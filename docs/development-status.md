@@ -51,7 +51,7 @@
 | Actions 更新 | 已审查、CI 通过且有 human-reviewed 的 PR #5 已合并。                                                                                                                                                                                      |
 | 自动合并     | PR #8 添加可信目标分支工作流，保留 ci、commit-lint、risk-gate；不自行添加人工确认标签。管理员须启用 Allow auto-merge，并为 main 设置经典分支保护、上述三项 required checks 和 up-to-date 要求。当前 integration 设置写入返回 GitHub 403。 |
 | Node 类型    | 运行时为 Node 24，PR #7 的 Node 26 类型升级已关闭；PR #9 禁止独立升级类型主版本。当前 24.19.2 为查询时该主版本最新版本。                                                                                                                  |
-| TypeScript 7 | PR #6 已转为草稿。隔离安装复现 ERESOLVE：typescript-eslint 稳定版 8.72.1 和预发行版 8.72.2-alpha.11 都要求 TypeScript <6.1.0。暂用支持的 6.0.3；工具链支持后联合升级，不用 force/legacy-peer-deps。                                       |
+| TypeScript 7 | 以用户明确的 TS7 目标为准。仅升级依赖的 PR #6 因 compiler API 工具不兼容已由 PR #11 替代并关闭；PR #11 使用 TS7.0.2、Oxlint 与 SWC，通过本地构建、类型检查、工具链边界测试、浏览器功能检查及生产容器验证，待 CI 与维护者审查合入。        |
 | 视觉基准     | 桌面/移动布局功能检查与人工截图检查通过；固定官方浏览器镜像下载受网络策略限制，像素基准仍待建立，不能宣称已完成视觉回归。                                                                                                                 |
 | 托管         | 未选择平台，用户服务器/域名待提供；不能生成假生产发布步骤。后续探针须验证大陆账号、邮件、数据和 AI 全链路。                                                                                                                               |
 
