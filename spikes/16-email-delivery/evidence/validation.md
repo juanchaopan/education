@@ -10,6 +10,7 @@
 - `npm run lint`：通过。
 - 本机 Chromium / 390px：同意前无请求、503 配置提示、网络错误不自动重试、无脚本错误/横向溢出。API 使用 mock，没有邮件发送。截图 `local-mobile.png`。
 - Vercel API：独立项目，Node24/sin1、staging READY、默认登录保护开启、无自定义域名。部署 ID 和非秘密配置见 `vercel.json`。首次无凭据初始化被 Vercel 标为 production，现已删除；代码拒绝 production 执行。
+- 维护者配置完成后，API 仅核对三个变量的名称、类型与 Preview 目标，应用密码为 Sensitive，未读取/解密取值。重新部署同一份原型，staging READY；非秘密元数据见 `vercel-configured-preview.json`。未运行邮件发送或 SMTP 连接，等待维护者从新预览回传连接测试结果。
 - 真实发送：0。Vercel 构建已完成，但预览域名访问不在本环境许可内，实际线上页面、登录拦截、SMTP 函数和 Google 授权仍未执行。QQ/163 送达、延迟、垃圾箱和真实风控恢复：未执行。
 
 fixture 检查与 MIME 输出不证明生产邮件安全性、当前免费条款或大陆投递。源码与证据留在 disposable spike 分支，正式业务实现仍为空框架。

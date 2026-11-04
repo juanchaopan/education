@@ -1,7 +1,7 @@
 # Spike #16：邮箱服务与大陆投递
 
 - 任务：<https://github.com/juanchaopan/education/issues/16>
-- 状态：第一轮调查、离线原型与无凭据 Vercel 构建完成；**未实发，未选定正式服务，issue 保持打开**。
+- 状态：第一轮调查、离线原型和 Vercel 构建完成；维护者已配置 Gmail 的 Preview 变量并重新部署。**SMTP 连接等待维护者浏览器测试；未实发，未选定正式服务，issue 保持打开**。
 - 开始：2026-11-04；基线 main `860a0b7`。分支 `spike/16-email-delivery`，探针代码不合入 main。
 - 用户询问“can i use gmail”，随后选择“普通 @gmail.com 个人账号（推荐先做试点）”。据此测试个人 Gmail，不把候选选择记录为正式投递验收。
 
@@ -51,7 +51,9 @@
 
 - 项目：`education-mail-spike` / `prj_dLHrRPM29UEL9MevgSCp2vMJlu5G`；独立项目，无 Git 自动部署连接。
 - API 确认 Node 24、`sin1`、`target=staging`、`READY`，默认 `ssoProtection.deploymentType=all_except_custom_domains`。没有绑定自定义域名；保留 Vercel 登录保护。
-- 预览：<https://education-mail-spike-72wpy08wj-juanchaopan1.vercel.app/>。系统环境变量自动暴露已开启。凭据尚未设置，开关默认关闭。
+- 初次无凭据预览：<https://education-mail-spike-72wpy08wj-juanchaopan1.vercel.app/>。系统环境变量自动暴露已开启；此旧部署创建时未配置凭据，不能用于验证后来新增的变量。
+- 维护者报告变量配置完成后，API 元数据确认 `GMAIL_USER`、`GMAIL_APP_PASSWORD`、`MAIL_PROBE_ENABLED` 均覆盖不限定 Git 分支的 Preview；应用密码类型为 `sensitive`。未读取/解密变量内容，也未据元数据证明取值正确。
+- 新预览：<https://education-mail-spike-26ms5cd87-juanchaopan1.vercel.app/>，`dpl_BZzhQnzMGTvEB2jDF4dZw8oQkqBC`，API 确认 staging / Node24 / sin1 / READY，使用同一已验证原型代码。配置后的构建证据见 [vercel-configured-preview.json](evidence/vercel-configured-preview.json)；构建成功不等于 SMTP 授权成功。
 - Vercel 将新项目的第一次初始化构建标为 production，虽然请求 target=staging；无凭据且代码拒绝 production 执行。已另建并确认 staging READY，删除第一次初始化构建。本轮没有发布正式产品或改动原有访问测试项目。
 - API 构建证据：[vercel.json](evidence/vercel.json)。当前云环境没有预览域名访问权限，所以没有实际加载线上页面、运行线上函数或检查登录拦截；API 配置与本机浏览器验证分别记录，不冒充线上验收。
 
@@ -59,7 +61,7 @@
 
 1. 用发信 Gmail 登录 <https://myaccount.google.com/security>，确认两步验证，再打开 <https://myaccount.google.com/apppasswords> 创建专用于试点的应用专用密码。不要发送普通密码或应用密码到聊天。没有该选项时先反馈，不能用普通密码代替。
 2. 打开 [Vercel 该项目环境变量](https://vercel.com/juanchaopan1/education-mail-spike/settings/environment-variables)，只选 **Preview** 环境，先设置 `GMAIL_USER`（发信地址）、`GMAIL_APP_PASSWORD`（应用专用密码，去显示空格，按敏感值保存）、`MAIL_PROBE_ENABLED=yes`。这里是 Vercel 项目设置，不是 Codex HTTP 密钥。
-3. 配好后由助手创建新的 staging 部署，再打开新的不可变预览 URL，用 Vercel 账号访问，点“测试 Gmail 连接（不发邮件）”。已有部署不会自动获得新环境变量。页面只接受当前部署 URL 的 Origin，不能换成任意 alias 后假定仍可调用。
+3. 本轮已重新创建 staging 部署。请打开上面的新预览 URL，用 Vercel 账号访问，点“测试 Gmail 连接（不发邮件）”，回传页面的脱敏 JSON 结果；`smtp-authenticated` 且 `sent:false` 才是连接/授权通过的实测证据。已有部署不会自动获得新环境变量。页面只接受当前部署 URL 的 Origin，不能换成任意 alias 后假定仍可调用。
 4. 连接通过后，取得测试收件人同意，再设 `MAIL_PROBE_QQ` / `MAIL_PROBE_163` 并重新部署。勾选同意、每次手动点击发送一封，记录真实收件结果。不要关闭访问保护；预览中的 Gmail 密码永远不应出现在页面输入框。
 5. 测试结束后撤销专用应用密码并停用/删除投递探针。若采用 Gmail，正式应用另外配置专用凭据，按 roadmap 重写邮件适配器，不沿用测试页面。
 
@@ -115,7 +117,7 @@ node --env-file=.env.local probe.mts --send
 
 ## 下一轮所需输入
 
-1. 个人 Gmail 候选已确认；现在需要维护者确认账号可生成应用专用密码，并在 Vercel 的 Preview 环境安全配置。不要发送密码到聊天。
+1. 个人 Gmail 候选、应用密码页面和 Preview 变量元数据已确认；新部署就绪，现在需要维护者在新预览点击不发邮件的连接测试并回传结果。不要发送密码到聊天。
 2. 官网资料访问权限或用户提供当前相关政策内容，以完成免费额度/条款核实；当前预览域名访问权限或用户报告线上连接结果。
 3. 自愿测试的 QQ、163 收件人；明确授权有限次数实发，并记录实际收信结果。
 

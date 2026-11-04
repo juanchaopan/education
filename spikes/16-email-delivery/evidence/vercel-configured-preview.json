@@ -1,0 +1,38 @@
+{
+  "id": "dpl_BZzhQnzMGTvEB2jDF4dZw8oQkqBC",
+  "url": "education-mail-spike-26ms5cd87-juanchaopan1.vercel.app",
+  "readyState": "READY",
+  "target": "staging",
+  "nodeVersion": "24.x",
+  "regions": ["sin1"],
+  "createdAt": 1793829673087,
+  "ready": 1793829683723,
+  "errorCode": null,
+  "observedAt": "2026-11-04T22:01:52.547915+00:00",
+  "projectId": "prj_dLHrRPM29UEL9MevgSCp2vMJlu5G",
+  "sourceCommit": "25e02c96056a8a65615980c017e595ca7fc20a4a",
+  "ssoProtection": {
+    "deploymentType": "all_except_custom_domains"
+  },
+  "previewVariableMetadata": [
+    {
+      "key": "GMAIL_USER",
+      "type": "encrypted",
+      "unscopedPreviewConfigured": true
+    },
+    {
+      "key": "GMAIL_APP_PASSWORD",
+      "type": "sensitive",
+      "unscopedPreviewConfigured": true
+    },
+    {
+      "key": "MAIL_PROBE_ENABLED",
+      "type": "encrypted",
+      "unscopedPreviewConfigured": true
+    }
+  ],
+  "variableValuesInspected": false,
+  "agentMessagesSent": 0,
+  "smtpConnectionTest": "awaiting-owner-browser",
+  "inboxDeliveryTest": "not-run"
+}
