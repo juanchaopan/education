@@ -1,7 +1,7 @@
 # Spike #16：邮箱服务与大陆投递
 
 - 任务：<https://github.com/juanchaopan/education/issues/16>
-- 状态：维护者已回传 Gmail SMTP 连接/授权通过，并确认 **126 注册验证测试邮件进入正常收件箱，“very fast”**。记录到一封收信，尚无精确端到端延迟；**找回密码邮件与链接打开待验证，未选定正式服务，issue 保持打开**。
+- 状态：维护者已确认 **注册验证、找回密码两封测试邮件均进入 126 正常收件箱，收信很快，两个网站链接均可打开**。本轮小样本投递验证通过；**当前额度/条款与真实故障恢复仍未验证，未选定正式服务，issue 保持打开**。
 - 收件范围：维护者明确要求“only test 126.com”。本轮只测 126，不要求 QQ/163；其他邮箱的投递能力不由本轮证明。
 - 开始：2026-11-04；基线 main `860a0b7`。分支 `spike/16-email-delivery`，探针代码不合入 main。
 - 用户询问“can i use gmail”，随后选择“普通 @gmail.com 个人账号（推荐先做试点）”。据此测试个人 Gmail，不把候选选择记录为正式投递验收。
@@ -21,17 +21,17 @@
 
 ## 目前结论（提议）
 
-个人 Gmail 可作为第一候选：专用 `@gmail.com` 发信账号 + 应用专用密码 + TLS SMTP。正式注册设计允许常见邮箱，探针本轮只向 126.com 测试地址发送；**不要求家长有 Google 账号，也不要求家长浏览器连接 Google**。维护者已确认一封注册验证测试邮件进入 126 正常收件箱；找回密码与重复样本未完成，QQ/163 未纳入本轮。
+建议个人 Gmail 用于小规模试点：专用 `@gmail.com` 发信账号 + 应用专用密码 + TLS SMTP。正式注册设计允许常见邮箱，探针本轮只向 126.com 测试地址发送；**不要求家长有 Google 账号，也不要求家长浏览器连接 Google**。维护者确认两类测试邮件均进入 126 正常收件箱，且两个网站链接均可打开。重复样本与实际账号令牌流程未完成，QQ/163 未纳入本轮；这仍是候选建议，不把投递成功自动当作正式服务选型确认。
 
 以账号自身 Gmail 地址作为 From，不伪装成 `@hyp.app`。此方向不需要先购买发信域名；现有网站的 CNAME、Vercel 证书和 `_vercel` 验证记录不变。后续若要自定义发信域名，需另核实域名控制权、SPF、DKIM、DMARC 和退信地址，不能把 hyp 的网站绑定能力视为已有邮件 DNS 权限。
 
-这是**待验证的试点候选**。Gmail 没有被证明适合本产品的持续事务邮件投递；普通账号的风控、共享额度和恢复运维都可能造成中断。不要把“大概够 10 家庭”写成免费额度或投递 SLA 的证明。
+这是**有两封实际收信证据的试点候选**。Gmail 的持续事务邮件投递、当前额度和风控恢复没有由小样本证明。不要把“大概够 10 家庭”写成免费额度或投递 SLA 的证明。
 
 ## 候选与已读来源
 
 | 候选              | 已有证据                                                                                                                                            | 未完成核实                                                  | 本轮建议                                                                         |
 | ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| 个人 Gmail + SMTP | Nodemailer 维护者 README 说明 Node 20+、TS 自带类型、TLS 校验和 Gmail/防火墙限制；其服务表包含 Gmail SMTP TLS 配置；本机 Node 24 / TS7 离线验证通过 | Google 当前发送额度/条款、126 实际投递、风控和恢复          | 优先做一次真实测试；无额外付费目标尚未全部核实                                   |
+| 个人 Gmail + SMTP | Nodemailer 维护者 README 说明 Node 20+、TS 自带类型、TLS 校验和 Gmail/防火墙限制；其服务表包含 Gmail SMTP TLS 配置；本机 Node 24 / TS7 离线验证通过 | Google 当前发送额度/条款、持续投递、风控和恢复              | 两类 126 邮件及链接已手工通过；建议用于试点，额度/条款仍待核实                   |
 | Gmail API + OAuth | Google 自己的固定版本 discovery 与发送样例证明 `users.messages.send`、RFC 邮件的 base64url 编码和 OAuth 授权路径                                    | 当前 OAuth 同意/验证与刷新令牌规则、账号额度、真实发送/投递 | 应用密码不可用时评估；正式实现只申请所需最小发送权限，不能照抄样例的多项广泛权限 |
 | Resend            | 官方 Node SDK README 展示 API 发信，自有域名发信先验证域名                                                                                          | 当前免费额度、测试域名收件范围、条款、超额行为和国内投递    | 备选，未选定；不能把 README 当作价格/额度证明                                    |
 | Brevo             | 官方 Node SDK README 展示 transactional email API、API key、可配置请求超时/重试                                                                     | 当前免费额度、身份认证、品牌/域名要求、条款与国内投递       | 备选，未选定；事务发送不能无条件复用 SDK 默认重试策略                            |
@@ -55,9 +55,9 @@
 - 初次无凭据预览：<https://education-mail-spike-72wpy08wj-juanchaopan1.vercel.app/>。系统环境变量自动暴露已开启；此旧部署创建时未配置凭据，不能用于验证后来新增的变量。
 - 维护者报告变量配置完成后，API 元数据确认 `GMAIL_USER`、`GMAIL_APP_PASSWORD`、`MAIL_PROBE_ENABLED` 均覆盖不限定 Git 分支的 Preview；应用密码类型为 `sensitive`。未读取/解密变量内容，也未据元数据证明取值正确。
 - 连接测试所用预览：<https://education-mail-spike-26ms5cd87-juanchaopan1.vercel.app/>，`dpl_BZzhQnzMGTvEB2jDF4dZw8oQkqBC`，API 确认 staging / Node24 / sin1 / READY，使用同一已验证原型代码。配置后的构建证据见 [vercel-configured-preview.json](evidence/vercel-configured-preview.json)；构建成功不等于 SMTP 授权成功。
-- 当前 **126 专用预览**：<https://education-mail-spike-ebtu2urrk-juanchaopan1.vercel.app/>，`dpl_3nAiFPF3bXmnNCDNj5gQmtamQMQQ`，staging / Node24 / sin1 / READY，源码 `a905e877611ca6a0eec58b28b830fc4cc5d33873`。部署证据见 [vercel-126-preview.json](evidence/vercel-126-preview.json)，本机 126 截图见 [local-126-mobile.png](evidence/local-126-mobile.png)。尚未实际发送邮件。
+- 当前 **126 专用预览**：<https://education-mail-spike-ebtu2urrk-juanchaopan1.vercel.app/>，`dpl_3nAiFPF3bXmnNCDNj5gQmtamQMQQ`，staging / Node24 / sin1 / READY，源码 `a905e877611ca6a0eec58b28b830fc4cc5d33873`。部署证据见 [vercel-126-preview.json](evidence/vercel-126-preview.json)，本机 126 截图见 [local-126-mobile.png](evidence/local-126-mobile.png)。构建阶段未发送邮件；后续两封手工实测见下文。
 - Vercel 将新项目的第一次初始化构建标为 production，虽然请求 target=staging；无凭据且代码拒绝 production 执行。已另建并确认 staging READY，删除第一次初始化构建。本轮没有发布正式产品或改动原有访问测试项目。
-- API 构建证据：[vercel.json](evidence/vercel.json)。当前云环境没有预览域名访问权限，助手未直接加载线上页面或检查登录拦截；既有 SMTP 连接结果来自维护者回传，126 线上发信仍待维护者操作。API 配置、本机浏览器与用户报告分别记录。
+- API 构建证据：[vercel.json](evidence/vercel.json)。当前云环境没有预览域名访问权限，助手未直接加载线上页面或检查登录拦截；线上 SMTP 连接、126 发信/收信与链接结果均来自维护者回传。API 配置、本机浏览器与用户报告分别记录。
 
 维护者操作：
 
@@ -100,8 +100,10 @@ node --env-file=.env.local probe.mts --send
 - 本机系统 Chromium 390px 移动布局通过：同意前不请求；配置未就绪可见；网络未知时提示先查邮箱且不自动重试；无横向溢出或页面脚本错误。API 为 mock，不是线上 Gmail。截图见 [local-mobile.png](evidence/local-mobile.png)。
 - 测试使用 fixture 错误检查分类，不是向 Gmail 故意触发封禁/限流，也没有验证真实故障恢复。sandbox 最初阻止测试子进程，允许正常子进程执行后通过；不是邮件服务故障。
 - 维护者回传 `smtp-authenticated`、`sent:false`、`smtpMs:1594`、requestId `9d0ad660-4afa-4d7c-b144-c1a011559764`，原始脱敏结果见 [gmail-connection-user-report.json](evidence/gmail-connection-user-report.json)。这是用户报告的线上 SMTP 连接/授权通过，助手没有独立重放；单个样本不是 P50/P95，1,594ms 也不是收件延迟或冷启动测量。
-- 维护者回传注册验证发送结果与邮件正文：runId `19c5842c2bde2011`、SMTP 接受 1,974ms；随后确认“inbox, very fast”。记录到 **1 封进入 126 正常收件箱**，正文含可读中文；原始发送响应中的 `inboxConfirmed:false` 保留不改，另记收件人后续确认。证据见 [126-verify-user-report.json](evidence/126-verify-user-report.json)。未提供收件 UTC/精确耗时或链接点击结果，不能把 1,974ms 当作端到端延迟。
-- 尚无找回密码邮件、重复投递、冷启动、配额耗尽或真实故障恢复证据；一次进入正常收件箱不代表持续投递质量。
+- 维护者回传注册验证发送结果与邮件正文：runId `19c5842c2bde2011`、SMTP 接受 1,974ms；随后确认“inbox, very fast”。记录到 **1 封进入 126 正常收件箱**，正文含可读中文；原始发送响应中的 `inboxConfirmed:false` 保留不改，另记收件人后续确认。证据见 [126-verify-user-report.json](evidence/126-verify-user-report.json)。未提供收件 UTC/精确耗时，不能把 1,974ms 当作端到端延迟；后续链接确认已补入证据。
+- 维护者回传找回密码发送结果与正文：runId `3a761f89839f2bd9`、开始 `2026-11-04T22:14:58.595Z`、SMTP 接受 2,616ms，并确认“very fast, inbox”。证据见 [126-reset-user-report.json](evidence/126-reset-user-report.json)。之后对两封邮件链接统一确认“能正常打开”，注册验证记录也补上链接确认。
+- 本轮记录到两封测试邮件均进入 126 正常收件箱、正文含可读中文、测试网站链接可打开。收信速度仅为“很快”的定性观察，无精确收件时间或端到端分位数；SMTP 1,974/2,616ms 不能替代真实收件延迟。没有正式账号创建、邮箱验证或密码重置行为。
+- 尚无重复投递、冷启动、配额耗尽或真实故障恢复证据；两封正常收件不代表持续投递质量。
 - 详细日志见 [validation.md](evidence/validation.md)、[offline.tap](evidence/offline.tap)。
 
 ## 实测记录表
@@ -121,8 +123,8 @@ node --env-file=.env.local probe.mts --send
 
 ## 下一轮所需输入
 
-1. 注册验证邮件已由维护者确认进入 126 正常收件箱且很快。下一步在当前预览手动发送一次“126 · 找回密码测试”，回传脱敏结果和收件情况；不需要再配置变量或重复发送注册验证邮件。
-2. 点击测试邮件内的网站链接并报告是否能打开；精确收件时间仍未知，已保留“very fast”定性观察，不编造数字。首轮两类完成后再决定是否重复样本。
-3. 官网资料访问权限或用户提供当前相关政策内容，以完成免费额度/条款核实；真实故障恢复仍待验证。
+1. 两类邮件与链接的首轮手工验证已完成，无须再次发送来补齐这两类样本。精确收件时间仍未知，保留“very fast”的定性观察。
+2. 官网资料访问权限或当前相关政策内容，以核实免费额度、适用用途和风控/超额行为；该项缺口不能通过收信成功替代。真实故障恢复仍待验证。
+3. 维护者决定是否按已说明限制采用 Gmail 作为试点方案，或继续核实后再决定；形成最终 ADR 时分别列明已验证范围、未完成验收和后续任务，不将探针邮件当作正式账号恢复功能。
 
 在这些输入到位前不关闭 #16、不把 Q-005 标为解决，也不创建已接受 ADR。采用/放弃由用户看到证据后决定；结论获确认后只将 ADR/脱敏证据通过文档 PR 合并，原型按 spike 流程归档删除。#17 可继续使用隔离邮件适配器开发，但不能显示“邮件已投递”。
