@@ -29,13 +29,28 @@ jobs:
       issues: write
       pull-requests: write
     outputs:
-      tier: ${{ steps.classify.outputs.tier }}
-      approved: ${{ steps.classify.outputs.approved }}
+      tier: ${{ steps.classify.outputs.tier || steps.bootstrap.outputs.tier }}
+      approved: ${{ steps.classify.outputs.approved || steps.bootstrap.outputs.approved }}
     steps:
       - uses: actions/checkout@v5
         with:
           ref: ${{ github.event.pull_request.base.sha }}
+      - name: Bootstrap the initial workflow installation
+        id: bootstrap
+        if: hashFiles('.github/scripts/risk-classify.mjs') == ''
+        env:
+          EVENT_ACTION: ${{ github.event.action }}
+          EVENT_LABEL: ${{ github.event.label.name }}
+        run: |
+          echo "tier=high" >> "$GITHUB_OUTPUT"
+          if [ "$EVENT_ACTION" = labeled ] && [ "$EVENT_LABEL" = human-reviewed ]; then
+            echo "approved=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "approved=false" >> "$GITHUB_OUTPUT"
+            echo "Initial workflow install: maintainer must review and apply human-reviewed after the latest commit."
+          fi
       - id: classify
+        if: hashFiles('.github/scripts/risk-classify.mjs') != ''
         run: node .github/scripts/risk-classify.mjs
         env:
           GH_TOKEN: ${{ github.token }}
