@@ -1,0 +1,2700 @@
+{
+  "measuredAt": "2026-11-04T21:05:40.747Z",
+  "environment": {
+    "node": "v24.22.1",
+    "argon2": "0.45.2",
+    "platform": "linux",
+    "arch": "x64",
+    "kernel": "6.18.57",
+    "cpu": "Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz",
+    "visibleCpus": 5,
+    "availableParallelism": 4,
+    "cgroupCpuMax": "400000 100000",
+    "cgroupMemoryMax": "34359738368",
+    "uvThreadpoolSize": "default (4)",
+    "scope": "Local cloud worker only; no HTTP, database, network, cold starts, Vercel or mainland measurements."
+  },
+  "methodology": "Fresh subprocess per candidate/mode; 6 warmups, 30 hashes + 30 verifies; batches of 1 or 3; nearest-rank quantiles; queue included; peak RSS is OS high-water mark including warmup/native allocator.",
+  "runs": [
+    {
+      "round": 1,
+      "candidate": {
+        "memoryCost": 19456,
+        "timeCost": 2
+      },
+      "parallelism": 1,
+      "saltBytes": 16,
+      "tagBytes": 32,
+      "mode": {
+        "name": "serial",
+        "requests": 1,
+        "slots": 1
+      },
+      "warmupCount": 6,
+      "summaries": {
+        "hash": {
+          "samples": 30,
+          "p50Ms": 42.19,
+          "p95Ms": 87.92,
+          "maxMs": 91.55
+        },
+        "verify": {
+          "samples": 30,
+          "p50Ms": 42.26,
+          "p95Ms": 161.09,
+          "maxMs": 162.29
+        }
+      },
+      "startRssMiB": 109.01,
+      "peakRssMiB": 109.64,
+      "eventLoopP95Ms": 10.64,
+      "rows": [
+        {
+          "operation": "hash",
+          "elapsedMs": 36.45,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 37.55,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 47.05,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 38.14,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 43.19,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 34.3,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 40.81,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 32.52,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 42.34,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 54.71,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 43.49,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 86.54,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 48.39,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 60.14,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 57.3,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 59.05,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 52.24,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 39.7,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 91.55,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 40.83,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 41.29,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 43.58,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 36.98,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 42.19,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 40.39,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 35.03,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 55.92,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 33.04,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 87.92,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 36.48,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 42.26,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 105.13,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 34.32,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 44.56,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 37.31,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 148.29,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 35.46,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 35.6,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 63.59,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 136.56,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 37.58,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 36.03,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 41.51,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 121.04,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 34.29,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 34.05,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 45.85,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 162.29,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 39.02,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 37.59,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 40.78,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 123.53,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 39.15,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 50.65,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 46.94,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 131.63,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 39.48,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 48.75,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 48.74,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 161.09,
+          "queueMs": 0
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "candidate": {
+        "memoryCost": 19456,
+        "timeCost": 2
+      },
+      "parallelism": 1,
+      "saltBytes": 16,
+      "tagBytes": 32,
+      "mode": {
+        "name": "three-two-slots",
+        "requests": 3,
+        "slots": 2
+      },
+      "warmupCount": 6,
+      "summaries": {
+        "hash": {
+          "samples": 30,
+          "p50Ms": 48.98,
+          "p95Ms": 101.85,
+          "maxMs": 116.53
+        },
+        "verify": {
+          "samples": 30,
+          "p50Ms": 54.5,
+          "p95Ms": 95.39,
+          "maxMs": 106.71
+        }
+      },
+      "startRssMiB": 108.96,
+      "peakRssMiB": 109.58,
+      "eventLoopP95Ms": 11.6,
+      "rows": [
+        {
+          "operation": "hash",
+          "elapsedMs": 45.59,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 47.21,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 116.53,
+          "queueMs": 44.61
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 38.89,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 48.35,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 77.58,
+          "queueMs": 38.82
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 38.82,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 48.98,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 89.69,
+          "queueMs": 38.77
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 41.46,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 41.61,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 74.76,
+          "queueMs": 39.96
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 44.22,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 61.89,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 93.37,
+          "queueMs": 44.15
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 39.57,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 47.83,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 82.99,
+          "queueMs": 39.57
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 39.93,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 63.61,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 101.85,
+          "queueMs": 39.87
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 61.09,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 71.87,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 101.66,
+          "queueMs": 60.93
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 34.19,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 40.78,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 69.72,
+          "queueMs": 34.19
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 39.34,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 52.66,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 72.54,
+          "queueMs": 39.04
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 47.59,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 51.15,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 106.71,
+          "queueMs": 47.41
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 58.15,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 58.79,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 93.91,
+          "queueMs": 58.12
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 44.51,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 66.73,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 82.5,
+          "queueMs": 44.48
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 47.65,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 48.55,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 90.12,
+          "queueMs": 47.75
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 42.07,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 44.56,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 82.18,
+          "queueMs": 42.05
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 32.65,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 41.64,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 93.68,
+          "queueMs": 32.59
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 50.96,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 52.88,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 91.65,
+          "queueMs": 50.94
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 54.5,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 55.97,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 95.39,
+          "queueMs": 54.48
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 37.34,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 66.02,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 86.14,
+          "queueMs": 37.3
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 35.98,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 38.31,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 73.37,
+          "queueMs": 35.71
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "candidate": {
+        "memoryCost": 32768,
+        "timeCost": 3
+      },
+      "parallelism": 1,
+      "saltBytes": 16,
+      "tagBytes": 32,
+      "mode": {
+        "name": "serial",
+        "requests": 1,
+        "slots": 1
+      },
+      "warmupCount": 6,
+      "summaries": {
+        "hash": {
+          "samples": 30,
+          "p50Ms": 128.81,
+          "p95Ms": 271.08,
+          "maxMs": 732.91
+        },
+        "verify": {
+          "samples": 30,
+          "p50Ms": 125.8,
+          "p95Ms": 309.15,
+          "maxMs": 726.9
+        }
+      },
+      "startRssMiB": 32.97,
+      "peakRssMiB": 65.54,
+      "eventLoopP95Ms": 11.21,
+      "rows": [
+        {
+          "operation": "hash",
+          "elapsedMs": 124.84,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 271.08,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 125.15,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 127.87,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 105.58,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 100.06,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 108.63,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 131.65,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 128.81,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 119.69,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 107.1,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 133.26,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 732.91,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 100.69,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 111.82,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 110.72,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 134.33,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 153,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 183.77,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 162.55,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 125.37,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 227,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 108.37,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 141.32,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 139.37,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 136.36,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 167.53,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 170.8,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 129.29,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 108.74,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 726.9,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 218.98,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 160.35,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 121.97,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 123.25,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 136.88,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 123.3,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 125.8,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 113.19,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 298.66,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 122.26,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 117.29,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 110.03,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 187.92,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 133.09,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 122.82,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 309.15,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 121.95,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 136.91,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 175.26,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 146.62,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 203.67,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 172.58,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 110.44,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 124.8,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 136.03,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 170.38,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 101.69,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 109.17,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 106.87,
+          "queueMs": 0
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "candidate": {
+        "memoryCost": 32768,
+        "timeCost": 3
+      },
+      "parallelism": 1,
+      "saltBytes": 16,
+      "tagBytes": 32,
+      "mode": {
+        "name": "three-two-slots",
+        "requests": 3,
+        "slots": 2
+      },
+      "warmupCount": 6,
+      "summaries": {
+        "hash": {
+          "samples": 30,
+          "p50Ms": 129.58,
+          "p95Ms": 254.1,
+          "maxMs": 294.99
+        },
+        "verify": {
+          "samples": 30,
+          "p50Ms": 136.39,
+          "p95Ms": 264.55,
+          "maxMs": 265.09
+        }
+      },
+      "startRssMiB": 33.36,
+      "peakRssMiB": 97.52,
+      "eventLoopP95Ms": 11.53,
+      "rows": [
+        {
+          "operation": "hash",
+          "elapsedMs": 129.36,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 141.06,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 294.99,
+          "queueMs": 129.56
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 106.47,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 130.79,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 209.34,
+          "queueMs": 105.88
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 129.58,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 138.46,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 254.1,
+          "queueMs": 129.48
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 116.51,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 157.7,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 217.27,
+          "queueMs": 116.32
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 106.54,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 146.19,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 208.97,
+          "queueMs": 106.53
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 106.49,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 114.93,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 209.41,
+          "queueMs": 106.48
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 105.08,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 123.47,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 252.78,
+          "queueMs": 104.78
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 117.03,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 118.37,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 242.52,
+          "queueMs": 117.03
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 113.18,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 125.95,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 226.19,
+          "queueMs": 113.17
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 112.14,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 123.13,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 229.19,
+          "queueMs": 112.13
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 107.2,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 119.64,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 250.66,
+          "queueMs": 107.02
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 106.87,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 115.98,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 264.55,
+          "queueMs": 106.83
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 123.13,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 136.99,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 246.45,
+          "queueMs": 123.11
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 112.13,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 151.76,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 230.74,
+          "queueMs": 112
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 105.35,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 137.82,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 222.79,
+          "queueMs": 105.32
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 108.94,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 163.23,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 233.52,
+          "queueMs": 108.82
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 114.89,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 119.92,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 241.07,
+          "queueMs": 114.74
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 116.82,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 136.39,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 218.85,
+          "queueMs": 116.81
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 116.38,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 126.77,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 232.98,
+          "queueMs": 116.34
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 124.55,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 156.5,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 265.09,
+          "queueMs": 124.28
+        }
+      ]
+    },
+    {
+      "round": 2,
+      "candidate": {
+        "memoryCost": 19456,
+        "timeCost": 2
+      },
+      "parallelism": 1,
+      "saltBytes": 16,
+      "tagBytes": 32,
+      "mode": {
+        "name": "serial",
+        "requests": 1,
+        "slots": 1
+      },
+      "warmupCount": 6,
+      "summaries": {
+        "hash": {
+          "samples": 30,
+          "p50Ms": 43.54,
+          "p95Ms": 62.27,
+          "maxMs": 126.38
+        },
+        "verify": {
+          "samples": 30,
+          "p50Ms": 39.49,
+          "p95Ms": 84.8,
+          "maxMs": 515.8
+        }
+      },
+      "startRssMiB": 108.95,
+      "peakRssMiB": 109.57,
+      "eventLoopP95Ms": 13.74,
+      "rows": [
+        {
+          "operation": "hash",
+          "elapsedMs": 38.31,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 56.06,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 53.22,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 45.12,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 126.38,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 42.13,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 51.27,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 43.54,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 44.35,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 35.72,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 41.06,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 37.1,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 49.45,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 39.59,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 36.29,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 33.28,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 59.29,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 43.76,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 49.6,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 34.79,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 43.48,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 42.17,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 48.05,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 38.41,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 49.69,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 36.94,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 50.53,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 46.25,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 62.27,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 40.94,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 84.8,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 515.8,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 40.89,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 37.33,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 34.88,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 46.76,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 32.59,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 36.76,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 50.61,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 62.4,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 42.32,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 44.37,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 39.49,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 33.79,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 34.84,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 37.57,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 35.35,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 38.16,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 40.9,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 47.63,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 46.58,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 49.04,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 50.71,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 38.15,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 46.95,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 44.06,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 33.76,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 37.63,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 34.02,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 37.87,
+          "queueMs": 0
+        }
+      ]
+    },
+    {
+      "round": 2,
+      "candidate": {
+        "memoryCost": 19456,
+        "timeCost": 2
+      },
+      "parallelism": 1,
+      "saltBytes": 16,
+      "tagBytes": 32,
+      "mode": {
+        "name": "three-two-slots",
+        "requests": 3,
+        "slots": 2
+      },
+      "warmupCount": 6,
+      "summaries": {
+        "hash": {
+          "samples": 30,
+          "p50Ms": 56.42,
+          "p95Ms": 109.11,
+          "maxMs": 112.9
+        },
+        "verify": {
+          "samples": 30,
+          "p50Ms": 53.4,
+          "p95Ms": 110.19,
+          "maxMs": 114.85
+        }
+      },
+      "startRssMiB": 108.78,
+      "peakRssMiB": 109.53,
+      "eventLoopP95Ms": 10.97,
+      "rows": [
+        {
+          "operation": "hash",
+          "elapsedMs": 54.79,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 57.38,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 109.11,
+          "queueMs": 54.79
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 44.87,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 51.95,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 83.36,
+          "queueMs": 44.76
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 67.46,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 69.75,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 107.49,
+          "queueMs": 67.38
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 44.86,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 50.46,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 84.78,
+          "queueMs": 44.87
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 50.19,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 50.36,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 84.34,
+          "queueMs": 50.19
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 32.63,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 36.15,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 78.69,
+          "queueMs": 32.62
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 34.08,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 35.84,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 70.44,
+          "queueMs": 33.31
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 38.83,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 51.9,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 78.22,
+          "queueMs": 38.82
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 75.55,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 77.57,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 112.9,
+          "queueMs": 75.54
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 39.34,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 56.42,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 79.85,
+          "queueMs": 39.33
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 40.47,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 42.35,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 89.29,
+          "queueMs": 40.31
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 50.61,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 53.76,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 114.85,
+          "queueMs": 50.58
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 46.62,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 58.26,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 100.63,
+          "queueMs": 46.49
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 51.4,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 53.4,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 91.85,
+          "queueMs": 51.38
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 39.82,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 47.89,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 94.43,
+          "queueMs": 39.68
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 46.94,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 49.5,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 99.86,
+          "queueMs": 46.78
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 35.44,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 50.25,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 84.69,
+          "queueMs": 35.32
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 40,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 59.75,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 93.79,
+          "queueMs": 39.79
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 43.13,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 43.42,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 82.95,
+          "queueMs": 43.11
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 60.83,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 61.11,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 110.19,
+          "queueMs": 60.71
+        }
+      ]
+    },
+    {
+      "round": 2,
+      "candidate": {
+        "memoryCost": 32768,
+        "timeCost": 3
+      },
+      "parallelism": 1,
+      "saltBytes": 16,
+      "tagBytes": 32,
+      "mode": {
+        "name": "serial",
+        "requests": 1,
+        "slots": 1
+      },
+      "warmupCount": 6,
+      "summaries": {
+        "hash": {
+          "samples": 30,
+          "p50Ms": 122.45,
+          "p95Ms": 142.6,
+          "maxMs": 154.19
+        },
+        "verify": {
+          "samples": 30,
+          "p50Ms": 124.84,
+          "p95Ms": 271.85,
+          "maxMs": 291.41
+        }
+      },
+      "startRssMiB": 32.85,
+      "peakRssMiB": 65.51,
+      "eventLoopP95Ms": 10.48,
+      "rows": [
+        {
+          "operation": "hash",
+          "elapsedMs": 133.8,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 105.66,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 117.7,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 116.33,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 119.2,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 121.87,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 112.23,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 136.39,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 128.27,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 111.34,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 111.83,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 130.23,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 119.79,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 130.91,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 122.94,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 154.19,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 125.73,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 111.05,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 132.72,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 115.52,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 111.1,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 141.31,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 110.64,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 140.34,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 122.45,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 121.74,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 142.6,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 130.26,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 129.99,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 127.7,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 115.16,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 137.82,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 122.39,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 116.47,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 124.84,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 118.41,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 122.46,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 136.14,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 128.48,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 240.02,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 291.41,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 251.96,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 262.92,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 271.85,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 261.12,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 177.43,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 121.89,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 150.82,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 132.59,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 114.12,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 117.04,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 125.7,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 114.89,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 120.81,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 110.5,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 121.05,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 131.41,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 134.51,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 109.42,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 115.64,
+          "queueMs": 0
+        }
+      ]
+    },
+    {
+      "round": 2,
+      "candidate": {
+        "memoryCost": 32768,
+        "timeCost": 3
+      },
+      "parallelism": 1,
+      "saltBytes": 16,
+      "tagBytes": 32,
+      "mode": {
+        "name": "three-two-slots",
+        "requests": 3,
+        "slots": 2
+      },
+      "warmupCount": 6,
+      "summaries": {
+        "hash": {
+          "samples": 30,
+          "p50Ms": 134.42,
+          "p95Ms": 246.77,
+          "maxMs": 268.18
+        },
+        "verify": {
+          "samples": 30,
+          "p50Ms": 156.89,
+          "p95Ms": 304.91,
+          "maxMs": 354.59
+        }
+      },
+      "startRssMiB": 32.9,
+      "peakRssMiB": 97.6,
+      "eventLoopP95Ms": 10.76,
+      "rows": [
+        {
+          "operation": "hash",
+          "elapsedMs": 102.29,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 107.19,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 241.89,
+          "queueMs": 102.36
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 112.81,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 121.61,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 220,
+          "queueMs": 112.74
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 125.51,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 132.66,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 242.93,
+          "queueMs": 125.48
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 106.75,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 108.26,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 231.45,
+          "queueMs": 107.06
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 147.02,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 156.31,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 268.18,
+          "queueMs": 147.01
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 119.29,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 123.15,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 244.56,
+          "queueMs": 119.2
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 134.42,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 142.22,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 246.77,
+          "queueMs": 134.36
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 131.73,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 140.94,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 231.42,
+          "queueMs": 131.7
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 115.05,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 117.38,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 225.2,
+          "queueMs": 115.04
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 122.43,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 138.94,
+          "queueMs": 0
+        },
+        {
+          "operation": "hash",
+          "elapsedMs": 231.89,
+          "queueMs": 122.43
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 119.11,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 137.55,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 249.41,
+          "queueMs": 119.02
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 156.89,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 157.08,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 267.62,
+          "queueMs": 156.34
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 132.72,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 190.25,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 261.15,
+          "queueMs": 132.7
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 122.44,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 162.99,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 304.91,
+          "queueMs": 122.27
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 117.68,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 147.53,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 249.33,
+          "queueMs": 117.68
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 106.41,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 110.98,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 354.59,
+          "queueMs": 106.16
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 148.8,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 161.18,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 265.83,
+          "queueMs": 148.2
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 107.04,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 143.97,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 223.28,
+          "queueMs": 106.87
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 124.09,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 233.13,
+          "queueMs": 123.76
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 302.18,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 151.26,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 154.67,
+          "queueMs": 0
+        },
+        {
+          "operation": "verify",
+          "elapsedMs": 272.39,
+          "queueMs": 151.23
+        }
+      ]
+    }
+  ]
+}

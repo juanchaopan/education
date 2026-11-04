@@ -110,4 +110,6 @@
 
 ## 下一步
 
-[#14](https://github.com/juanchaopan/education/issues/14) 已获维护者验收，结论见 [ADR-0008](adr/0008-hosting-spike.md)：Vercel Hobby + 自定义域名用于后续 staging，完整产品与量化大陆验收仍待完成。下一个执行项是 [#15](https://github.com/juanchaopan/education/issues/15)，运行 `/spike 15`，确定账号安全参数与儿童登录方式。功能开发使用 `/implement next` 或指定 issue；[#16](https://github.com/juanchaopan/education/issues/16)、[#28](https://github.com/juanchaopan/education/issues/28) 也可独立推进。
+[#14](https://github.com/juanchaopan/education/issues/14) 托管与 [#15](https://github.com/juanchaopan/education/issues/15) 账号设计探针已结束，结论见 [ADR-0008](adr/0008-hosting-spike.md) / [ADR-0009](adr/0009-account-security-spike.md)。账号、真实数据库/邮件、浏览器持久登录与版本更新仍未实现；目标部署性能与大陆完整链路仍待验收。
+
+下一个探针是 [#16](https://github.com/juanchaopan/education/issues/16)，运行 `/spike 16` 验证邮箱服务与大陆投递。[#17](https://github.com/juanchaopan/education/issues/17) 的设计依赖已解除，可用 `/implement 17` 从隔离邮件适配器开始本地实现；未真实发送邮件时不能显示已投递。不要将以上说明当作已开始下一任务。
