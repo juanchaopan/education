@@ -1,0 +1,44 @@
+[
+  {
+    "name": "password",
+    "url": "https://raw.githubusercontent.com/OWASP/CheatSheetSeries/e43c9badc9bc6a9f79ec00cb5997991ffe97be80/cheatsheets/Password_Storage_Cheat_Sheet.md",
+    "checkedAt": "2026-11-04T21:07:33.109827+00:00",
+    "sha256": "5004d1ead2dfa8270df8be7789c9decb39746261639ddf271e24ba1ac68b32a1",
+    "bytes": 20550
+  },
+  {
+    "name": "authentication",
+    "url": "https://raw.githubusercontent.com/OWASP/CheatSheetSeries/e43c9badc9bc6a9f79ec00cb5997991ffe97be80/cheatsheets/Authentication_Cheat_Sheet.md",
+    "checkedAt": "2026-11-04T21:07:33.512575+00:00",
+    "sha256": "92f7483b28548679917a329c7b9be1824f33e934d9eed670aaf3e9a1e7b37e83",
+    "bytes": 41242
+  },
+  {
+    "name": "session",
+    "url": "https://raw.githubusercontent.com/OWASP/CheatSheetSeries/e43c9badc9bc6a9f79ec00cb5997991ffe97be80/cheatsheets/Session_Management_Cheat_Sheet.md",
+    "checkedAt": "2026-11-04T21:07:33.872237+00:00",
+    "sha256": "3c38656e2be6188be4fc31d8c1fadafaaa6f37accc27e411e3345c235d44c051",
+    "bytes": 56989
+  },
+  {
+    "name": "csrf",
+    "url": "https://raw.githubusercontent.com/OWASP/CheatSheetSeries/e43c9badc9bc6a9f79ec00cb5997991ffe97be80/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.md",
+    "checkedAt": "2026-11-04T21:07:34.782486+00:00",
+    "sha256": "fb6fb6a43e11dd0ae2709ddcad06ee3682ebc55fef4b8f7bc89e4852d0ba0ff4",
+    "bytes": 53863
+  },
+  {
+    "name": "node-crypto",
+    "url": "https://nodejs.org/docs/latest-v24.x/api/crypto.json",
+    "checkedAt": "2026-11-04T21:01:12.082095+00:00",
+    "sha256": "18b1e428b0053b214ab71c45224e5c37dafe9b7a44e8e5f0146a256668bf41e8",
+    "bytes": 533244
+  },
+  {
+    "name": "argon2-package",
+    "url": "https://registry.npmjs.org/argon2/latest",
+    "checkedAt": "2026-11-04T21:01:12.368800+00:00",
+    "sha256": "ae8bf517b8ea9890458a8baccf6085255e593fbe6de2fcd8c8f721846a407492",
+    "bytes": 2428
+  }
+]

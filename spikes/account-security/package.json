@@ -1,0 +1,15 @@
+{
+  "name": "education-account-security-spike",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "scripts": {
+    "bench": "node bench.mjs",
+    "check": "node --test --test-isolation=none --test-reporter=tap scenarios.mjs"
+  },
+  "dependencies": {
+    "argon2": "0.45.2"
+  }
+}
