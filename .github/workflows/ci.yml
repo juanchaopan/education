@@ -1,0 +1,65 @@
+name: ci
+on:
+  pull_request:
+  merge_group:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  app:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: education
+          POSTGRES_PASSWORD: ci-only-password
+          POSTGRES_DB: education_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U education -d education_test"
+          --health-interval 5s --health-timeout 3s --health-retries 20
+    env:
+      DATABASE_URL: postgres://education:ci-only-password@127.0.0.1:5432/education_test
+      STORYBOOK_DISABLE_TELEMETRY: '1'
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      - run: npm run db:migrate
+      - run: npm run test:db
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: browser-test-results
+          path: test-results/
+  duplication:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx --no-install jscpd .
+  ci:
+    if: always()
+    needs: [app, duplication]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require every check to pass
+        env:
+          APP: ${{ needs.app.result }}
+          DUPLICATION: ${{ needs.duplication.result }}
+        run: test "$APP" = success && test "$DUPLICATION" = success

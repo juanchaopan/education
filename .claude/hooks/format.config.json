@@ -1,0 +1,16 @@
+{
+  "rules": [
+    {
+      "dir": "apps/web",
+      "extensions": [".ts", ".tsx", ".css"],
+      "format": "npx --no-install prettier --write {file}",
+      "lint": "npx --no-install oxlint {file}"
+    },
+    {
+      "dir": "apps/api",
+      "extensions": [".ts"],
+      "format": "npx --no-install prettier --write {file}",
+      "lint": "npx --no-install eslint {file}"
+    }
+  ]
+}
