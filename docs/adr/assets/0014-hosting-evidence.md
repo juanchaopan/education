@@ -112,3 +112,9 @@
 上传采用白名单：`package.json`、`package-lock.json`、`vercel.json`、`api/ping.js`、`public/index.html`、`public/app.js`、`public/styles.css`。创建 API 不接受 nodeVersion 字段，已通过项目更新接口设为 24.x；预览部署目标必须显式写 `staging`。第一次省略目标产生的测试项目 production 部署以及中间预览均已删除（HTTP 200）；当前仅保留最终 staging。
 
 部署文件列表只展示函数输出，不能单凭这个接口确认静态内容存在或缺失。最终配置已显式指定 public 输出目录；在线访问验证继续保留为待测。用户从大陆打开预览后可点击“开始测试”，把结果与省份、运营商、Wi-Fi/移动网络类型发回。若需从本云环境执行 HTTPS 验证，仍需通过环境设置允许精确预览主机；本轮未改动已发布环境配置。
+
+## 自定义域名验证（2026-11-04 20:46 UTC）
+
+用户在 hyp DNS 面板保存 CNAME 和 TXT 后，Vercel DNS 配置为 `misconfigured: false`、项目域名为 `verified: true`。已显式将 <https://education-access-spike.hyp.app/> 绑定到同一 staging 部署 `dpl_4HWHQJKv6nUYfwR6zfAP5nvVoL4G`；alias 查询确认无重定向及错误。证书列表含该主机的 `cert_GYAgVYeQNFe86bzps72XDWIm`，不再是之前的 `cert_missing` 状态。
+
+Vercel 继续承担托管。工具环境 20:46:14 UTC 对自定义域名的直接 HTTPS 尝试仍被环境代理 CONNECT 403 拒绝，因此没有宣称在线页面已验证或获得大陆性能数据。域名管理与大陆访问属于不同验证步骤，后者待真实设备结果。

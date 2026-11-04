@@ -42,3 +42,5 @@
 用户随后明确要求测试 Vercel，下一轮优先验证 Vercel，不将第一轮自有服务器建议视为已接受。2026-11-04 19:50 UTC 对 Vercel 官网和 API 的 HTTPS 尝试均被环境代理以 CONNECT 403 拒绝。GitHub 部署列表为空；尚未获得项目测试 URL，未配置 Vercel 部署身份，亦无大陆测试节点。详见证据记录末尾；没有部署应用或购买资源。已请求用户提供现有测试 URL，网络策略需允许该精确域名才能继续从此环境测试。
 
 上述阻塞为当时记录。用户随后配置 Vercel API 令牌并授权继续，已完成身份验证和独立测试项目部署。当前预览：[网络访问测试](https://education-access-spike-ogpfo98vl-juanchaopan1.vercel.app/)。实现及本地运行见 [探针说明](spikes/vercel-access/SPIKE.md)，实际验证边界见 [Vercel 执行结果](docs/adr/assets/0014-hosting-evidence.md)。未升级付费套餐、未部署教育产品、未连接数据库或 AI，预览未被选为生产平台。
+
+用户指定的自定义域名已完成 DNS 验证、证书记录和 staging alias 绑定，现在使用 [education-access-spike.hyp.app](https://education-access-spike.hyp.app/)。托管仍为 Vercel，原预览 URL 保留。实际大陆设备测试仍待完成，详情见探针说明。
