@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>小小探索家 · 网络访问测试</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <script src="/app.js" defer></script>
+  </head>
+  <body>
+    <main>
+      <p class="eyebrow">小小探索家 · 部署前验证</p>
+      <h1>看看这里能否顺畅打开</h1>
+      <p>请在中国大陆的日常网络下测试，并关闭 VPN。可以分别用 Wi-Fi 和手机流量打开一次。</p>
+      <p id="assets">网页已打开，正在等待脚本与样式。</p>
+      <noscript>浏览器未执行 JavaScript，暂时无法测试接口。</noscript>
+      <div class="actions">
+        <button id="start" disabled>开始测试</button>
+        <button id="stop" disabled>停止</button>
+      </div>
+      <p id="status" role="status" aria-live="polite">准备中。</p>
+      <label for="report">测试结果（可复制发回聊天）</label>
+      <textarea id="report" rows="12" readonly placeholder="测试结束后在这里显示结果。"></textarea>
+      <button id="copy" disabled>复制结果</button>
+      <p class="note">
+        这是临时网络测试页。没有题目、登录或学习记录；不调用 AI
+        或数据库。结果仅保留在本页，刷新后清除，托管平台仍可能记录常规访问日志。
+      </p>
+      <p class="note">
+        测试包含首次请求、3 次预热和最多 20 次正式请求；单次超时 10 秒，连续失败 3
+        次即停止。首次请求不等于冷启动。成功请求延迟与失败次数分别展示，不能凭一次测试判断所有地区可用。
+      </p>
+    </main>
+  </body>
+</html>

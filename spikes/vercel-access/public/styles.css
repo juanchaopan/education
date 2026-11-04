@@ -1,0 +1,81 @@
+:root {
+  --probe-css: ready;
+  font-family: system-ui, sans-serif;
+  color: #173d43;
+  background: #f1f8f6;
+}
+body {
+  margin: 0;
+  padding: 24px;
+}
+main {
+  max-width: 680px;
+  margin: 40px auto;
+  padding: 32px;
+  background: white;
+  border-radius: 24px;
+  box-shadow: 0 8px 36px #173d4310;
+}
+h1 {
+  font-size: clamp(24px, 5vw, 34px);
+  line-height: 1.3;
+}
+p {
+  line-height: 1.8;
+}
+.eyebrow {
+  color: #52716f;
+  font-weight: 600;
+}
+.actions {
+  display: flex;
+  gap: 12px;
+  margin: 24px 0;
+}
+button {
+  min-height: 48px;
+  border: 0;
+  border-radius: 12px;
+  padding: 12px 22px;
+  font: inherit;
+  background: #176e65;
+  color: white;
+  cursor: pointer;
+}
+button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+button:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid #d09127;
+  outline-offset: 3px;
+}
+label {
+  display: block;
+  margin-top: 24px;
+}
+textarea {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 14px;
+  margin: 8px 0 12px;
+  border: 1px solid #a5c3bd;
+  border-radius: 12px;
+  background: #f7faf9;
+  font-size: 14px;
+  resize: vertical;
+}
+.note {
+  font-size: 14px;
+  color: #526b68;
+}
+@media (max-width: 520px) {
+  body {
+    padding: 12px;
+  }
+  main {
+    padding: 20px;
+    margin: 12px auto;
+  }
+}
