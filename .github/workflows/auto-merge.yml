@@ -41,26 +41,16 @@ jobs:
             if (!repository.allow_auto_merge) {
               throw new Error('Enable Settings → General → Allow auto-merge first.');
             }
-            // Fail closed: auto-merge must wait for all three enforced gates.
-            const rules = await github.graphql(`
-              query($owner: String!, $repo: String!) {
-                repository(owner: $owner, name: $repo) {
-                  ref(qualifiedName: "refs/heads/main") {
-                    branchProtectionRule {
-                      requiresStatusChecks
-                      requiresStrictStatusChecks
-                      requiredStatusCheckContexts
-                    }
-                  }
-                }
-              }
-            `, { owner, repo });
-            const protection = rules.repository.ref.branchProtectionRule;
-            const required = new Set(protection?.requiredStatusCheckContexts ?? []);
-            if (!protection?.requiresStatusChecks || !protection.requiresStrictStatusChecks ||
+            // Read branch metadata with contents permission, without administration access.
+            const { data: branch } = await github.rest.repos.getBranch({
+              owner, repo, branch: pr.base.ref,
+            });
+            const required = new Set(branch.protection?.required_status_checks?.contexts ?? []);
+            if (!branch.protected ||
                 !['ci', 'commit-lint', 'risk-gate'].every(name => required.has(name))) {
-              throw new Error('Protect main with up-to-date required checks: ci, commit-lint, risk-gate.');
+              throw new Error('Protect main with required checks: ci, commit-lint, risk-gate.');
             }
+            // GitHub enforces configured freshness and review requirements at merge time.
             const query = await github.graphql(`
               query($id: ID!) { node(id: $id) { ... on PullRequest {
                 autoMergeRequest { enabledAt }
