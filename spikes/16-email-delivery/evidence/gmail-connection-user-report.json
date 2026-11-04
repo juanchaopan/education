@@ -1,0 +1,14 @@
+{
+  "source": "maintainer-pasted-browser-result",
+  "independentlyReplayedByAgent": false,
+  "samples": 1,
+  "expectedDeploymentIdFromTestInstructions": "dpl_BZzhQnzMGTvEB2jDF4dZw8oQkqBC",
+  "result": {
+    "status": "smtp-authenticated",
+    "sent": false,
+    "smtpMs": 1594,
+    "requestId": "9d0ad660-4afa-4d7c-b144-c1a011559764"
+  },
+  "interpretation": "One reported SMTP connection and authentication succeeded; no email was sent. This is not inbox delivery latency, a cold-start measurement, or a percentile distribution.",
+  "inboxDeliveryTest": "not-run"
+}

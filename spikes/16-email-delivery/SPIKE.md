@@ -1,7 +1,7 @@
 # Spike #16：邮箱服务与大陆投递
 
 - 任务：<https://github.com/juanchaopan/education/issues/16>
-- 状态：第一轮调查、离线原型和 Vercel 构建完成；维护者已配置 Gmail 的 Preview 变量并重新部署。**SMTP 连接等待维护者浏览器测试；未实发，未选定正式服务，issue 保持打开**。
+- 状态：维护者已回传 **Gmail SMTP 连接/授权通过，1,594ms，未发送邮件**。离线检查与 Vercel 构建完成；**QQ/163 实际投递待验证，未选定正式服务，issue 保持打开**。
 - 开始：2026-11-04；基线 main `860a0b7`。分支 `spike/16-email-delivery`，探针代码不合入 main。
 - 用户询问“can i use gmail”，随后选择“普通 @gmail.com 个人账号（推荐先做试点）”。据此测试个人 Gmail，不把候选选择记录为正式投递验收。
 
@@ -20,7 +20,7 @@
 
 ## 目前结论（提议）
 
-个人 Gmail 可作为第一候选：专用 `@gmail.com` 发信账号 + 应用专用密码 + TLS SMTP。家长仍可用 QQ、163 或其他邮箱注册，**不要求家长有 Google 账号，也不要求家长浏览器连接 Google**。发信连接发生在 Vercel 后端；这条路径和 QQ/163 的收信路径都没有在本轮实际验证。
+个人 Gmail 可作为第一候选：专用 `@gmail.com` 发信账号 + 应用专用密码 + TLS SMTP。家长仍可用 QQ、163 或其他邮箱注册，**不要求家长有 Google 账号，也不要求家长浏览器连接 Google**。维护者在新预览回传 SMTP 连接/授权通过的单次结果；QQ/163 收信路径仍未验证。
 
 以账号自身 Gmail 地址作为 From，不伪装成 `@hyp.app`。此方向不需要先购买发信域名；现有网站的 CNAME、Vercel 证书和 `_vercel` 验证记录不变。后续若要自定义发信域名，需另核实域名控制权、SPF、DKIM、DMARC 和退信地址，不能把 hyp 的网站绑定能力视为已有邮件 DNS 权限。
 
@@ -97,7 +97,8 @@ node --env-file=.env.local probe.mts --send
 - TS7 严格编译及构建通过；Node 24 默认 preview、仓库 lint 通过。
 - 本机系统 Chromium 390px 移动布局通过：同意前不请求；配置未就绪可见；网络未知时提示先查邮箱且不自动重试；无横向溢出或页面脚本错误。API 为 mock，不是线上 Gmail。截图见 [local-mobile.png](evidence/local-mobile.png)。
 - 测试使用 fixture 错误检查分类，不是向 Gmail 故意触发封禁/限流，也没有验证真实故障恢复。sandbox 最初阻止测试子进程，允许正常子进程执行后通过；不是邮件服务故障。
-- 本轮实发 **0 封**，QQ/163 收信 **0 个样本**，无 Vercel SMTP、P50/P95、冷启动、反垃圾或真实授权证据。
+- 维护者回传 `smtp-authenticated`、`sent:false`、`smtpMs:1594`、requestId `9d0ad660-4afa-4d7c-b144-c1a011559764`，原始脱敏结果见 [gmail-connection-user-report.json](evidence/gmail-connection-user-report.json)。这是用户报告的线上 SMTP 连接/授权通过，助手没有独立重放；单个样本不是 P50/P95，1,594ms 也不是收件延迟或冷启动测量。
+- 本轮实发 **0 封**，QQ/163 收信 **0 个样本**，尚无实际投递、冷启动、反垃圾、配额耗尽或真实故障恢复证据。
 - 详细日志见 [validation.md](evidence/validation.md)、[offline.tap](evidence/offline.tap)。
 
 ## 实测记录表
@@ -117,8 +118,8 @@ node --env-file=.env.local probe.mts --send
 
 ## 下一轮所需输入
 
-1. 个人 Gmail 候选、应用密码页面和 Preview 变量元数据已确认；新部署就绪，现在需要维护者在新预览点击不发邮件的连接测试并回传结果。不要发送密码到聊天。
-2. 官网资料访问权限或用户提供当前相关政策内容，以完成免费额度/条款核实；当前预览域名访问权限或用户报告线上连接结果。
-3. 自愿测试的 QQ、163 收件人；明确授权有限次数实发，并记录实际收信结果。
+1. 维护者在 Vercel 项目的 Preview 环境设置 `MAIL_PROBE_QQ`（本人或明确同意测试的 `@qq.com` 地址）、`MAIL_PROBE_163`（同样条件的 `@163.com` 地址）；地址直接保存在 Vercel，无须贴到聊天。助手核对变量元数据后重新部署，旧部署不会获得新增值。
+2. 在新预览勾选同意并每次手动发送一封，收件人记录真实收到时间、正常/垃圾收件箱、中文和链接情况；先做少量首轮，再决定是否继续重复样本。
+3. 官网资料访问权限或用户提供当前相关政策内容，以完成免费额度/条款核实；真实故障恢复仍待验证。
 
 在这些输入到位前不关闭 #16、不把 Q-005 标为解决，也不创建已接受 ADR。采用/放弃由用户看到证据后决定；结论获确认后只将 ADR/脱敏证据通过文档 PR 合并，原型按 spike 流程归档删除。#17 可继续使用隔离邮件适配器开发，但不能显示“邮件已投递”。
