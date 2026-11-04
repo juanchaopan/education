@@ -18,5 +18,10 @@ export default defineConfig({
     command: 'HOST=127.0.0.1 PORT=4173 npm start -w @education/api',
     url: 'http://127.0.0.1:4173/health/live',
     reuseExistingServer: false,
+    env: {
+      APP_ORIGIN: 'http://127.0.0.1:4173',
+      REGISTRATION_ENABLED: process.env.DATABASE_URL ? 'true' : 'false',
+      AUTH_RATE_LIMIT_KEY: 'playwright-isolated-test-key-not-for-deployment',
+    },
   },
 });

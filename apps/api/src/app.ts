@@ -1,10 +1,15 @@
-import Fastify, { type FastifyError } from 'fastify';
+import Fastify, { LogController, type FastifyError } from 'fastify';
 import { Type } from '@sinclair/typebox';
 import { registerCatalog } from './catalog/routes/catalog.js';
+import { registerParentRegistration } from './identity/routes/registration.js';
+import type { RegistrationService } from './identity/services/registration.js';
+import { RequestError } from './shared/request-error.js';
 
-export function buildApp() {
+export function buildApp(options: { origin?: string; registration?: RegistrationService } = {}) {
   const app = Fastify({
     bodyLimit: 1_048_576,
+    logController: new LogController({ disableRequestLogging: true }),
+    ajv: { customOptions: { removeAdditional: false, coerceTypes: false } },
     logger: {
       redact: ['req.headers.authorization', 'req.headers.cookie', 'res.headers.set-cookie'],
     },
@@ -15,12 +20,29 @@ export function buildApp() {
     () => ({ status: 'ok' }),
   );
   registerCatalog(app);
+  registerParentRegistration(app, options.origin ?? 'http://127.0.0.1:5173', options.registration);
   app.setErrorHandler<FastifyError>((error, request, reply) => {
     const invalid = error.validation !== undefined;
+    const status = error instanceof RequestError ? error.statusCode : httpErrorStatus(error);
     request.log.error({ requestId: request.id, code: error.code }, 'Request failed');
+    if (status === 429) reply.header('Retry-After', '60');
     void reply
-      .code(invalid ? 400 : 500)
-      .send({ message: invalid ? '请检查输入后重试' : '暂时无法完成，请稍后重试' });
+      .code(status)
+      .header('Cache-Control', 'no-store')
+      .send({
+        message:
+          error instanceof RequestError
+            ? error.message
+            : invalid
+              ? '请检查邮箱和密码格式后重试。'
+              : '暂时无法完成，请稍后重试。',
+      });
   });
   return app;
+}
+
+function httpErrorStatus(error: FastifyError) {
+  if (error.statusCode && error.statusCode >= 400 && error.statusCode < 500)
+    return error.statusCode;
+  return 503;
 }

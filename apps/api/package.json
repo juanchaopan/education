@@ -15,13 +15,14 @@
     "test:db": "vitest run --config vitest.database.config.ts"
   },
   "dependencies": {
+    "@education/contracts": "*",
+    "@education/problems": "*",
     "@fastify/static": "^10.1.9",
     "@fastify/type-provider-typebox": "^6.3.0",
     "@sinclair/typebox": "^0.34.52",
+    "argon2": "0.45.2",
     "drizzle-orm": "^0.45.4",
     "fastify": "^5.12.8",
-    "pg": "^8.23.1",
-    "@education/contracts": "*",
-    "@education/problems": "*"
+    "pg": "^8.23.1"
   }
 }

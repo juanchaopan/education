@@ -14,8 +14,48 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env) {
     paidAiEnabled: env.PAID_AI_ENABLED !== 'false',
   };
   if (!Value.Check(schema, config)) throw new Error('Invalid application configuration');
-  if (env.PAID_AI_ENABLED && !['true', 'false'].includes(env.PAID_AI_ENABLED)) {
-    throw new Error('PAID_AI_ENABLED must be true or false');
+  checkBoolean(env.PAID_AI_ENABLED);
+  checkBoolean(env.REGISTRATION_ENABLED);
+  return { ...config, ...readRegistrationConfig(env) };
+}
+
+function checkBoolean(value: string | undefined) {
+  if (value && !['true', 'false'].includes(value))
+    throw new Error('Boolean configuration must be true or false');
+}
+
+function readRegistrationConfig(env: NodeJS.ProcessEnv) {
+  const registrationEnabled = env.REGISTRATION_ENABLED === 'true';
+  const origin = env.APP_ORIGIN ?? 'http://127.0.0.1:5173';
+  const url = new URL(origin);
+  if (url.origin !== origin || !['http:', 'https:'].includes(url.protocol)) {
+    throw new Error('APP_ORIGIN must be an exact HTTP(S) origin');
   }
-  return config;
+  if (env.NODE_ENV === 'production' && registrationEnabled && url.protocol !== 'https:') {
+    throw new Error('Registration requires an HTTPS APP_ORIGIN in production');
+  }
+  if (registrationEnabled) validateRegistrationSecrets(env);
+  return {
+    registrationEnabled,
+    origin,
+    databaseUrl: env.DATABASE_URL,
+    rateLimitKey: env.AUTH_RATE_LIMIT_KEY,
+  };
+}
+
+function validateRegistrationSecrets(env: NodeJS.ProcessEnv) {
+  if (!env.DATABASE_URL || (env.AUTH_RATE_LIMIT_KEY?.length ?? 0) < 32) {
+    throw new Error('Registration requires DATABASE_URL and AUTH_RATE_LIMIT_KEY (32+ characters)');
+  }
+  if (!isPostgresUrl(env.DATABASE_URL)) {
+    throw new Error('DATABASE_URL must use PostgreSQL');
+  }
+}
+
+function isPostgresUrl(value: string) {
+  try {
+    return ['postgres:', 'postgresql:'].includes(new URL(value).protocol);
+  } catch {
+    return false;
+  }
 }

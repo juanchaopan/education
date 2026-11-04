@@ -4,7 +4,9 @@
 
 已搭建：npm workspaces、Vite/React 中文应用外壳、空题库 API、家长空间空状态、PostgreSQL/Drizzle 初始迁移、类型与依赖边界检查、单元和真实数据库测试、Storybook 与 Playwright 功能检查、容器配置和 CI/审查文件。
 
-尚未实现：家长注册/验证/恢复、儿童 KEY 兑换和登录、会话与家庭授权、学习记录、练习安排、草稿服务、家庭导出删除、AI/语音调用，以及每题专属页面。初始 schema 只包含 families、parents、children、registration_keys、drafts；尚不包含架构里规划的全部表。数据库约束不等于服务端家庭授权。
+#17 实现：家长注册表单、Argon2id 密码哈希、家庭与待验证家长的原子创建、数据库共享注册限流与隔离邮件适配器；验收记录见 [#17](evidence/17/README.md)，PR 合并状态以 GitHub 为准。
+
+尚未实现：家长邮箱验证/登录/恢复、儿童 KEY 兑换和登录、会话与家庭授权、学习记录、练习安排、草稿服务、家庭导出删除、AI/语音调用，以及每题专属页面。schema 包含 families、parents、children、registration_keys、drafts 和 registration_attempts；尚不包含架构里规划的全部表。注册不会发信或签发会话，数据库约束不等于服务端家庭授权。
 
 不能把本阶段称为完整产品或已完成账号验收。空题库不展示演示问题，不伪造学习进度。
 

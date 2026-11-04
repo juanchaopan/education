@@ -3,9 +3,32 @@ import { existsSync } from 'node:fs';
 import fastifyStatic from '@fastify/static';
 import { buildApp } from './app.js';
 import { readConfig } from './shared/config.js';
+import pg from 'pg';
+import { createRegistrationService } from './identity/services/registration.js';
+import { hashParentPassword } from './identity/services/password.js';
+import { createRegistrationStore } from './identity/repositories/postgres-registration.js';
+import { createRegistrationAdmission } from './identity/repositories/registration-admission.js';
 
 const config = readConfig();
-const app = buildApp();
+const pool = config.registrationEnabled
+  ? new pg.Pool({
+      connectionString: config.databaseUrl,
+      max: 10,
+      connectionTimeoutMillis: 1000,
+      statement_timeout: 3000,
+    })
+  : undefined;
+const registration = pool
+  ? createRegistrationService({
+      save: createRegistrationStore(pool),
+      admit: createRegistrationAdmission(pool, config.rateLimitKey!),
+      hash: hashParentPassword,
+    })
+  : undefined;
+const app = buildApp({ origin: config.origin, registration });
+app.addHook('onClose', async () => {
+  await pool?.end();
+});
 const webRoot = fileURLToPath(new URL('../../web/dist/', import.meta.url));
 if (existsSync(webRoot)) {
   await app.register(fastifyStatic, { root: webRoot });
