@@ -1,0 +1,27 @@
+{
+  "source": "maintainer-pasted-browser-result-and-email-body-with-inbox-followup",
+  "independentlyReplayedByAgent": false,
+  "recipientProvider": "126.com",
+  "sendResult": {
+    "runId": "19c5842c2bde2011",
+    "purpose": "verify",
+    "startedAt": "2026-11-04T22:11:41.986Z",
+    "smtpMs": 1974,
+    "status": "smtp-accepted-inbox-unconfirmed",
+    "inboxConfirmed": false,
+    "requestId": "b01a5cdd-f6ea-4675-b51c-dfffcb927baa"
+  },
+  "recipientObservation": {
+    "received": true,
+    "folder": "inbox",
+    "latencyDescriptionVerbatim": "very fast",
+    "receivedAt": null,
+    "endToEndMs": null,
+    "emailBodyPasted": true,
+    "pastedBodyHasReadableChinese": true,
+    "emailBodyRunId": "19c5842c2bde2011",
+    "linkTarget": "https://education-access-spike.hyp.app/?mail_probe=19c5842c2bde2011&purpose=verify",
+    "linkOpenedSuccessfully": null
+  },
+  "interpretation": "One reported verify email reached the 126 inbox quickly. The original SMTP response remains inbox-unconfirmed; subsequent recipient testimony supplies inbox confirmation. SMTP 1974ms is not measured end-to-end delivery latency. Link opening, reset mail and repeated samples remain unverified."
+}
