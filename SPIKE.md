@@ -2,7 +2,7 @@
 
 - 任务：[验证免费托管与大陆访问退路](https://github.com/juanchaopan/education/issues/14)
 - 日期：2026-11-04；基线：`41a99d4843c3a77f356fd300a0572381a427b4b1`
-- 状态：Vercel 独立 staging 探针已构建 READY；本地浏览器验证通过，真实大陆访问待测。此探针分支不合并，正式结论经确认后另开文档 PR。
+- 状态：用户报告测试成功，并要求结束 #14、提交推送及创建 PR。结论进入独立文档 PR，探针代码归档而不合并。
 
 ## 问题与范围
 
@@ -44,3 +44,9 @@
 上述阻塞为当时记录。用户随后配置 Vercel API 令牌并授权继续，已完成身份验证和独立测试项目部署。当前预览：[网络访问测试](https://education-access-spike-ogpfo98vl-juanchaopan1.vercel.app/)。实现及本地运行见 [探针说明](spikes/vercel-access/SPIKE.md)，实际验证边界见 [Vercel 执行结果](docs/adr/assets/0014-hosting-evidence.md)。未升级付费套餐、未部署教育产品、未连接数据库或 AI，预览未被选为生产平台。
 
 用户指定的自定义域名已完成 DNS 验证、证书记录和 staging alias 绑定，现在使用 [education-access-spike.hyp.app](https://education-access-spike.hyp.app/)。托管仍为 Vercel，原预览 URL 保留。实际大陆设备测试仍待完成，详情见探针说明。
+
+## 用户验收与归档
+
+2026-11-04，维护者回复：“test successful. let's wrap up spike 14 commit push and pr”。据此接受 Vercel Hobby + 自定义域名作为后续 staging 集成方向，结束本轮托管可行性探针。用户未附测量 JSON、地区、运营商或设备明细；记录为用户报告的测试成功，不声称已经达到 P95 目标、覆盖大陆所有网络或完成教育产品验收。
+
+归档标签为 `archive/spike-14-hosting-mainland`。正式 PR 仅包含 ADR、证据、文档索引与后续任务指向；不合并本文件或 `spikes/` 代码。现有无数据的测试站保留供复查，正式 staging 集成 #20 时处理替换/退役；本轮不删除用户刚确认的域名或测试站，不创建正式产品发布。
