@@ -34,3 +34,20 @@ Vercel Hobby 能否部署一个同源静态页面与 Node.js 24 / Fastify 5 接�
 - Vercel API 确认函数产物 READY，但部署文件列表未展示静态输出；已显式配置 `outputDirectory: public`。线上 HTML/CSS/JS 和 API 的 HTTP 响应仍待确认，不仅凭 READY 判断全部端点可用。
 - 云环境仅允许 `api.vercel.com`，对预览主机的直接请求被代理 CONNECT 403 拒绝。没有大陆测试节点，未获得线上或大陆延迟数据。用户可从大陆设备打开链接点击“开始测试”并复制结果；若打不开，记录错误和网络类型，不推断原因。
 - 首次上传省略目标被 Vercel 标记为独立测试项目的 production；正确的 REST API 预览目标名为 `staging`。该首次部署和中间预览均已删除（DELETE 200），只保留上述 staging 部署。后续部署须显式指定目标及项目配置。
+
+## 自定义域名（2026-11-04，等待 DNS）
+
+用户要求使用 `education-access-spike.hyp.app`，继续由 Vercel 托管。已将该域名添加到上述项目，`verified: false`；Vercel 查询显示 `hyp.app` 的权威 DNS 在 Cloudflare。当前主机解析为 Cloudflare 地址，尚无 Vercel CNAME；这不证明存在同名显式记录，也可能来自通配记录。
+
+在 Cloudflare 的 `hyp.app` 区域添加以下记录：
+
+| 类型  | 名称                     | 内容                                                                   | 代理                 |
+| ----- | ------------------------ | ---------------------------------------------------------------------- | -------------------- |
+| CNAME | `education-access-spike` | `90215d081f0623e0.vercel-dns-017.com`                                  | DNS only（灰色云朵） |
+| TXT   | `_vercel`                | `vc-domain-verify=education-access-spike.hyp.app,edb66cce0df2d1eae0cc` | 不适用               |
+
+以上 TXT 是公开的域名验证记录，不是 Vercel API 令牌。保留已有 `_vercel` TXT；若子域已有冲突的 A/AAAA/CNAME，仅替换该子域的冲突记录，不改其他主机或通配记录。没有 Cloudflare 管理凭据，本轮没有修改 DNS。
+
+已尝试将域名直接指向现有 staging 部署，Vercel 返回 HTTP 400 `cert_missing`。DNS 生效后须重新验证项目域名，检查 TLS 签发，再执行部署 alias 绑定；添加项目域名本身不足以使该 staging URL 可访问。当前项目默认域名关联生产目标，因此必须保留显式 staging alias 步骤，不把它误接到已删除的首次部署。
+
+当前 `https://education-access-spike.hyp.app/` 尚未确认为可用；原 staging URL 保留。自定义域名不会自动证明大陆可达，也不会改变环境的网络允许列表。后续需要分别完成 HTTPS 检查和大陆设备测试。
