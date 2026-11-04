@@ -1,0 +1,80 @@
+name: auto-merge
+
+# Runs only trusted base-branch code; never checks out or executes PR content.
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize, ready_for_review]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: Existing PR number to enroll
+        required: true
+        type: number
+
+permissions: {}
+
+jobs:
+  enable:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/github-script@v8
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr_number }}
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const pull_number = Number(process.env.PR_NUMBER);
+            if (!Number.isSafeInteger(pull_number) || pull_number < 1) {
+              throw new Error('Provide a positive PR number.');
+            }
+            const { data: pr } = await github.rest.pulls.get({ owner, repo, pull_number });
+            if (pr.state !== 'open' || pr.draft || pr.base.ref !== 'main' ||
+                pr.head.repo?.full_name !== `${owner}/${repo}`) {
+              core.notice('Only open, non-draft, same-repository PRs into main are enrolled.');
+              return;
+            }
+            const { data: repository } = await github.rest.repos.get({ owner, repo });
+            if (!repository.allow_auto_merge) {
+              throw new Error('Enable Settings → General → Allow auto-merge first.');
+            }
+            // Fail closed: auto-merge must wait for all three enforced gates.
+            const rules = await github.graphql(`
+              query($owner: String!, $repo: String!) {
+                repository(owner: $owner, name: $repo) {
+                  ref(qualifiedName: "refs/heads/main") {
+                    branchProtectionRule {
+                      requiresStatusChecks
+                      requiresStrictStatusChecks
+                      requiredStatusCheckContexts
+                    }
+                  }
+                }
+              }
+            `, { owner, repo });
+            const protection = rules.repository.ref.branchProtectionRule;
+            const required = new Set(protection?.requiredStatusCheckContexts ?? []);
+            if (!protection?.requiresStatusChecks || !protection.requiresStrictStatusChecks ||
+                !['ci', 'commit-lint', 'risk-gate'].every(name => required.has(name))) {
+              throw new Error('Protect main with up-to-date required checks: ci, commit-lint, risk-gate.');
+            }
+            const query = await github.graphql(`
+              query($id: ID!) { node(id: $id) { ... on PullRequest {
+                autoMergeRequest { enabledAt }
+              } } }
+            `, { id: pr.node_id });
+            if (query.node.autoMergeRequest) {
+              core.notice('Auto-merge is already enabled.');
+              return;
+            }
+            await github.graphql(`
+              mutation($id: ID!) {
+                enablePullRequestAutoMerge(input: {pullRequestId: $id, mergeMethod: SQUASH}) {
+                  pullRequest { number }
+                }
+              }
+            `, { id: pr.node_id });
+            core.notice(`PR #${pull_number} will squash-merge when GitHub's required gates pass.`);
