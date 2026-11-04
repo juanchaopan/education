@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "target": "ES2023",
+    "types": ["node"],
+    "rewriteRelativeImportExtensions": true,
+    "rootDir": ".",
+    "outDir": "build.local",
+    "noEmitOnError": true
+  },
+  "include": ["probe.mts", "api/*.ts"]
+}

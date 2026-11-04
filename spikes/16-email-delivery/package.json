@@ -1,0 +1,18 @@
+{
+  "name": "education-spike-16-email-delivery",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "scripts": {
+    "build": "tsc --project tsconfig.json",
+    "preview": "node probe.mts",
+    "send": "node probe.mts --send",
+    "test": "node --test probe.test.mts api.test.mts",
+    "typecheck": "tsc --ignoreConfig --noEmit --strict --allowImportingTsExtensions --module NodeNext --moduleResolution NodeNext --target ES2023 --types node probe.mts probe.test.mts api/probe.ts api.test.mts"
+  },
+  "dependencies": {
+    "nodemailer": "10.3.1"
+  }
+}

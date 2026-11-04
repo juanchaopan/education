@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex,nofollow" />
+    <title>Gmail 私有投递测试</title>
+    <link rel="stylesheet" href="/style.css" />
+    <script src="/client.js" defer></script>
+  </head>
+  <body>
+    <main>
+      <h1>Gmail 私有投递测试</h1>
+      <p>
+        这是管理员测试工具，不是儿童学习网站。密码只保存在 Vercel 服务端环境变量中，不在此处填写。
+      </p>
+      <p>先配置 Preview 环境变量并重新部署，再测试连接。连接测试不会发送邮件。</p>
+      <button id="connect">测试 Gmail 连接（不发邮件）</button>
+      <h2>发一封测试邮件</h2>
+      <label
+        ><input id="consent" type="checkbox" />
+        我是收件人，或已获得收件人同意接收本次测试邮件。</label
+      >
+      <p>
+        只会发送到服务端预先配置的 QQ、163
+        测试邮箱。每按一次发一封；不要连续点击，超时后先查收件箱再决定是否重发。
+      </p>
+      <div class="actions">
+        <button data-recipient="qq" data-purpose="verify">QQ · 注册验证测试</button>
+        <button data-recipient="qq" data-purpose="reset">QQ · 找回密码测试</button>
+        <button data-recipient="163" data-purpose="verify">163 · 注册验证测试</button>
+        <button data-recipient="163" data-purpose="reset">163 · 找回密码测试</button>
+      </div>
+      <p>邮件链接只打开已有网络测试页，不会创建账号、验证邮箱或重置密码。</p>
+      <p role="status" id="status">尚未发起测试。</p>
+      <pre id="result" aria-label="脱敏测试结果"></pre>
+      <p>
+        smtp-accepted-inbox-unconfirmed 只表示 Google
+        接受了邮件；请另记录真实收到时间、收件箱或垃圾箱、中文与链接情况。测试结束后撤销应用密码并停用本项目。
+      </p>
+    </main>
+  </body>
+</html>

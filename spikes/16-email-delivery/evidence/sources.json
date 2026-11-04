@@ -1,0 +1,51 @@
+[
+  {
+    "name": "gmail-api",
+    "url": "https://raw.githubusercontent.com/googleapis/google-api-nodejs-client/e4a2e7943c40072164c37a14edf4f68d580c3c62/discovery/gmail-v1.json",
+    "sha256": "f651441dcc942f428d92768e8b20c94a28ff82bf485b79872d9eef267a894225",
+    "bytes": 217715,
+    "retrievedAt": "2026-11-04T21:34:27.411230+00:00"
+  },
+  {
+    "name": "gmail-send-sample",
+    "url": "https://raw.githubusercontent.com/googleapis/google-api-nodejs-client/e4a2e7943c40072164c37a14edf4f68d580c3c62/samples/gmail/send.js",
+    "sha256": "8db8b4459b0163e8c56277e71cf1ddbfd9e7a357b94104ce05262fd3f1d62b5c",
+    "bytes": 2286,
+    "retrievedAt": "2026-11-04T21:34:27.271975+00:00"
+  },
+  {
+    "name": "gmail-sdk-readme",
+    "url": "https://raw.githubusercontent.com/googleapis/google-api-nodejs-client/e4a2e7943c40072164c37a14edf4f68d580c3c62/README.md",
+    "sha256": "52acd9c502abd7fee41b35ad9ce4b44e26624d2f1132643c1e139d87be96b9ec",
+    "bytes": 27014,
+    "retrievedAt": "2026-11-04T21:34:27.303601+00:00"
+  },
+  {
+    "name": "nodemailer-readme",
+    "url": "https://raw.githubusercontent.com/nodemailer/nodemailer/00d70cf1c36419caf3b66fced5e086d78e89b112/README.md",
+    "sha256": "196a69b2b6c19cfdb200c47216471709d7f953a0ca3f7bdf476515b0f76a5a85",
+    "bytes": 6815,
+    "retrievedAt": "2026-11-04T21:34:27.404278+00:00"
+  },
+  {
+    "name": "nodemailer-gmail-service",
+    "url": "https://raw.githubusercontent.com/nodemailer/nodemailer/00d70cf1c36419caf3b66fced5e086d78e89b112/src/well-known/services.json",
+    "sha256": "24d81710e28c218082fa7a3a2ed8a9ccb63be63571d4c243e027631d75b37993",
+    "bytes": 16001,
+    "retrievedAt": "2026-11-04T21:34:27.325706+00:00"
+  },
+  {
+    "name": "resend-readme",
+    "url": "https://raw.githubusercontent.com/resend/resend-node/3576a65b8d63bc61becf6ace238f56e3543290ca/readme.md",
+    "sha256": "05b8ff730f12bfa37b59853ca24fcb530201138e521eccf923249b988543853f",
+    "bytes": 5404,
+    "retrievedAt": "2026-11-04T21:34:27.640801+00:00"
+  },
+  {
+    "name": "brevo-readme",
+    "url": "https://raw.githubusercontent.com/getbrevo/brevo-node/4318c60e99e7426f293940a03918b7e61c6924da/README.md",
+    "sha256": "f2a7b7fef30f316067195139c9ebde0e05720ed50b33cf0034e578619a36c02d",
+    "bytes": 14119,
+    "retrievedAt": "2026-11-04T21:34:27.653587+00:00"
+  }
+]
