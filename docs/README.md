@@ -17,3 +17,5 @@
 | [决策记录](adr/)                     | 已选择技术及提议的实现细节       |
 
 [框架进度与后续工作](development-status.md)：实际实现范围、前置条件和开发顺序。
+
+[ADR-0007](adr/0007-typescript-7-toolchain.md)：按用户 TS7 目标调整编译、lint 与架构解析工具链。

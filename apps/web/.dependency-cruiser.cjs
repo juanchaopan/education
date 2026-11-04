@@ -52,7 +52,6 @@ module.exports = {
   options: {
     doNotFollow: { path: 'node_modules' },
     exclude: { path: '[.]test[.]tsx?$' },
-    tsConfig: { fileName: 'tsconfig.app.json' },
-    tsPreCompilationDeps: true,
+    parser: 'swc',
   },
 };

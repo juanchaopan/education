@@ -4,7 +4,7 @@
 
 ## 本地开发
 
-需要 Node.js 24、npm 11、Docker Compose。使用当前 checkout，无需额外 worktree。
+需要 Node.js 24、npm 11、Docker Compose。项目使用 TypeScript 7.0.2 编译与类型检查，Oxlint 检查代码，dependency-cruiser 通过 SWC 解析源码检查依赖边界。使用当前 checkout，无需额外 worktree。
 
 ```sh
 npm ci

@@ -12,7 +12,7 @@
 
 用户已选择 Vite、React Router、TanStack Query、CSS Modules 与设计令牌，页面/展示组件分层，Storybook 与 Playwright。服务器状态由数据访问 hooks 管理；展示组件不调 API。
 
-用户已确认无 Redux/Zustand：题目内状态放最近的页面或交互控制器，跨路由的持久状态从后端恢复。用户已确认自定义组件，不加大型 UI 库；Vitest/Testing Library、ESLint/Prettier、dependency-cruiser 与 npm workspaces。此处不声明具体版本已安装或兼容。
+用户已确认无 Redux/Zustand：题目内状态放最近的页面或交互控制器，跨路由的持久状态从后端恢复。用户已确认自定义组件，不加大型 UI 库；Vitest/Testing Library、ESLint/Prettier、dependency-cruiser 与 npm workspaces。TypeScript 7 与 lint 工具的后续决策见 ADR-0007。
 
 ## 证据与后果
 
