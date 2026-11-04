@@ -1,5 +1,6 @@
 import {
   boolean,
+  index,
   integer,
   jsonb,
   pgTable,
@@ -23,6 +24,15 @@ export const parents = pgTable('parents', {
   passwordHash: text('password_hash').notNull(),
   emailVerified: boolean('email_verified').default(false).notNull(),
 });
+
+export const registrationAttempts = pgTable(
+  'registration_attempts',
+  {
+    bucket: text('bucket').notNull(),
+    attemptedAt: timestamp('attempted_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [index('registration_attempts_bucket_time').on(table.bucket, table.attemptedAt)],
+);
 
 export const children = pgTable(
   'children',

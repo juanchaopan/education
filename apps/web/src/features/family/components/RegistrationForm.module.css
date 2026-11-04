@@ -1,0 +1,78 @@
+.layout {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
+  gap: var(--space-8);
+  padding: var(--space-6) 0;
+  align-items: start;
+}
+.introduction {
+  padding: var(--space-5);
+  color: var(--muted);
+}
+.introduction h2 {
+  color: var(--ink);
+  font-size: var(--text-xl);
+}
+.symbol {
+  display: inline-grid;
+  place-items: center;
+  padding: var(--space-4) var(--space-5);
+  background: var(--teal-light);
+  border-radius: var(--radius-lg);
+  color: var(--teal-dark);
+  font-size: var(--text-xl);
+}
+.card {
+  padding: var(--space-6);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+}
+.card h2 {
+  margin-top: 0;
+}
+.card form {
+  display: grid;
+  gap: var(--space-3);
+}
+.card label {
+  font-weight: 700;
+}
+.card input {
+  width: 100%;
+  min-width: 0;
+  padding: var(--space-3);
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--muted);
+  border-radius: var(--radius-sm);
+}
+.card button {
+  padding: var(--space-3) var(--space-5);
+  border: 0;
+  border-radius: var(--radius-pill);
+  color: var(--paper);
+  background: var(--teal-dark);
+  font-weight: 700;
+  cursor: pointer;
+}
+.card button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.hint {
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+.notice {
+  padding: var(--space-4);
+  border-radius: var(--radius-sm);
+  background: var(--teal-light);
+  overflow-wrap: anywhere;
+}
+@media (max-width: 600px) {
+  .card {
+    order: -1;
+  }
+}

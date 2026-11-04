@@ -8,9 +8,9 @@ test('empty catalog and family navigation reflect actual framework readiness', a
   await expect(page.getByRole('button', { name: '开始学习' })).toHaveCount(0);
   await page.screenshot({ path: testInfo.outputPath('explore.png'), fullPage: true });
   await page.getByRole('link', { name: '家长空间' }).click();
-  await expect(page.getByRole('heading', { name: '家庭账号即将开放' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '创建家长账号' })).toBeVisible();
   await page.reload();
-  await expect(page.getByRole('heading', { name: '家庭账号即将开放' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '创建家长账号' })).toBeVisible();
 });
 
 test('API routes return JSON and do not fall back to the SPA', async ({ request }) => {

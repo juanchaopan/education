@@ -8,6 +8,13 @@
       "when": 1793807171843,
       "tag": "0000_giant_piledriver",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1793832391186,
+      "tag": "0001_small_jackal",
+      "breakpoints": true
     }
   ]
 }

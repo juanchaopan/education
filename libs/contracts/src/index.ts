@@ -1,4 +1,5 @@
 import { Type, type Static } from '@sinclair/typebox';
+export { ParentRegistration, RegistrationReceipt, passwordIssue } from './registration.js';
 
 export const ProblemSummary = Type.Object({
   id: Type.String({ minLength: 1 }),
