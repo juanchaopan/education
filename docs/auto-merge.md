@@ -15,9 +15,18 @@
    ci、commit-lint、risk-gate。启用 Require branches to be up to date before merging。
 4. 先合入添加本工作流的 PR；该工作流自身不会为自己启用 auto-merge。
 
-工作流读取经典 main 分支保护；若只配置 ruleset，它会拒绝启用，而不是猜测是否安全。
-如果 Actions token 无法读取分支保护或启用 auto-merge，运行会显示具体权限错误；
-不要通过去掉 required checks 或风险关卡来解决权限问题。
+工作流通过普通分支 API（GET /repos/{owner}/{repo}/branches/main）读取 protected 与
+protection.required_status_checks.contexts，确认三个检查都受保护。该接口只需 contents:read，
+包含在现有 contents:write 中；不读取需要管理权限的 branchProtectionRule，也不需要 PAT。
+缺少保护、检查列表或 API 请求失败时，拒绝登记。仅 ruleset 的配置如果不返回这三个 context，
+同样会拒绝登记，因此仍按上面步骤配置经典保护规则。
+
+普通分支 API 不返回 strict（分支必须最新）设置；请保留上面的 up-to-date 选项。
+工作流不修改保护规则；GitHub 在实际合并时执行已配置的更新、检查和审批要求。
+如果无法启用 auto-merge，运行会显示具体权限错误；不要移除 required checks 或风险关卡。
+
+修改本工作流的修复 PR 仍执行 main 上的旧版本，需要先由维护者审查并合并。
+修复合入后，对已有 PR 运行下述 Run workflow；重新运行旧 run 可能仍使用旧版本。
 
 ## 已有 PR
 
