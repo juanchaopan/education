@@ -2,7 +2,7 @@
 
 - 任务：[验证免费托管与大陆访问退路](https://github.com/juanchaopan/education/issues/14)
 - 日期：2026-11-04；基线：`41a99d4843c3a77f356fd300a0572381a427b4b1`
-- 状态：第一轮调研完成；用户要求追加 Vercel 实测，当前连接被环境代理阻止。此探针分支不合并，正式结论经确认后另开文档 PR。
+- 状态：Vercel 独立 staging 探针已构建 READY；本地浏览器验证通过，真实大陆访问待测。此探针分支不合并，正式结论经确认后另开文档 PR。
 
 ## 问题与范围
 
@@ -40,3 +40,5 @@
 ## 第二轮：Vercel
 
 用户随后明确要求测试 Vercel，下一轮优先验证 Vercel，不将第一轮自有服务器建议视为已接受。2026-11-04 19:50 UTC 对 Vercel 官网和 API 的 HTTPS 尝试均被环境代理以 CONNECT 403 拒绝。GitHub 部署列表为空；尚未获得项目测试 URL，未配置 Vercel 部署身份，亦无大陆测试节点。详见证据记录末尾；没有部署应用或购买资源。已请求用户提供现有测试 URL，网络策略需允许该精确域名才能继续从此环境测试。
+
+上述阻塞为当时记录。用户随后配置 Vercel API 令牌并授权继续，已完成身份验证和独立测试项目部署。当前预览：[网络访问测试](https://education-access-spike-ogpfo98vl-juanchaopan1.vercel.app/)。实现及本地运行见 [探针说明](spikes/vercel-access/SPIKE.md)，实际验证边界见 [Vercel 执行结果](docs/adr/assets/0014-hosting-evidence.md)。未升级付费套餐、未部署教育产品、未连接数据库或 AI，预览未被选为生产平台。

@@ -91,3 +91,24 @@
 两个代理响应均带 `server: envoy` 和 `date: Wed, 04 Nov 2026 19:50:11 GMT`。没有绕过代理、修改路由或降低 TLS 校验。这是本环境的访问控制结果，不能记作 Vercel 服务故障或大陆封锁证据，也不能用其响应耗时衡量 Vercel 性能。
 
 下一步需要测试项目的精确 `https://…vercel.app` URL，并在云环境网络设置允许该主机。读取官网/部署 API 时还需允许 `vercel.com`、`api.vercel.com`；实际部署另需受控的 Vercel 授权，不能靠 GitHub 仓库权限推定已有。已向用户询问是否存在部署 URL。即使这里随后连接成功，大陆结论仍需真实大陆设备或可用的大陆测试节点。
+
+## Vercel 授权后执行结果（2026-11-04）
+
+用户配置 API 令牌并要求继续后，运行环境报告令牌 ready、网络策略 enforced。API 身份查询成功，工作区 `juanchaopan1` 的套餐字段为 `hobby`；没有升级套餐或购买资源。此记录替代上文“没有 Vercel 授权”的当前状态，保留原连接失败作为历史证据。
+
+| 验证                   | 实际结果                                                                                   | 边界                                                                                   |
+| ---------------------- | ------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------- |
+| 本地静态文件与 Fastify | HTML/CSS/JS/JSON 均 200；POST 405；API 返回 no-store                                       | localhost HTTP，未测公网 TLS                                                           |
+| 本地移动浏览器         | 系统 Chromium，390×844；CSS/JS 成功，24 个 API 请求中 20 个正式样本全部成功                | [截图](0014-vercel-local-mobile.png)仅证明本地布局与测量流程；本地毫秒数不用于大陆结论 |
+| 网络失败呈现           | Playwright 注入 HTTP 503，连续 3 次后停止，延迟分位数为 null                               | 模拟失败；没有伪装成真实网络故障                                                       |
+| 静态检查               | Prettier、Oxlint、git diff 检查通过；jscpd 0 重复                                          | 仅此独立探针，无正式产品代码变更                                                       |
+| 云端部署               | `dpl_4HWHQJKv6nUYfwR6zfAP5nvVoL4G`，READY、staging、Node 24.x、sin1                        | 平台报告构建/函数产物成功；未证明 HTTP 访问、数据持久化或完整产品可用                  |
+| 匿名访问配置           | 单独测试项目 `ssoProtection: null`；无业务数据或凭据                                       | 未改变其他项目规则；实际匿名 HTTP 仍待测                                               |
+| 云端直连尝试           | 20:21:17 UTC 对中间预览域名请求被环境代理 CONNECT 403 拒绝；最终预览域名也不在当前允许列表 | 没有绕过代理或用管理 API 转发访问；未为最终域名编造请求结果                            |
+| 大陆访问               | 未测，缺少真实大陆设备结果                                                                 | 不认定 Vercel 可达或被封锁                                                             |
+
+预览 URL：<https://education-access-spike-ogpfo98vl-juanchaopan1.vercel.app/>。测试项目 `prj_pVpgvnM9GoqNvxUAKN7FJmcThHDW`；源码提交 `5eb6313`；运行与清理说明见[探针说明](../../../spikes/vercel-access/SPIKE.md)。正式应用仍未部署到 Vercel，也未配置 Neon、邮件或 AI。
+
+上传采用白名单：`package.json`、`package-lock.json`、`vercel.json`、`api/ping.js`、`public/index.html`、`public/app.js`、`public/styles.css`。创建 API 不接受 nodeVersion 字段，已通过项目更新接口设为 24.x；预览部署目标必须显式写 `staging`。第一次省略目标产生的测试项目 production 部署以及中间预览均已删除（HTTP 200）；当前仅保留最终 staging。
+
+部署文件列表只展示函数输出，不能单凭这个接口确认静态内容存在或缺失。最终配置已显式指定 public 输出目录；在线访问验证继续保留为待测。用户从大陆打开预览后可点击“开始测试”，把结果与省份、运营商、Wi-Fi/移动网络类型发回。若需从本云环境执行 HTTPS 验证，仍需通过环境设置允许精确预览主机；本轮未改动已发布环境配置。
