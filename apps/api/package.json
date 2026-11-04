@@ -1,0 +1,27 @@
+{
+  "name": "@education/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "arch": "node ../../scripts/arch-check.mjs",
+    "start": "node dist/index.js",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx src/database/migrate.ts",
+    "test:db": "vitest run --config vitest.database.config.ts"
+  },
+  "dependencies": {
+    "@fastify/static": "^10.1.9",
+    "@fastify/type-provider-typebox": "^6.3.0",
+    "@sinclair/typebox": "^0.34.52",
+    "drizzle-orm": "^0.45.4",
+    "fastify": "^5.12.8",
+    "pg": "^8.23.1",
+    "@education/contracts": "*",
+    "@education/problems": "*"
+  }
+}

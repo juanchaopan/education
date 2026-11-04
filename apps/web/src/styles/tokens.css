@@ -1,0 +1,29 @@
+:root {
+  --background: #faf8f2;
+  --paper: #fffefa;
+  --ink: #243c37;
+  --muted: #596c66;
+  --teal: #398271;
+  --teal-dark: #226451;
+  --teal-light: #e8f0e9;
+  --line: #dedfd4;
+  --gold: #e5b950;
+  --coral: #dd9276;
+  --peach: #f3e8d6;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-8: 3rem;
+  --space-10: 4rem;
+  --text-sm: 0.875rem;
+  --text-base: 1.0625rem;
+  --text-lg: 1.375rem;
+  --text-xl: 1.75rem;
+  --radius-sm: 0.5rem;
+  --radius-lg: 1.5rem;
+  --radius-pill: 999px;
+  --shadow: 0 16px 40px #243c3710;
+  color-scheme: light;
+}
