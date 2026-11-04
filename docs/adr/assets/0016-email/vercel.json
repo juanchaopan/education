@@ -1,0 +1,19 @@
+{
+  "id": "dpl_HFBhE6CZP9uW5W9DeG1zETkYuKMF",
+  "name": "education-mail-spike",
+  "url": "education-mail-spike-72wpy08wj-juanchaopan1.vercel.app",
+  "readyState": "READY",
+  "target": "staging",
+  "nodeVersion": "24.x",
+  "regions": ["sin1"],
+  "readySubstate": "STAGED",
+  "createdAt": 1793829047790,
+  "ready": 1793829057826,
+  "projectId": "prj_dLHrRPM29UEL9MevgSCp2vMJlu5G",
+  "ssoProtection": {
+    "deploymentType": "all_except_custom_domains"
+  },
+  "systemEnvsExposed": true,
+  "mailCredentialsConfiguredByAgent": false,
+  "messagesSent": 0
+}

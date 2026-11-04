@@ -1,0 +1,22 @@
+{
+  "id": "dpl_3nAiFPF3bXmnNCDNj5gQmtamQMQQ",
+  "url": "education-mail-spike-ebtu2urrk-juanchaopan1.vercel.app",
+  "readyState": "READY",
+  "target": "staging",
+  "nodeVersion": "24.x",
+  "regions": ["sin1"],
+  "createdAt": 1793830157484,
+  "ready": 1793830168451,
+  "errorCode": null,
+  "observedAt": "2026-11-04T22:10:28.386194+00:00",
+  "projectId": "prj_dLHrRPM29UEL9MevgSCp2vMJlu5G",
+  "sourceCommit": "a905e877611ca6a0eec58b28b830fc4cc5d33873",
+  "ssoProtection": {
+    "deploymentType": "all_except_custom_domains"
+  },
+  "recipientScope": "126.com only",
+  "recipientVariablePreviewConfigured": true,
+  "variableValuesInspected": false,
+  "agentMessagesSent": 0,
+  "inboxDeliveryTest": "awaiting-owner-126-inbox"
+}
