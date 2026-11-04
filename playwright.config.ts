@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
@@ -21,7 +22,7 @@ export default defineConfig({
     env: {
       APP_ORIGIN: 'http://127.0.0.1:4173',
       REGISTRATION_ENABLED: process.env.DATABASE_URL ? 'true' : 'false',
-      AUTH_RATE_LIMIT_KEY: 'playwright-isolated-test-key-not-for-deployment',
+      AUTH_RATE_LIMIT_KEY: randomBytes(32).toString('hex'),
     },
   },
 });

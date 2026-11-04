@@ -4,7 +4,7 @@ import { SocketAddress } from 'node:net';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { sql } from 'drizzle-orm';
 import type pg from 'pg';
-import type { RegistrationRepository } from './registration.js';
+import type { AuthAdmission } from '../domain/authentication.js';
 import { RequestError } from '../../shared/request-error.js';
 
 const busy = () => new RequestError(429, '尝试较多，请稍后再试。');
@@ -57,10 +57,7 @@ async function claimSlot(client: pg.PoolClient) {
   throw busy();
 }
 
-export function createAuthAdmission(
-  pool: pg.Pool,
-  secret: string,
-): RegistrationRepository['admit'] {
+export function createAuthAdmission(pool: pg.Pool, secret: string): AuthAdmission {
   let active = 0;
   const bucket = (value: string) => createHmac('sha256', secret).update(value).digest('hex');
   return async (work, email, source) => {
@@ -70,9 +67,9 @@ export function createAuthAdmission(
     try {
       client = await pool.connect();
       await reserveBudget(client, [
-        bucket('registration'),
+        bucket('authentication'),
         bucket(`ip:${sourceGroup(source)}`),
-        bucket(`email:${email}`),
+        ...(email ? [bucket(`email:${email}`)] : []),
       ]);
       await claimSlot(client);
       return await work();

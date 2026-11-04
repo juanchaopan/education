@@ -1,0 +1,10 @@
+.switch {
+  padding: var(--space-3) var(--space-5);
+  min-block-size: var(--space-8);
+  border: 1px solid var(--teal-dark);
+  border-radius: var(--radius-pill);
+  color: var(--teal-dark);
+  background: var(--paper);
+  font-weight: 700;
+  cursor: pointer;
+}

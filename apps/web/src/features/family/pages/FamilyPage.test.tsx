@@ -14,7 +14,11 @@ function setup(response: () => Promise<Response>) {
   const fetcher = vi
     .fn()
     .mockImplementation((_url: string, options?: RequestInit) =>
-      options?.method === 'POST' ? response() : Promise.resolve(Response.json({ enabled: true })),
+      _url.endsWith('/session')
+        ? Promise.resolve(Response.json({}, { status: 401 }))
+        : options?.method === 'POST'
+          ? response()
+          : Promise.resolve(Response.json({ enabled: true })),
     );
   vi.stubGlobal('fetch', fetcher);
   render(
@@ -27,7 +31,7 @@ function setup(response: () => Promise<Response>) {
 
 async function fillAndSubmit() {
   const user = userEvent.setup();
-  await user.type(screen.getByLabelText('家长邮箱'), 'parent@example.test');
+  await user.type(await screen.findByLabelText('家长邮箱'), 'parent@example.test');
   await user.type(screen.getByLabelText('设置密码'), password);
   await user.click(screen.getByRole('button', { name: '提交注册' }));
 }

@@ -1,3 +1,5 @@
+import { registerParentSessions } from './identity/routes/session.js';
+import type { SessionService } from './identity/services/session.js';
 import Fastify, { LogController, type FastifyError } from 'fastify';
 import { Type } from '@sinclair/typebox';
 import { registerCatalog } from './catalog/routes/catalog.js';
@@ -5,7 +7,9 @@ import { registerParentRegistration } from './identity/routes/registration.js';
 import type { RegistrationService } from './identity/services/registration.js';
 import { RequestError } from './shared/request-error.js';
 
-export function buildApp(options: { origin?: string; registration?: RegistrationService } = {}) {
+export function buildApp(
+  options: { origin?: string; registration?: RegistrationService; sessions?: SessionService } = {},
+) {
   const app = Fastify({
     bodyLimit: 1_048_576,
     logController: new LogController({ disableRequestLogging: true }),
@@ -21,6 +25,7 @@ export function buildApp(options: { origin?: string; registration?: Registration
   );
   registerCatalog(app);
   registerParentRegistration(app, options.origin ?? 'http://127.0.0.1:5173', options.registration);
+  registerParentSessions(app, options.origin ?? 'http://127.0.0.1:5173', options.sessions);
   app.setErrorHandler<FastifyError>((error, request, reply) => {
     const invalid = error.validation !== undefined;
     const status = error instanceof RequestError ? error.statusCode : httpErrorStatus(error);
