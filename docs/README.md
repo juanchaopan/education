@@ -21,3 +21,5 @@
 [框架进度与后续工作](development-status.md)：实际实现范围、前置条件和开发顺序。
 
 [ADR-0007](adr/0007-typescript-7-toolchain.md)：按用户 TS7 目标调整编译、lint 与架构解析工具链。
+
+[ADR-0008](adr/0008-hosting-spike.md)：#14 托管探针已获维护者验收，接受 Vercel Hobby + 自定义域名用于 staging；证据、归档和后续验证范围见文档。下一步 `/spike 15`。
