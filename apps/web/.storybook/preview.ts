@@ -1,0 +1,4 @@
+import '../src/styles/tokens.css';
+import '../src/styles/global.css';
+
+export default { parameters: { backgrounds: { default: 'paper' } } };

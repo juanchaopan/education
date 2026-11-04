@@ -1,0 +1,36 @@
+.empty {
+  text-align: center;
+  padding: var(--space-8) var(--space-4);
+  max-width: 600px;
+  margin: auto;
+}
+.icon {
+  display: inline-grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: var(--radius-lg);
+  color: var(--teal);
+  background: var(--teal-light);
+  font-size: var(--text-xl);
+}
+.empty h3 {
+  margin: var(--space-4) 0 var(--space-2);
+  font-size: var(--text-lg);
+}
+.empty p {
+  color: var(--muted);
+  line-height: 1.8;
+  margin: 0;
+}
+.empty button {
+  margin-top: var(--space-4);
+  background: var(--teal-dark);
+  color: var(--paper);
+  border: 0;
+  border-radius: var(--radius-pill);
+  padding: var(--space-3) var(--space-5);
+  min-height: 48px;
+  cursor: pointer;
+  font: inherit;
+}

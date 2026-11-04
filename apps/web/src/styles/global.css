@@ -1,0 +1,43 @@
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  background: var(--background);
+  color: var(--ink);
+  font-family: 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', system-ui, sans-serif;
+  line-height: 1.6;
+}
+a {
+  color: inherit;
+}
+button,
+input {
+  font: inherit;
+}
+a,
+button {
+  touch-action: manipulation;
+}
+:focus-visible {
+  outline: 3px solid var(--teal-dark);
+  outline-offset: 4px;
+}
+main {
+  min-height: 65vh;
+}
+main:focus {
+  outline: none;
+}
+::selection {
+  background: var(--teal-light);
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}
