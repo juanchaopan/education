@@ -110,4 +110,4 @@
 
 ## 下一步
 
-第一个执行项是 [#14](https://github.com/juanchaopan/education/issues/14)（探针），运行 `/spike 14`。功能开发使用 `/implement next` 或指定 issue。没有服务器资料时，[#15](https://github.com/juanchaopan/education/issues/15)、[#16](https://github.com/juanchaopan/education/issues/16)、[#28](https://github.com/juanchaopan/education/issues/28) 可独立推进。
+[#14](https://github.com/juanchaopan/education/issues/14) 已获维护者验收，结论见 [ADR-0008](adr/0008-hosting-spike.md)：Vercel Hobby + 自定义域名用于后续 staging，完整产品与量化大陆验收仍待完成。下一个执行项是 [#15](https://github.com/juanchaopan/education/issues/15)，运行 `/spike 15`，确定账号安全参数与儿童登录方式。功能开发使用 `/implement next` 或指定 issue；[#16](https://github.com/juanchaopan/education/issues/16)、[#28](https://github.com/juanchaopan/education/issues/28) 也可独立推进。
