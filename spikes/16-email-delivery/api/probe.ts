@@ -1,11 +1,11 @@
 import { randomUUID } from 'node:crypto';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import nodemailer from 'nodemailer';
-import { classify, deliver, gmailCredentials, mailbox, smtpOptions } from '../probe.mts';
+import { classify, deliver, gmailCredentials, smtpOptions, testRecipient } from '../probe.mts';
 
 type Action =
   | { action: 'connect' }
-  | { action: 'send'; purpose: 'verify' | 'reset'; recipient: 'qq' | '163'; consent: true };
+  | { action: 'send'; purpose: 'verify' | 'reset'; recipient: '126'; consent: true };
 
 function reply(response: ServerResponse, status: number, body: unknown): void {
   response.writeHead(status, {
@@ -23,8 +23,7 @@ export function validateAction(value: unknown): Action {
   if (input.action !== 'send' || input.consent !== true)
     throw new Error('Explicit recipient consent is required');
   if (input.purpose !== 'verify' && input.purpose !== 'reset') throw new Error('Invalid purpose');
-  if (input.recipient !== 'qq' && input.recipient !== '163')
-    throw new Error('Invalid recipient slot');
+  if (input.recipient !== '126') throw new Error('Invalid recipient slot');
   return { action: 'send', purpose: input.purpose, recipient: input.recipient, consent: true };
 }
 
@@ -76,11 +75,8 @@ export function allowedPost(
   );
 }
 
-function configuredRecipient(slot: 'qq' | '163'): string {
-  const key = { qq: 'MAIL_PROBE_QQ', '163': 'MAIL_PROBE_163' }[slot];
-  const address = mailbox(process.env[key] ?? '');
-  if (!address.toLowerCase().endsWith(`@${slot}.com`)) throw new Error('Wrong recipient provider');
-  return address;
+function configuredRecipient(): string {
+  return testRecipient(process.env.MAIL_PROBE_126 ?? '');
 }
 
 export default async function handler(
@@ -98,7 +94,7 @@ export default async function handler(
     const { user, password } = gmailCredentials();
     if (action.action === 'connect')
       return reply(response, 200, { ...(await connect(user, password)), requestId });
-    const to = configuredRecipient(action.recipient);
+    const to = configuredRecipient();
     return reply(response, 200, {
       ...(await deliver(user, to, password, action.purpose)),
       requestId,

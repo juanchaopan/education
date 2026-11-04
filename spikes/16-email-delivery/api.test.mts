@@ -15,12 +15,17 @@ test('accepts Vercel-preparsed JSON and rejects oversized or malformed bodies be
   await assert.rejects(() => readAction(malformed));
 });
 
-test('private page accepts only fixed recipient slots and explicit per-message consent', () => {
+test('private page accepts only the 126 recipient slot and explicit per-message consent', () => {
   assert.deepEqual(validateAction({ action: 'connect' }), { action: 'connect' });
   assert.deepEqual(
-    validateAction({ action: 'send', recipient: 'qq', purpose: 'verify', consent: true }),
-    { action: 'send', recipient: 'qq', purpose: 'verify', consent: true },
+    validateAction({ action: 'send', recipient: '126', purpose: 'verify', consent: true }),
+    { action: 'send', recipient: '126', purpose: 'verify', consent: true },
   );
+  for (const recipient of ['qq', '163']) {
+    assert.throws(() =>
+      validateAction({ action: 'send', recipient, purpose: 'verify', consent: true }),
+    );
+  }
   assert.throws(() =>
     validateAction({
       action: 'send',
@@ -29,9 +34,9 @@ test('private page accepts only fixed recipient slots and explicit per-message c
       consent: true,
     }),
   );
-  assert.throws(() => validateAction({ action: 'send', recipient: 'qq', purpose: 'verify' }));
+  assert.throws(() => validateAction({ action: 'send', recipient: '126', purpose: 'verify' }));
   assert.throws(() =>
-    validateAction({ action: 'send', recipient: 'qq', purpose: 'other', consent: true }),
+    validateAction({ action: 'send', recipient: '126', purpose: 'other', consent: true }),
   );
 });
 

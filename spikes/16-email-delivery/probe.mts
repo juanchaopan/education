@@ -19,6 +19,12 @@ export function mailbox(value: string): string {
   return value;
 }
 
+export function testRecipient(value: string): string {
+  const address = mailbox(value);
+  if (!address.toLowerCase().endsWith('@126.com')) throw new Error('Expected a 126.com recipient');
+  return address;
+}
+
 export function message(
   from: string,
   to: string,
@@ -147,7 +153,7 @@ async function run(): Promise<void> {
   const purpose = process.env.MAIL_PROBE_PURPOSE ?? 'verify';
   if (purpose !== 'verify' && purpose !== 'reset') throw new Error('Invalid purpose');
   if (args[0] !== '--send') return preview(purpose);
-  const to = mailbox(process.env.MAIL_PROBE_TO ?? '');
+  const to = testRecipient(process.env.MAIL_PROBE_TO ?? '');
   if (process.env.MAIL_PROBE_CONFIRM_TO !== to)
     throw new Error('Recipient must be explicitly confirmed');
   const { user, password } = gmailCredentials();

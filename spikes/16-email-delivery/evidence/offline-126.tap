@@ -1,0 +1,82 @@
+TAP version 13
+# Subtest: accepts Vercel-preparsed JSON and rejects oversized or malformed bodies before SMTP
+ok 1 - accepts Vercel-preparsed JSON and rejects oversized or malformed bodies before SMTP
+  ---
+  duration_ms: 7.354656
+  type: 'test'
+  ...
+# Subtest: private page accepts only the 126 recipient slot and explicit per-message consent
+ok 2 - private page accepts only the 126 recipient slot and explicit per-message consent
+  ---
+  duration_ms: 0.867052
+  type: 'test'
+  ...
+# Subtest: rejects cross-origin, missing-origin, simple-form and missing-header requests
+ok 3 - rejects cross-origin, missing-origin, simple-form and missing-header requests
+  ---
+  duration_ms: 0.536388
+  type: 'test'
+  ...
+# Subtest: actual HTTP handler blocks wrong methods/origins and disabled deployment without SMTP
+ok 4 - actual HTTP handler blocks wrong methods/origins and disabled deployment without SMTP
+  ---
+  duration_ms: 89.096474
+  type: 'test'
+  ...
+# Subtest: live recipients must be exactly on 126.com; other providers and deceptive domains are rejected
+ok 5 - live recipients must be exactly on 126.com; other providers and deceptive domains are rejected
+  ---
+  duration_ms: 3.37989
+  type: 'test'
+  ...
+# Subtest: real MIME encoder produces UTF-8 multipart verify and reset emails without network
+ok 6 - real MIME encoder produces UTF-8 multipart verify and reset emails without network
+  ---
+  duration_ms: 50.693632
+  type: 'test'
+  ...
+# Subtest: rejects recipient/header injection and multiple recipients
+ok 7 - rejects recipient/header injection and multiple recipients
+  ---
+  duration_ms: 2.687511
+  type: 'test'
+  ...
+# Subtest: cannot inject another link, purpose or HTML through probe identifier
+ok 8 - cannot inject another link, purpose or HTML through probe identifier
+  ---
+  duration_ms: 0.568343
+  type: 'test'
+  ...
+# Subtest: requires Gmail sender, app password, authenticated TLS and bounded socket timeouts
+ok 9 - requires Gmail sender, app password, authenticated TLS and bounded socket timeouts
+  ---
+  duration_ms: 2.402663
+  type: 'test'
+  ...
+# Subtest: distinguishes authentication, explicit rejection and uncertain delivery without retrying
+ok 10 - distinguishes authentication, explicit rejection and uncertain delivery without retrying
+  ---
+  duration_ms: 0.257123
+  type: 'test'
+  ...
+# Subtest: default CLI is offline and does not reveal supplied personal data or secret
+ok 11 - default CLI is offline and does not reveal supplied personal data or secret
+  ---
+  duration_ms: 309.675429
+  type: 'test'
+  ...
+# Subtest: live CLI refuses an unconfirmed recipient before any SMTP connection
+ok 12 - live CLI refuses an unconfirmed recipient before any SMTP connection
+  ---
+  duration_ms: 294.842337
+  type: 'test'
+  ...
+1..12
+# tests 12
+# suites 0
+# pass 12
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1051.48856

@@ -2,7 +2,21 @@ import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { test } from 'node:test';
 import nodemailer from 'nodemailer';
-import { classify, mailbox, message, smtpOptions } from './probe.mts';
+import { classify, mailbox, message, smtpOptions, testRecipient } from './probe.mts';
+
+test('live recipients must be exactly on 126.com; other providers and deceptive domains are rejected', () => {
+  assert.equal(testRecipient('a@126.com'), 'a@126.com');
+  assert.equal(testRecipient('a@126.COM'), 'a@126.COM');
+  for (const address of [
+    'a@qq.com',
+    'a@163.com',
+    'a@126.com.evil.invalid',
+    'a@sub.126.com',
+    'a@126.com\r\nBcc: a@example.invalid',
+  ]) {
+    assert.throws(() => testRecipient(address));
+  }
+});
 
 test('real MIME encoder produces UTF-8 multipart verify and reset emails without network', async () => {
   const transport = nodemailer.createTransport({
@@ -80,13 +94,13 @@ test('default CLI is offline and does not reveal supplied personal data or secre
       ...process.env,
       GMAIL_USER: 'a@gmail.com',
       GMAIL_APP_PASSWORD: 'abcdefghijklmnop',
-      MAIL_PROBE_TO: 'a@qq.com',
+      MAIL_PROBE_TO: 'a@126.com',
     },
   });
   assert.ifError(result.error);
   assert.equal(result.status, 0, result.stderr);
   assert.equal(JSON.parse(result.stdout).sent, false);
-  assert.doesNotMatch(result.stdout + result.stderr, /a@(gmail|qq)\.com|abcdefghijklmnop/);
+  assert.doesNotMatch(result.stdout + result.stderr, /a@(gmail|126)\.com|abcdefghijklmnop/);
 });
 
 test('live CLI refuses an unconfirmed recipient before any SMTP connection', () => {
@@ -97,11 +111,11 @@ test('live CLI refuses an unconfirmed recipient before any SMTP connection', () 
       ...process.env,
       GMAIL_USER: 'a@gmail.com',
       GMAIL_APP_PASSWORD: 'abcdefghijklmnop',
-      MAIL_PROBE_TO: 'a@qq.com',
+      MAIL_PROBE_TO: 'a@126.com',
       MAIL_PROBE_CONFIRM_TO: '',
     },
   });
   assert.ifError(result.error);
   assert.equal(result.status, 1);
-  assert.doesNotMatch(result.stdout + result.stderr, /a@(gmail|qq)\.com|abcdefghijklmnop/);
+  assert.doesNotMatch(result.stdout + result.stderr, /a@(gmail|126)\.com|abcdefghijklmnop/);
 });
