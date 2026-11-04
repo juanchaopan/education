@@ -7,7 +7,7 @@ import pg from 'pg';
 import { createRegistrationService } from './identity/services/registration.js';
 import { hashParentPassword } from './identity/services/password.js';
 import { createRegistrationStore } from './identity/repositories/postgres-registration.js';
-import { createRegistrationAdmission } from './identity/repositories/registration-admission.js';
+import { createAuthAdmission } from './identity/repositories/auth-admission.js';
 
 const config = readConfig();
 const pool = config.registrationEnabled
@@ -21,7 +21,7 @@ const pool = config.registrationEnabled
 const registration = pool
   ? createRegistrationService({
       save: createRegistrationStore(pool),
-      admit: createRegistrationAdmission(pool, config.rateLimitKey!),
+      admit: createAuthAdmission(pool, config.rateLimitKey!),
       hash: hashParentPassword,
     })
   : undefined;

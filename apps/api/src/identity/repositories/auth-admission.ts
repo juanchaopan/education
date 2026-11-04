@@ -57,7 +57,7 @@ async function claimSlot(client: pg.PoolClient) {
   throw busy();
 }
 
-export function createRegistrationAdmission(
+export function createAuthAdmission(
   pool: pg.Pool,
   secret: string,
 ): RegistrationRepository['admit'] {

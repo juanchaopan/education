@@ -3,7 +3,7 @@ import pg from 'pg';
 import { randomUUID } from 'node:crypto';
 import { verify } from 'argon2';
 import { createRegistrationStore } from './postgres-registration.js';
-import { createRegistrationAdmission } from './registration-admission.js';
+import { createAuthAdmission } from './auth-admission.js';
 import { createRegistrationService } from '../services/registration.js';
 import { hashParentPassword } from '../services/password.js';
 
@@ -75,7 +75,7 @@ it('persists an unverified parent with a real hash and uniform receipts for dupl
   const submit = createRegistrationService({
     save,
     hash: hashParentPassword,
-    admit: createRegistrationAdmission(pool, randomUUID()),
+    admit: createAuthAdmission(pool, randomUUID()),
   });
   const first = await submit({ email: address.toUpperCase(), password }, '127.0.0.1');
   expect(await submit({ email: address, password }, '127.0.0.1')).toEqual(first);
@@ -91,8 +91,8 @@ it('persists an unverified parent with a real hash and uniform receipts for dupl
 
 it('shares per-email limits across service instances and stores only pseudonymous buckets', async () => {
   const secret = randomUUID();
-  const first = createRegistrationAdmission(pool, secret);
-  const second = createRegistrationAdmission(pool, secret);
+  const first = createAuthAdmission(pool, secret);
+  const second = createAuthAdmission(pool, secret);
   const address = email();
   for (let count = 0; count < 10; count++) await first(async () => {}, address, '127.0.0.1');
   await expect(second(async () => {}, address, '127.0.0.2')).rejects.toMatchObject({
@@ -105,7 +105,7 @@ it('shares per-email limits across service instances and stores only pseudonymou
 });
 
 it('aggregates equivalent IPv6 addresses to the same /64 source budget', async () => {
-  const admit = createRegistrationAdmission(pool, randomUUID());
+  const admit = createAuthAdmission(pool, randomUUID());
   for (let count = 0; count < 30; count++) await admit(async () => {}, email(), '2001:db8::1');
   await expect(admit(async () => {}, email(), '2001:0db8:0000:0000:1111::2')).rejects.toMatchObject(
     { statusCode: 429 },
@@ -117,12 +117,12 @@ it('enforces global hash slots and releases a slot after a failing operation', a
   try {
     for (const [slot, client] of clients.entries())
       await client.query('SELECT pg_advisory_lock(1718,$1)', [slot]);
-    const admit = createRegistrationAdmission(pool, randomUUID());
+    const admit = createAuthAdmission(pool, randomUUID());
     await expect(admit(async () => {}, email(), 'ip')).rejects.toMatchObject({ statusCode: 429 });
   } finally {
     for (const client of clients) client.release(true);
   }
-  const admit = createRegistrationAdmission(pool, randomUUID());
+  const admit = createAuthAdmission(pool, randomUUID());
   await expect(
     admit(
       async () => {
@@ -136,7 +136,7 @@ it('enforces global hash slots and releases a slot after a failing operation', a
 });
 
 it('rejects excess local work without an unbounded hash queue', async () => {
-  const admit = createRegistrationAdmission(pool, randomUUID());
+  const admit = createAuthAdmission(pool, randomUUID());
   const release = signal();
   const started = [signal(), signal()];
   const work = started.map((signal) =>
