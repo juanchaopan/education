@@ -1,0 +1,58 @@
+[
+  {
+    "url": "https://support.google.com/accounts/answer/185833",
+    "checkedAt": "2026-11-04T21:39:01.647234+00:00",
+    "curlExit": 56,
+    "http": "000",
+    "error": "curl: (56) CONNECT tunnel failed, response 403",
+    "bodyRead": false
+  },
+  {
+    "url": "https://support.google.com/mail/answer/7126229",
+    "checkedAt": "2026-11-04T21:39:01.469865+00:00",
+    "curlExit": 56,
+    "http": "000",
+    "error": "curl: (56) CONNECT tunnel failed, response 403",
+    "bodyRead": false
+  },
+  {
+    "url": "https://support.google.com/mail/answer/22839",
+    "checkedAt": "2026-11-04T21:39:01.672034+00:00",
+    "curlExit": 56,
+    "http": "000",
+    "error": "curl: (56) CONNECT tunnel failed, response 403",
+    "bodyRead": false
+  },
+  {
+    "url": "https://developers.google.com/gmail/api/guides/sending",
+    "checkedAt": "2026-11-04T21:39:01.487449+00:00",
+    "curlExit": 56,
+    "http": "000",
+    "error": "curl: (56) CONNECT tunnel failed, response 403",
+    "bodyRead": false
+  },
+  {
+    "url": "https://developers.google.com/identity/protocols/oauth2#expiration",
+    "checkedAt": "2026-11-04T21:39:01.494572+00:00",
+    "curlExit": 56,
+    "http": "000",
+    "error": "curl: (56) CONNECT tunnel failed, response 403",
+    "bodyRead": false
+  },
+  {
+    "url": "https://resend.com/pricing",
+    "checkedAt": "2026-11-04T21:39:01.690811+00:00",
+    "curlExit": 56,
+    "http": "000",
+    "error": "curl: (56) CONNECT tunnel failed, response 403",
+    "bodyRead": false
+  },
+  {
+    "url": "https://www.brevo.com/pricing/",
+    "checkedAt": "2026-11-04T21:39:01.730163+00:00",
+    "curlExit": 56,
+    "http": "000",
+    "error": "curl: (56) CONNECT tunnel failed, response 403",
+    "bodyRead": false
+  }
+]

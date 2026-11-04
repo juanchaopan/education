@@ -110,6 +110,6 @@
 
 ## 下一步
 
-[#14](https://github.com/juanchaopan/education/issues/14) 托管与 [#15](https://github.com/juanchaopan/education/issues/15) 账号设计探针已结束，结论见 [ADR-0008](adr/0008-hosting-spike.md) / [ADR-0009](adr/0009-account-security-spike.md)。账号、真实数据库/邮件、浏览器持久登录与版本更新仍未实现；目标部署性能与大陆完整链路仍待验收。
+#14 托管、#15 账号设计与 #16 邮件调查已结束，见 [ADR-0008](adr/0008-hosting-spike.md)、[ADR-0009](adr/0009-account-security-spike.md)、[ADR-0010](adr/0010-email-delivery-spike.md)。#16 有条件采用 Gmail；维护者确认两类测试信进入 126 正常收件箱、很快且网站链接可打开，不代表原始验收项全部通过。当前邮件条款/额度由 #20 核实，正式限流/失败恢复和验证/密码恢复由 #21/#22 完成，#51/#52 保留大陆全链路与生产上线门槛。
 
-下一个探针是 [#16](https://github.com/juanchaopan/education/issues/16)，运行 `/spike 16` 验证邮箱服务与大陆投递。[#17](https://github.com/juanchaopan/education/issues/17) 的设计依赖已解除，可用 `/implement 17` 从隔离邮件适配器开始本地实现；未真实发送邮件时不能显示已投递。不要将以上说明当作已开始下一任务。
+下一项可运行 `/implement 17`，从家长注册与隔离邮件适配器开始。正式账号、持久化、邮件令牌、浏览器持久登录与版本更新尚未实现；未实际发送不能显示已投递。这里不自动启动下一任务。

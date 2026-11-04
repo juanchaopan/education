@@ -1,0 +1,1 @@
+PASS: local Chromium 390px 126-only page with exactly two 126 send buttons; consent blocks sending; disabled configuration shown; network uncertainty shown without automatic retry; no overflow or browser errors. Mock API only, no Vercel or email verification.

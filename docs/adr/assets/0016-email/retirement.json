@@ -1,0 +1,25 @@
+{
+  "observedAt": "2026-11-04T22:25:29.811040+00:00",
+  "projectId": "prj_dLHrRPM29UEL9MevgSCp2vMJlu5G",
+  "retiredDeployments": [
+    {
+      "id": "dpl_3nAiFPF3bXmnNCDNj5gQmtamQMQQ",
+      "deleteHttpStatus": 200
+    },
+    {
+      "id": "dpl_BZzhQnzMGTvEB2jDF4dZw8oQkqBC",
+      "deleteHttpStatus": 200
+    },
+    {
+      "id": "dpl_HFBhE6CZP9uW5W9DeG1zETkYuKMF",
+      "deleteHttpStatus": 200
+    }
+  ],
+  "remainingDeployments": [],
+  "projectRetained": true,
+  "projectVariablesRetained": true,
+  "googleAppPasswordRevokedByAgent": false,
+  "googleAppPasswordAction": "Maintainer must revoke the dedicated spike app password in Google; production uses separately configured credentials.",
+  "accessProbeIssue14Modified": false,
+  "agentSentAdditionalMail": false
+}
