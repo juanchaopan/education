@@ -6,9 +6,9 @@
 
 | 组件                 | 目录     | 技术栈                                     | 职责                         |
 | -------------------- | -------- | ------------------------------------------ | ---------------------------- |
-| web                  | apps/web | React 19、Vite 8、TypeScript 6             | 儿童友好页面与家长空间       |
+| web                  | apps/web | React 19、Vite 8、TypeScript 7             | 儿童友好页面与家长空间       |
 | api                  | apps/api | Fastify 5、TypeBox、Drizzle、PostgreSQL 17 | 空题库 API、配置与数据库基础 |
-| contracts / problems | libs/    | TypeScript 6                               | 共享协议与空题目清单         |
+| contracts / problems | libs/    | TypeScript 7                               | 共享协议与空题目清单         |
 
 ## 自检命令
 

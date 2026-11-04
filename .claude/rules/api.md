@@ -5,7 +5,7 @@ paths:
 
 # Node.js 规范：api
 
-来源：typescript-eslint 推荐规则、Node.js 官方文档。格式由 Prettier 负责，类型和常见问题由 TypeScript 严格模式和 ESLint 检查，分层由 dependency-cruiser（`.dependency-cruiser.cjs`，`npm run arch`）检查；这里写需要判断的部分。
+来源：Oxlint 的 TypeScript 规则、Node.js 官方文档。格式由 Prettier 负责，类型由 TypeScript 7 严格模式检查，常见问题由 Oxlint 检查，分层由 dependency-cruiser（`.dependency-cruiser.cjs`，`npm run arch`）检查；这里写需要判断的部分。
 
 ## 分层
 
@@ -39,7 +39,7 @@ src/
 
 ## 异步和错误
 
-- 每个 Promise 都要 await 或显式处理（ESLint 的 no-floating-promises 会检查）。
+- 每个 Promise 都要 await 或显式处理。当前 Oxlint 运行语法规则，未启用类型感知的 no-floating-promises，审查不能假定此规则已被自动检查。
 - 错误统一由错误处理中间件转换成响应，不把堆栈返回给调用方。
 - 调用外部服务都设置超时；只对幂等的操作做重试。
 - 请求处理路径上不用同步的文件和加密 API（`readFileSync`、`pbkdf2Sync` 等），它们会卡住整个进程。

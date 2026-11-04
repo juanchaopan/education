@@ -4,13 +4,13 @@
       "dir": "apps/web",
       "extensions": [".ts", ".tsx", ".css"],
       "format": "npx --no-install prettier --write {file}",
-      "lint": "npx --no-install oxlint {file}"
+      "lint": "npx --no-install oxlint --deny-warnings -c ../../.oxlintrc.json {file}"
     },
     {
       "dir": "apps/api",
       "extensions": [".ts"],
       "format": "npx --no-install prettier --write {file}",
-      "lint": "npx --no-install eslint {file}"
+      "lint": "npx --no-install oxlint --deny-warnings -c ../../.oxlintrc.json {file}"
     }
   ]
 }
