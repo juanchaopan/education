@@ -1,0 +1,52 @@
+# PR risk: high paths require maintainer review; documentation is low risk.
+[high]
+apps/api/src/database/**
+apps/api/src/identity/**
+apps/api/src/ai/**
+libs/contracts/**
+scripts/**
+package.json
+package-lock.json
+# 流程和规范本身：放宽检查规则、改基线、改 CI，都要人看过
+.github/**
+.githooks/**
+.claude/**
+CLAUDE.md
+REVIEW.md
+AGENTS.md
+.jscpd.json
+**/.dependency-cruiser.cjs
+**/.dependency-cruiser-known-violations.json
+**/ArchitectureTest.java
+**/ArchitectureTests.cs
+**/archunit.properties
+**/archunit_store/**
+**/.importlinter
+**/checkstyle.xml
+**/pmd-ruleset.xml
+**/eslint.config.*
+**/.oxlintrc.json
+**/ruff.toml
+**/mypy.ini
+**/.editorconfig
+**/Directory.Build.props
+# 视觉回归的基准截图：外观变了，要人对照新旧截图确认
+**/*-snapshots/**
+# 业务上敏感的代码
+**/auth/**
+**/billing/**
+**/payment/**
+**/payments/**
+**/migrations/**
+**/*.sql
+**/.env*
+**/install*
+**/release/**
+**/Dockerfile
+infra/**
+
+[low]
+**/*.md
+docs/**
+**/*.txt
+LICENSE
