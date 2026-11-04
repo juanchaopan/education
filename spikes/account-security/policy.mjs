@@ -69,6 +69,7 @@ export class PolicyModel {
       version: child.version,
       created: now,
       seen: now,
+      expires: now + 180 * 86400000,
     });
     return { status: 200, token };
   }
@@ -76,11 +77,10 @@ export class PolicyModel {
     const session = this.sessions.get(digest(token));
     if (!session || session.family !== family) return false;
     const child = this.children.get(session.child);
-    return (
-      child?.version === session.version &&
-      now < session.created + 7 * 86400000 &&
-      now < session.seen + 86400000
-    );
+    if (child?.version !== session.version || now >= session.expires) return false;
+    session.seen = now;
+    session.expires = now + 180 * 86400000;
+    return true;
   }
   reset(parent, child, pin, now) {
     if (

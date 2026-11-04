@@ -6,115 +6,115 @@ TAP version 13
 # Subtest: 20 simultaneous hash requests admit 6, reject 14, and never execute more than 2
 ok 1 - 20 simultaneous hash requests admit 6, reject 14, and never execute more than 2
   ---
-  duration_ms: 332.518183
+  duration_ms: 187.109445
   type: 'test'
   ...
 # Subtest: duplicate nickname across families requires the correct family
 ok 2 - duplicate nickname across families requires the correct family
   ---
-  duration_ms: 9.388747
+  duration_ms: 1.36975
   type: 'test'
   ...
 # Subtest: family location reveals neither children nor a session, including nonexistent families
 ok 3 - family location reveals neither children nor a session, including nonexistent families
   ---
-  duration_ms: 5.863582
+  duration_ms: 0.812335
   type: 'test'
   ...
 # Subtest: normalized duplicates inside one family are rejected
 ok 4 - normalized duplicates inside one family are rejected
   ---
-  duration_ms: 1.588143
+  duration_ms: 0.322423
   type: 'test'
   ...
 # Subtest: unknown family, unknown nickname, and wrong PIN share an error shape
 ok 5 - unknown family, unknown nickname, and wrong PIN share an error shape
   ---
-  duration_ms: 1.463111
+  duration_ms: 0.215219
   type: 'test'
   ...
 # Subtest: account budget cannot be bypassed by changing source IP
 ok 6 - account budget cannot be bypassed by changing source IP
   ---
-  duration_ms: 2.606567
+  duration_ms: 0.243044
   type: 'test'
   ...
 # Subtest: daily account budget survives short-window expiry
 ok 7 - daily account budget survives short-window expiry
   ---
-  duration_ms: 0.241994
+  duration_ms: 0.331513
   type: 'test'
   ...
 # Subtest: parent reset revokes existing sessions, restores attempts and changes PIN
 ok 8 - parent reset revokes existing sessions, restores attempts and changes PIN
   ---
-  duration_ms: 3.912451
+  duration_ms: 0.484234
   type: 'test'
   ...
 # Subtest: reset rejects other families, unverified parents and stale reauthentication
 ok 9 - reset rejects other families, unverified parents and stale reauthentication
   ---
-  duration_ms: 2.729475
+  duration_ms: 0.388255
   type: 'test'
   ...
-# Subtest: session denies another family and expires exactly at idle boundary
-ok 10 - session denies another family and expires exactly at idle boundary
+# Subtest: remembered child session denies another family and expires after 180 idle days
+ok 10 - remembered child session denies another family and expires after 180 idle days
   ---
-  duration_ms: 0.554552
+  duration_ms: 0.808411
   type: 'test'
   ...
-# Subtest: activity does not extend absolute lifetime
-ok 11 - activity does not extend absolute lifetime
+# Subtest: returning children remain signed in beyond seven days and renew without their PIN
+ok 11 - returning children remain signed in beyond seven days and renew without their PIN
   ---
-  duration_ms: 0.517173
+  duration_ms: 0.763199
   type: 'test'
   ...
 # Subtest: logout rejects the old cookie and stored tokens are hashes
 ok 12 - logout rejects the old cookie and stored tokens are hashes
   ---
-  duration_ms: 0.221775
+  duration_ms: 0.288511
   type: 'test'
   ...
 # Subtest: registration key is single use and cannot mint a second child on replay
 ok 13 - registration key is single use and cannot mint a second child on replay
   ---
-  duration_ms: 0.234997
+  duration_ms: 0.476092
   type: 'test'
   ...
 # Subtest: reissue revokes previous keys and new keys expire at the exact boundary
 ok 14 - reissue revokes previous keys and new keys expire at the exact boundary
   ---
-  duration_ms: 0.147712
+  duration_ms: 0.368164
   type: 'test'
   ...
 # Subtest: nickname conflict does not consume the key in the sequential model
 ok 15 - nickname conflict does not consume the key in the sequential model
   ---
-  duration_ms: 0.176895
+  duration_ms: 0.199072
   type: 'test'
   ...
 # Subtest: 6-digit PIN permits leading zeros but rejects common predictable patterns
 ok 16 - 6-digit PIN permits leading zeros but rejects common predictable patterns
   ---
-  duration_ms: 0.237721
+  duration_ms: 0.57591
   type: 'test'
   ...
 # Subtest: origin uses exact trusted origin, rejecting missing, null and lookalike origins
 ok 17 - origin uses exact trusted origin, rejecting missing, null and lookalike origins
   ---
-  duration_ms: 0.174541
+  duration_ms: 0.528376
   type: 'test'
   ...
 # Subtest: opaque session tokens encode 32 random bytes
 ok 18 - opaque session tokens encode 32 random bytes
   ---
-  duration_ms: 0.256484
+  duration_ms: 0.383246
   type: 'test'
   ...
 # Subtest: real Argon2id verifies peppered PIN; wrong PIN, family or pepper fail
 ok 19 - real Argon2id verifies peppered PIN; wrong PIN, family or pepper fail
   ---
-  duration_ms: 1433.442628
+  duration_ms: 1044.242359
   type: 'test'
   ...
 1..19
@@ -125,4 +125,4 @@ ok 19 - real Argon2id verifies peppered PIN; wrong PIN, family or pepper fail
 # cancelled 0
 # skipped 0
 # todo 0
-# duration_ms 1919.479435
+# duration_ms 1287.401553

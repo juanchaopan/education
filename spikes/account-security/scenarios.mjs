@@ -103,17 +103,19 @@ test('reset rejects other families, unverified parents and stale reauthenticatio
     assert.equal(model.reset(parent, child, '638214', now), false);
   assert.equal(child.version, 1);
 });
-test('session denies another family and expires exactly at idle boundary', () => {
+test('remembered child session denies another family and expires after 180 idle days', () => {
   const { model } = fixture();
   const session = model.login('family-A', '小雨', '428716', now);
   assert.equal(model.authorize(session.token, 'family-B', now), false);
-  assert.equal(model.authorize(session.token, 'family-A', now + 86400000), false);
+  assert.equal(model.authorize(session.token, 'family-A', now + 180 * 86400000), false);
 });
-test('activity does not extend absolute lifetime', () => {
+test('returning children remain signed in beyond seven days and renew without their PIN', () => {
   const { model } = fixture();
   const session = model.login('family-A', '小雨', '428716', now);
-  model.sessions.get(digest(session.token)).seen = now + 7 * 86400000 - 1;
-  assert.equal(model.authorize(session.token, 'family-A', now + 7 * 86400000), false);
+  for (const day of [8, 100, 200, 300, 400]) {
+    assert.equal(model.authorize(session.token, 'family-A', now + day * 86400000), true);
+  }
+  assert.equal(model.authorize(session.token, 'family-A', now + 580 * 86400000), false);
 });
 test('logout rejects the old cookie and stored tokens are hashes', () => {
   const { model } = fixture();
