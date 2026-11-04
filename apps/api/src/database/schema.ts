@@ -11,11 +11,13 @@ import {
 } from 'drizzle-orm/pg-core';
 
 export const families = pgTable('families', {
+  authEpoch: integer('auth_epoch').default(1).notNull(),
   id: uuid('id').defaultRandom().primaryKey(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
 export const parents = pgTable('parents', {
+  credentialVersion: integer('credential_version').default(1).notNull(),
   id: uuid('id').defaultRandom().primaryKey(),
   familyId: uuid('family_id')
     .notNull()
@@ -72,5 +74,25 @@ export const drafts = pgTable(
   },
   (table) => [
     uniqueIndex('draft_child_problem').on(table.childId, table.problemId, table.problemVersion),
+  ],
+);
+
+export const parentSessions = pgTable(
+  'parent_sessions',
+  {
+    tokenHash: text('token_hash').primaryKey(),
+    parentId: uuid('parent_id')
+      .notNull()
+      .references(() => parents.id, { onDelete: 'cascade' }),
+    credentialVersion: integer('credential_version').notNull(),
+    familyEpoch: integer('family_epoch').notNull(),
+    verified: boolean('verified').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    lastSeenAt: timestamp('last_seen_at', { withTimezone: true }).defaultNow().notNull(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  },
+  (table) => [
+    index('parent_sessions_parent').on(table.parentId),
+    index('parent_sessions_expiry').on(table.expiresAt),
   ],
 );

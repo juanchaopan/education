@@ -21,3 +21,5 @@ export type TeachingFeedback = {
   stepId: string;
   highlight?: { x: number; y: number; width: number; height: number };
 };
+
+export { ParentLogin, ParentSession } from './session.js';

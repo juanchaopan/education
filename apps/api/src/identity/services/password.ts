@@ -9,3 +9,5 @@ export function hashParentPassword(password: string) {
     hashLength: 32,
   });
 }
+
+export { verify as verifyParentPassword } from 'argon2';
