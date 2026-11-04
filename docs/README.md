@@ -22,4 +22,6 @@
 
 [ADR-0007](adr/0007-typescript-7-toolchain.md)：按用户 TS7 目标调整编译、lint 与架构解析工具链。
 
-[ADR-0008](adr/0008-hosting-spike.md)：#14 托管探针已获维护者验收，接受 Vercel Hobby + 自定义域名用于 staging；证据、归档和后续验证范围见文档。下一步 `/spike 15`。
+[ADR-0008](adr/0008-hosting-spike.md)：#14 托管探针已获维护者验收，接受 Vercel Hobby + 自定义域名用于 staging；证据、归档和后续验证范围见文档。
+
+[ADR-0009](adr/0009-account-security-spike.md)：#15 账号探针已结束，接受家庭定位/六位 PIN、注册 KEY、安全参数及默认持久登录；部署更新先保存草稿再刷新。仅文档与本地证据，实际账号及目标资源验收未完成。下一步 `/spike 16` 验证邮件服务；#17 可按已接受基线开始本地实现。
