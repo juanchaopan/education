@@ -17,10 +17,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-      - name: Install synthetic audio tools
-        run: sudo apt-get install -y espeak-ng ffmpeg
       - name: Transcribe synthetic phrases in two formats
         env:
           SPIKE_OPENAI_API_KEY: ${{ secrets.SPIKE_OPENAI_API_KEY }}
         run: node spikes/browser-voice-touch/transcribe.mjs
+
 
