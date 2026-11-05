@@ -41,6 +41,14 @@ Supabase 官方仓库快照：`ab54becc60debd614a4496742d5fcf787be4bb60`，读�
 
 ## 未完成与验收边界
 
-尚需维护者配置 GitHub staging 秘密、启用变量及人工审查；再验收真实 Vercel 构建、Supabase 连接/权限、受控迁移、账号冒烟、域名切换、重新部署持久化和失败回退。独立开发环境允许下载 Actions 日志的草稿尚未发布；这不等于 GitHub runner 网络不可用。
+维护者已报告 GitHub staging 秘密和启用变量配置完成，PR #60 已经人工审查并合并；仍需触发修复合入后验收真实 Supabase 连接/权限、受控迁移、账号冒烟、域名切换、重新部署持久化和失败回退。独立开发环境允许下载 Actions 日志的草稿尚未发布；这不等于 GitHub runner 网络不可用。
 
 Gmail 继续隔离，不发送任何邮件；AI 没有供应商调用。#21/#22 正式邮件、#47 更新刷新、#51 大陆真机链路及 #52 生产发布尚未完成。详见 [部署步骤](../../deployment/staging.md)。
+
+## PR #60 合并后的触发缺口
+
+PR #60 已经维护者 human-reviewed 后由 app/github-actions squash 合并，main 为 `c2782443de721c97d97aa780590df96cf623d1bc`。维护者报告 GitHub secrets 与 STAGING_ENABLED=true 已配置。查询这个 main SHA 的 Actions runs 返回 total_count=0；PR CI 的 head 为 feature 提交 `6f123fb58bbc4001cd720d9647e4b535b25156b0`，不能将它当作 main CI。
+
+[GitHub 官方规则](https://github.com/github/docs/blob/main/data/reusables/actions/actions-do-not-trigger-workflows.md) 明确 GITHUB_TOKEN 普通事件不递归触发，workflow_dispatch/repository_dispatch 是例外。本任务补充 CI 手动派发入口，staging 从可信 main 查询已合并 PR 与精确 SHA，派发真实 main CI 并等待成功，再发布；不增加 PAT、不放宽分支保护、不自加人工确认标签。
+
+新增九项触发测试：bot merge 缺少 push CI、精确 main 成功、排队/运行/失败、未合并、外仓库、手动重试与旧/PR 成功拒绝。与原有部署/函数测试共 20 项通过；完整常规检查和 0 clones 验证继续执行。实际 main CI 与数据库发布仍待这项修复合入后的线上运行，不提前勾选 #20 验收。
