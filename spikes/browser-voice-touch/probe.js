@@ -97,6 +97,15 @@ el("stop-record").onclick = () => {
 };
 clip.onplaying = () => log("record-playback-start");
 
+const recognitionStatus = el("recognition-status");
+const recognitionMessages = {
+  "recognition-result": "识别完成。请检查结果，也可以直接输入文字。",
+  "recognition-cancelled": "识别已取消，可以直接输入文字。",
+  "recognition-timeout": "识别超时，可以直接输入文字。",
+  "recognition-unavailable": "当前设备没有可用的普通话识别，可以直接输入文字。",
+  "recognition-no-result": "没有识别到文字，可以重试或直接输入。",
+  "recognition-error": "识别失败，可以重试或直接输入。",
+};
 let activeRecognition;
 function cancelRecognition() {
   if (!activeRecognition) return;
@@ -107,9 +116,19 @@ function cancelRecognition() {
 
 async function recognize(local) {
   const mode = local ? "local" : "online";
-  if (!Recognition) return log("recognition-unavailable", { mode });
-  if (recording || permissionRequest || activeRecognition) return log("recognition-busy", { mode });
-  if (!local && !confirm("允许浏览器语音服务处理这句测试用语？")) return;
+  if (!Recognition) {
+    recognitionStatus.textContent = recognitionMessages["recognition-unavailable"];
+    return log("recognition-unavailable", { mode });
+  }
+  if (recording || permissionRequest || activeRecognition) {
+    recognitionStatus.textContent = activeRecognition ? "正在识别，请稍候。" : "请先结束上面的录音，再开始识别。";
+    return log("recognition-busy", { mode });
+  }
+  if (!local && !confirm("允许浏览器语音服务处理这句测试用语？")) {
+    recognitionStatus.textContent = "已跳过在线识别，可以直接输入文字。";
+    return;
+  }
+  recognitionStatus.textContent = local ? "正在检查设备端识别…" : "正在启动在线识别…";
 
   el("transcript").textContent = "";
   el("use-transcript").disabled = true;
@@ -120,6 +139,9 @@ async function recognize(local) {
     if (activeRecognition?.recognition !== recognition) return;
     clearTimeout(timeout);
     activeRecognition = undefined;
+    recognitionStatus.textContent = data.error === "network"
+      ? "浏览器语音服务连不上，可以直接输入文字。"
+      : recognitionMessages[event];
     log(event, { mode, elapsedMs: ms(started), ...data });
   };
   const timeout = setTimeout(() => {
@@ -127,7 +149,10 @@ async function recognize(local) {
     try { recognition.abort(); } catch {}
   }, 12000);
   activeRecognition = { recognition, finish };
-  recognition.onstart = () => log("recognition-start", { mode, startMs: ms(started) });
+  recognition.onstart = () => {
+    recognitionStatus.textContent = "正在听，请说上面的测试短句。";
+    log("recognition-start", { mode, startMs: ms(started) });
+  };
   recognition.onresult = (event) => {
     if (activeRecognition?.recognition !== recognition) return;
     const result = event.results[event.resultIndex][0];
@@ -163,69 +188,154 @@ el("use-transcript").onclick = () => {
   el("answer").focus();
 };
 
+const speechStatus = el("speech-status");
+const sample = el("sample");
+let currentSpeech;
+let speechTimer;
+
+function stopSpeech() {
+  sampleRequest++;
+  currentSpeech = undefined;
+  clearTimeout(speechTimer);
+  window.speechSynthesis?.cancel();
+  sample.pause();
+  sample.currentTime = 0;
+}
+
 function speak() {
-  if (!window.speechSynthesis) return log("speech-unavailable");
+  stopSpeech();
   const synth = window.speechSynthesis;
-  const voices = synth.getVoices().filter((voice) => /^zh([-_]CN)?$/i.test(voice.lang) && voice.localService);
-  if (!voices.length) return log("speech-no-local-mandarin-voice", { voices: synth.getVoices().length });
+  const voices = synth?.getVoices() ?? [];
+  const voice = voices.find((entry) => /^zh(?:-Hans)?(?:-CN)?$/i.test(entry.lang) && entry.localService);
+  if (!voice) {
+    speechStatus.textContent = "当前没有可用的本地普通话声音。请试试预录示例。";
+    return log(synth ? "speech-no-local-mandarin-voice" : "speech-unavailable", { voices: voices.length });
+  }
+
   const utterance = new SpeechSynthesisUtterance(phrase);
   utterance.lang = "zh-CN";
-  utterance.voice = voices[0];
-  synth.cancel();
+  utterance.voice = voice;
+  currentSpeech = utterance;
   const started = performance.now();
-  utterance.onstart = () => log("speech-start", { voice: voices[0].name, lang: voices[0].lang, startMs: ms(started) });
-  utterance.onend = () => log("speech-end", { elapsedMs: ms(started) });
-  utterance.onerror = (event) => log("speech-error", { error: event.error, elapsedMs: ms(started) });
+  const finish = (event, message, data = {}) => {
+    if (currentSpeech !== utterance) return;
+    currentSpeech = undefined;
+    clearTimeout(speechTimer);
+    speechStatus.textContent = message;
+    log(event, { elapsedMs: ms(started), ...data });
+  };
+  utterance.onstart = () => {
+    if (currentSpeech !== utterance) return;
+    clearTimeout(speechTimer);
+    speechStatus.textContent = "正在朗读。";
+    log("speech-start", { voice: voice.name, lang: voice.lang, startMs: ms(started) });
+  };
+  utterance.onend = () => finish("speech-end", "朗读结束。");
+  utterance.onerror = (event) => finish("speech-error", "朗读失败。请试试预录示例。", { error: event.error });
+  speechStatus.textContent = "正在启动朗读…";
+  speechTimer = setTimeout(() => {
+    finish("speech-timeout", "朗读没有启动。请试试预录示例。");
+    synth.cancel();
+  }, 3000);
   synth.speak(utterance);
 }
+
 el("speak").onclick = speak;
+let sampleRequest = 0;
+el("play-sample").onclick = async () => {
+  stopSpeech();
+  const request = ++sampleRequest;
+  speechStatus.textContent = "正在加载预录示例…";
+  const started = performance.now();
+  try {
+    await sample.play();
+    if (request !== sampleRequest) return;
+    speechStatus.textContent = "正在播放预录示例。";
+    log("sample-start", { startMs: ms(started) });
+  } catch (error) {
+    if (request !== sampleRequest) return;
+    speechStatus.textContent = "预录示例播放失败，可以阅读短句。";
+    log("sample-error", { error: error.name });
+  }
+};
+sample.onended = () => {
+  speechStatus.textContent = "预录示例播放结束。";
+  log("sample-end");
+};
 el("stop-speak").onclick = () => {
-  window.speechSynthesis?.cancel();
+  stopSpeech();
+  speechStatus.textContent = "播放已停止。";
   log("speech-stop");
 };
 
 const canvas = el("drawing");
 const ctx = canvas.getContext("2d");
 let stroke;
+const paths = [];
+
+function paintPath(points) {
+  if (points.length < 2) return;
+  const [first, ...rest] = points;
+  ctx.beginPath();
+  ctx.moveTo(first.x * canvas.clientWidth, first.y * canvas.clientHeight);
+  for (const point of rest) {
+    ctx.lineTo(point.x * canvas.clientWidth, point.y * canvas.clientHeight);
+  }
+  ctx.stroke();
+}
 
 function resizeDrawing() {
-  canvas.width = Math.round(canvas.clientWidth * devicePixelRatio);
-  canvas.height = Math.round(canvas.clientHeight * devicePixelRatio);
-  ctx.scale(devicePixelRatio, devicePixelRatio);
+  const width = Math.round(canvas.clientWidth * devicePixelRatio);
+  const height = Math.round(canvas.clientHeight * devicePixelRatio);
+  if (!width || !height || (canvas.width === width && canvas.height === height)) return;
+  canvas.width = width;
+  canvas.height = height;
+  ctx.setTransform(width / canvas.clientWidth, 0, 0, height / canvas.clientHeight, 0, 0);
   ctx.lineWidth = 3;
   ctx.lineCap = "round";
   ctx.strokeStyle = "#125492";
+  paths.forEach(paintPath);
 }
+canvas.width = 0;
 resizeDrawing();
+new ResizeObserver(resizeDrawing).observe(canvas);
 window.addEventListener("resize", resizeDrawing);
+
+function drawingPoint(event) {
+  return { x: event.offsetX / canvas.clientWidth, y: event.offsetY / canvas.clientHeight };
+}
 canvas.onpointerdown = (event) => {
   if (stroke || event.button !== 0) return;
   canvas.setPointerCapture(event.pointerId);
-  stroke = { id: event.pointerId, start: performance.now(), samples: 0 };
-  ctx.beginPath();
-  ctx.moveTo(event.offsetX, event.offsetY);
+  const points = [drawingPoint(event)];
+  paths.push(points);
+  stroke = { id: event.pointerId, start: performance.now(), points };
 };
 canvas.onpointermove = (event) => {
   if (stroke?.id !== event.pointerId) return;
-  ctx.lineTo(event.offsetX, event.offsetY);
-  ctx.stroke();
-  stroke.samples++;
+  const next = drawingPoint(event);
+  paintPath([stroke.points.at(-1), next]);
+  stroke.points.push(next);
 };
 function finishStroke(event) {
   if (stroke?.id !== event.pointerId) return;
-  log("drawing", { type: event.pointerType, event: event.type, samples: stroke.samples, elapsedMs: ms(stroke.start) });
+  log("drawing", { type: event.pointerType, event: event.type, samples: stroke.points.length - 1, elapsedMs: ms(stroke.start) });
   stroke = undefined;
 }
 canvas.onpointerup = finishStroke;
 canvas.onpointercancel = finishStroke;
 canvas.onlostpointercapture = finishStroke;
-el("clear").onclick = () => ctx.clearRect(0, 0, canvas.clientWidth, canvas.clientHeight);
+el("clear").onclick = () => {
+  paths.length = 0;
+  stroke = undefined;
+  ctx.clearRect(0, 0, canvas.clientWidth, canvas.clientHeight);
+};
 
 function leavePage() {
   if (recording || permissionRequest) log("record-interrupted", { reason: "page-hidden" });
   stopRecording(true);
   cancelRecognition();
-  window.speechSynthesis?.cancel();
+  stopSpeech();
 }
 document.addEventListener("visibilitychange", () => {
   if (document.hidden) leavePage();

@@ -14,7 +14,7 @@
 
 ## 运行
 
-在本目录运行 `node serve.mjs`，打开 http://localhost:8280/。手机需要 HTTPS 地址；此原型只包含 `index.html` 和 `probe.js` 两个可公开文件。
+在本目录运行 `node serve.mjs`，打开 http://localhost:8280/。手机需要 HTTPS 地址；预览仅提供 `index.html`、`probe.js` 和一个来自合成夹具的固定预录示例。
 
 
 Windows 自动化：启动原型后，从仓库根目录安装锁文件依赖，运行 `node spikes/browser-voice-touch/browser-test.mjs`。需要本机 Chrome、Edge。使用浏览器模拟录音、权限和触摸；不读取物理麦克风。

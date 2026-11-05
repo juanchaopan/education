@@ -26,16 +26,20 @@
   <section>
     <h2>2. 普通话识别</h2>
     <button id="recognize-local">设备端识别</button><button id="recognize-online">浏览器在线识别</button>
-    <p>在线识别可能将短句发送给浏览器的语音服务。页面不会上传录音。</p>
+    <p>点识别后请重新说一次短句。在线识别可能将这次说话发送给浏览器语音服务。上面录好的音频保留在本页。</p>
+    <p id="recognition-status" role="status">请选择识别方式，或直接输入文字。</p>
     <p id="transcript" aria-live="polite"></p>
     <button id="use-transcript" disabled>使用识别结果</button><br>
-    <label for="answer">文字输入或修改识别结果</label><br>
-    <input id="answer" autocomplete="off" maxlength="80">
+    <label for="answer">你的答案</label><br>
+    <input id="answer" autocomplete="off" maxlength="80" placeholder="可以直接打字">
+    <p>有识别结果时，点“使用识别结果”填入这里，再检查或修改。</p>
   </section>
   <section>
     <h2>3. 中文朗读</h2>
-    <button id="speak">播放测试短句</button><button id="stop-speak">停止</button>
-    <p>确认实际听到普通话，再试重播和停止。</p>
+    <button id="speak">用设备声音朗读</button>
+    <button id="play-sample">播放预录示例</button><button id="stop-speak">停止</button>
+    <audio id="sample" preload="none" src="./sample.m4a"></audio>
+    <p id="speech-status" role="status">请选择朗读方式。预录示例是固定的合成短句。</p>
   </section>
   <section>
     <h2>4. 绘图</h2>
