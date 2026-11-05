@@ -5,6 +5,7 @@ import { ResetPasswordPage } from '../features/family/pages/ResetPasswordPage';
 import { VerifyEmailPage } from '../features/family/pages/VerifyEmailPage';
 import { NavLink, Route, Routes } from 'react-router-dom';
 import { LibraryPage } from '../features/library/pages/LibraryPage';
+import { ProblemPage } from '../features/library/pages/ProblemPage';
 import { FamilyPage } from '../features/family/pages/FamilyPage';
 import styles from './App.module.css';
 
@@ -30,6 +31,7 @@ export function App() {
       <main id="main" tabIndex={-1}>
         <Routes>
           <Route path="/" element={<LibraryPage />} />
+          <Route path="/problems/:id/:version?" element={<ProblemPage />} />
           <Route path="/family" element={<FamilyPage />} />
           <Route path="/child" element={<ChildPage />} />
           <Route path="/join" element={<ChildRegistrationPage />} />

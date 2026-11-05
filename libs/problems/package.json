@@ -4,10 +4,15 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+    "./server": {
+      "node": {
+        "types": "./dist/server.d.ts",
+        "import": "./dist/server.js"
+      }
     }
+  },
+  "dependencies": {
+    "@education/contracts": "*"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
