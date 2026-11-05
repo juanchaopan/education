@@ -36,7 +36,7 @@ export function RegistrationForm(props: RegistrationFormProps) {
           <div role="status" className={styles.notice}>
             <h3>注册申请已受理</h3>
             <p>若此邮箱尚未注册，待验证账号已保存。重复提交不会创建另一个家庭。</p>
-            <p>当前版本尚未发送验证邮件。邮箱验证开放后，请先完成验证，再管理家庭。</p>
+            <p>尚未发送验证邮件。请点击“已有账号？去登录”，登录后发送验证邮件并完成验证。</p>
           </div>
         ) : (
           <form onSubmit={submit} aria-busy={props.pending}>
