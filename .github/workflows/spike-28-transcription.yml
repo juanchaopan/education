@@ -1,6 +1,8 @@
 name: Spike 28 Mandarin file transcription
 on:
-  workflow_dispatch:
+  push:
+    branches: [spike/28-browser-voice-touch]
+    paths: [.github/workflows/spike-28-transcription.yml, spikes/browser-voice-touch/transcribe.mjs]
 permissions:
   contents: read
 jobs:
