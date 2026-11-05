@@ -1,5 +1,6 @@
 import { Type } from '@sinclair/typebox';
 import { Value } from '@sinclair/typebox/value';
+import { databaseOptions } from './database-config.js';
 
 const schema = Type.Object({
   port: Type.Integer({ minimum: 1, maximum: 65535 }),
@@ -31,7 +32,11 @@ function readRegistrationConfig(env: NodeJS.ProcessEnv) {
   if (url.origin !== origin || !['http:', 'https:'].includes(url.protocol)) {
     throw new Error('APP_ORIGIN must be an exact HTTP(S) origin');
   }
-  if (env.NODE_ENV === 'production' && registrationEnabled && url.protocol !== 'https:') {
+  if (
+    (env.NODE_ENV === 'production' || env.VERCEL === '1') &&
+    registrationEnabled &&
+    url.protocol !== 'https:'
+  ) {
     throw new Error('Registration requires an HTTPS APP_ORIGIN in production');
   }
   if (registrationEnabled) validateRegistrationSecrets(env);
@@ -50,6 +55,7 @@ function validateRegistrationSecrets(env: NodeJS.ProcessEnv) {
   if (!isPostgresUrl(env.DATABASE_URL)) {
     throw new Error('DATABASE_URL must use PostgreSQL');
   }
+  databaseOptions(env);
 }
 
 function isPostgresUrl(value: string) {

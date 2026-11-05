@@ -25,3 +25,26 @@ it('accepts only an exact configured origin, requiring HTTPS in production', () 
     readConfig({ ...env, NODE_ENV: 'production', APP_ORIGIN: 'https://example.com' }).origin,
   ).toBe('https://example.com');
 });
+
+it('requires verified TLS and direct PostgreSQL sessions on Vercel', () => {
+  const cloud = { ...env, VERCEL: '1', APP_ORIGIN: 'https://staging.example.test' };
+  expect(() => readConfig(cloud)).toThrow('verified TLS');
+  for (const query of ['sslmode=no-verify', 'sslmode=disable', 'sslmode=require']) {
+    expect(() =>
+      readConfig({ ...cloud, DATABASE_URL: `postgres://db.test/test?${query}` }),
+    ).toThrow();
+  }
+  expect(() =>
+    readConfig({
+      ...cloud,
+      DATABASE_URL:
+        'postgres://ep-test-pooler.ap-southeast-1.aws.neon.tech/test?sslmode=verify-full',
+    }),
+  ).toThrow('direct');
+  expect(
+    readConfig({
+      ...cloud,
+      DATABASE_URL: 'postgres://ep-test.ap-southeast-1.aws.neon.tech/test?sslmode=verify-full',
+    }).registrationEnabled,
+  ).toBe(true);
+});

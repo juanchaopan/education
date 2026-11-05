@@ -13,6 +13,7 @@ export function buildApp(
     registration?: RegistrationService;
     sessions?: SessionService;
     ready?: () => Promise<boolean>;
+    revision?: string;
   } = {},
 ) {
   const app = Fastify({
@@ -41,6 +42,9 @@ export function buildApp(
       .send({ status: ready ? 'ready' : 'unavailable' });
   });
   registerCatalog(app);
+  app.get('/version.json', (_request, reply) =>
+    reply.header('Cache-Control', 'no-store').send({ revision: options.revision ?? null }),
+  );
   registerParentRegistration(app, options.origin ?? 'http://127.0.0.1:5173', options.registration);
   registerParentSessions(app, options.origin ?? 'http://127.0.0.1:5173', options.sessions);
   app.setErrorHandler<FastifyError>((error, request, reply) => {

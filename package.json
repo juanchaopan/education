@@ -13,6 +13,7 @@
   "scripts": {
     "dev": "npm run build:libs && concurrently -k -n api,web \"npm run dev -w @education/api\" \"npm run dev -w @education/web\"",
     "build": "npm run build:libs && npm run build -w @education/api && npm run build -w @education/web",
+    "build:staging": "node scripts/build-staging.mjs",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run test --workspaces --if-present && npm run test:toolchain",
     "lint": "oxlint --deny-warnings .",
@@ -23,6 +24,7 @@
     "build-storybook": "npm run build-storybook -w @education/web",
     "test:e2e": "playwright test",
     "test:accounts": "node scripts/test-accounts-compose.mjs",
+    "test:staging": "node --test scripts/staging-handler.test.mjs scripts/staging-release.test.mjs",
     "db:generate": "npm run db:generate -w @education/api",
     "db:migrate": "npm run db:migrate -w @education/api",
     "check": "npm run build:libs && npm run format:check && npm run lint && npm run arch && npm run typecheck && npm test && npm run build && npm run build-storybook",

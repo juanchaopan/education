@@ -1,0 +1,19 @@
+{
+  "id": "dpl_dnN4NVYEU8LjhQXhQS64yHULNq7t",
+  "url": "education-staging-ep53353rg-juanchaopan1.vercel.app",
+  "readyState": "READY",
+  "projectId": "prj_UYpAbi3rHNsoEdnOYGWiOo8L2WP0",
+  "target": "staging",
+  "regions": ["sin1"],
+  "errorCode": null,
+  "revision": "a5d4dae040456e72e2d5b35052401adf61efa4fa",
+  "registrationEnabled": false,
+  "businessCredentialsConfigured": false,
+  "hypAliasChanged": false,
+  "runtimeVerified": true,
+  "runtimeEvidenceSource": "maintainer-reported JSON",
+  "liveness": {
+    "status": "ok"
+  },
+  "reportedRevision": "a5d4dae040456e72e2d5b35052401adf61efa4fa"
+}

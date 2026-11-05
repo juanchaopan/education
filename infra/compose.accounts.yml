@@ -54,6 +54,7 @@ services:
     <<: *app
   app-b:
     <<: *app
+    command: ['node', 'infra/serve-function.mjs']
   gateway:
     image: nginx:stable-alpine
     ports:
