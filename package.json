@@ -22,6 +22,7 @@
     "storybook": "npm run storybook -w @education/web",
     "build-storybook": "npm run build-storybook -w @education/web",
     "test:e2e": "playwright test",
+    "test:accounts": "node scripts/test-accounts-compose.mjs",
     "db:generate": "npm run db:generate -w @education/api",
     "db:migrate": "npm run db:migrate -w @education/api",
     "check": "npm run build:libs && npm run format:check && npm run lint && npm run arch && npm run typecheck && npm test && npm run build && npm run build-storybook",

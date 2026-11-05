@@ -53,13 +53,31 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx --no-install jscpd .
+  accounts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:accounts
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: isolated-account-test-results
+          path: test-results/accounts/
   ci:
     if: always()
-    needs: [app, duplication]
+    needs: [app, duplication, accounts]
     runs-on: ubuntu-latest
     steps:
       - name: Require every check to pass
         env:
           APP: ${{ needs.app.result }}
           DUPLICATION: ${{ needs.duplication.result }}
-        run: test "$APP" = success && test "$DUPLICATION" = success
+          ACCOUNTS: ${{ needs.accounts.result }}
+        run: test "$APP" = success && test "$DUPLICATION" = success && test "$ACCOUNTS" = success
