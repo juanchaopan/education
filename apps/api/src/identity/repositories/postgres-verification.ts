@@ -1,7 +1,8 @@
 import type pg from 'pg';
 import type { VerificationStatus } from '@education/contracts';
 import type { VerificationRepository, VerificationDraft } from './verification.js';
-import { reserveVerificationBudget, verificationTransaction } from './verification-budget.js';
+import { reserveMailBudget } from './mail-budget.js';
+import { transaction } from './transaction.js';
 import { RequestError } from '../../shared/request-error.js';
 
 type Row = VerificationDraft & {
@@ -18,7 +19,7 @@ const cleanup = `UPDATE email_verifications SET payload=NULL,
 export function createVerificationRepository(pool: pg.Pool): VerificationRepository {
   return {
     reserve: (email, mode, draft) =>
-      verificationTransaction(pool, async (client) => {
+      transaction(pool, async (client) => {
         const parent = (
           await client.query<{ id: string; email_verified: boolean }>(
             'SELECT id,email_verified FROM parents WHERE email=$1 FOR UPDATE',
@@ -37,7 +38,7 @@ export function createVerificationRepository(pool: pg.Pool): VerificationReposit
           )
         ).rows[0];
         validateAction(mode, current);
-        await reserveVerificationBudget(client, parent.id);
+        await reserveMailBudget(client, parent.id, 'verification');
         if (mode === 'retry') {
           await client.query(
             "UPDATE email_verifications SET status='sending',attempts=attempts+1,last_attempt_at=now() WHERE parent_id=$1",
@@ -83,7 +84,7 @@ function canRetry(current?: Row) {
   );
 }
 async function consume(pool: pg.Pool, hash: string) {
-  return verificationTransaction(pool, async (client) => {
+  return transaction(pool, async (client) => {
     const parent = (
       await client.query<{ id: string }>(
         `SELECT p.id FROM parents p

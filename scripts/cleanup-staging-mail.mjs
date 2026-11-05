@@ -1,6 +1,6 @@
 import pg from 'pg';
 import { databaseOptions } from '../apps/api/dist/shared/database-config.js';
-import { cleanupVerificationMail } from '../apps/api/dist/database/mail-retention.js';
+import { cleanupAccountMail } from '../apps/api/dist/database/mail-retention.js';
 import { validateSupabaseDatabase } from './staging-release.mjs';
 
 async function cleanup() {
@@ -12,7 +12,7 @@ async function cleanup() {
     statement_timeout: 10000,
   });
   try {
-    console.log(`Expired verification payloads cleared: ${await cleanupVerificationMail(pool)}`);
+    console.log(`Expired account mail payloads cleared: ${await cleanupAccountMail(pool)}`);
   } finally {
     await pool.end();
   }

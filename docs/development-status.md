@@ -10,7 +10,7 @@
 
 #19 实现：独立迁移、数据库/迁移就绪检查及隔离的双实例 HTTPS Compose 账号测试；验证跨实例登录、轮换、撤销、共享限流和数据库中断恢复。范围和实际检查结果见 [#19](evidence/19/README.md)，未部署至 Vercel 或生产。
 
-尚未实现：家长密码恢复、儿童 KEY 兑换和登录、其他家庭业务 API 的授权、学习记录、练习安排、草稿服务、家庭导出删除、AI/语音调用，以及每题专属页面。schema 包含 families、parents、children、registration_keys、drafts、registration_attempts、parent_sessions、email_verifications 和 verification_attempts；尚不包含架构里规划的全部表。注册不会发信或签发会话，数据库约束不等于服务端家庭授权。
+尚未实现：儿童 KEY 兑换和登录、其他家庭业务 API 的授权、学习记录、练习安排、草稿服务、家庭导出删除、AI/语音调用，以及每题专属页面。schema 包含 families、parents、children、registration_keys、drafts、registration_attempts、parent_sessions、email_verifications 、verification_attempts、password_resets 和 recovery_attempts；尚不包含架构里规划的全部表。注册不会发信或签发会话，数据库约束不等于服务端家庭授权。
 
 不能把本阶段称为完整产品或已完成账号验收。空题库不展示演示问题，不伪造学习进度。
 
@@ -64,3 +64,5 @@
 | 托管         | 未选择平台，用户服务器/域名待提供；不能生成假生产发布步骤。后续探针须验证大陆账号、邮件、数据和 AI 全链路。                                                                                                                               |
 
 管理员操作与 PR #8/#9 的审查合入仍为收尾前置条件。此阶段不发布云开发环境，不部署生产，不提前运行 roadmap。
+
+#22 已实现密码恢复申请、30 分钟单次邮件链接、密码策略与事务撤销，覆盖真实数据库、受控 SMTP 及浏览器检查。当前为分支实现，合并/发布和真实收信恢复验收仍待完成，不能把本地结果当作正式 Gmail 或大陆验证。见 [#22 证据](evidence/22/README.md)。

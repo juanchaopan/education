@@ -10,6 +10,8 @@ const tables = [
   'parent_sessions',
   'email_verifications',
   'verification_attempts',
+  'password_resets',
+  'recovery_attempts',
 ];
 
 export async function revokeStagingDefaults(pool: pg.Pool) {

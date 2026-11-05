@@ -1,3 +1,4 @@
+import { verificationEmail } from './verification-email.js';
 import { describe, expect, it, vi } from 'vitest';
 import { classifySmtpError, createGmailSender } from './gmail.js';
 
@@ -20,8 +21,8 @@ describe('SMTP outcomes', () => {
       {
         user: 'sender@gmail.com',
         password: 'test-only',
-        origin: 'https://school.example',
       },
+      (token) => verificationEmail('https://school.example', token),
       () => ({ sendMail, close }),
     );
     expect(await sender.send('parent@example.test', 'a'.repeat(43))).toBe('accepted');
@@ -45,7 +46,8 @@ it('bounds a stalled send at twelve seconds and reports unknown without starting
   const sendMail = vi.fn().mockImplementation(() => new Promise(() => {}));
   try {
     const sender = createGmailSender(
-      { user: 'sender@gmail.com', password: 'test', origin: 'https://school.example' },
+      { user: 'sender@gmail.com', password: 'test' },
+      (token) => verificationEmail('https://school.example', token),
       () => ({ sendMail, close }),
     );
     const result = sender.send('parent@example.test', 'a'.repeat(43));

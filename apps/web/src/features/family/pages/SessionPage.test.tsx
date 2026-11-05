@@ -1,3 +1,4 @@
+import { MemoryRouter } from 'react-router-dom';
 import { afterEach, expect, it, vi } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -34,7 +35,9 @@ function setup(mode: 'success' | 'failure' | 'remembered' = 'success') {
   vi.stubGlobal('fetch', fetcher);
   render(
     <QueryClientProvider client={new QueryClient()}>
-      <FamilyPage />
+      <MemoryRouter>
+        <FamilyPage />
+      </MemoryRouter>
     </QueryClientProvider>,
   );
   return fetcher;

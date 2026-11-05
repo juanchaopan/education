@@ -1,10 +1,11 @@
 import nodemailer from 'nodemailer';
-import { verificationEmail } from './verification-email.js';
+export type MailContent = { subject: string; text: string; html: string };
+export type MailRenderer = (token: string) => MailContent;
 
 export type MailOutcome =
   'accepted' | 'retryable' | 'rejected' | 'authorization-failed' | 'unknown';
 export type MailSender = { send: (email: string, token: string) => Promise<MailOutcome> };
-type Options = { user: string; password: string; origin: string };
+type Options = { user: string; password: string };
 type Transport = {
   sendMail: (mail: object) => Promise<{ accepted: unknown[]; rejected: unknown[] }>;
   close: () => void;
@@ -24,7 +25,11 @@ export function classifySmtpError(error: unknown): MailOutcome {
     : 'unknown';
 }
 
-export function createGmailSender(options: Options, factory = gmailTransport): MailSender {
+export function createGmailSender(
+  options: Options,
+  render: MailRenderer,
+  factory = gmailTransport,
+): MailSender {
   return {
     send: async (email, token) => {
       const transport = factory(options);
@@ -40,7 +45,7 @@ export function createGmailSender(options: Options, factory = gmailTransport): M
           transport.sendMail({
             from: options.user,
             to: email,
-            ...verificationEmail(options.origin, token),
+            ...render(token),
             disableFileAccess: true,
             disableUrlAccess: true,
           }),
