@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { prepareMainRelease } from './staging-trigger.mjs';
+import { selectMainRelease } from './staging-trigger.mjs';
 
 const sha = 'a'.repeat(40);
 const head = 'b'.repeat(40);
@@ -47,10 +47,11 @@ function fixture({ runs = [], merged = true, foreign = false, eventName = 'workf
 
 test('a bot merge with no push run explicitly dispatches real CI on main, never deploys immediately', async () => {
   const { options, count } = fixture();
-  assert.deepEqual(await prepareMainRelease(options), {
+  assert.deepEqual(await selectMainRelease(options), {
     sha,
     ready: false,
     reason: 'ci-dispatched',
+    afterRunId: 0,
   });
   assert.equal(count(), 1);
 });
@@ -67,7 +68,7 @@ test('only a successful exact-main CI run can release', async () => {
       },
     ],
   });
-  assert.deepEqual(await prepareMainRelease(options), { sha, ready: true, reason: 'ci-passed' });
+  assert.deepEqual(await selectMainRelease(options), { sha, ready: true, reason: 'ci-passed' });
   assert.equal(count(), 0);
 });
 
@@ -84,7 +85,7 @@ for (const status of ['queued', 'in_progress', 'completed']) {
         },
       ],
     });
-    assert.equal((await prepareMainRelease(options)).ready, false);
+    assert.equal((await selectMainRelease(options)).ready, false);
     assert.equal(count(), 0);
   });
 }
@@ -92,7 +93,7 @@ for (const status of ['queued', 'in_progress', 'completed']) {
 for (const settings of [{ merged: false }, { foreign: true }]) {
   test(`ignores unmerged or foreign PR runs: ${JSON.stringify(settings)}`, async () => {
     const { options, count } = fixture(settings);
-    assert.equal((await prepareMainRelease(options)).ready, false);
+    assert.equal((await selectMainRelease(options)).ready, false);
     assert.equal(count(), 0);
   });
 }
@@ -110,7 +111,7 @@ test('manual retry still runs full CI and does not bypass a failed main check', 
       },
     ],
   });
-  assert.equal((await prepareMainRelease(options)).ready, false);
+  assert.equal((await selectMainRelease(options)).ready, false);
   assert.equal(count(), 1);
 });
 
@@ -133,6 +134,6 @@ test('an old-main or PR success is never reused for the current main', async () 
       },
     ],
   });
-  assert.equal((await prepareMainRelease(options)).ready, false);
+  assert.equal((await selectMainRelease(options)).ready, false);
   assert.equal(count(), 1);
 });
