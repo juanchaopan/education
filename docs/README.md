@@ -30,4 +30,4 @@
 
 [ADR-0010](adr/0010-email-delivery-spike.md)：#16 有条件采用 Gmail 作为试点方向；两类测试邮件均获维护者确认进入 126 正常收件箱且链接可打开。当前条款/额度与正式失败恢复仍交 #21/#22/#51/#52 验收；原型归档、测试部署退役，不合并原型代码。家长注册与会话的当前实现见 [#17](evidence/17/README.md) / [#18](evidence/18/README.md)，双实例账号验证见 [#19](evidence/19/README.md)；#20 staging 已验收，下一步 `/implement 21`（邮箱验证）。
 
-[#21 家长验证邮件配置](deployment/mail.md)：实现与本地证据见 [验收记录](evidence/21/README.md)；真实 Gmail 资格和正式投递尚待验收，不能按已上线使用。
+[#21 家长验证邮件配置](deployment/mail.md)：实现与本地证据见 [验收记录](evidence/21/README.md)；Gmail 技术前置条件、额度和恢复说明已根据维护者提供的官方正文记录，正式投递仍待验收。
