@@ -4,6 +4,8 @@
 
 [路线图](roadmap.md)：里程碑、依赖顺序与外部前置条件；[任务规格](roadmap-issues.md)：每项验收标准、组件、风险与测试。两个里程碑和 39 个任务已关联 GitHub issues，进度以 GitHub 为准。
 
+[#20 staging 配置与发布步骤](deployment/staging.md)：Vercel/Supabase、服务端秘密、发布门槛与回退；[验证记录](evidence/20/README.md)。未通过实际线上验收前不称为已部署。
+
 | 文档                                  | 内容                     |
 | ------------------------------------- | ------------------------ |
 | [产品愿景](product/vision.md)         | 用户、目标、范围和约束   |
