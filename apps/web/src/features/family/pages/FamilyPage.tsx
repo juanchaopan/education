@@ -1,3 +1,4 @@
+import { RegistrationKeyPanel } from './RegistrationKeyPanel';
 import { VerificationPanel } from './VerificationPanel';
 import styles from './FamilyPage.module.css';
 import { useState } from 'react';
@@ -34,6 +35,9 @@ export function FamilyPage() {
             refreshing={session.isError}
             onLogout={leave}
           />
+          {session.data.access === 'verified' && (
+            <RegistrationKeyPanel key={session.data.csrfToken} csrf={session.data.csrfToken} />
+          )}
           {!session.data.emailVerified && <VerificationPanel csrf={session.data.csrfToken} />}
         </>
       ) : (

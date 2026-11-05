@@ -60,7 +60,7 @@ for (const verified of [false, true]) {
     const context = await browser.newContext({ storageState: await page.context().storageState() });
     try {
       const restored = await context.newPage();
-      await restored.goto('http://127.0.0.1:4173/family');
+      await restored.goto(new URL('/family', page.url()).href);
       await expect(restored.getByRole('heading', { name: '我的家长账号' })).toBeVisible();
       await restored.getByRole('button', { name: '退出账号' }).click();
       await expect(restored.getByRole('heading', { name: '家长登录' })).toBeVisible();
