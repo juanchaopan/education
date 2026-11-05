@@ -1,6 +1,8 @@
 # #20 staging 接入记录
 
-状态：真实 Singapore staging 发布、数据库迁移、账号冒烟及自动域名绑定通过；浏览器与重部署持久化仍待确认，#20 保持开放。维护者提供 Supabase 项目编号；连接串与部署秘密只通过 GitHub 安全配置。
+状态：#20 核心验收通过。main 合并后自动部署隔离 Singapore staging，数据库迁移、账号冒烟、自动域名绑定及真实浏览器重部署持久化均已验证；PR 预览按已记录的免费资源限制使用隔离 staging 退路。维护者提供 Supabase 项目编号；连接串与部署秘密只通过 GitHub 安全配置。
+
+以下保留各实施阶段的原始结果；阶段中写明的失败、未完成和临时区域不代表当前状态。最近的真实发布与浏览器结果见文末。
 
 ## 范围
 
@@ -41,7 +43,7 @@ Supabase 官方仓库快照：`ab54becc60debd614a4496742d5fcf787be4bb60`，读�
 
 ## 未完成与验收边界
 
-维护者已报告 GitHub staging 秘密和启用变量配置完成，PR #60 已经人工审查并合并；仍需触发修复合入后验收真实 Supabase 连接/权限、受控迁移、账号冒烟、域名切换、重新部署持久化和失败回退。独立开发环境允许下载 Actions 日志的草稿尚未发布；这不等于 GitHub runner 网络不可用。
+维护者已配置 GitHub staging 秘密和启用变量。真实 Supabase 连接/权限、受控迁移、账号冒烟、域名切换和浏览器同数据库重部署持久化的结果见文末；失败不推广候选和 alias 不确定时保留候选由回归测试覆盖，早期失败与恢复也保留在下方。开发环境完整 Actions 日志下载仍受限，后续使用安全 annotation 和提供商元数据核对；这不等于 GitHub runner 网络不可用。
 
 Gmail 继续隔离，不发送任何邮件；AI 没有供应商调用。#21/#22 正式邮件、#47 更新刷新、#51 大陆真机链路及 #52 生产发布尚未完成。详见 [部署步骤](../../deployment/staging.md)。
 
@@ -80,3 +82,21 @@ PR #63 经维护者确认后合并为 `16fcaa675b3887ae92c6261ffdf57cd79ff1c848`
 发布步骤成功意味着受控迁移、表权限加固、精确版本/数据库就绪及注册/登录/会话/退出/旧 cookie 拒绝检查均通过，合成账号由 finally 定向清理。GitHub Actions 使用已配置的 STAGING_VERCEL_TOKEN 成功提交域名绑定，不再返回之前的 403。独立 API 读回 education-access-spike.hyp.app 的 deploymentId 与上述候选相等，projectId 为 staging 项目。没有取得完整日志中的逐次耗时，不补造延迟数字，也不将这次发布等同于大陆性能达标。
 
 合并等待修复的 staging 回归共 35 项通过，完整常规检查通过，jscpd 为 0 clones。真实浏览器刷新、同数据库重新部署后的账号和会话持久化仍待维护者验证；本节不提前勾选该项。隔离邮件仍返回 not-sent，没有开启 Gmail 或 AI。后续将通过本修复的实际自动触发核对发布链路，不能把上述手动启动冒充合并自动触发。
+
+## 真实浏览器与同数据库重部署持久化（2026-11-05 UTC）
+
+维护者在稳定域名 /family 注册一个仅用于 staging 的合成家长账号，自定密码且未发送到聊天；登录后刷新仍显示“我的家长账号”。此时稳定域名指向 `dpl_9Ez9gzBfmZ2urRX8AmrxJ8K2TJem`。
+
+随后启动 [41975900571](https://github.com/juanchaopan/education/actions/runs/41975900571)，同一代码 SHA、同一 Supabase 项目和同一限流密钥重新构建/迁移/冒烟/推广，最终 success。独立 API 读回域名已指向不同 deployment `dpl_5w1pby48yy6yrnzejxJKq6GGg9k5`，regions 为 `["sin1"]`、READY、target staging；不是仅刷新同一个实例。维护者在切换后确认：“刷新仍登录，退出和重新登录都成功”。据此记录账号和服务器端会话跨部署保留、浏览器刷新恢复、退出和原密码重新登录通过。当前未验证邮箱账号只有验证状态访问权，未将其当作完整家庭管理或孩子账号验收。
+
+测试没有发送真实邮件、录音、绘图或儿童信息，没有访问生产数据库；未执行项目删除、全库清空或密码轮换。
+
+## 合并后的真实自动发布验收（2026-11-05 UTC）
+
+PR #64 合并为 main `1ee1321fe1ebb5413eab1d7fd645d513862da3fa`。由 `workflow_run` 自动触发的 staging [41976030636](https://github.com/juanchaopan/education/actions/runs/41976030636) 在 PR 合并前开始，等待合并后选择该精确 main SHA，并显式派发完整 CI [41976075649](https://github.com/juanchaopan/education/actions/runs/41976075649)。CI 的 app、accounts、duplication、ci 全部 success；同一次 staging 的 prepare 与 deploy 最终均 success，配置提醒任务按预期 skipped。本次没有手动派发 staging，区别于此前两次人工启动的发布。工作流事件的 headSha 为创建时的旧 main；实际发布版本以准备任务选择的 main 和候选构建的 educationRevision 核对。
+
+Vercel API 读回候选 `dpl_ANwUBUBj5WPVmXLZTYkXvSXSs1Xh`：READY、target staging、regions `["sin1"]`，educationRevision 为上述 `1ee1321…`，URL 为 `education-staging-4bw3jl8wz-juanchaopan1.vercel.app`。再次独立读取稳定域名 education-access-spike.hyp.app，projectId 为 `prj_UYpAbi3rHNsoEdnOYGWiOo8L2WP0`、deploymentId 为同一候选。说明精确 main CI、受控迁移、账号薄链路、合成账号清理和域名推广已按自动流程完成。
+
+#20 两项核心标准据此验收：自动发布已实测；逐 PR 独立数据库没有获准的免费生命周期资源，按任务约定记录限制并采用隔离 staging，没有创建待清理的 PR 数据库。生产仍手动发布。浏览器同数据库跨部署登录验证见上一节，不将未验证邮箱账号当作完整家庭权限验收。
+
+邮件交接中的 Google 资格/额度、真实发信与失败恢复仍交 #21/#22 在正式启用前完成；当前使用隔离邮件适配器且不声称已送达。#47 更新刷新、#51 大陆真机完整链路、#52 生产发布继续开放，不能把这次 staging 成功当作这些任务已完成。
