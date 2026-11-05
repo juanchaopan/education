@@ -4,7 +4,7 @@
 
 [路线图](roadmap.md)：里程碑、依赖顺序与外部前置条件；[任务规格](roadmap-issues.md)：每项验收标准、组件、风险与测试。两个里程碑和 39 个任务已关联 GitHub issues，进度以 GitHub 为准。
 
-[#20 staging 配置与发布步骤](deployment/staging.md)：Vercel/Supabase、服务端秘密、发布门槛与回退；[验证记录](evidence/20/README.md)。未通过实际线上验收前不称为已部署。
+[#20 staging 配置与发布步骤](deployment/staging.md)：Vercel/Supabase、服务端秘密、发布门槛与回退；[验证记录](evidence/20/README.md)。已验证 main 自动发布、Singapore 实际区域、账号冒烟和同数据库跨部署持久登录；生产发布与大陆完整链路仍待后续验收。
 
 | 文档                                  | 内容                     |
 | ------------------------------------- | ------------------------ |
@@ -28,4 +28,4 @@
 
 [ADR-0009](adr/0009-account-security-spike.md)：#15 账号探针已结束，接受家庭定位/六位 PIN、注册 KEY、安全参数及默认持久登录；部署更新先保存草稿再刷新。仅文档与本地证据，实际账号及目标资源验收未完成。#16 邮件探针结论见下文；#17 可按已接受基线开始本地实现。
 
-[ADR-0010](adr/0010-email-delivery-spike.md)：#16 有条件采用 Gmail 作为试点方向；两类测试邮件均获维护者确认进入 126 正常收件箱且链接可打开。当前条款/额度与正式失败恢复仍交 #20/#21/#22/#51/#52 验收；原型归档、测试部署退役，不合并原型代码。家长注册与会话的当前实现见 [#17](evidence/17/README.md) / [#18](evidence/18/README.md)，双实例账号验证见 [#19](evidence/19/README.md)；#19 合并后下一步 `/implement 20`。
+[ADR-0010](adr/0010-email-delivery-spike.md)：#16 有条件采用 Gmail 作为试点方向；两类测试邮件均获维护者确认进入 126 正常收件箱且链接可打开。当前条款/额度与正式失败恢复仍交 #21/#22/#51/#52 验收；原型归档、测试部署退役，不合并原型代码。家长注册与会话的当前实现见 [#17](evidence/17/README.md) / [#18](evidence/18/README.md)，双实例账号验证见 [#19](evidence/19/README.md)；#20 staging 已验收，下一步 `/implement 21`（邮箱验证）。

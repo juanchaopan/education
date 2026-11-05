@@ -32,7 +32,7 @@
 4. 供应商与部署 spike：大陆访问、邮件送达、AI 条款与后端调用、token 控制、中文语音兼容性。
 5. 收到真实题目后逐题设计教学方式，验证错误定位、耐心提示与独立理解。
 
-当前：#19 已由 PR #59 合并；#20 正在接入隔离 staging，配置步骤和发布门槛见 [部署说明](deployment/staging.md)。尚未取得正式 staging 发布验收证据；完成后再执行 `/implement 21`。
+当前：#19 已由 PR #59 合并；#20 已完成隔离 Singapore staging 的 main 自动发布、迁移、账号冒烟、域名推广和真实浏览器同数据库跨部署登录验收，见 [部署说明](deployment/staging.md) 与 [验收记录](evidence/20/README.md)。现有 Supabase us-east-1 项目保持不变。逐 PR 免费独立数据库未启用，按任务约定使用隔离 staging 退路；生产仍手动发布。下一步 `/implement 21`，正式启用 Gmail 前先核实资格/额度和失败恢复；目前继续使用隔离邮件适配器。
 
 ## Scaffold 阶段历史验证
 
