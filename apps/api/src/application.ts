@@ -1,3 +1,4 @@
+import { verificationEmail } from './shared/verification-email.js';
 import { readMailConfig } from './shared/mail-config.js';
 import { createMailPayload } from './shared/mail-payload.js';
 import { createGmailSender } from './shared/gmail.js';
@@ -100,7 +101,7 @@ function createVerification(
   return createVerificationService({
     admit: admit!,
     repository: createVerificationRepository(pool),
-    sender: createGmailSender(config),
+    sender: createGmailSender(config, (token) => verificationEmail(config.origin, token)),
     payload: createMailPayload(config.payloadKey),
   });
 }

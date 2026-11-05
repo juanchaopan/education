@@ -20,21 +20,3 @@ export async function reserveVerificationBudget(client: pg.PoolClient, parent: s
     throw new RequestError(429, '发送较频繁，请至少等 60 秒再试；达到每日上限时，请明天再来。');
   await client.query('INSERT INTO verification_attempts(parent_id) VALUES($1)', [parent]);
 }
-
-export async function verificationTransaction<T>(
-  pool: pg.Pool,
-  work: (client: pg.PoolClient) => Promise<T>,
-) {
-  const client = await pool.connect();
-  try {
-    await client.query('BEGIN');
-    const result = await work(client);
-    await client.query('COMMIT');
-    return result;
-  } catch (error) {
-    await client.query('ROLLBACK');
-    throw error;
-  } finally {
-    client.release();
-  }
-}

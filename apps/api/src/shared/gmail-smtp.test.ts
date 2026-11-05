@@ -1,3 +1,4 @@
+import { verificationEmail } from './verification-email.js';
 import { afterAll, beforeAll, expect, it } from 'vitest';
 import { SMTPServer } from 'smtp-server';
 import nodemailer from 'nodemailer';
@@ -81,7 +82,8 @@ it.each([
     await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
     const port = (server.server.address() as AddressInfo).port;
     const sender = createGmailSender(
-      { user: 'sender@gmail.com', password: 'test', origin: 'https://school.example' },
+      { user: 'sender@gmail.com', password: 'test' },
+      (token) => verificationEmail('https://school.example', token),
       () =>
         nodemailer.createTransport({
           host: '127.0.0.1',
