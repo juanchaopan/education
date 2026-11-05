@@ -1,12 +1,9 @@
+import { useParentReauthentication } from '../data-access/useParentReauthentication';
 import { FamilyCodePanel } from './FamilyCodePanel';
 import type { RegistrationKeyStatus } from '@education/contracts';
 import { useState } from 'react';
 import { RegistrationKeyCard } from '../components/RegistrationKeyCard';
-import {
-  useRegistrationKey,
-  useManageRegistrationKey,
-  useParentReauthentication,
-} from '../data-access/useRegistrationKey';
+import { useRegistrationKey, useManageRegistrationKey } from '../data-access/useRegistrationKey';
 export function RegistrationKeyPanel({ csrf }: { csrf: string }) {
   const status = useRegistrationKey(csrf);
   const manage = useManageRegistrationKey(csrf);

@@ -2,6 +2,7 @@ import { randomUUID, createHash } from 'node:crypto';
 import { generateRegistrationKey } from '../../apps/api/src/identity/services/registration-key.js';
 import { expect, test } from '@playwright/test';
 import { command, compose, database } from '../../scripts/accounts-compose.mjs';
+import { hashParentPassword } from '../../apps/api/src/identity/services/password.js';
 
 const origin = `https://localhost:${process.env.ACCOUNTS_PORT_A ?? '8443'}`;
 const other = `https://localhost:${process.env.ACCOUNTS_PORT_B ?? '8444'}`;
@@ -294,4 +295,76 @@ async function registeredChild(request: import('@playwright/test').APIRequestCon
   expect(registered.status()).toBe(200);
   const { familyCode } = await registered.json();
   return { familyCode, nickname: '小鹿', pin: '018274' };
+}
+
+test('parent resets on A, revoking all child tokens on B without allowing stale replay to revoke a new login', async ({
+  playwright,
+}) => {
+  // Previous independent scenarios intentionally exhaust the shared localhost budget.
+  await database('TRUNCATE registration_attempts;');
+  const parent = await playwright.request.newContext({ ignoreHTTPSErrors: true });
+  const child = await playwright.request.newContext({ ignoreHTTPSErrors: true });
+  const second = await playwright.request.newContext({ ignoreHTTPSErrors: true });
+  try {
+    const data = await registeredChild(child);
+    const csrf = await attachParent(parent, data.familyCode);
+    for (const [client, base] of [
+      [child, origin],
+      [second, other],
+    ] as const)
+      expect((await client.post(`${base}/api/v1/children/login`, { headers, data })).status()).toBe(
+        200,
+      );
+    const listing = await parent.get(`${origin}/api/v1/parents/children`);
+    expect(listing.status()).toBe(200);
+    const target = (await listing.json()).children[0];
+    const input = {
+      childId: target.id,
+      credentialVersion: target.credentialVersion,
+      pin: '937261',
+    };
+    const reset = () =>
+      parent.post(`${origin}/api/v1/parents/children/reset-pin`, {
+        headers: { ...headers, 'X-CSRF-Token': csrf },
+        data: input,
+      });
+    expect((await reset()).status()).toBe(204);
+    for (const client of [child, second])
+      expect((await client.get(`${other}/api/v1/children/session`)).status()).toBe(401);
+    expect((await child.post(`${other}/api/v1/children/login`, { headers, data })).status()).toBe(
+      401,
+    );
+    expect(
+      (
+        await child.post(`${other}/api/v1/children/login`, {
+          headers,
+          data: { ...data, pin: input.pin },
+        })
+      ).status(),
+    ).toBe(200);
+    expect((await reset()).status()).toBe(409);
+    expect((await child.get(`${origin}/api/v1/children/session`)).status()).toBe(200);
+  } finally {
+    await parent.dispose();
+    await child.dispose();
+    await second.dispose();
+  }
+});
+
+async function attachParent(
+  parent: import('@playwright/test').APIRequestContext,
+  familyCode: string,
+) {
+  const code = familyCode.replaceAll('-', '');
+  const email = `${randomUUID()}@example.test`,
+    hash = await hashParentPassword(password);
+  await database(
+    `INSERT INTO parents(family_id,email,password_hash,email_verified) SELECT id,'${email}','${hash}',true FROM families WHERE code='${code}';`,
+  );
+  const login = await parent.post(`${other}/api/v1/parents/login`, {
+    headers,
+    data: { email, password },
+  });
+  expect(login.status()).toBe(200);
+  return (await login.json()).csrfToken as string;
 }

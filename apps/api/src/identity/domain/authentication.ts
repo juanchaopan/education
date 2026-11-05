@@ -1,4 +1,5 @@
-export type AuthScope = 'authentication' | 'recovery' | 'child-registration' | 'child-login';
+export type AuthScope =
+  'authentication' | 'recovery' | 'child-registration' | 'child-login' | 'child-reset';
 export type AuthAdmission = <T>(
   work: () => Promise<T>,
   identity: string,

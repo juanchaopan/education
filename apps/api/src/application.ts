@@ -1,9 +1,11 @@
+import { createChildAccessService } from './identity/services/child-access.js';
+import { createChildAccessRepository } from './identity/repositories/postgres-child-access.js';
 import { createChildRegistrationService } from './identity/services/child-registration.js';
 import { createChildSessionService } from './identity/services/child-session.js';
 import { createChildSessionRepository } from './identity/repositories/postgres-child-session.js';
 import { createPinMaterial } from './identity/services/child-pin.js';
 import { createChildRegistrationRepository } from './identity/repositories/postgres-child-registration.js';
-import { createChildPin } from './identity/services/child-pin.js';
+import { createChildPin, createReplacementPin } from './identity/services/child-pin.js';
 import { createRegistrationKeyService } from './identity/services/registration-key.js';
 import { createRegistrationKeyRepository } from './identity/repositories/postgres-registration-key.js';
 import { createReauthenticationService } from './identity/services/reauthentication.js';
@@ -59,6 +61,7 @@ export async function createApplication(env: NodeJS.ProcessEnv = process.env) {
     sessions,
     childRegistration: createChildRegistration(pool, config, admit),
     childSessions,
+    childAccess: createChildAccess(pool, sessions, admit, config),
     ...createFamilyManagement(pool, sessions, admit),
     verification: createVerification(pool, mailConfig, admit),
     recovery: createRecovery(pool, mailConfig, admit),
@@ -187,5 +190,20 @@ function createChildRegistration(
     admit,
     hashPin: createChildPin(config.pinPepper),
     fingerprintKey: config.rateLimitKey!,
+  });
+}
+
+function createChildAccess(
+  pool: pg.Pool | undefined,
+  sessions: ReturnType<typeof createSessionService> | undefined,
+  admit: ReturnType<typeof createAuthAdmission> | undefined,
+  config: ReturnType<typeof readConfig>,
+) {
+  if (!pool || !sessions || !admit || !config.pinPepper) return undefined;
+  return createChildAccessService({
+    sessions,
+    admit,
+    repository: createChildAccessRepository(pool, config.rateLimitKey!),
+    replacePin: createReplacementPin(config.pinPepper),
   });
 }

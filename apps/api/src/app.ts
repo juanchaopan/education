@@ -1,3 +1,5 @@
+import { registerChildAccess } from './identity/routes/child-access.js';
+import type { ChildAccessService } from './identity/services/child-access.js';
 import { registerChildRegistration } from './identity/routes/child-registration.js';
 import { registerChildSessions } from './identity/routes/child-session.js';
 import type { ChildSessionService } from './identity/services/child-session.js';
@@ -23,6 +25,7 @@ import { RequestError } from './shared/request-error.js';
 import { readinessErrorCode } from './shared/readiness-error.js';
 
 type AppOptions = {
+  childAccess?: ChildAccessService;
   childSessions?: ChildSessionService;
   childRegistration?: ChildRegistrationService;
   origin?: string;
@@ -101,6 +104,7 @@ function registerIdentity(app: FastifyInstance, options: AppOptions) {
   registerParentRegistration(app, origin, options.registration);
   registerChildRegistration(app, origin, options.childRegistration);
   registerChildSessions(app, origin, options.childSessions);
+  registerChildAccess(app, origin, options.childAccess);
   registerParentSessions(app, origin, options.sessions);
   registerVerification(app, {
     origin: origin,
