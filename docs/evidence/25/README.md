@@ -41,11 +41,17 @@
 - [桌面登录](after.png) / [手机登录](after-mobile.png)
 - [桌面儿童空间](space.png) / [手机儿童空间](space-mobile.png)
 
-## 发布与待验收
+## 发布与真实浏览器验收
 
-本记录先保存本地验证；PR、精确提交的 hosted CI 与合并状态以 GitHub 为准。正式 staging 验收仍待完成。Vercel 继续 Singapore sin1，沿用既有 Supabase us-east-1；不切换数据库、不更换 pepper，不发布生产环境。
+- [PR #78](https://github.com/juanchaopan/education/pull/78) 在维护者 `juanchaopan` 为最终 head `b9d427de57b7a6fc3bacd9e035db0c1f59ee7182` 添加 `human-reviewed` 后自动 squash 合并；main 提交为 `af8f7680dd736b088c0c397fcc8dd7aca4adf294`。
+- [PR CI 42085263674](https://github.com/juanchaopan/education/actions/runs/42085263674)、[审核门槛 42090979010](https://github.com/juanchaopan/education/actions/runs/42090979010) 和 [精确 main CI 42091259760](https://github.com/juanchaopan/education/actions/runs/42091259760) 成功。可选 Claude/security review 为跳过，不记为独立审查通过；审查线程为空。审核前的旧 risk-gate 失败记录仍在历史中，添加标签后的新检查通过，自动合并正常完成，无需重跑旧记录。
+- [首次 staging 发布 42091036886](https://github.com/juanchaopan/education/actions/runs/42091036886) 成功。该 workflow_run 的事件 head 是旧 main；实际 prepare 选择、部署和稳定域名的 provider 元数据均指向已通过 CI 的 `af8f7680dd736b088c0c397fcc8dd7aca4adf294`，不以事件 head 代替实际发布版本。
+- 稳定域名为 `https://education-access-spike.hyp.app`，项目 `prj_UYpAbi3rHNsoEdnOYGWiOo8L2WP0`。首次部署 `dpl_EXgymAAb2zJ2N94C7KbBsbofpn54` 的实际别名映射、READY 状态、版本和 `regions: ["sin1"]` 已经 Vercel API 核对。
+- 维护者先回复 **“all good”**，确认已有 #24 儿童使用原家庭码/昵称/PIN 登录，刷新仍显示欢迎；退出回到表单且带出家庭码/昵称、PIN 为空；原 PIN 能重新登录并保持登录。
+- 在维护者保持登录后，[受控重新部署 42092715733](https://github.com/juanchaopan/education/actions/runs/42092715733) 成功。Vercel API 核对稳定域名从上述部署切换到不同的 READY 部署 `dpl_4iNUrc8gQYKtpP7mdSAanytUw2Nv`，仍为相同已批准版本及 Singapore `sin1`；沿用同一 Supabase us-east-1 数据库和已有密钥。
+- 维护者随后回复 **“yes”**，确认重新部署后刷新仍显示自己的昵称和欢迎，关闭该标签再重新打开无需输入 PIN。这里验证的是关闭标签及同一版本跨部署，未将它表述为整个浏览器进程重启、不同代码版本切换或自动刷新验证。
 
-合并后在 staging 检查：已有 #24 儿童能以原家庭码/昵称/PIN 登录；刷新、关闭重开和部署后仍登录；退出后不能恢复旧会话，重新登录带出定位信息；家长与孩子角色切换不串权限。只记录结果，不索取实际 PIN、KEY 或密码。大陆完整链路、两秒目标、家长 PIN 重置 #26 和保存草稿后版本刷新 #47 不在本次完成范围。
+#25 验收完成。只记录通过结果，不保存实际昵称、家庭码、PIN、KEY 或密码；未采集本次设备、浏览器版本、所在地或精确延迟，不推断大陆全网可达或两秒目标达标。角色权限、旧 token 拒绝、限流与事务竞态的细分边界以自动化证据为准，不全部记为真人复测。家长 PIN 重置由 #26 实现，保存草稿后自动刷新部署版本由 #47 实现，生产仍手动发布。
 
 ## 回退
 
