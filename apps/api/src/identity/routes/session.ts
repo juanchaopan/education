@@ -1,4 +1,5 @@
-import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import { sessionWriteGuard } from './session-guard.js';
+import type { FastifyInstance } from 'fastify';
 import { Type } from '@sinclair/typebox';
 import { ParentLogin, ParentSession } from '@education/contracts';
 import type { SessionService } from '../services/session.js';
@@ -8,17 +9,6 @@ import { readSessionCookie, writeSessionCookie } from './session-cookie.js';
 function serviceOrUnavailable(service?: SessionService) {
   if (!service) throw new RequestError(503, '登录服务尚未配置，请稍后再来。');
   return service;
-}
-function writeGuard(origin: string) {
-  return async (request: FastifyRequest, reply: FastifyReply) => {
-    reply.header('Cache-Control', 'no-store');
-    if (
-      request.headers.origin !== origin ||
-      request.headers['x-education-request'] !== 'session' ||
-      request.headers['content-type']?.split(';')[0]?.trim() !== 'application/json'
-    )
-      throw new RequestError(403, '请从本站家长页面提交。');
-  };
 }
 export function registerParentSessions(
   app: FastifyInstance,
@@ -30,7 +20,7 @@ export function registerParentSessions(
     '/api/v1/parents/login',
     {
       bodyLimit: 4096,
-      onRequest: writeGuard(origin),
+      onRequest: sessionWriteGuard(origin),
       schema: { body: ParentLogin, response: { 200: ParentSession } },
     },
     async (request, reply) => {
@@ -56,7 +46,7 @@ export function registerParentSessions(
     '/api/v1/parents/logout',
     {
       bodyLimit: 4096,
-      onRequest: writeGuard(origin),
+      onRequest: sessionWriteGuard(origin),
       schema: { body: empty, response: { 204: Type.Null() } },
     },
     async (request, reply) => {

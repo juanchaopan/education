@@ -17,7 +17,7 @@ export function AccountStatus({
   const verified = session.access === 'verified';
   const notice = session.emailVerified
     ? '邮箱已验证，请重新登录以更新账号权限。'
-    : '请先完成邮箱验证，再管理家庭。当前版本尚未开放验证邮件发送，孩子注册和学习资料不可访问。';
+    : '请先完成邮箱验证，再管理家庭。请在下方发送验证邮件；验证前，孩子注册和学习资料不可访问。';
   return (
     <section className={styles.card} aria-labelledby="account-title">
       <h2 id="account-title">我的家长账号</h2>

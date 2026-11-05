@@ -1,4 +1,5 @@
-import { createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
+import { randomBytes } from 'node:crypto';
+import { tokenHash, csrfToken, validToken, csrfMatches } from './session-security.js';
 import type { ParentLogin, ParentSession } from '@education/contracts';
 import type { SessionRepository } from '../repositories/session.js';
 import type { AuthAdmission } from '../domain/authentication.js';
@@ -11,11 +12,6 @@ type Dependencies = {
   verify: (hash: string, password: string) => Promise<boolean>;
   dummyHash: string;
 };
-const tokenHash = (token: string) => createHash('sha256').update(token).digest('hex');
-const csrfToken = (token: string) =>
-  createHmac('sha256', token).update('education-csrf-v1').digest('base64url');
-const validToken = (token: string | undefined): token is string =>
-  typeof token === 'string' && /^[A-Za-z0-9_-]{43}$/.test(token);
 const denied = () => new RequestError(401, '邮箱或密码不正确，或登录状态已失效。');
 
 export function createSessionService({ repository, admit, verify, dummyHash }: Dependencies) {
@@ -69,8 +65,7 @@ export function createSessionService({ repository, admit, verify, dummyHash }: D
   };
   const logout = async (token: string | undefined, csrf: string | undefined, source: string) => {
     const session = await read(token, source);
-    if (!validToken(csrf) || !timingSafeEqual(Buffer.from(csrf), Buffer.from(session.csrfToken)))
-      return reject(source, 403);
+    if (!csrfMatches(csrf, session.csrfToken)) return reject(source, 403);
     await repository.revoke(tokenHash(token!));
   };
   return { login, read, logout };

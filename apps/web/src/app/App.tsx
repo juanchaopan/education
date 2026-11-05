@@ -1,3 +1,4 @@
+import { VerifyEmailPage } from '../features/family/pages/VerifyEmailPage';
 import { NavLink, Route, Routes } from 'react-router-dom';
 import { LibraryPage } from '../features/library/pages/LibraryPage';
 import { FamilyPage } from '../features/family/pages/FamilyPage';
@@ -24,6 +25,7 @@ export function App() {
         <Routes>
           <Route path="/" element={<LibraryPage />} />
           <Route path="/family" element={<FamilyPage />} />
+          <Route path="/family/verify" element={<VerifyEmailPage />} />
           <Route
             path="*"
             element={

@@ -42,7 +42,7 @@ it('shows an honest pending-verification receipt without claiming mail was sent'
   );
   await fillAndSubmit();
   expect(await screen.findByRole('heading', { name: '注册申请已受理' })).toBeVisible();
-  expect(screen.getByText(/当前版本尚未发送验证邮件/)).toBeVisible();
+  expect(screen.getByText(/尚未发送验证邮件/)).toBeVisible();
   expect(screen.queryByLabelText('设置密码')).toBeNull();
   expect(fetcher.mock.calls.filter((call) => call[1]?.method === 'POST')).toHaveLength(1);
 });

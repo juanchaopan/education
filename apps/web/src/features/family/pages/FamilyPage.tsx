@@ -1,3 +1,4 @@
+import { VerificationPanel } from './VerificationPanel';
 import styles from './FamilyPage.module.css';
 import { useState } from 'react';
 import { RegistrationPanel } from './RegistrationPanel';
@@ -25,13 +26,16 @@ export function FamilyPage() {
       {session.isPending ? (
         <p role="status">正在确认登录状态…</p>
       ) : session.data ? (
-        <AccountStatus
-          session={session.data}
-          pending={logout.isPending}
-          error={logout.error?.message}
-          refreshing={session.isError}
-          onLogout={leave}
-        />
+        <>
+          <AccountStatus
+            session={session.data}
+            pending={logout.isPending}
+            error={logout.error?.message}
+            refreshing={session.isError}
+            onLogout={leave}
+          />
+          {!session.data.emailVerified && <VerificationPanel csrf={session.data.csrfToken} />}
+        </>
       ) : (
         <>
           {session.isError && <p role="status">暂时无法恢复登录状态，请稍后刷新或重新登录。</p>}

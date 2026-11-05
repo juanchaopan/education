@@ -30,7 +30,7 @@ test('real registration persists a pending parent; duplicate submissions have th
     await page.getByLabel('设置密码').fill('a private browser test family phrase');
     await page.getByRole('button', { name: '提交注册' }).click();
     await expect(page.getByRole('heading', { name: '注册申请已受理' })).toBeVisible();
-    await expect(page.getByText(/当前版本尚未发送验证邮件/)).toBeVisible();
+    await expect(page.getByText(/尚未发送验证邮件/)).toBeVisible();
   };
   await submit();
   await page.screenshot({ path: testInfo.outputPath('registration-receipt.png'), fullPage: true });

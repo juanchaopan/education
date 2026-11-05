@@ -33,7 +33,7 @@ it('denies anonymous Supabase-style table access while the server owner can use 
           "SELECT count(*)::int n FROM pg_class WHERE relnamespace='public'::regnamespace AND relkind='r' AND relrowsecurity",
         )
       ).rows[0].n,
-    ).toBe(7);
+    ).toBe(9);
     for (const role of ['anon', 'authenticated']) {
       expect(
         (
@@ -41,6 +41,15 @@ it('denies anonymous Supabase-style table access while the server owner can use 
             "SELECT has_table_privilege($1, 'public.parents', 'SELECT') AS allowed",
             [role],
           )
+        ).rows[0].allowed,
+      ).toBe(false);
+    }
+    for (const table of ['email_verifications', 'verification_attempts']) {
+      expect(
+        (
+          await pool.query("SELECT has_table_privilege('anon', $1, 'SELECT') AS allowed", [
+            `public.${table}`,
+          ])
         ).rows[0].allowed,
       ).toBe(false);
     }

@@ -1,3 +1,4 @@
+import { stagingMailEnv } from './staging-mail-env.mjs';
 import { execFileSync } from 'node:child_process';
 import { appendFile } from 'node:fs/promises';
 import { setTimeout } from 'node:timers/promises';
@@ -42,6 +43,7 @@ async function deploy() {
   execFileSync('git', ['diff', '--exit-code', 'HEAD'], { stdio: 'pipe' });
   const teamId = required('STAGING_VERCEL_TEAM_ID');
   const runtimeEnv = {
+    ...stagingMailEnv(process.env, required('STAGING_ORIGIN')),
     DATABASE_URL: required('DATABASE_URL'),
     AUTH_RATE_LIMIT_KEY: required('AUTH_RATE_LIMIT_KEY'),
     DATABASE_CA_CERT: process.env.DATABASE_CA_CERT ?? '',

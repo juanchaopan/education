@@ -1,6 +1,8 @@
+import { registerVerification } from './identity/routes/verification.js';
+import type { VerificationService } from './identity/services/verification.js';
 import { registerParentSessions } from './identity/routes/session.js';
 import type { SessionService } from './identity/services/session.js';
-import Fastify, { LogController, type FastifyError } from 'fastify';
+import Fastify, { LogController, type FastifyInstance, type FastifyError } from 'fastify';
 import { Type } from '@sinclair/typebox';
 import { registerCatalog } from './catalog/routes/catalog.js';
 import { registerParentRegistration } from './identity/routes/registration.js';
@@ -13,6 +15,7 @@ export function buildApp(
     origin?: string;
     registration?: RegistrationService;
     sessions?: SessionService;
+    verification?: VerificationService;
     ready?: () => Promise<boolean>;
     revision?: string;
   } = {},
@@ -48,6 +51,22 @@ export function buildApp(
   );
   registerParentRegistration(app, options.origin ?? 'http://127.0.0.1:5173', options.registration);
   registerParentSessions(app, options.origin ?? 'http://127.0.0.1:5173', options.sessions);
+  registerVerification(app, {
+    origin: options.origin ?? 'http://127.0.0.1:5173',
+    sessions: options.sessions,
+    verification: options.verification,
+  });
+  registerErrors(app);
+  return app;
+}
+
+function httpErrorStatus(error: FastifyError) {
+  if (error.statusCode && error.statusCode >= 400 && error.statusCode < 500)
+    return error.statusCode;
+  return 503;
+}
+
+function registerErrors(app: FastifyInstance) {
   app.setErrorHandler<FastifyError>((error, request, reply) => {
     const invalid = error.validation !== undefined;
     const status = error instanceof RequestError ? error.statusCode : httpErrorStatus(error);
@@ -65,11 +84,4 @@ export function buildApp(
               : '暂时无法完成，请稍后重试。',
       });
   });
-  return app;
-}
-
-function httpErrorStatus(error: FastifyError) {
-  if (error.statusCode && error.statusCode >= 400 && error.statusCode < 500)
-    return error.statusCode;
-  return 503;
 }

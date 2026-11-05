@@ -1,0 +1,7 @@
+.panel {
+  margin-block-start: var(--space-4);
+}
+.panel button {
+  margin-inline-end: var(--space-2);
+  margin-block: var(--space-2);
+}

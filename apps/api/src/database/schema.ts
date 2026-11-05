@@ -96,3 +96,27 @@ export const parentSessions = pgTable(
     index('parent_sessions_expiry').on(table.expiresAt),
   ],
 );
+
+export const emailVerifications = pgTable('email_verifications', {
+  parentId: uuid('parent_id')
+    .primaryKey()
+    .references(() => parents.id, { onDelete: 'cascade' }),
+  id: uuid('id').notNull().unique(),
+  tokenHash: text('token_hash').notNull().unique(),
+  payload: text('payload'),
+  status: text('status').notNull(),
+  attempts: integer('attempts').default(1).notNull(),
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  lastAttemptAt: timestamp('last_attempt_at', { withTimezone: true }).defaultNow().notNull(),
+  consumedAt: timestamp('consumed_at', { withTimezone: true }),
+});
+export const verificationAttempts = pgTable(
+  'verification_attempts',
+  {
+    parentId: uuid('parent_id')
+      .notNull()
+      .references(() => parents.id, { onDelete: 'cascade' }),
+    attemptedAt: timestamp('attempted_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [index('verification_attempts_parent_time').on(table.parentId, table.attemptedAt)],
+);

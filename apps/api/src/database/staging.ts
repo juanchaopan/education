@@ -8,6 +8,8 @@ const tables = [
   'drafts',
   'registration_attempts',
   'parent_sessions',
+  'email_verifications',
+  'verification_attempts',
 ];
 
 export async function revokeStagingDefaults(pool: pg.Pool) {
