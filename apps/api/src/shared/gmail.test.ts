@@ -32,3 +32,21 @@ describe('SMTP outcomes', () => {
     expect(close).toHaveBeenCalledOnce();
   });
 });
+it('bounds a stalled send at twelve seconds and reports unknown without starting another send', async () => {
+  vi.useFakeTimers();
+  const close = vi.fn();
+  const sendMail = vi.fn().mockImplementation(() => new Promise(() => {}));
+  try {
+    const sender = createGmailSender(
+      { user: 'sender@gmail.com', password: 'test', origin: 'https://school.example' },
+      () => ({ sendMail, close }),
+    );
+    const result = sender.send('parent@example.test', 'a'.repeat(43));
+    await vi.advanceTimersByTimeAsync(12000);
+    expect(await result).toBe('unknown');
+    expect(sendMail).toHaveBeenCalledOnce();
+    expect(close).toHaveBeenCalled();
+  } finally {
+    vi.useRealTimers();
+  }
+});

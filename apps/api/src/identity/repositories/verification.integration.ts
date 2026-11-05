@@ -128,6 +128,13 @@ it('expires tokens, clears payloads and safely recovers an interrupted invocatio
     (await pool.query('SELECT payload FROM email_verifications WHERE parent_id=$1', [f.id])).rows[0]
       .payload,
   ).toBeNull();
+  const accepted = await fixture();
+  await accepted.service.send(accepted.email, 'send');
+  await pool.query(
+    "UPDATE email_verifications SET expires_at=now()-interval '1 second' WHERE parent_id=$1",
+    [accepted.id],
+  );
+  expect((await accepted.service.status(accepted.email)).status).toBe('expired');
   await f.cool();
   const id = randomUUID();
   await f.repository.reserve(f.email, 'resend', {
@@ -174,4 +181,24 @@ it('requires password login after mailbox verification and never upgrades an exi
   const verified = await sessions.login({ email: f.email, password }, 'ip', restricted.token);
   expect(verified.view.access).toBe('verified');
   await expect(sessions.read(restricted.token, 'ip')).rejects.toMatchObject({ statusCode: 401 });
+});
+it('shares global daily and burst limits between different families', async () => {
+  const first = await fixture();
+  const second = await fixture();
+  await pool.query(
+    "INSERT INTO verification_attempts(parent_id,attempted_at) SELECT $1,now()-interval '1 hour' FROM generate_series(1,50)",
+    [first.id],
+  );
+  await expect(second.service.send(second.email, 'send')).rejects.toMatchObject({
+    statusCode: 429,
+  });
+  await pool.query('DELETE FROM verification_attempts WHERE parent_id=$1', [first.id]);
+  await pool.query(
+    'INSERT INTO verification_attempts(parent_id) SELECT $1 FROM generate_series(1,10)',
+    [first.id],
+  );
+  await expect(second.service.send(second.email, 'send')).rejects.toMatchObject({
+    statusCode: 429,
+  });
+  expect(second.tokens).toHaveLength(0);
 });
