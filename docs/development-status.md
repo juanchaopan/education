@@ -10,14 +10,14 @@
 
 #19 实现：独立迁移、数据库/迁移就绪检查及隔离的双实例 HTTPS Compose 账号测试；验证跨实例登录、轮换、撤销、共享限流和数据库中断恢复。范围和实际检查结果见 [#19](evidence/19/README.md)，未部署至 Vercel 或生产。
 
-尚未实现：家长邮箱验证/恢复、儿童 KEY 兑换和登录、其他家庭业务 API 的授权、学习记录、练习安排、草稿服务、家庭导出删除、AI/语音调用，以及每题专属页面。schema 包含 families、parents、children、registration_keys、drafts、registration_attempts 和 parent_sessions；尚不包含架构里规划的全部表。注册不会发信或签发会话，数据库约束不等于服务端家庭授权。
+尚未实现：家长密码恢复、儿童 KEY 兑换和登录、其他家庭业务 API 的授权、学习记录、练习安排、草稿服务、家庭导出删除、AI/语音调用，以及每题专属页面。schema 包含 families、parents、children、registration_keys、drafts、registration_attempts、parent_sessions、email_verifications 和 verification_attempts；尚不包含架构里规划的全部表。注册不会发信或签发会话，数据库约束不等于服务端家庭授权。
 
 不能把本阶段称为完整产品或已完成账号验收。空题库不展示演示问题，不伪造学习进度。
 
 ## 交付前置条件
 
 - 先实现并验证账号链路及家庭隔离，再接入儿童真实输入。
-- 邮件服务、托管平台与 AI 资格未验证；大陆访问必须真实端到端测试。
+- Singapore staging 与 Gmail 验证邮件已完成下述实际验证；AI 资格、生产发布及大陆完整链路仍需后续验收。
 - 付费 AI 配置默认开启；当前没有供应商调用，不产生模型费用。
 - 框架与 CI/审查配置已分别通过 PR #1、#4 合入 main；GitHub API 可读取 PR 和检查结果。仓库设置写入仍返回 403，不能声称分支保护或 auto-merge 已启用。
 - Claude 审查与云端协作需维护者自行配置 GitHub App、凭据及 ENABLE_CLAUDE_REVIEW=true；默认不运行付费审查。此开关与应用付费 AI 开关不同。
@@ -32,7 +32,7 @@
 4. 供应商与部署 spike：大陆访问、邮件送达、AI 条款与后端调用、token 控制、中文语音兼容性。
 5. 收到真实题目后逐题设计教学方式，验证错误定位、耐心提示与独立理解。
 
-当前：#19 已由 PR #59 合并；#20 已完成隔离 Singapore staging 的 main 自动发布、迁移、账号冒烟、域名推广和真实浏览器同数据库跨部署登录验收，见 [部署说明](deployment/staging.md) 与 [验收记录](evidence/20/README.md)。现有 Supabase us-east-1 项目保持不变。逐 PR 免费独立数据库未启用，按任务约定使用隔离 staging 退路；生产仍手动发布。下一步 `/implement 21`，正式启用 Gmail 前先核实资格/额度和失败恢复；目前继续使用隔离邮件适配器。
+当前：#19 已由 PR #59 合并；#20 已完成隔离 Singapore staging 的 main 自动发布、迁移、账号冒烟、域名推广和真实浏览器同数据库跨部署登录验收，见 [部署说明](deployment/staging.md) 与 [验收记录](evidence/20/README.md)。现有 Supabase us-east-1 项目保持不变。逐 PR 免费独立数据库未启用，按任务约定使用隔离 staging 退路；生产仍手动发布。邮箱验证 #21 已实现，维护者完成真实 Gmail → 126 收信、验证及重新登录，见 [#21 验收记录](evidence/21/README.md)；真实投递、自动化故障测试和未复测范围在该记录中区分。下一步 `/implement 22`，实现家长密码恢复与旧会话撤销。
 
 ## Scaffold 阶段历史验证
 
