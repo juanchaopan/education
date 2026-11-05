@@ -5,6 +5,7 @@ const tables = [
   'parents',
   'children',
   'registration_keys',
+  'key_generation_attempts',
   'drafts',
   'registration_attempts',
   'parent_sessions',

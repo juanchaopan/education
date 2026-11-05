@@ -1,3 +1,7 @@
+import { createRegistrationKeyService } from './identity/services/registration-key.js';
+import { createRegistrationKeyRepository } from './identity/repositories/postgres-registration-key.js';
+import { createReauthenticationService } from './identity/services/reauthentication.js';
+import { createReauthenticationRepository } from './identity/repositories/postgres-reauthentication.js';
 import { createRecoveryService } from './identity/services/recovery.js';
 import { createRecoveryRepository } from './identity/repositories/postgres-recovery.js';
 import { recoveryEmail } from './shared/recovery-email.js';
@@ -54,6 +58,7 @@ export async function createApplication(env: NodeJS.ProcessEnv = process.env) {
     origin: config.origin,
     registration,
     sessions,
+    ...createFamilyManagement(pool, sessions, admit),
     verification: createVerification(pool, mailConfig, admit),
     recovery: createRecovery(pool, mailConfig, admit),
     ready: pool ? await createReadinessCheck(pool) : undefined,
@@ -123,4 +128,24 @@ function createRecovery(
     sender: createGmailSender(config, (token) => recoveryEmail(config.origin, token)),
     payload: createMailPayload(config.payloadKey),
   });
+}
+
+function createFamilyManagement(
+  pool: pg.Pool | undefined,
+  sessions: ReturnType<typeof createSessionService> | undefined,
+  admit: ReturnType<typeof createAuthAdmission> | undefined,
+) {
+  if (!pool || !sessions || !admit) return {};
+  return {
+    registrationKeys: createRegistrationKeyService({
+      sessions,
+      repository: createRegistrationKeyRepository(pool),
+    }),
+    reauthentication: createReauthenticationService({
+      sessions,
+      admit,
+      repository: createReauthenticationRepository(pool),
+      verify: verifyParentPassword,
+    }),
+  };
 }

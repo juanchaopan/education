@@ -32,8 +32,8 @@ export function createSessionRepository(pool: pg.Pool): SessionRepository {
         if (previousHash)
           await tx.execute(sql`DELETE FROM parent_sessions WHERE token_hash=${previousHash}`);
         await tx.execute(sql`INSERT INTO parent_sessions
-        (token_hash, parent_id, credential_version, family_epoch, verified, expires_at)
-        VALUES (${hash}, ${account.id}, ${account.credentialVersion}, ${account.familyEpoch}, ${account.emailVerified},
+        (token_hash, parent_id, credential_version, family_epoch, verified, password_verified_at, expires_at)
+        VALUES (${hash}, ${account.id}, ${account.credentialVersion}, ${account.familyEpoch}, ${account.emailVerified}, now(),
           now() + CASE WHEN ${account.emailVerified} THEN interval '7 days' ELSE interval '15 minutes' END)`);
         return true;
       }),

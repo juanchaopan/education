@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm';
 import {
   boolean,
   index,
@@ -49,15 +50,36 @@ export const children = pgTable(
   (table) => [uniqueIndex('child_family_nickname').on(table.familyId, table.nickname)],
 );
 
-export const registrationKeys = pgTable('registration_keys', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  familyId: uuid('family_id')
-    .notNull()
-    .references(() => families.id, { onDelete: 'cascade' }),
-  keyHash: text('key_hash').notNull().unique(),
-  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
-  consumedAt: timestamp('consumed_at', { withTimezone: true }),
-});
+export const registrationKeys = pgTable(
+  'registration_keys',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    familyId: uuid('family_id')
+      .notNull()
+      .references(() => families.id, { onDelete: 'cascade' }),
+    keyHash: text('key_hash').notNull().unique(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    revokedAt: timestamp('revoked_at', { withTimezone: true }),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    consumedAt: timestamp('consumed_at', { withTimezone: true }),
+  },
+  (table) => [
+    uniqueIndex('registration_keys_family_pending')
+      .on(table.familyId)
+      .where(sql`${table.consumedAt} IS NULL AND ${table.revokedAt} IS NULL`),
+  ],
+);
+
+export const keyGenerationAttempts = pgTable(
+  'key_generation_attempts',
+  {
+    familyId: uuid('family_id')
+      .notNull()
+      .references(() => families.id, { onDelete: 'cascade' }),
+    attemptedAt: timestamp('attempted_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [index('key_generation_family_time').on(table.familyId, table.attemptedAt)],
+);
 
 export const drafts = pgTable(
   'drafts',
@@ -81,6 +103,7 @@ export const parentSessions = pgTable(
   'parent_sessions',
   {
     tokenHash: text('token_hash').primaryKey(),
+    passwordVerifiedAt: timestamp('password_verified_at', { withTimezone: true }),
     parentId: uuid('parent_id')
       .notNull()
       .references(() => parents.id, { onDelete: 'cascade' }),

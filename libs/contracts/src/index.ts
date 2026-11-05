@@ -26,3 +26,5 @@ export { ParentLogin, ParentSession } from './session.js';
 export * from './verification.js';
 
 export * from './recovery.js';
+
+export * from './registration-key.js';
