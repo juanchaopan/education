@@ -10,7 +10,7 @@
 
 #19 实现：独立迁移、数据库/迁移就绪检查及隔离的双实例 HTTPS Compose 账号测试；验证跨实例登录、轮换、撤销、共享限流和数据库中断恢复。范围和实际检查结果见 [#19](evidence/19/README.md)，未部署至 Vercel 或生产。
 
-尚未实现：儿童 KEY 兑换和登录、其他家庭业务 API 的授权、学习记录、练习安排、草稿服务、家庭导出删除、AI/语音调用，以及每题专属页面。schema 包含 families、parents、children、registration_keys、drafts、registration_attempts、parent_sessions、email_verifications 、verification_attempts、password_resets 和 recovery_attempts；尚不包含架构里规划的全部表。注册不会发信或签发会话，数据库约束不等于服务端家庭授权。
+尚未实现：家长重置儿童访问、其他家庭业务 API 的授权、学习记录、练习安排、草稿服务、家庭导出删除、AI/语音调用，以及每题专属页面。当前身份 schema 还包含 `key_generation_attempts`、`child_registrations` 和 `child_sessions`，但不包含架构里规划的全部表。儿童注册不签发会话，须再用 PIN 登录；数据库约束不等于其他业务 API 已有家庭授权。
 
 不能把本阶段称为完整产品或已完成账号验收。空题库不展示演示问题，不伪造学习进度。
 
@@ -74,3 +74,7 @@
 ## #24 儿童用 KEY 注册
 
 `/join` 提供 KEY、昵称、六位 PIN 注册，同事务消费 KEY 并绑定正确家庭；昵称按家庭规范化唯一，PIN 经独立 pepper 与 Argon2id 保护，网络重试回放原回执。独立测试数据库与浏览器验证见 [#24](evidence/24/README.md)；PR #75/#76 已通过 hosted CI、维护者确认后自动合并并发布到 Singapore staging；维护者已确认儿童注册、家长页家庭码一致且可复制、KEY 显示已使用均正常，#24 已验收完成。儿童登录、持久会话和家长重置仍由 #25/#26 完成，不自动开始下一任务。
+
+## #25 儿童登录与退出
+
+`/child` 使用家庭码、规范昵称和六位 PIN，签发仅有儿童权限的安全 cookie；会话保存在数据库并在有效访问时续期，180 天不活动才过期。家长密码恢复撤销本家庭儿童会话，签发前事务复核凭据版本与家庭 epoch；错误登录受跨实例儿童、家庭、来源和部署预算限制。页面默认记住定位信息，不保存明文 PIN；注册成功可带出定位信息进入登录。证据与 PR/staging 状态见 [#25](evidence/25/README.md)。家长重置儿童 PIN 与更新草稿保护仍分别由 #26/#47 实现。
