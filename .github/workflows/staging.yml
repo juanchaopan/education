@@ -1,0 +1,72 @@
+name: staging
+on:
+  workflow_run:
+    workflows: [ci]
+    branches: [main]
+    types: [completed]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: education-staging
+  cancel-in-progress: false
+jobs:
+  configuration:
+    if: vars.STAGING_ENABLED != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo 'Staging is not enabled. Configure the dedicated project and credentials described in docs/deployment/staging.md; no deployment was attempted.' >> "$GITHUB_STEP_SUMMARY"
+  deploy:
+    if: >-
+      vars.STAGING_ENABLED == 'true' &&
+      (github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_repository.full_name == github.repository))
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: staging
+    steps:
+      - name: Select the exact passing main commit
+        id: release
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const { data: branch } = await github.rest.repos.getBranch({ owner, repo, branch: 'main' });
+            const sha = branch.commit.sha;
+            if (context.eventName === 'workflow_run' && context.payload.workflow_run.head_sha !== sha) {
+              throw new Error('Superseded main run; no deployment attempted');
+            }
+            const { data } = await github.rest.actions.listWorkflowRuns({
+              owner, repo, workflow_id: 'ci.yml', branch: 'main', head_sha: sha, event: 'push', status: 'success', per_page: 10
+            });
+            if (!data.workflow_runs.some(run => run.head_sha === sha && run.conclusion === 'success')) {
+              throw new Error('Main has no successful CI run');
+            }
+            core.setOutput('sha', sha);
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ steps.release.outputs.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Build candidate, migrate, smoke, then promote staging
+        run: node scripts/deploy-staging.mjs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_SHA: ${{ steps.release.outputs.sha }}
+          STAGING_DATABASE: 'true'
+          STAGING_SUPABASE_PROJECT_REF: ${{ vars.STAGING_SUPABASE_PROJECT_REF || 'telkaiyxprpetmqthyhn' }}
+          STAGING_ORIGIN: ${{ vars.STAGING_ORIGIN || 'https://education-access-spike.hyp.app' }}
+          STAGING_VERCEL_PROJECT_ID: ${{ vars.STAGING_VERCEL_PROJECT_ID || 'prj_UYpAbi3rHNsoEdnOYGWiOo8L2WP0' }}
+          STAGING_VERCEL_TEAM_ID: ${{ vars.STAGING_VERCEL_TEAM_ID || 'team_6WBQUpNIhHEGrjeEWxoFyN62' }}
+          VERCEL_TOKEN: ${{ secrets.STAGING_VERCEL_TOKEN }}
+          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+          DATABASE_CA_CERT: ${{ secrets.STAGING_DATABASE_CA_CERT }}
+          AUTH_RATE_LIMIT_KEY: ${{ secrets.STAGING_AUTH_RATE_LIMIT_KEY }}

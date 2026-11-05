@@ -12,13 +12,15 @@ import { hashParentPassword, verifyParentPassword } from './identity/services/pa
 import { createRegistrationStore } from './identity/repositories/postgres-registration.js';
 import { createAuthAdmission } from './identity/repositories/auth-admission.js';
 import { createReadinessCheck } from './database/readiness.js';
+import { databaseOptions } from './shared/database-config.js';
+import { readRevision } from './shared/revision.js';
 
 export async function createApplication(env: NodeJS.ProcessEnv = process.env) {
   const config = readConfig(env);
   const pool = config.registrationEnabled
     ? new pg.Pool({
-        connectionString: config.databaseUrl,
-        max: 10,
+        ...databaseOptions(env),
+        max: env.VERCEL === '1' ? 4 : 10,
         connectionTimeoutMillis: 1000,
         statement_timeout: 3000,
       })
@@ -44,21 +46,40 @@ export async function createApplication(env: NodeJS.ProcessEnv = process.env) {
     registration,
     sessions,
     ready: pool ? await createReadinessCheck(pool) : undefined,
+    revision: await readRevision(),
   });
   // Idle connections can fail during a database restart without ending the HTTP process.
   pool?.on('error', () => app.log.error('Database connection unavailable'));
   app.addHook('onClose', async () => {
     await pool?.end();
   });
+  await registerWeb(app);
+  return app;
+}
+
+async function registerWeb(app: ReturnType<typeof buildApp>) {
   const webRoot = fileURLToPath(new URL('../../web/dist/', import.meta.url));
   if (existsSync(webRoot)) {
-    await app.register(fastifyStatic, { root: webRoot });
+    await app.register(fastifyStatic, { root: webRoot, cacheControl: false });
+    app.addHook('onSend', async (request, reply) => {
+      if (reply.getHeader('Cache-Control') === undefined) {
+        reply.header(
+          'Cache-Control',
+          request.url.startsWith('/assets/') && reply.statusCode === 200
+            ? 'public, max-age=31536000, immutable'
+            : 'no-cache',
+        );
+      }
+    });
     app.setNotFoundHandler((request, reply) => {
-      if (request.url.startsWith('/api/') || request.url.startsWith('/health/')) {
+      if (
+        request.url.startsWith('/api/') ||
+        request.url.startsWith('/health/') ||
+        request.url.startsWith('/assets/')
+      ) {
         return reply.code(404).send({ message: '没有找到这个接口' });
       }
       return reply.sendFile('index.html');
     });
   }
-  return app;
 }

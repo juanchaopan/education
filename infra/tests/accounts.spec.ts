@@ -20,16 +20,19 @@ test('failed migrations block startup and readiness; controlled migration is rep
   expect((await compose(['ps', '--status', 'running', '--services'])).output.trim()).toBe('db');
   // Deliberately bypass dependencies only in this destructive test: health must still fail closed.
   await compose(['up', '-d', '--no-deps', 'app-a', 'app-b', 'gateway']);
-  await expect
-    .poll(async () => {
-      try {
-        return (await request.get('/health/live')).status();
-      } catch {
-        return 0;
-      }
-    })
-    .toBe(200);
   for (const base of [origin, other]) {
+    await expect
+      .poll(
+        async () => {
+          try {
+            return (await request.get(`${base}/health/live`)).status();
+          } catch {
+            return 0;
+          }
+        },
+        { timeout: 30000 },
+      )
+      .toBe(200);
     expect((await request.get(`${base}/health/ready`)).status()).toBe(503);
     const result = await request.post(`${base}/api/v1/parents/register`, {
       headers: registrationHeaders,

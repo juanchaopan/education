@@ -44,7 +44,17 @@ try {
     { timeout: 600_000 },
   );
   process.stdout.write(result.output);
-  if (result.code !== 0) process.exitCode = 1;
+  if (result.code !== 0) {
+    const logs = await compose(['logs', '--no-color', 'app-a', 'app-b', 'gateway'], {
+      allowFailure: true,
+    });
+    process.stdout.write(
+      logs.output
+        .replaceAll(process.env.POSTGRES_PASSWORD, '[redacted]')
+        .replaceAll(process.env.AUTH_RATE_LIMIT_KEY, '[redacted]'),
+    );
+    process.exitCode = 1;
+  }
 } finally {
   try {
     await compose(['down', '-v', '--remove-orphans']);

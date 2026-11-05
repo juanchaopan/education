@@ -8,6 +8,13 @@ afterEach(async () => {
 });
 
 describe('framework HTTP contract', () => {
+  it('reports the immutable release revision without caching it', async () => {
+    const app = buildApp({ revision: 'a'.repeat(40) });
+    apps.push(app);
+    const response = await app.inject('/version.json');
+    expect(response.json()).toEqual({ revision: 'a'.repeat(40) });
+    expect(response.headers['cache-control']).toBe('no-store');
+  });
   it('serves an empty catalog, with no invented demo content', async () => {
     const app = buildApp();
     apps.push(app);
