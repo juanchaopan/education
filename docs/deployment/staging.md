@@ -84,3 +84,7 @@ GitHub 官方说明 GITHUB_TOKEN 引发的普通事件不会递归启动工作�
 发布前的只读就绪探测至多五次，每次最多五秒，间隔一秒；只有明确的 503 才重试。HTTP 200 还须匹配 ready 响应；持续失败、其他 HTTP 错误和网络失败均不发布。注册、登录、退出不重试。耗时记录包含 HTTP 状态，失败样本不能计为成功延迟。
 
 自定义域名曾仍归属旧探针项目，GitHub 发布 token 的 alias 请求返回 403。已通过 Vercel 官方 moveProjectDomain 原子接口将该子域名转交 education-staging，并保留原已验证 deployment 指向。运行 41975178909 随后使用 GitHub Actions 的 token 完成 Singapore 候选的迁移、账号冒烟和 alias 发布，API 读回与候选一致；此前的手工恢复不计作这次自动发布证据。Alias 错误可显示公共域名的提供商原因，包含环境变量的 deployment 错误仍只输出 HTTP 摘要。
+
+## #21 邮件配置
+
+真实发信独立受控，默认关闭；配置、供应商核实和正式验收步骤见 [家长验证邮件](mail.md)。即使后续启用，发布中的合成账号冒烟也不会调用 Gmail；注册本身不发信。新表随迁移启用 RLS 并撤销 anon/authenticated 权限。
