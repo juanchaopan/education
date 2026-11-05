@@ -1,0 +1,44 @@
+.navigation {
+  margin-top: var(--space-5);
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+}
+
+.filter {
+  display: grid;
+  gap: var(--space-2);
+  flex: 1 1 8rem;
+  min-width: 0;
+  color: var(--teal-dark);
+  font-weight: 700;
+}
+
+.filters select {
+  width: 100%;
+  min-height: var(--space-8);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--muted);
+  border-radius: var(--radius-sm);
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+}
+
+.problems {
+  display: grid;
+  gap: var(--space-2);
+  padding-inline-start: var(--space-5);
+  margin-block: var(--space-4) 0;
+}
+
+.problems a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--space-8);
+  color: var(--teal-dark);
+  font-weight: 700;
+}

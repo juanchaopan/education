@@ -1,10 +1,15 @@
+import { useSearchParams } from 'react-router-dom';
 import { useCatalog } from '../data-access/useCatalog';
 import { EmptyState } from '../../../shared/ui/EmptyState';
+import { CatalogNavigation } from '../components/CatalogNavigation';
 import { WelcomeHero, LearningPrinciples } from '../components/Welcome';
+import { changeCategory, selectCategory } from '../model';
 import styles from '../components/Library.module.css';
 
 export function LibraryPage() {
   const catalog = useCatalog();
+  const [query, setQuery] = useSearchParams();
+  const selection = catalog.data ? selectCategory(catalog.data, query) : null;
   return (
     <>
       <WelcomeHero />
@@ -39,19 +44,19 @@ export function LibraryPage() {
             }}
           />
         )}
-        {catalog.isSuccess && catalog.data.problems.length === 0 && (
+        {catalog.isSuccess && selection?.grade.options.length === 0 && (
           <EmptyState
             icon="✿"
             title="好问题，正在准备中"
             description="这里将放上可以说、可以画、可以动手探索的题目。准备好后，就能从这里出发。"
           />
         )}
-        {catalog.isSuccess && catalog.data.problems.length > 0 && (
-          <ul>
-            {catalog.data.problems.map((problem) => (
-              <li key={problem.id}>{problem.title}</li>
-            ))}
-          </ul>
+        {catalog.isSuccess && selection && selection.grade.options.length > 0 && (
+          <CatalogNavigation
+            selection={selection}
+            problems={selection.problems}
+            onChange={(level, value) => setQuery(changeCategory(selection, level, value))}
+          />
         )}
       </section>
       <LearningPrinciples />
