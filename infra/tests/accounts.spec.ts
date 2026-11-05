@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { expect, test } from '@playwright/test';
-import { compose, database } from '../../scripts/accounts-compose.mjs';
+import { command, compose, database } from '../../scripts/accounts-compose.mjs';
 
 const origin = `https://localhost:${process.env.ACCOUNTS_PORT_A ?? '8443'}`;
 const other = `https://localhost:${process.env.ACCOUNTS_PORT_B ?? '8444'}`;
@@ -47,6 +47,18 @@ test('failed migrations block startup and readiness; controlled migration is rep
   expect(await database('SELECT count(*) FROM drizzle.__drizzle_migrations;')).toBe(applied);
   for (const base of [origin, other])
     expect((await request.get(`${base}/health/ready`)).status()).toBe(200);
+});
+
+test('staged CA and TLS files are ignored by Git and absent from the runtime image', async () => {
+  expect((await command('git', ['check-ignore', process.env.ACCOUNTS_TLS_DIR!])).code).toBe(0);
+  await compose([
+    'exec',
+    '-T',
+    'app-a',
+    'node',
+    '-e',
+    "if(require('node:fs').readdirSync('/app/infra').some(name=>name.startsWith('.env.accounts-'))) process.exit(1)",
+  ]);
 });
 
 test('readiness checks the required migration and permits later additive migrations', async ({

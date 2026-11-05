@@ -1,10 +1,10 @@
 import { randomBytes } from 'node:crypto';
-import { mkdtemp, rm } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import { copyFile, mkdtemp, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { command, compose } from './accounts-compose.mjs';
 
-const directory = await mkdtemp(join(tmpdir(), 'education-accounts-'));
+// This directory is inside Bake's read boundary and excluded by Git and Docker's .env.* rules.
+const directory = await mkdtemp(join(process.cwd(), 'infra/.env.accounts-'));
 process.env.COMPOSE_PROJECT_NAME = `education-accounts-${randomBytes(6).toString('hex')}`;
 process.env.POSTGRES_PASSWORD = randomBytes(24).toString('hex');
 process.env.AUTH_RATE_LIMIT_KEY = randomBytes(32).toString('hex');
@@ -13,6 +13,9 @@ process.env.ACCOUNTS_PORT_A ??= '8443';
 process.env.ACCOUNTS_PORT_B ??= '8444';
 
 try {
+  const ca = join(directory, 'proxy-ca.pem');
+  await copyFile(process.env.CODEX_PROXY_CERT ?? '/etc/ssl/certs/ca-certificates.crt', ca);
+  process.env.CODEX_PROXY_CERT = ca;
   const certificate = await command('openssl', [
     'req',
     '-x509',
