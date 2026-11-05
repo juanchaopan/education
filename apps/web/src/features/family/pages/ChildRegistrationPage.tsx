@@ -40,7 +40,17 @@ export function ChildRegistrationPage() {
     <section aria-labelledby="child-title">
       <h1 id="child-title">孩子注册</h1>
       {receipt ? (
-        <ChildRegistrationSuccess receipt={receipt} />
+        <>
+          <ChildRegistrationSuccess receipt={receipt} />
+          <p>
+            <Link
+              to="/child"
+              state={{ familyCode: receipt.familyCode, nickname: receipt.nickname }}
+            >
+              去孩子登录
+            </Link>
+          </p>
+        </>
       ) : (
         <ChildRegistrationForm
           {...fields}

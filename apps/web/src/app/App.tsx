@@ -1,4 +1,5 @@
 import { ChildRegistrationPage } from '../features/family/pages/ChildRegistrationPage';
+import { ChildPage } from '../features/family/pages/ChildPage';
 import { RecoveryPage } from '../features/family/pages/RecoveryPage';
 import { ResetPasswordPage } from '../features/family/pages/ResetPasswordPage';
 import { VerifyEmailPage } from '../features/family/pages/VerifyEmailPage';
@@ -22,6 +23,7 @@ export function App() {
             探索题目
           </NavLink>
           <NavLink to="/family">家长空间</NavLink>
+          <NavLink to="/child">孩子空间</NavLink>
           <NavLink to="/join">孩子注册</NavLink>
         </nav>
       </header>
@@ -29,6 +31,7 @@ export function App() {
         <Routes>
           <Route path="/" element={<LibraryPage />} />
           <Route path="/family" element={<FamilyPage />} />
+          <Route path="/child" element={<ChildPage />} />
           <Route path="/join" element={<ChildRegistrationPage />} />
           <Route path="/family/recover" element={<RecoveryPage />} />
           <Route path="/family/reset" element={<ResetPasswordPage />} />

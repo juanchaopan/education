@@ -1,0 +1,11 @@
+.remember {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.remember input {
+  width: auto;
+  flex: 0 0 auto;
+  min-height: var(--space-6);
+  min-width: var(--space-6);
+}
