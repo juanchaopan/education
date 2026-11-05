@@ -40,8 +40,20 @@
 
 本轮先单独提交不改变家长认证预算行为的重构，再加入儿童兑换。按 open-pr 命令做本地简化、代码和安全检查；当前没有安装独立 simplify/code-review/security-review 技能，未声称调用过这些工具。实际 hosted CI、审查与合并结果以 PR 为准，不能用本地成功替代。
 
-本轮不修改 Vercel Singapore/sin1 或 Supabase us-east-1；不发布生产、不发真实邮件、不调用 AI。正式 staging 的生成 KEY → 儿童注册 → 回执和原 KEY 已使用状态，仍待合并发布后由维护者实际验收；没有宣称大陆完整链路可达或两秒达标。
+本轮不修改 Vercel Singapore/sin1 或 Supabase us-east-1；不发布生产、不发真实邮件、不调用 AI。正式 staging 的生成 KEY → 儿童注册 → 回执和原 KEY 已使用状态，仍待维护者实际验收；没有宣称大陆完整链路可达或两秒达标。
 
 ## 撤回
 
 撤回应用 PR 或将 staging alias 恢复至兼容同数据库的上一版本；保留新增表、列、家庭码和儿童记录，不执行破坏性 down migration。旧应用忽略新增字段。撤回时仍须在密码管理器中保留原 PIN_PEPPER；移除 GitHub Secret 会阻止后续 staging 发布，不能据此声称已停用线上入口。丢失原密钥将使已有 PIN 无法验证。回滚应用不等于回滚已消费的 KEY 或删除儿童。
+
+## 家长查看家庭码的补充
+
+维护者要求家庭码在家长页长期可查看、可复制，不让孩子或家长背新代码。家长现有 KEY 状态接口在验证当前家长所属家庭后，返回已分配的固定家庭码；还没有儿童成功注册时省略该字段，页面说明首次注册后显示。刷新、重新生成或撤销邀请 KEY 不改变家庭码。共享协议复用同一家庭码格式，展示组件仍不取数据；复制只在明确点击时写入剪贴板，失败可手动选取。家长页的展示见 [手机](family-code-mobile.png) / [桌面](family-code-desktop.png)；均为合成数据。此前未展示家庭码的家长 KEY 面板见 [#23 截图](../23/after-mobile.png)。
+
+补充验证：`npm run check` 通过（API 92、Web 15、工具链/工作流 23，含 TS7 和 Storybook）；真实 PostgreSQL 60 项通过，覆盖仅返回当前家庭的码及 KEY 替换后不变。桌面/移动定向浏览器 2 项通过，覆盖读取、复制和刷新保留。没有新增迁移、秘密或登录实现。#25 的日常体验应默认恢复登录；需要重新登录时带出家庭码/昵称，仅需填写 PIN，新设备由家长帮助一次，不保存明文 PIN。
+
+## 已发布版本与配置排查
+
+PR #75 已由维护者添加 human-reviewed 后自动 squash 合并为 `e870efe60a0eb4aa5dbe250aa723c47fa1f2fff6`；PR CI 42066392552、精确 main CI 42066930016 均成功。早先 staging 42066771933 / 42066885065 的工作流版本仍是旧 main，虽然 checkout 了新代码，却没有新 PIN_PEPPER 的 env 绑定，因而报告缺失；这不证明维护者的 Secret 配错。使用最新 main 手动派发 42068192275 后发布成功，无需重新生成密钥。
+
+实际 alias 读回为 READY deployment `dpl_GnJF1WSgD9KcvxSSVTkiRmqCx7kN`，region 为 sin1，revision 为上述 e870efe6，项目与稳定域名匹配。该版本包含儿童注册，尚不包含本次家长页家庭码补充；补充需独立 PR 审查、合并和发布。可选 Claude/security jobs 为 skipped，不能称为独立审查通过。真实家庭注册验收尚待维护者确认。
