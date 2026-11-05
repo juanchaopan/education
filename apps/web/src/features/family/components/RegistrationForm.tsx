@@ -80,7 +80,7 @@ export function RegistrationForm(props: RegistrationFormProps) {
             <button type="submit" disabled={props.pending || !props.available}>
               {props.pending ? '正在保存，请稍等…' : '提交注册'}
             </button>
-            <p className={styles.hint}>此阶段只保存待验证账号，尚未开放家庭管理和孩子注册。</p>
+            <p className={styles.hint}>家长验证邮箱并登录后，可以生成 KEY，邀请孩子加入家庭。</p>
           </form>
         )}
       </section>

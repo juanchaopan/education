@@ -9,6 +9,7 @@ function server(port: number) {
     reuseExistingServer: false,
     env: {
       APP_ORIGIN: origin(port),
+      PIN_PEPPER: 'ab'.repeat(32),
       REGISTRATION_ENABLED: process.env.DATABASE_URL ? 'true' : 'false',
       // Independent suites do not consume each other's real authentication budgets.
       AUTH_RATE_LIMIT_KEY: randomBytes(32).toString('hex'),
