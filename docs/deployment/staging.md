@@ -29,11 +29,11 @@ Vercel 测试项目关闭默认登录保护，让不携带平台登录 cookie �
 
 项目编号、Vercel project/team ID 与域名已有工作流默认值；如更换资源，可通过同名 Repository variables 覆盖 `STAGING_SUPABASE_PROJECT_REF`、`STAGING_VERCEL_PROJECT_ID`、`STAGING_VERCEL_TEAM_ID`、`STAGING_ORIGIN`。不能将这些变量指向生产。GitHub App 当前无读取/设置 Actions secrets 的权限，必须由维护者安全配置。
 
-5. 代码审查合入 main、资源和上述秘密准备好后，在 [Actions variables](https://github.com/juanchaopan/education/settings/variables/actions) 设置 Repository variable **`STAGING_ENABLED=true`**。之后每次 main 的 `ci` 成功会自动触发；首次可在 Actions → staging → Run workflow 运行。手动触发仍检查当前 main 已通过 CI，不能部署任意分支或跳过 CI。变量未启用时，工作流只写明“未尝试部署”，不是部署成功。
+5. 代码审查合入 main、资源和上述秘密准备好后，在 [Actions variables](https://github.com/juanchaopan/education/settings/variables/actions) 设置 Repository variable **`STAGING_ENABLED=true`**。之后每次 main 的 `ci` 成功会自动触发；首次可在 Actions → staging → Run workflow 运行。首次手动触发时，如当前 main 尚无 CI，会先显式派发完整 CI；CI 成功后另一次 staging 运行才发布。不能部署任意分支或跳过 CI。变量未启用时，工作流只写明“未尝试部署”，不是部署成功。
 
 ## 发布流程与失败处理
 
-1. `workflow_run` 仅接受本仓库 main 的成功 push CI；手动运行也从 API 查询成功记录。检出精确 SHA，安装和构建步骤不接收部署秘密。发布步骤读取秘密，并再次确认 main 和工作区没有变化。
+1. `workflow_run` 监听本仓库 ci、ai-review、commits 的成功运行；PR 事件必须关联到已经合并 main 的同仓库、同 head SHA。准备任务只检出可信 main，用 API 选择当前 main 的精确 SHA；缺少检查时以 workflow_dispatch 显式派发真实 CI，正在运行或失败时不发布，也不把 PR 成功套用到 squash 提交。准备任务仅为派发 CI 获得 actions:write；部署任务仍是 actions:read。main 的 push 或显式派发 CI 成功后，才检出准确 SHA 安装/构建；这些步骤不接收部署秘密。发布步骤读取秘密，并再次确认 main 和工作区没有变化。
 2. 仅上传明确允许的 Git 跟踪源文件；不上传 `.env`、本地文件、证书、测试结果或文档截图。Vercel 运行 `npm run build:staging`，将 SHA 写入构建内的 `release.json`。函数复用容器的 Fastify 组装，无第二套账号实现。SQL 迁移文件及版本文件明确包含在函数产物内；SPA HTML 和散列资源由 Vercel 静态路由提供，不在函数中加载静态服务器插件。
 3. 等待候选构建 READY。先撤销迁移角色对 anon/authenticated 的默认表和序列授权，再单独运行迁移，随后对七张应用表启用 RLS 并撤销两角色的表权限。匿名 Supabase Data API 不能代替应用 API 访问账号表；运行时凭据只交服务端。
 4. 对精确候选 URL 检查版本、数据库就绪、注册、登录、读取会话、退出和旧 cookie 拒绝。仅生成随机 `@example.invalid` 合成账号，不发送邮件。finally 定向删除该账号所属且没有其他成员的测试家庭；失败时不清空其他账号或限流表。网络故障后需核对是否有未完成的合成账号清理。
@@ -65,3 +65,7 @@ Vercel 支持 PR 预览，但当前选用的 Supabase 分支文档明确按分�
 关闭 `STAGING_ENABLED` 可停止后续自动部署。将 staging alias 恢复至已记录的上一可用 deployment，并核对 `/version.json`。不要仅 revert Git 就宣称已回滚线上；不要删除 Supabase 项目或执行全库清理来撤回应用。初始旧探针为 `dpl_4HWHQJKv6nUYfwR6zfAP5nvVoL4G`，它不是正式账号应用；一旦新 staging 产生持久数据，应选择兼容同一数据库的应用版本。
 
 官方来源及日期、实际验证和未完成项见 [#20 证据](../evidence/20/README.md)。
+
+## 自动合并与 GitHub 事件
+
+GitHub 官方说明 GITHUB_TOKEN 引发的普通事件不会递归启动工作流，workflow_dispatch/repository_dispatch 是例外。PR #60 的 bot squash 合并已实际出现 main 无 push CI 的情况；不能只等 push。当前通过可信工作流完成事件解析已合并 PR，再显式派发 main CI；未合并、外仓库、旧 SHA、待完成或失败检查均不能直接进入发布。手动 staging 可在失败后重试完整 CI，自动事件不循环重跑失败检查。

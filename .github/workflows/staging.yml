@@ -1,8 +1,7 @@
 name: staging
 on:
   workflow_run:
-    workflows: [ci]
-    branches: [main]
+    workflows: [ci, ai-review, commits]
     types: [completed]
   workflow_dispatch:
 permissions:
@@ -17,38 +16,50 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: echo 'Staging is not enabled. Configure the dedicated project and credentials described in docs/deployment/staging.md; no deployment was attempted.' >> "$GITHUB_STEP_SUMMARY"
-  deploy:
+  prepare:
+    permissions:
+      contents: read
+      actions: write
     if: >-
       vars.STAGING_ENABLED == 'true' &&
       (github.event_name == 'workflow_dispatch' ||
       (github.event.workflow_run.conclusion == 'success' &&
-      github.event.workflow_run.event == 'push' &&
       github.event.workflow_run.head_repository.full_name == github.repository))
     runs-on: ubuntu-latest
-    timeout-minutes: 20
-    environment: staging
+    outputs:
+      sha: ${{ steps.release.outputs.sha }}
+      ready: ${{ steps.release.outputs.ready }}
     steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          persist-credentials: false
       - name: Select the exact passing main commit
         id: release
         uses: actions/github-script@v9
         with:
           script: |
-            const { owner, repo } = context.repo;
-            const { data: branch } = await github.rest.repos.getBranch({ owner, repo, branch: 'main' });
-            const sha = branch.commit.sha;
-            if (context.eventName === 'workflow_run' && context.payload.workflow_run.head_sha !== sha) {
-              throw new Error('Superseded main run; no deployment attempted');
-            }
-            const { data } = await github.rest.actions.listWorkflowRuns({
-              owner, repo, workflow_id: 'ci.yml', branch: 'main', head_sha: sha, event: 'push', status: 'success', per_page: 10
+            const { prepareMainRelease } = await import(`${process.env.GITHUB_WORKSPACE}/scripts/staging-trigger.mjs`);
+            const result = await prepareMainRelease({
+              api: github.rest, ...context.repo, eventName: context.eventName, payload: context.payload,
+              wait: ms => new Promise(resolve => setTimeout(resolve, ms)),
             });
-            if (!data.workflow_runs.some(run => run.head_sha === sha && run.conclusion === 'success')) {
-              throw new Error('Main has no successful CI run');
-            }
-            core.setOutput('sha', sha);
+            core.setOutput('sha', result.sha ?? '');
+            core.setOutput('ready', String(result.ready));
+            await core.summary.addRaw(`Staging gate: ${result.reason}; no release until exact-main CI passes.\n`).write();
+  deploy:
+    needs: prepare
+    if: needs.prepare.outputs.ready == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: staging
+    permissions:
+      contents: read
+      actions: read
+    steps:
       - uses: actions/checkout@v7
         with:
-          ref: ${{ steps.release.outputs.sha }}
+          ref: ${{ needs.prepare.outputs.sha }}
           persist-credentials: false
       - uses: actions/setup-node@v7
         with:
@@ -60,7 +71,7 @@ jobs:
         run: node scripts/deploy-staging.mjs
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_SHA: ${{ steps.release.outputs.sha }}
+          RELEASE_SHA: ${{ needs.prepare.outputs.sha }}
           STAGING_DATABASE: 'true'
           STAGING_SUPABASE_PROJECT_REF: ${{ vars.STAGING_SUPABASE_PROJECT_REF || 'telkaiyxprpetmqthyhn' }}
           STAGING_ORIGIN: ${{ vars.STAGING_ORIGIN || 'https://education-access-spike.hyp.app' }}
