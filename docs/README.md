@@ -45,3 +45,5 @@
 [ADR-0011](adr/0011-openai-tutoring-model-spike.md)：#27 采用 GPT-6 Luna（关闭推理）作为试点模型。合成文字与绘图后端对比通过，实际接入与大陆完整链路仍待验收。
 
 [#29 作答一致性与删除恢复](adr/0005-data-consistency.md) 已通过本机 PostgreSQL 探针。试点采用作答重试去重、草稿冲突提示和删除清单恢复流程。备份保留 14 天、恢复时普通业务数据最多丢失 24 小时、4 小时恢复和在线数据 24 小时内清理是待实测目标。[演练证据](adr/assets/0029-answer-consistency-recovery-evidence.md)
+
+[ADR-0012](adr/0012-browser-voice-touch-spike.md)：#28 接受 GPT-Transcribe 试点语音转写及 Pointer Events 绘图。正式朗读的普通话声音交 #42 试听验收；iPad 和大陆端到端验证交 #51。

@@ -1164,7 +1164,7 @@ REQ-003、REQ-004；见 [产品需求](product/requirements.md)、[架构总览]
 
 ### 验收标准
 
-- [ ] Given 可用中文朗读能力，When 点重听，Then 播放当前步骤且不会叠音。
+- [ ] Given 当前步骤有已试听通过、适合儿童的普通话音频，When 点重听，Then 播放当前步骤且不会叠音。自然的 AI 声音可在试听通过后使用，见 [ADR-0012](adr/0012-browser-voice-touch-spike.md)。
 - [ ] Given 缺少语音或步骤切换，Then 显示文字并停止过期播放；若方案使用外部服务须遵守 [#37](https://github.com/juanchaopan/education/issues/37)/[#39](https://github.com/juanchaopan/education/issues/39) 的授权与用量控制。
 
 ### 涉及的组件
