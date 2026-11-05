@@ -1,3 +1,4 @@
+import { FamilyCodePanel } from './FamilyCodePanel';
 import type { RegistrationKeyStatus } from '@education/contracts';
 import { useState } from 'react';
 import { RegistrationKeyCard } from '../components/RegistrationKeyCard';
@@ -40,42 +41,50 @@ export function RegistrationKeyPanel({ csrf }: { csrf: string }) {
     }
   };
   return (
-    <RegistrationKeyCard
-      status={status.isError ? undefined : status.data}
-      loading={status.isFetching}
-      pending={pending}
-      error={errorMessage(manage.error, status.error) || confirmationError}
-      value={value}
-      password={password}
-      copyNotice={copyNotice}
-      onPasswordChange={setPassword}
-      onCopy={() => {
-        void copy();
-      }}
-      onGenerate={() => change({ type: 'generate' })}
-      onRevoke={() => {
-        if (status.data?.key) change({ type: 'revoke', id: status.data.key.id });
-      }}
-      onRefresh={() => {
-        clear();
-        manage.reset();
-        confirm.reset();
-        setConfirmationError('');
-        void status.refetch();
-      }}
-      onConfirm={() => {
-        if (pending) return;
-        clear();
-        setConfirmationError('');
-        confirm.mutate(password, {
-          onError: (error) => setConfirmationError(error.message),
-          onSettled: () => {
-            setPassword('');
-            confirm.reset();
-          },
-        });
-      }}
-    />
+    <>
+      <FamilyCodePanel
+        key={status.data?.familyCode}
+        code={status.isSuccess && !status.isFetching ? status.data.familyCode : undefined}
+        loading={status.isFetching}
+        failed={status.isError}
+      />
+      <RegistrationKeyCard
+        status={status.isError ? undefined : status.data}
+        loading={status.isFetching}
+        pending={pending}
+        error={errorMessage(manage.error, status.error) || confirmationError}
+        value={value}
+        password={password}
+        copyNotice={copyNotice}
+        onPasswordChange={setPassword}
+        onCopy={() => {
+          void copy();
+        }}
+        onGenerate={() => change({ type: 'generate' })}
+        onRevoke={() => {
+          if (status.data?.key) change({ type: 'revoke', id: status.data.key.id });
+        }}
+        onRefresh={() => {
+          clear();
+          manage.reset();
+          confirm.reset();
+          setConfirmationError('');
+          void status.refetch();
+        }}
+        onConfirm={() => {
+          if (pending) return;
+          clear();
+          setConfirmationError('');
+          confirm.mutate(password, {
+            onError: (error) => setConfirmationError(error.message),
+            onSettled: () => {
+              setPassword('');
+              confirm.reset();
+            },
+          });
+        }}
+      />
+    </>
   );
 }
 

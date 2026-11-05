@@ -318,3 +318,15 @@ it('rotates the secure cookie after HTTP reauthentication and invalidates the pr
     await app.close();
   }
 });
+
+it('returns only the verified parent family code and preserves it when KEYs are replaced', async () => {
+  const a = await fixture();
+  const b = await fixture();
+  expect((await a.keys.read(a.login.token, 'ip')).familyCode).toBeUndefined();
+  await pool.query("UPDATE families SET code='ABCDEFGHJKMN' WHERE id=$1", [a.family]);
+  expect((await a.keys.read(a.login.token, 'ip')).familyCode).toBe('ABCD-EFGH-JKMN');
+  expect((await b.keys.read(b.login.token, 'ip')).familyCode).toBeUndefined();
+  await a.generate();
+  await a.generate();
+  expect((await a.keys.read(a.login.token, 'ip')).familyCode).toBe('ABCD-EFGH-JKMN');
+});

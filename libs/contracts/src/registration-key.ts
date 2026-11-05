@@ -1,3 +1,4 @@
+import { FamilyCode } from './family.js';
 import { Type, type Static } from '@sinclair/typebox';
 export const ParentReauthentication = Type.Object(
   { password: Type.String({ minLength: 1, maxLength: 128 }) },
@@ -17,7 +18,11 @@ export const RegistrationKeyInfo = Type.Object(
 );
 export type RegistrationKeyInfo = Static<typeof RegistrationKeyInfo>;
 export const RegistrationKeyStatus = Type.Object(
-  { key: Type.Union([RegistrationKeyInfo, Type.Null()]), reauthenticationRequired: Type.Boolean() },
+  {
+    key: Type.Union([RegistrationKeyInfo, Type.Null()]),
+    reauthenticationRequired: Type.Boolean(),
+    familyCode: Type.Optional(FamilyCode),
+  },
   { additionalProperties: false },
 );
 export type RegistrationKeyStatus = Static<typeof RegistrationKeyStatus>;
