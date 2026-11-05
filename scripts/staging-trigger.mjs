@@ -30,9 +30,7 @@ async function triggerProblem(options) {
   return undefined;
 }
 
-export async function prepareMainRelease(options) {
-  const problem = await triggerProblem(options);
-  if (problem) return { ready: false, reason: problem };
+async function readMainCi(options) {
   const scope = { owner: options.owner, repo: options.repo };
   const { data: branch } = await options.api.repos.getBranch({ ...scope, branch: 'main' });
   const sha = branch.commit.sha;
@@ -49,15 +47,38 @@ export async function prepareMainRelease(options) {
       run.head_branch === 'main' &&
       ['push', 'workflow_dispatch'].includes(run.event),
   );
+  return { sha, latest, afterRunId: latest?.id ?? 0 };
+}
+
+export async function selectMainRelease(options) {
+  const problem = await triggerProblem(options);
+  if (problem) return { ready: false, reason: problem };
+  const { sha, latest, afterRunId } = await readMainCi(options);
   if (latest?.status === 'completed' && latest.conclusion === 'success')
     return { sha, ready: true, reason: 'ci-passed' };
   if (latest && latest.status !== 'completed') return { sha, ready: false, reason: 'ci-running' };
   if (latest && options.eventName !== 'workflow_dispatch')
     return { sha, ready: false, reason: 'ci-failed' };
   await options.api.actions.createWorkflowDispatch({
-    ...scope,
+    owner: options.owner,
+    repo: options.repo,
     workflow_id: 'ci.yml',
     ref: 'main',
   });
-  return { sha, ready: false, reason: 'ci-dispatched' };
+  return { sha, ready: false, reason: 'ci-dispatched', afterRunId };
+}
+
+export async function prepareMainRelease(options) {
+  const selected = await selectMainRelease(options);
+  if (!['ci-dispatched', 'ci-running'].includes(selected.reason)) return selected;
+  for (let attempt = 0; attempt < 60; attempt++) {
+    const { sha, latest } = await readMainCi(options);
+    if (sha !== selected.sha) return { sha, ready: false, reason: 'superseded' };
+    if (latest && latest.id > (selected.afterRunId ?? 0) && latest.status === 'completed') {
+      if (latest.conclusion !== 'success') throw new Error('Main CI failed; staging not released');
+      return { sha, ready: true, reason: 'ci-passed' };
+    }
+    await options.wait(10000);
+  }
+  throw new Error('Timed out waiting for main CI; staging not released');
 }

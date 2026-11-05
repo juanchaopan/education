@@ -17,7 +17,7 @@ Vercel 测试项目关闭默认登录保护，让不携带平台登录 cookie �
 
 1. 确认 Supabase 是本项目专用的 staging 项目，没有其他业务和真实用户数据。此流程会修改本项目 `public` 应用表权限和当前迁移角色的默认权限，不能指向共用/生产项目。
 2. Supabase Dashboard → Connect → **Session pooler**，复制 PostgreSQL 连接串，端口 **5432**，填入实际密码。密码中的特殊字符须按 URL 编码；使用 `?sslmode=verify-full`。本应用的会话级 advisory lock 不兼容 Transaction pooler/6543。IPv6 直连也可用，但 GitHub runner 未必有 IPv6；推荐 Session pooler。
-3. 从 Supabase Database settings 的 SSL 区域下载该项目根证书；如系统根证书不信任它，将 PEM 全文放进下表证书配置。保持证书验证，不能改用 no-verify/disable。
+3. 从 Supabase Database settings 的 SSL 区域下载该项目根证书；本项目实际连接已出现 self-signed certificate in certificate chain，必须将下载的 PEM 全文放进下表证书配置。保持证书验证，不能改用 no-verify/disable。
 4. 在 [GitHub Actions secrets](https://github.com/juanchaopan/education/settings/secrets/actions) 配置服务端秘密；这里不使用 ChatGPT 环境中的秘密绑定，也不将值发到聊天或写进 Git。
 
 | Repository secret             | 内容                                                             |
@@ -25,11 +25,11 @@ Vercel 测试项目关闭默认登录保护，让不携带平台登录 cookie �
 | `STAGING_VERCEL_TOKEN`        | 能管理上述 staging 项目的 Vercel token，按期更新；不会发往浏览器 |
 | `STAGING_DATABASE_URL`        | 上述专用 Supabase PostgreSQL 连接串，含密码、5432、verify-full   |
 | `STAGING_AUTH_RATE_LIMIT_KEY` | 密码管理器生成的至少 32 字符随机值，跨部署保持一致               |
-| `STAGING_DATABASE_CA_CERT`    | 可选：Supabase 下载的 PEM 根证书全文；不是数据库密码             |
+| `STAGING_DATABASE_CA_CERT`    | 本项目必需：Supabase 下载的 PEM 根证书全文；不是数据库密码       |
 
 项目编号、Vercel project/team ID 与域名已有工作流默认值；如更换资源，可通过同名 Repository variables 覆盖 `STAGING_SUPABASE_PROJECT_REF`、`STAGING_VERCEL_PROJECT_ID`、`STAGING_VERCEL_TEAM_ID`、`STAGING_ORIGIN`。不能将这些变量指向生产。GitHub App 当前无读取/设置 Actions secrets 的权限，必须由维护者安全配置。
 
-5. 代码审查合入 main、资源和上述秘密准备好后，在 [Actions variables](https://github.com/juanchaopan/education/settings/variables/actions) 设置 Repository variable **`STAGING_ENABLED=true`**。之后每次 main 的 `ci` 成功会自动触发；首次可在 Actions → staging → Run workflow 运行。首次手动触发时，如当前 main 尚无 CI，会先显式派发完整 CI；CI 成功后另一次 staging 运行才发布。不能部署任意分支或跳过 CI。变量未启用时，工作流只写明“未尝试部署”，不是部署成功。
+5. 代码审查合入 main、资源和上述秘密准备好后，在 [Actions variables](https://github.com/juanchaopan/education/settings/variables/actions) 设置 Repository variable **`STAGING_ENABLED=true`**。之后每次 main 的 `ci` 成功会自动触发；首次可在 Actions → staging → Run workflow 运行。首次手动触发时，如当前 main 尚无 CI，会先显式派发完整 CI；当前 staging 准备任务会有界等待 CI 成功，再在同一次运行中继续发布，不依赖递归完成回调。不能部署任意分支或跳过 CI。变量未启用时，工作流只写明“未尝试部署”，不是部署成功。
 
 ## 发布流程与失败处理
 
@@ -69,3 +69,5 @@ Vercel 支持 PR 预览，但当前选用的 Supabase 分支文档明确按分�
 ## 自动合并与 GitHub 事件
 
 GitHub 官方说明 GITHUB_TOKEN 引发的普通事件不会递归启动工作流，workflow_dispatch/repository_dispatch 是例外。PR #60 的 bot squash 合并已实际出现 main 无 push CI 的情况；不能只等 push。当前通过可信工作流完成事件解析已合并 PR，再显式派发 main CI；未合并、外仓库、旧 SHA、待完成或失败检查均不能直接进入发布。手动 staging 可在失败后重试完整 CI，自动事件不循环重跑失败检查。
+
+准备任务等待 CI 最多十分钟，整个准备 job 最多十五分钟。检查失败、超时或等待期间 main 更新均不发布。手动重试会区分旧失败 run 与新 run，不能在新检查出现之前误用旧结果。发布错误以转义后的 GitHub annotation 输出，便于在日志下载受限时通过 API 读取原因，不输出秘密值。

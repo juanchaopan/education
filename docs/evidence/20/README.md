@@ -52,3 +52,11 @@ PR #60 已经维护者 human-reviewed 后由 app/github-actions squash 合并，
 [GitHub 官方规则](https://github.com/github/docs/blob/main/data/reusables/actions/actions-do-not-trigger-workflows.md) 明确 GITHUB_TOKEN 普通事件不递归触发，workflow_dispatch/repository_dispatch 是例外。本任务补充 CI 手动派发入口，staging 从可信 main 查询已合并 PR 与精确 SHA，派发真实 main CI 并等待成功，再发布；不增加 PAT、不放宽分支保护、不自加人工确认标签。
 
 新增九项触发测试：bot merge 缺少 push CI、精确 main 成功、排队/运行/失败、未合并、外仓库、手动重试与旧/PR 成功拒绝。与原有部署/函数测试共 20 项通过；完整常规检查和 0 clones 验证继续执行。实际 main CI 与数据库发布仍待这项修复合入后的线上运行，不提前勾选 #20 验收。
+
+## main CI 与首次数据库发布尝试
+
+显式 staging 运行 41967486004 成功派发 main 的真实 CI 41967500357，精确提交为 `b100d2d3bff307a211dda3782d1f347ee92d163e`；app、accounts、duplication、ci 均成功。未观测到随后自动创建的 staging 完成回调运行，因此将等待 CI 与继续发布收拢到同一个 staging 准备任务，不再依赖递归完成事件。
+
+显式继续运行 41968154844：prepare、安装和构建成功，发布步骤失败。维护者提供安全错误行 `Staging release failed: self-signed certificate in certificate chain`。这说明当前 Supabase 连接还需要官方根证书；要求下载并安全配置 STAGING_DATABASE_CA_CERT，不关闭 TLS 验证。数据库/alias 验收仍未通过。
+
+等待流程新增六项用例：同一次运行等待后继续、复用进行中 CI、新 CI 失败、旧失败与新 run 区分、main 更新与超时；staging 相关共 26 项通过。CI 等待超时有明确上限，失败不产生发布许可。后续发布错误增加安全 GitHub annotation，避免必须下载被环境代理阻止的完整日志。

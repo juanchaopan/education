@@ -17,6 +17,7 @@ jobs:
     steps:
       - run: echo 'Staging is not enabled. Configure the dedicated project and credentials described in docs/deployment/staging.md; no deployment was attempted.' >> "$GITHUB_STEP_SUMMARY"
   prepare:
+    timeout-minutes: 15
     permissions:
       contents: read
       actions: write

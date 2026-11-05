@@ -94,6 +94,10 @@ async function deploy() {
 try {
   await deploy();
 } catch (error) {
-  console.error(`Staging release failed: ${error.message}`);
+  const message = error.message
+    .replaceAll('%', '%25')
+    .replaceAll('\r', '%0D')
+    .replaceAll('\n', '%0A');
+  console.error(`::error::Staging release failed: ${message}`);
   process.exitCode = 1;
 }
