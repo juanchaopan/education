@@ -12,7 +12,7 @@ type Row = VerificationDraft & {
 };
 const cleanup = `UPDATE email_verifications SET payload=NULL,
   status=CASE WHEN consumed_at IS NOT NULL THEN 'verified' WHEN expires_at<=now() THEN 'expired' ELSE 'unknown' END
-  WHERE parent_id=$1 AND (expires_at<=now() OR consumed_at IS NOT NULL OR
+  WHERE parent_id=(SELECT id FROM parents WHERE email=$1) AND (expires_at<=now() OR consumed_at IS NOT NULL OR
     (status='sending' AND last_attempt_at<=now()-interval '60 seconds')) AND status NOT IN ('verified','expired')`;
 
 export function createVerificationRepository(pool: pg.Pool): VerificationRepository {
@@ -27,7 +27,7 @@ export function createVerificationRepository(pool: pg.Pool): VerificationReposit
         ).rows[0];
         if (!parent || parent.email_verified)
           throw new RequestError(409, '邮箱已验证或账号不可用，请刷新账号状态。');
-        await client.query(cleanup, [parent.id]);
+        await client.query(cleanup, [email]);
         const current = (
           await client.query<Row>(
             `SELECT id, token_hash AS "tokenHash", payload, status, attempts,
@@ -106,10 +106,7 @@ async function consume(pool: pg.Pool, hash: string) {
 
 function createStatusReader(pool: pg.Pool) {
   return async (email: string) => {
-    await pool.query(
-      cleanup.replace('parent_id=$1', 'parent_id=(SELECT id FROM parents WHERE email=$1)'),
-      [email],
-    );
+    await pool.query(cleanup, [email]);
     const row = (
       await pool.query<VerificationStatus>(
         `SELECT true AS enabled,
