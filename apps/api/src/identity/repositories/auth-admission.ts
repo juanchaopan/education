@@ -60,16 +60,17 @@ async function claimSlot(client: pg.PoolClient) {
 export function createAuthAdmission(pool: pg.Pool, secret: string): AuthAdmission {
   let active = 0;
   const bucket = (value: string) => createHmac('sha256', secret).update(value).digest('hex');
-  return async (work, email, source) => {
+  return async (work, email, source, scope = 'authentication') => {
     if (active >= 2) throw busy();
     active++;
     let client: pg.PoolClient | undefined;
     try {
       client = await pool.connect();
+      const prefix = scope === 'recovery' ? 'recovery:' : '';
       await reserveBudget(client, [
-        bucket('authentication'),
-        bucket(`ip:${sourceGroup(source)}`),
-        ...(email ? [bucket(`email:${email}`)] : []),
+        bucket(`${prefix}authentication`),
+        bucket(`${prefix}ip:${sourceGroup(source)}`),
+        ...(email ? [bucket(`${prefix}email:${email}`)] : []),
       ]);
       await claimSlot(client);
       return await work();

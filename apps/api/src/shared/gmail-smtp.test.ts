@@ -1,4 +1,4 @@
-import { verificationEmail } from './verification-email.js';
+import { recoveryEmail } from './recovery-email.js';
 import { afterAll, beforeAll, expect, it } from 'vitest';
 import { SMTPServer } from 'smtp-server';
 import nodemailer from 'nodemailer';
@@ -83,7 +83,7 @@ it.each([
     const port = (server.server.address() as AddressInfo).port;
     const sender = createGmailSender(
       { user: 'sender@gmail.com', password: 'test' },
-      (token) => verificationEmail('https://school.example', token),
+      (token) => recoveryEmail('https://school.example', token),
       () =>
         nodemailer.createTransport({
           host: '127.0.0.1',
@@ -99,6 +99,7 @@ it.each([
       if (mode === 'accept') {
         const message = Buffer.concat(chunks).toString();
         expect(message).toContain('Content-Type: multipart/alternative;');
+        expect(message).toContain('/family/reset');
         expect(message).toContain('Content-Type: text/plain; charset=utf-8');
         expect(message).toContain('Content-Type: text/html; charset=utf-8');
       }

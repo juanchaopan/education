@@ -1,3 +1,5 @@
+import { registerRecovery } from './identity/routes/recovery.js';
+import type { RecoveryService } from './identity/services/recovery.js';
 import { registerVerification } from './identity/routes/verification.js';
 import type { VerificationService } from './identity/services/verification.js';
 import { registerParentSessions } from './identity/routes/session.js';
@@ -16,6 +18,7 @@ export function buildApp(
     registration?: RegistrationService;
     sessions?: SessionService;
     verification?: VerificationService;
+    recovery?: RecoveryService;
     ready?: () => Promise<boolean>;
     revision?: string;
   } = {},
@@ -56,6 +59,7 @@ export function buildApp(
     sessions: options.sessions,
     verification: options.verification,
   });
+  registerRecovery(app, options.origin ?? 'http://127.0.0.1:5173', options.recovery);
   registerErrors(app);
   return app;
 }

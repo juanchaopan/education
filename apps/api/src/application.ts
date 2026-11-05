@@ -1,3 +1,6 @@
+import { createRecoveryService } from './identity/services/recovery.js';
+import { createRecoveryRepository } from './identity/repositories/postgres-recovery.js';
+import { recoveryEmail } from './shared/recovery-email.js';
 import { verificationEmail } from './shared/verification-email.js';
 import { readMailConfig } from './shared/mail-config.js';
 import { createMailPayload } from './shared/mail-payload.js';
@@ -52,6 +55,7 @@ export async function createApplication(env: NodeJS.ProcessEnv = process.env) {
     registration,
     sessions,
     verification: createVerification(pool, mailConfig, admit),
+    recovery: createRecovery(pool, mailConfig, admit),
     ready: pool ? await createReadinessCheck(pool) : undefined,
     revision: await readRevision(),
   });
@@ -102,6 +106,21 @@ function createVerification(
     admit: admit!,
     repository: createVerificationRepository(pool),
     sender: createGmailSender(config, (token) => verificationEmail(config.origin, token)),
+    payload: createMailPayload(config.payloadKey),
+  });
+}
+
+function createRecovery(
+  pool: pg.Pool | undefined,
+  config: ReturnType<typeof readMailConfig>,
+  admit: ReturnType<typeof createAuthAdmission> | undefined,
+) {
+  if (!pool || !config || !admit) return undefined;
+  return createRecoveryService({
+    repository: createRecoveryRepository(pool),
+    admit: (work, email, source) => admit(work, email, source, 'recovery'),
+    hash: hashParentPassword,
+    sender: createGmailSender(config, (token) => recoveryEmail(config.origin, token)),
     payload: createMailPayload(config.payloadKey),
   });
 }

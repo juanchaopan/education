@@ -118,7 +118,9 @@ it('enforces global hash slots and releases a slot after a failing operation', a
     for (const [slot, client] of clients.entries())
       await client.query('SELECT pg_advisory_lock(1718,$1)', [slot]);
     const admit = createAuthAdmission(pool, randomUUID());
-    await expect(admit(async () => {}, email(), 'ip')).rejects.toMatchObject({ statusCode: 429 });
+    await expect(admit(async () => {}, email(), 'ip', 'recovery')).rejects.toMatchObject({
+      statusCode: 429,
+    });
   } finally {
     for (const client of clients) client.release(true);
   }
@@ -151,10 +153,20 @@ it('rejects excess local work without an unbounded hash queue', async () => {
   );
   try {
     await Promise.all(started.map((signal) => signal.promise));
-    await expect(admit(async () => {}, email(), 'ip')).rejects.toMatchObject({ statusCode: 429 });
+    await expect(admit(async () => {}, email(), 'ip', 'recovery')).rejects.toMatchObject({
+      statusCode: 429,
+    });
   } finally {
     release.resolve();
     await Promise.all(work);
   }
   expect(await admit(async () => 'ready', email(), 'ip')).toBe('ready');
+});
+
+it('recovery has independent attempt budgets while sharing the same resource admission gate', async () => {
+  const admit = createAuthAdmission(pool, randomUUID());
+  const account = email();
+  for (let i = 0; i < 10; i++) await admit(async () => {}, account, 'ip');
+  await expect(admit(async () => {}, account, 'ip')).rejects.toMatchObject({ statusCode: 429 });
+  expect(await admit(async () => 'recover', account, 'ip', 'recovery')).toBe('recover');
 });
