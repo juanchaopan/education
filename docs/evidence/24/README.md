@@ -57,3 +57,9 @@
 PR #75 已由维护者添加 human-reviewed 后自动 squash 合并为 `e870efe60a0eb4aa5dbe250aa723c47fa1f2fff6`；PR CI 42066392552、精确 main CI 42066930016 均成功。早先 staging 42066771933 / 42066885065 的工作流版本仍是旧 main，虽然 checkout 了新代码，却没有新 PIN_PEPPER 的 env 绑定，因而报告缺失；这不证明维护者的 Secret 配错。使用最新 main 手动派发 42068192275 后发布成功，无需重新生成密钥。
 
 实际 alias 读回为 READY deployment `dpl_GnJF1WSgD9KcvxSSVTkiRmqCx7kN`，region 为 sin1，revision 为上述 e870efe6，项目与稳定域名匹配。该版本包含儿童注册，尚不包含本次家长页家庭码补充；补充需独立 PR 审查、合并和发布。可选 Claude/security jobs 为 skipped，不能称为独立审查通过。真实家庭注册验收尚待维护者确认。
+
+## 剪贴板权限的浏览器回归
+
+PR #76 的 hosted CI 42069285582 第二次运行有 24 项通过、桌面/移动两项失败，均要求出现“已复制家庭码。”；维护者提供了错误输出，日志与工件下载在云环境仍被拒绝。原用例没有设置剪贴板权限，却断言复制必定成功。用全新浏览器上下文明示拒绝权限，重现相同的两项断言失败；页面实际给出手动复制提示。授权时独立探测确认 Clipboard API 写入和读取的完整家庭码一致。
+
+用例现在只在自己的测试 Origin 授予 clipboard-read/write，并读取实际剪贴板核对家庭码；随后清除已有授权、明示拒绝权限，再检查手动复制提示、成功提示消失及家庭码仍可见。清除权限是因为 Playwright 多次 grantPermissions 会累加授权。未修改产品、服务端、数据库、安全门槛、超时或重试次数。定向桌面/移动两项均通过，lint、格式与 diff 检查通过；最新 hosted 结果以 PR 为准。
