@@ -4,12 +4,12 @@
 
 ## 已准备的资源
 
-| 项目                 | 配置                                                                                                                         |
-| -------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| Vercel 工作区        | juanchaopan1 / `team_6WBQUpNIhHEGrjeEWxoFyN62`，API 返回 Hobby                                                               |
-| 独立项目             | education-staging / `prj_UYpAbi3rHNsoEdnOYGWiOo8L2WP0`，Node 24；未连接 Git 自动部署                                         |
-| 数据库               | 维护者指定 Supabase 项目 `telkaiyxprpetmqthyhn`；us-east-1（维护者确认）；项目保持不变，Vercel 按用户要求固定 Singapore/sin1 |
-| 成功后使用的测试地址 | <https://education-access-spike.hyp.app/>；首次成功前仍指向 #14 旧探针                                                       |
+| 项目          | 配置                                                                                                                         |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| Vercel 工作区 | juanchaopan1 / `team_6WBQUpNIhHEGrjeEWxoFyN62`，API 返回 Hobby                                                               |
+| 独立项目      | education-staging / `prj_UYpAbi3rHNsoEdnOYGWiOo8L2WP0`，Node 24；未连接 Git 自动部署                                         |
+| 数据库        | 维护者指定 Supabase 项目 `telkaiyxprpetmqthyhn`；us-east-1（维护者确认）；项目保持不变，Vercel 按用户要求固定 Singapore/sin1 |
+| 当前测试地址  | <https://education-access-spike.hyp.app/>；已完成 Singapore 账号候选的发布与域名读回，详见验收记录                           |
 
 Vercel 测试项目关闭默认登录保护，让不携带平台登录 cookie 的候选版本冒烟可以执行；这是公开的合成数据测试站。无 Gmail/AI 凭据。自管账号的服务端会话与权限不受此设置替代。
 
@@ -70,7 +70,9 @@ Vercel 支持 PR 预览，但当前选用的 Supabase 分支文档明确按分�
 
 GitHub 官方说明 GITHUB_TOKEN 引发的普通事件不会递归启动工作流，workflow_dispatch/repository_dispatch 是例外。PR #60 的 bot squash 合并已实际出现 main 无 push CI 的情况；不能只等 push。当前通过可信工作流完成事件解析已合并 PR，再显式派发 main CI；未合并、外仓库、旧 SHA、待完成或失败检查均不能直接进入发布。手动 staging 可在失败后重试完整 CI，自动事件不循环重跑失败检查。
 
-准备任务等待 CI 最多十分钟，整个准备 job 最多十五分钟。检查失败、超时或等待期间 main 更新均不发布。手动重试会区分旧失败 run 与新 run，不能在新检查出现之前误用旧结果。发布错误以转义后的 GitHub annotation 输出，便于在日志下载受限时通过 API 读取原因，不输出秘密值。
+原生自动合并可能晚于所需检查完成。PR 完成事件每五秒核对关联 PR，最多等待两分钟，只有同仓库、同 head SHA 且已合并 main 才继续；一直未合并则不派发 CI、不部署。超过此窗口才合并的异常情况需手动运行 staging，不能将等待超时当成发布成功。
+
+准备任务随后等待 CI 最多十分钟，整个准备 job 最多十五分钟。检查失败、超时或等待期间 main 更新均不发布。手动重试会区分旧失败 run 与新 run，不能在新检查出现之前误用旧结果。发布错误以转义后的 GitHub annotation 输出，便于在日志下载受限时通过 API 读取原因，不输出秘密值。
 
 ## Singapore 函数与现有美国数据库
 
@@ -80,4 +82,4 @@ GitHub 官方说明 GITHUB_TOKEN 引发的普通事件不会递归启动工作�
 
 发布前的只读就绪探测至多五次，每次最多五秒，间隔一秒；只有明确的 503 才重试。HTTP 200 还须匹配 ready 响应；持续失败、其他 HTTP 错误和网络失败均不发布。注册、登录、退出不重试。耗时记录包含 HTTP 状态，失败样本不能计为成功延迟。
 
-自定义域名曾仍归属旧探针项目，GitHub 发布 token 的 alias 请求返回 403。已通过 Vercel 官方 moveProjectDomain 原子接口将该子域名转交 education-staging，并保留原已验证 deployment 指向。后续仍需实际验证 GitHub token 的自动 alias 发布；不将手工指向当作自动发布成功。Alias 错误可显示公共域名的提供商原因，包含环境变量的 deployment 错误仍只输出 HTTP 摘要。
+自定义域名曾仍归属旧探针项目，GitHub 发布 token 的 alias 请求返回 403。已通过 Vercel 官方 moveProjectDomain 原子接口将该子域名转交 education-staging，并保留原已验证 deployment 指向。运行 41975178909 随后使用 GitHub Actions 的 token 完成 Singapore 候选的迁移、账号冒烟和 alias 发布，API 读回与候选一致；此前的手工恢复不计作这次自动发布证据。Alias 错误可显示公共域名的提供商原因，包含环境变量的 deployment 错误仍只输出 HTTP 摘要。

@@ -1,6 +1,7 @@
 async function followsMergedMain(options, run) {
   if (run.head_branch === 'main') return true;
-  for (let attempt = 0; attempt < 6; attempt++) {
+  // GitHub may finish required checks before its native auto-merge completes.
+  for (let attempt = 0; attempt < 25; attempt++) {
     const { data } = await options.api.repos.listPullRequestsAssociatedWithCommit({
       owner: options.owner,
       repo: options.repo,
@@ -15,7 +16,7 @@ async function followsMergedMain(options, run) {
         pr.merged_at,
     );
     if (merged) return true;
-    if (attempt < 5) await options.wait(3000);
+    if (attempt < 24) await options.wait(5000);
   }
   return false;
 }

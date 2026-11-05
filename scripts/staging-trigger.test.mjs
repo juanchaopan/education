@@ -56,6 +56,34 @@ test('a bot merge with no push run explicitly dispatches real CI on main, never 
   assert.equal(count(), 1);
 });
 
+test('waits for a delayed native auto-merge before dispatching exact-main CI', async () => {
+  const { options, count } = fixture({ merged: false });
+  let elapsed = 0;
+  options.wait = async (ms) => {
+    elapsed += ms;
+  };
+  const original = options.api.repos.listPullRequestsAssociatedWithCommit;
+  options.api.repos.listPullRequestsAssociatedWithCommit = async () => {
+    const result = await original();
+    if (elapsed >= 30000) result.data[0].merged_at = '2026-11-05T05:35:24Z';
+    return result;
+  };
+  assert.equal((await selectMainRelease(options)).reason, 'ci-dispatched');
+  assert.equal(count(), 1);
+  assert.ok(elapsed >= 30000);
+});
+
+test('an indefinitely unmerged PR stops waiting without dispatching CI or permitting release', async () => {
+  const { options, count } = fixture({ merged: false });
+  let elapsed = 0;
+  options.wait = async (ms) => {
+    elapsed += ms;
+  };
+  assert.deepEqual(await selectMainRelease(options), { ready: false, reason: 'not-merged' });
+  assert.equal(count(), 0);
+  assert.equal(elapsed, 120000);
+});
+
 test('only a successful exact-main CI run can release', async () => {
   const { options, count } = fixture({
     runs: [
