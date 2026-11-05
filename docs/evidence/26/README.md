@@ -1,6 +1,6 @@
 # #26 家长重置儿童访问
 
-本轮实现尚待 PR 的 CI、维护者审查、合并与 Singapore staging 真实浏览器验收；不能据本地结果关闭 #26 或声称已经发布。
+[PR #80](https://github.com/juanchaopan/education/pull/80) 已通过 CI、维护者审查后自动合并并发布到 Singapore staging。维护者确认重置后旧儿童登录退出、旧 PIN 失败、新 PIN 成功，家庭码与昵称不变；#26 已验收完成。
 
 ## 行为与边界
 
@@ -40,7 +40,12 @@
 
 ## 发布后验收
 
-合并并通过 main CI 的 staging 自动发布后，需家长/孩子分开浏览器上下文：孩子保持登录，家长选择这个孩子并设置新 PIN；确认旧孩子页面刷新后退出，旧 PIN 失败，新 PIN 成功，家庭码和昵称不变。不要在聊天中发送 PIN、密码、KEY 或 cookie。真实大陆网络、所有设备/浏览器、180 天实时时长及未来学习进度不在本轮本地证据内。
+- 功能 head `51f48cfe801a692d8d0460618a280c67cd7e03b9` 的 [CI 42100737735](https://github.com/juanchaopan/education/actions/runs/42100737735) 成功。维护者添加 `human-reviewed` 后，[审查门槛 42101667348](https://github.com/juanchaopan/education/actions/runs/42101667348) 成功，PR #80 squash 合并为 `6c7300cd895f3ca3a736c521f36ccdc6609d27f4`。可选 Claude/security 作业为跳过，不能称为独立 AI 审查已通过。
+- 精确合并版本的 [main CI 42101756170](https://github.com/juanchaopan/education/actions/runs/42101756170) 与 [staging 42101722010](https://github.com/juanchaopan/education/actions/runs/42101722010) 均成功。staging 的事件 head 仍显示旧版本 `8125d75...`，prepare 实际选择并验证上述 `6c7300c...`，不能把触发事件 head 当作发布版本。
+- 2026-11-05 15:20:32（America/Toronto，UTC−05:00）通过 Vercel API 核对稳定域名 `education-access-spike.hyp.app`：部署 `dpl_vrY8iXgzP8duvHdndkZiZCnRLiST`，项目 `prj_UYpAbi3rHNsoEdnOYGWiOo8L2WP0`，READY，区域 `sin1`（Singapore），`educationRevision` 为 `6c7300cd895f3ca3a736c521f36ccdc6609d27f4`。这是验收时固定版本的证据，后续文档部署可能改变当前 alias。
+- 维护者按普通窗口保持孩子登录、无痕窗口登录家长并为该孩子设置新 PIN 的步骤验收，并回复 **“yes”**：普通窗口刷新后旧登录退出，旧 PIN 登录失败，新 PIN 登录成功，家庭码和昵称不变。没有收集真实账号、昵称、PIN、KEY、密码或 cookie。
+
+跨家庭、其他孩子会话保留、并发及重复请求的证据来自自动化测试，并非本次人工逐项复测。没有记录此次设备型号、浏览器型号或所在地；真实大陆网络、完整设备覆盖、180 天实时时长及未来学习进度不在本轮验收范围内。
 
 ## 撤回
 
