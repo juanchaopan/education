@@ -28,12 +28,15 @@ test('requires the dedicated Supabase project and session-compatible connection'
 
 function fixture(failure) {
   const events = [];
-  const api = async (method, path) => {
+  const api = async (method, path, body) => {
     events.push(`${method} ${path}`);
     if (path.startsWith('/v9/projects/')) return { name: 'education-staging', nodeVersion: '24.x' };
     if (path.startsWith('/v4/aliases/'))
       return { deploymentId: 'dpl_candidate', projectId: settings.projectId };
-    if (method === 'POST' && path === '/v13/deployments') return { id: 'dpl_candidate' };
+    if (method === 'POST' && path === '/v13/deployments') {
+      assert.equal(body.target, 'staging');
+      return { id: 'dpl_candidate' };
+    }
     if (method === 'GET')
       return {
         id: 'dpl_candidate',

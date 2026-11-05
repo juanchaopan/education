@@ -46,6 +46,7 @@ export async function releaseStaging(options) {
   await options.stillCurrent();
   const candidate = await options.api('POST', '/v13/deployments', {
     name: 'education-staging',
+    target: 'staging',
     project: options.projectId,
     files: options.files,
     env: {
