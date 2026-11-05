@@ -23,3 +23,4 @@ export type TeachingFeedback = {
 };
 
 export { ParentLogin, ParentSession } from './session.js';
+export * from './verification.js';

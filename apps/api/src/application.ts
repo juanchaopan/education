@@ -1,3 +1,8 @@
+import { readMailConfig } from './shared/mail-config.js';
+import { createMailPayload } from './shared/mail-payload.js';
+import { createGmailSender } from './shared/gmail.js';
+import { createVerificationService } from './identity/services/verification.js';
+import { createVerificationRepository } from './identity/repositories/postgres-verification.js';
 import { randomBytes } from 'node:crypto';
 import { createSessionService } from './identity/services/session.js';
 import { createSessionRepository } from './identity/repositories/postgres-session.js';
@@ -16,6 +21,7 @@ import { readRevision } from './shared/revision.js';
 
 export async function createApplication(env: NodeJS.ProcessEnv = process.env) {
   const config = readConfig(env);
+  const mailConfig = readMailConfig(env);
   const pool = config.registrationEnabled
     ? new pg.Pool({
         ...databaseOptions(env),
@@ -44,6 +50,7 @@ export async function createApplication(env: NodeJS.ProcessEnv = process.env) {
     origin: config.origin,
     registration,
     sessions,
+    verification: createVerification(pool, mailConfig, admit),
     ready: pool ? await createReadinessCheck(pool) : undefined,
     revision: await readRevision(),
   });
@@ -82,4 +89,18 @@ async function registerWeb(app: ReturnType<typeof buildApp>) {
       return reply.sendFile('index.html');
     });
   }
+}
+
+function createVerification(
+  pool: pg.Pool | undefined,
+  config: ReturnType<typeof readMailConfig>,
+  admit: ReturnType<typeof createAuthAdmission> | undefined,
+) {
+  if (!pool || !config) return undefined;
+  return createVerificationService({
+    admit: admit!,
+    repository: createVerificationRepository(pool),
+    sender: createGmailSender(config),
+    payload: createMailPayload(config.payloadKey),
+  });
 }
