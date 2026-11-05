@@ -31,7 +31,18 @@ docker compose --env-file infra/.env -f infra/docker-compose.yml up --build -d
 docker compose --env-file infra/.env -f infra/docker-compose.yml ps
 ```
 
-当前 API 不依赖数据库提供空题库，健康接口只证明进程存活，不证明账号、数据库或 AI 就绪。数据库 schema 仅为初始基础，不能代替家庭权限实现。
+空题库仍可独立于数据库运行。`/health/live` 只证明进程存活；`/health/ready` 在账号服务已配置、数据库可访问且本版本所需迁移哈希已记入 Drizzle 迁移表时返回 200，其余返回 503；两者都不证明邮件或 AI 可用。就绪探针不执行迁移，不返回数据库配置。
+
+### 隔离的双实例账号验证（#19）
+
+```sh
+npx playwright install chromium
+npm run test:accounts
+```
+
+需要可用的本地 Docker daemon、Compose v2 和 OpenSSL。命令构建现有可移植镜像，生成临时密码、共享限流密钥和一天有效的 localhost 测试证书，用独立 Compose 项目启动 PostgreSQL、受控迁移、两个应用实例和 HTTPS 入口。数据库不映射主机端口；入口仅绑定回环地址 8443/8444，可用 `ACCOUNTS_PORT_A` / `ACCOUNTS_PORT_B` 选择空闲端口。两个入口用于精确选择实例，浏览器写请求始终使用第一个入口的同源地址。
+
+**此命令会故意破坏测试库的初始迁移、停止测试数据库并删除整个测试卷。** 它不使用外部 `DATABASE_URL`，不连接开发或生产家庭库；不要把这份测试编排作为生产部署。测试结束后清理本次容器、网络、数据卷与临时证书，构建缓存保留。CI 将它作为 `ci` 的必要检查。实际记录与局限见 [#19 验收](docs/evidence/19/README.md)。
 
 ### 本地家长注册与登录（#17 / #18）
 

@@ -8,6 +8,8 @@
 
 #18 实现：家长登录、SHA-256 哈希存储的数据库会话、账号状态读取、同源/CSRF 保护、会话轮换与退出撤销；受限家长不会获得家庭权限。验收记录见 [#18](evidence/18/README.md)，PR 合并状态以 GitHub 为准。
 
+#19 实现：独立迁移、数据库/迁移就绪检查及隔离的双实例 HTTPS Compose 账号测试；验证跨实例登录、轮换、撤销、共享限流和数据库中断恢复。范围和实际检查结果见 [#19](evidence/19/README.md)，未部署至 Vercel 或生产。
+
 尚未实现：家长邮箱验证/恢复、儿童 KEY 兑换和登录、其他家庭业务 API 的授权、学习记录、练习安排、草稿服务、家庭导出删除、AI/语音调用，以及每题专属页面。schema 包含 families、parents、children、registration_keys、drafts、registration_attempts 和 parent_sessions；尚不包含架构里规划的全部表。注册不会发信或签发会话，数据库约束不等于服务端家庭授权。
 
 不能把本阶段称为完整产品或已完成账号验收。空题库不展示演示问题，不伪造学习进度。
