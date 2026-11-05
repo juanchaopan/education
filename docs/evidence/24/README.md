@@ -22,12 +22,12 @@
 
 ## 自动化验证
 
-- `npm run check`：格式、lint、分层、TS7、API 92 项、Web 14 项、工具链/工作流 23 项、应用与 Storybook 构建通过。
-- `npm run test:db`：隔离 PostgreSQL 17，59 项通过。包含跨仓储实例相同/不同请求并发、同家庭规范昵称冲突与跨家庭同名、KEY 状态、哈希失败回滚、实际恢复竞争、锁等待后的到期检查，以及跨准入实例 KEY/来源预算。
+- `npm run check`：格式、lint、分层、TS7、API 92 项、Web 15 项、工具链/工作流 23 项、应用与 Storybook 构建通过。
+- `npm run test:db`：隔离 PostgreSQL 17，60 项通过。包含跨仓储实例相同/不同请求并发、同家庭规范昵称冲突与跨家庭同名、KEY 状态、哈希失败回滚、实际恢复竞争、锁等待后的到期检查，以及跨准入实例 KEY/来源预算。
 - `npm run test:e2e`：桌面/移动共 26 项通过；#24 新增实际数据库注册、家庭码、KEY 不能重复注册及宽度检查。随后在桌面/移动各 1 项定向复测中，实际截断已提交的成功响应，再以相同输入重试，两项均通过且数据库仍只有一名儿童。
 - `npm run test:accounts`：可移植 Docker 镜像、HTTPS、两个真实进程和函数处理器。新增 A 注册、B 相同请求回放、B 新请求不能重用 KEY；7 项全部通过。
 - `npm run test:staging`：36 项通过。首次未提升的本地沙箱运行不能打开 handler 监听；在允许 localhost 的执行环境中重跑通过，没有修改网络策略或关闭 TLS。
-- `npx --no-install jscpd .`：0.58%，6 个重复块，低于已有 2% 门槛；未修改检查规则。
+- `npx --no-install jscpd .`：0.57%，6 个重复块，低于已有 2% 门槛；未修改检查规则。
 - 初次启动临时 PostgreSQL 时尚未就绪，迁移连接失败；确认 pg_isready 后重新执行成功。最终迁移在任务独占的全新测试库中再次验证，不连接真实家庭数据库。
 
 ## 界面证据
@@ -40,7 +40,7 @@
 
 本轮先单独提交不改变家长认证预算行为的重构，再加入儿童兑换。按 open-pr 命令做本地简化、代码和安全检查；当前没有安装独立 simplify/code-review/security-review 技能，未声称调用过这些工具。实际 hosted CI、审查与合并结果以 PR 为准，不能用本地成功替代。
 
-本轮不修改 Vercel Singapore/sin1 或 Supabase us-east-1；不发布生产、不发真实邮件、不调用 AI。正式 staging 的生成 KEY → 儿童注册 → 回执和原 KEY 已使用状态，仍待维护者实际验收；没有宣称大陆完整链路可达或两秒达标。
+本轮不修改 Vercel Singapore/sin1 或 Supabase us-east-1；不发布生产、不发真实邮件、不调用 AI。维护者已确认正式 staging 的生成 KEY → 儿童注册 → 家长页家庭码一致、可复制及原 KEY 已使用状态全部正常；没有宣称大陆完整链路可达或两秒达标。
 
 ## 撤回
 
@@ -56,10 +56,18 @@
 
 PR #75 已由维护者添加 human-reviewed 后自动 squash 合并为 `e870efe60a0eb4aa5dbe250aa723c47fa1f2fff6`；PR CI 42066392552、精确 main CI 42066930016 均成功。早先 staging 42066771933 / 42066885065 的工作流版本仍是旧 main，虽然 checkout 了新代码，却没有新 PIN_PEPPER 的 env 绑定，因而报告缺失；这不证明维护者的 Secret 配错。使用最新 main 手动派发 42068192275 后发布成功，无需重新生成密钥。
 
-实际 alias 读回为 READY deployment `dpl_GnJF1WSgD9KcvxSSVTkiRmqCx7kN`，region 为 sin1，revision 为上述 e870efe6，项目与稳定域名匹配。该版本包含儿童注册，尚不包含本次家长页家庭码补充；补充需独立 PR 审查、合并和发布。可选 Claude/security jobs 为 skipped，不能称为独立审查通过。真实家庭注册验收尚待维护者确认。
+实际 alias 读回为 READY deployment `dpl_GnJF1WSgD9KcvxSSVTkiRmqCx7kN`，region 为 sin1，revision 为上述 e870efe6，项目与稳定域名匹配。该首次发布版本包含儿童注册；家长页家庭码补充随后通过 PR #76 审查、合并和发布，最终版本及验收见下文。可选 Claude/security jobs 为 skipped，不能称为独立审查通过。真实浏览器验收已获维护者确认，范围见下文。
 
 ## 剪贴板权限的浏览器回归
 
 PR #76 的 hosted CI 42069285582 第二次运行有 24 项通过、桌面/移动两项失败，均要求出现“已复制家庭码。”；维护者提供了错误输出，日志与工件下载在云环境仍被拒绝。原用例没有设置剪贴板权限，却断言复制必定成功。用全新浏览器上下文明示拒绝权限，重现相同的两项断言失败；页面实际给出手动复制提示。授权时独立探测确认 Clipboard API 写入和读取的完整家庭码一致。
 
-用例现在只在自己的测试 Origin 授予 clipboard-read/write，并读取实际剪贴板核对家庭码；随后清除已有授权、明示拒绝权限，再检查手动复制提示、成功提示消失及家庭码仍可见。清除权限是因为 Playwright 多次 grantPermissions 会累加授权。未修改产品、服务端、数据库、安全门槛、超时或重试次数。定向桌面/移动两项均通过，lint、格式与 diff 检查通过；最新 hosted 结果以 PR 为准。
+用例现在只在自己的测试 Origin 授予 clipboard-read/write，并读取实际剪贴板核对家庭码；随后清除已有授权、明示拒绝权限，再检查手动复制提示、成功提示消失及家庭码仍可见。清除权限是因为 Playwright 多次 grantPermissions 会累加授权。未修改产品、服务端、数据库、安全门槛、超时或重试次数。定向桌面/移动两项均通过，lint、格式与 diff 检查通过；修复后的 hosted CI 已通过，记录见下文。
+
+## 正式 staging 验收完成
+
+[PR #75](https://github.com/juanchaopan/education/pull/75) 与 [PR #76](https://github.com/juanchaopan/education/pull/76) 均由维护者确认后自动 squash 合并。最终功能版本为 `1f2b539c6292f6582f824dbe6ac7b43a1a0c80cc`；[修复后的 PR CI 42074732559](https://github.com/juanchaopan/education/actions/runs/42074732559)、[精确 main CI 42075201787](https://github.com/juanchaopan/education/actions/runs/42075201787) 和 [staging 发布 42075133034](https://github.com/juanchaopan/education/actions/runs/42075133034) 均成功。该发布事件的旧 head SHA 不等于实际发布版本；稳定域名 API 读回为 READY deployment `dpl_3sFXYuuSrqhTrS9Jc6z7TK4u52vF`、sin1、上述最终 revision，项目与域名匹配。
+
+维护者针对这次已发布版本回复“全部正常”，确认：家长生成新 KEY，孩子使用该 KEY、昵称与六位 PIN 注册成功；回到家长页刷新后，家庭码与注册成功页一致，可复制或按提示手动复制，KEY 状态为“已使用”。本记录只保存通过结果，不保存实际 KEY、PIN、密码、昵称或家庭码。未采集设备、浏览器、网络所在地或精确延迟，不能推断大陆全链路或两秒目标达标。
+
+#24 完成。儿童登录、默认持久会话和免反复输入家庭码/昵称的体验由 #25 实现；家长重置由 #26 实现。并发兑换、重试、过期/撤销、隔离及复制权限拒绝的细分边界以自动化证据为准，没有将这些全部记为真人复测。
