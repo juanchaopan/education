@@ -44,6 +44,7 @@ it.each([
 ])(
   'classifies a real TLS SMTP %s response without treating acceptance as verification',
   async (mode, outcome) => {
+    const chunks: Buffer[] = [];
     const server = new SMTPServer({
       secure: true,
       key,
@@ -63,7 +64,7 @@ it.each([
         else callback();
       },
       onData: (stream, _session, callback) => {
-        stream.on('data', () => {});
+        stream.on('data', (chunk: Buffer) => chunks.push(chunk));
         stream.on('end', () => {
           if (mode === 'data-disconnect') {
             for (const connection of server.connections) connection._socket.destroy();
@@ -93,6 +94,12 @@ it.each([
     );
     try {
       expect(await sender.send('recipient@example.test', 'a'.repeat(43))).toBe(outcome);
+      if (mode === 'accept') {
+        const message = Buffer.concat(chunks).toString();
+        expect(message).toContain('Content-Type: multipart/alternative;');
+        expect(message).toContain('Content-Type: text/plain; charset=utf-8');
+        expect(message).toContain('Content-Type: text/html; charset=utf-8');
+      }
     } finally {
       await new Promise<void>((resolve) => server.close(resolve));
     }
