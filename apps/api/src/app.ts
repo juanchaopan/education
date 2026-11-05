@@ -1,3 +1,9 @@
+import {
+  registerRegistrationKeys,
+  registerReauthentication,
+} from './identity/routes/registration-key.js';
+import type { RegistrationKeyService } from './identity/services/registration-key.js';
+import type { ReauthenticationService } from './identity/services/reauthentication.js';
 import { registerRecovery } from './identity/routes/recovery.js';
 import type { RecoveryService } from './identity/services/recovery.js';
 import { registerVerification } from './identity/routes/verification.js';
@@ -12,17 +18,18 @@ import type { RegistrationService } from './identity/services/registration.js';
 import { RequestError } from './shared/request-error.js';
 import { readinessErrorCode } from './shared/readiness-error.js';
 
-export function buildApp(
-  options: {
-    origin?: string;
-    registration?: RegistrationService;
-    sessions?: SessionService;
-    verification?: VerificationService;
-    recovery?: RecoveryService;
-    ready?: () => Promise<boolean>;
-    revision?: string;
-  } = {},
-) {
+type AppOptions = {
+  origin?: string;
+  registration?: RegistrationService;
+  sessions?: SessionService;
+  verification?: VerificationService;
+  recovery?: RecoveryService;
+  registrationKeys?: RegistrationKeyService;
+  reauthentication?: ReauthenticationService;
+  ready?: () => Promise<boolean>;
+  revision?: string;
+};
+export function buildApp(options: AppOptions = {}) {
   const app = Fastify({
     bodyLimit: 1_048_576,
     logController: new LogController({ disableRequestLogging: true }),
@@ -52,14 +59,7 @@ export function buildApp(
   app.get('/version.json', (_request, reply) =>
     reply.header('Cache-Control', 'no-store').send({ revision: options.revision ?? null }),
   );
-  registerParentRegistration(app, options.origin ?? 'http://127.0.0.1:5173', options.registration);
-  registerParentSessions(app, options.origin ?? 'http://127.0.0.1:5173', options.sessions);
-  registerVerification(app, {
-    origin: options.origin ?? 'http://127.0.0.1:5173',
-    sessions: options.sessions,
-    verification: options.verification,
-  });
-  registerRecovery(app, options.origin ?? 'http://127.0.0.1:5173', options.recovery);
+  registerIdentity(app, options);
   registerErrors(app);
   return app;
 }
@@ -88,4 +88,18 @@ function registerErrors(app: FastifyInstance) {
               : '暂时无法完成，请稍后重试。',
       });
   });
+}
+
+function registerIdentity(app: FastifyInstance, options: AppOptions) {
+  const origin = options.origin ?? 'http://127.0.0.1:5173';
+  registerParentRegistration(app, origin, options.registration);
+  registerParentSessions(app, origin, options.sessions);
+  registerVerification(app, {
+    origin: origin,
+    sessions: options.sessions,
+    verification: options.verification,
+  });
+  registerRecovery(app, origin, options.recovery);
+  registerRegistrationKeys(app, origin, options.registrationKeys);
+  registerReauthentication(app, origin, options.reauthentication);
 }
