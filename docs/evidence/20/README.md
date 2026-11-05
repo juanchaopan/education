@@ -60,3 +60,13 @@ PR #60 已经维护者 human-reviewed 后由 app/github-actions squash 合并，
 显式继续运行 41968154844：prepare、安装和构建成功，发布步骤失败。维护者提供安全错误行 `Staging release failed: self-signed certificate in certificate chain`。这说明当前 Supabase 连接还需要官方根证书；要求下载并安全配置 STAGING_DATABASE_CA_CERT，不关闭 TLS 验证。数据库/alias 验收仍未通过。
 
 等待流程新增六项用例：同一次运行等待后继续、复用进行中 CI、新 CI 失败、旧失败与新 run 区分、main 更新与超时；staging 相关共 26 项通过。CI 等待超时有明确上限，失败不产生发布许可。后续发布错误增加安全 GitHub annotation，避免必须下载被环境代理阻止的完整日志。
+
+## 固定 Singapore 与保留现有 Supabase（2026-11-05）
+
+PR #62 经维护者确认已合并为 main `10600074c5fd3209b9c40c358d92bb70a88d2301`。单次 staging 41970172391 内派发并等待 CI 41970190634；CI app/accounts/duplication/ci 全部成功，随后同一 staging 自动进入 deploy，证明不再需要二次回调。该版本就绪探测为 503，Vercel 日志确认原始连接异常被捕获，但当时未记录分类，不能据此声称具体异常代码。
+
+维护者提供 Supabase 区域 us-east-1。临时将 staging 函数设为 iad1 后，候选 `dpl_4kKkduS51qUiL3gNHAsho4BSnB8H` 构建为 READY，工作流 41971380175 及后续尝试到达 alias POST 后返回 403，意味着此前迁移与账号冒烟未抛错；没有捏造丢失的请求耗时。使用已配置的云端 Vercel 身份完成该已通过冒烟候选的手工 alias 绑定并读回 project/deployment ID。这是手工恢复，不是 GitHub 自动发布成功。
+
+确认旧探针仍拥有 Project Domain 后，读取 Vercel 官方 SDK moveProjectDomain 端点及请求模式，使用原子移动将 education-access-spike.hyp.app 转交 staging 项目；读回 verified=true，既有 alias 指向保持不变。
+
+维护者随后明确不新建 Supabase，并要求 Vercel 仍为 Singapore。已将项目默认函数区域恢复 sin1；现有数据库与凭据保持不变，现有已验证版本仅作为退路。当前代码扩展跨区连接建立预算、增加不含私密信息的错误分类及有界启动探测；实际 sin1 发布与持久化尚待验收。未宣称故障一定由网络延迟造成，下一轮日志将提供允许列表中的错误分类。

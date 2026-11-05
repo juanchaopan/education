@@ -1,4 +1,5 @@
 import { randomBytes, randomUUID } from 'node:crypto';
+import { waitForReadiness } from './staging-readiness.mjs';
 
 function smokeRequest(url, measurements) {
   return async (path, status, options = {}) => {
@@ -9,7 +10,11 @@ function smokeRequest(url, measurements) {
       signal: AbortSignal.timeout(15000),
       cache: 'no-store',
     });
-    measurements.push({ path, ms: Math.round(performance.now() - started) });
+    measurements.push({
+      path,
+      status: response.status,
+      ms: Math.round(performance.now() - started),
+    });
     if (response.status !== status)
       throw new Error(`Staging smoke failed: ${path} (HTTP ${response.status})`);
     return response;
@@ -33,7 +38,7 @@ export async function smokeAccount(url, origin, revision, cleanup) {
       version.headers.get('cache-control') !== 'no-store'
     )
       throw new Error('Release identity mismatch');
-    await request('/health/ready', 200);
+    await waitForReadiness(url, measurements);
     const receipt = await request('/api/v1/parents/register', 202, {
       method: 'POST',
       headers: { ...headers, 'X-Education-Request': 'registration' },

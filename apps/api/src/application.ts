@@ -20,7 +20,7 @@ export async function createApplication(env: NodeJS.ProcessEnv = process.env) {
     ? new pg.Pool({
         ...databaseOptions(env),
         max: env.VERCEL === '1' ? 4 : 10,
-        connectionTimeoutMillis: 1000,
+        connectionTimeoutMillis: config.connectionTimeoutMs,
         statement_timeout: 3000,
       })
     : undefined;

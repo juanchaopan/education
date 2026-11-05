@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { buildApp } from './app.js';
 import { readConfig } from './shared/config.js';
 
@@ -53,6 +53,30 @@ describe('framework HTTP contract', () => {
       expect(response.statusCode).toBe(503);
       expect(response.json()).toEqual({ status: 'unavailable' });
       expect(response.headers['cache-control']).toBe('no-store');
+    }
+  });
+  it('logs only an allowlisted connection category, never the private database error', async () => {
+    const privateMessage = 'private postgres://user:password@database connection timed out';
+    for (const [error, code] of [
+      [
+        Object.assign(new Error(privateMessage), { code: 'SELF_SIGNED_CERT_IN_CHAIN' }),
+        'SELF_SIGNED_CERT_IN_CHAIN',
+      ],
+      [new Error(privateMessage), 'TIMEOUT'],
+      [Object.assign(new Error('private password'), { code: 'private-password' }), 'UNKNOWN'],
+    ] as const) {
+      const app = buildApp({
+        ready: async () => {
+          throw error;
+        },
+      });
+      apps.push(app);
+      const warning = vi.spyOn(app.log, 'warn');
+      const response = await app.inject('/health/ready');
+      expect(response.statusCode).toBe(503);
+      expect(response.json()).toEqual({ status: 'unavailable' });
+      expect(warning).toHaveBeenCalledWith({ code }, 'Database readiness unavailable');
+      expect(JSON.stringify(warning.mock.calls)).not.toContain('password');
     }
   });
   it('enables paid AI by default without making a provider call', () => {
