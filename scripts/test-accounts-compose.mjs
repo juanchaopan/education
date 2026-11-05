@@ -8,6 +8,7 @@ const directory = await mkdtemp(join(process.cwd(), 'infra/.env.accounts-'));
 process.env.COMPOSE_PROJECT_NAME = `education-accounts-${randomBytes(6).toString('hex')}`;
 process.env.POSTGRES_PASSWORD = randomBytes(24).toString('hex');
 process.env.AUTH_RATE_LIMIT_KEY = randomBytes(32).toString('hex');
+process.env.PIN_PEPPER = randomBytes(32).toString('hex');
 process.env.ACCOUNTS_TLS_DIR = directory;
 process.env.ACCOUNTS_PORT_A ??= '8443';
 process.env.ACCOUNTS_PORT_B ??= '8444';
@@ -51,7 +52,8 @@ try {
     process.stdout.write(
       logs.output
         .replaceAll(process.env.POSTGRES_PASSWORD, '[redacted]')
-        .replaceAll(process.env.AUTH_RATE_LIMIT_KEY, '[redacted]'),
+        .replaceAll(process.env.AUTH_RATE_LIMIT_KEY, '[redacted]')
+        .replaceAll(process.env.PIN_PEPPER, '[redacted]'),
     );
     process.exitCode = 1;
   }

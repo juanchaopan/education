@@ -82,6 +82,7 @@ jobs:
           DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
           DATABASE_CA_CERT: ${{ secrets.STAGING_DATABASE_CA_CERT }}
           AUTH_RATE_LIMIT_KEY: ${{ secrets.STAGING_AUTH_RATE_LIMIT_KEY }}
+          PIN_PEPPER: ${{ secrets.STAGING_PIN_PEPPER }}
           MAIL_ENABLED: ${{ vars.STAGING_MAIL_ENABLED || 'false' }}
           MAIL_PROVIDER_APPROVED: ${{ vars.STAGING_MAIL_PROVIDER_APPROVED || 'false' }}
           GMAIL_USER: ${{ vars.STAGING_GMAIL_USER }}

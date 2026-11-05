@@ -46,10 +46,13 @@ async function deploy() {
     ...stagingMailEnv(process.env, required('STAGING_ORIGIN')),
     DATABASE_URL: required('DATABASE_URL'),
     AUTH_RATE_LIMIT_KEY: required('AUTH_RATE_LIMIT_KEY'),
+    PIN_PEPPER: required('PIN_PEPPER'),
     DATABASE_CA_CERT: process.env.DATABASE_CA_CERT ?? '',
   };
   if (runtimeEnv.AUTH_RATE_LIMIT_KEY.length < 32)
     throw new Error('Staging rate-limit key must contain at least 32 characters');
+  if (!/^[a-fA-F0-9]{64}$/.test(runtimeEnv.PIN_PEPPER))
+    throw new Error('Staging PIN pepper must contain 64 hexadecimal characters');
   const pool = new pg.Pool({
     ...databaseOptions({ ...process.env, STAGING_DATABASE: 'true' }),
     max: 1,
