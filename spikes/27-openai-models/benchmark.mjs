@@ -8,9 +8,9 @@ if (!key) {
 }
 
 const models = [
-  { id: 'gpt-5.4-nano', reasoning: { effort: 'none' } },
-  { id: 'gpt-6-luna', reasoning: { effort: 'none' } },
-  { id: 'gpt-4.1-mini' },
+  { id: 'gpt-6-luna', effort: 'none' },
+  { id: 'gpt-6-luna', effort: 'low' },
+  { id: 'gpt-5.4-mini', effort: 'none' },
 ];
 const cases = [
   {
@@ -31,8 +31,17 @@ const cases = [
     prompt: '题目：画一个四边形。孩子说“我画完了”。图中线条可能没闭合，只有看清楚时才描述所见。无法确认时，请孩子检查或补画，不能替孩子判定对错。',
     image: 'gap.png',
   },
+  {
+    id: 'subtraction-holdout',
+    prompt: '题目：15－7。孩子说“我用大数减小数：个位7减5，十位留着”。请提示如何用积木借十。',
+  },
+  {
+    id: 'occluded-drawing-holdout',
+    prompt: '题目：把四边形画完整。孩子问“我画的左边是不是连上了？”请根据图给提示。图中灰色方块挡住了部分线条。',
+    image: 'covered.png',
+  },
 ];
-const instructions = '你是儿童解题助手。只用简体中文，最多两句。用第一句直接给一个可操作的小提示或澄清问题，不直接说答案。看不清就请孩子检查，不猜测。';
+const instructions = '你是儿童解题助手，直接对孩子说话。只输出一句简体中文，用“试着”开头，给一个可操作的提示或澄清问题。把最后一步留给孩子：绝不说本题最终的数字、正确的十位和个位各有几个、或该选哪个图形。可以引导用工具、数边或比较，但不要把答案写进操作指令。如果图片有遮挡或细节看不清，请指出要检查哪里或请求补图，不判断对错。';
 const api = 'https://api.openai.com/v1/responses';
 
 async function contentFor(test) {
@@ -72,7 +81,7 @@ async function measure(model, test, sample, cancel = false) {
   const controller = new AbortController();
   const start = performance.now();
   const elapsed = () => Math.round(performance.now() - start);
-  const result = { model: model.id, case: test.id, sample, status: 'missing-terminal-event', text: '' };
+  const result = { model: model.id, effort: model.effort, case: test.id, sample, status: 'missing-terminal-event', text: '' };
   const deadline = setTimeout(() => controller.abort('deadline'), 10_000);
   try {
     const response = await fetch(api, {
@@ -82,7 +91,7 @@ async function measure(model, test, sample, cancel = false) {
       signal: controller.signal,
       body: JSON.stringify({
         model: model.id,
-        reasoning: model.reasoning,
+        reasoning: { effort: model.effort },
         instructions,
         input: [{ role: 'user', content }],
         max_output_tokens: 128,
@@ -101,11 +110,11 @@ async function measure(model, test, sample, cancel = false) {
       return result;
     }
     for await (const event of events(response.body)) {
-      if (event.type === 'response.output_text.delta' && event.delta.trim()) {
-        result.firstTextMs ??= elapsed();
+      if (event.type === 'response.output_text.delta') {
+        if (event.delta.trim()) result.firstTextMs ??= elapsed();
         result.text += event.delta;
         if (/[。？！]/u.test(result.text)) result.firstSentenceMs ??= elapsed();
-        if (cancel) {
+        if (cancel && result.firstTextMs !== undefined) {
           controller.abort('probe-cancel');
           result.status = 'local-abort-after-first-delta';
           break;
@@ -134,5 +143,5 @@ for (const test of cases) {
   }
 }
 
-const cancelled = await measure(models[1], cases[0], 'cancel', true);
+const cancelled = await measure(models[0], cases[0], 'cancel', true);
 console.log('MEASUREMENT ' + JSON.stringify(cancelled));
