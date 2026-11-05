@@ -8,7 +8,12 @@ import type { RegistrationService } from './identity/services/registration.js';
 import { RequestError } from './shared/request-error.js';
 
 export function buildApp(
-  options: { origin?: string; registration?: RegistrationService; sessions?: SessionService } = {},
+  options: {
+    origin?: string;
+    registration?: RegistrationService;
+    sessions?: SessionService;
+    ready?: () => Promise<boolean>;
+  } = {},
 ) {
   const app = Fastify({
     bodyLimit: 1_048_576,
@@ -23,6 +28,18 @@ export function buildApp(
     { schema: { response: { 200: Type.Object({ status: Type.Literal('ok') }) } } },
     () => ({ status: 'ok' }),
   );
+  app.get('/health/ready', async (_request, reply) => {
+    let ready = false;
+    try {
+      ready = (await options.ready?.()) === true;
+    } catch {
+      app.log.warn('Database readiness unavailable');
+    }
+    return reply
+      .code(ready ? 200 : 503)
+      .header('Cache-Control', 'no-store')
+      .send({ status: ready ? 'ready' : 'unavailable' });
+  });
   registerCatalog(app);
   registerParentRegistration(app, options.origin ?? 'http://127.0.0.1:5173', options.registration);
   registerParentSessions(app, options.origin ?? 'http://127.0.0.1:5173', options.sessions);

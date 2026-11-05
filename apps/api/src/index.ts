@@ -11,6 +11,7 @@ import { createRegistrationService } from './identity/services/registration.js';
 import { hashParentPassword, verifyParentPassword } from './identity/services/password.js';
 import { createRegistrationStore } from './identity/repositories/postgres-registration.js';
 import { createAuthAdmission } from './identity/repositories/auth-admission.js';
+import { createReadinessCheck } from './database/readiness.js';
 
 const config = readConfig();
 const pool = config.registrationEnabled
@@ -37,7 +38,14 @@ const sessions = pool
       dummyHash: await hashParentPassword(randomBytes(32).toString('base64url')),
     })
   : undefined;
-const app = buildApp({ origin: config.origin, registration, sessions });
+const app = buildApp({
+  origin: config.origin,
+  registration,
+  sessions,
+  ready: pool ? await createReadinessCheck(pool) : undefined,
+});
+// Idle connections can fail during a database restart without ending the HTTP process.
+pool?.on('error', () => app.log.error('Database connection unavailable'));
 app.addHook('onClose', async () => {
   await pool?.end();
 });
