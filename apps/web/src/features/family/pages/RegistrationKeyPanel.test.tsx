@@ -13,7 +13,7 @@ afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
 });
-function setup(recent = true) {
+function setup(recent = true, familyCode?: string) {
   let generated = false;
   let revoked = false;
   const fetcher = vi.fn(async (_url: string, options?: RequestInit) => {
@@ -28,6 +28,7 @@ function setup(recent = true) {
     return Response.json({
       key: generated ? { ...key, status: revoked ? 'revoked' : 'active' } : null,
       reauthenticationRequired: !recent,
+      ...(familyCode ? { familyCode } : {}),
     });
   });
   vi.stubGlobal('fetch', fetcher);
@@ -59,4 +60,15 @@ it('requires current-password reauthentication before key mutations', async () =
     'current-password',
   );
   expect(screen.getByRole('button', { name: '生成注册 KEY' })).toBeDisabled();
+});
+
+it('keeps the assigned family code visible and copyable without generating another KEY', async () => {
+  const user = userEvent.setup();
+  const fetcher = setup(true, 'ABCD-EFGH-JKMN');
+  expect(await screen.findByLabelText('家庭码')).toHaveTextContent('ABCD-EFGH-JKMN');
+  await user.click(screen.getByRole('button', { name: '复制家庭码' }));
+  expect(await navigator.clipboard.readText()).toBe('ABCD-EFGH-JKMN');
+  await user.click(screen.getByRole('button', { name: '刷新 KEY 状态' }));
+  expect(await screen.findByLabelText('家庭码')).toHaveTextContent('ABCD-EFGH-JKMN');
+  expect(fetcher.mock.calls.every(([, options]) => options?.method !== 'POST')).toBe(true);
 });

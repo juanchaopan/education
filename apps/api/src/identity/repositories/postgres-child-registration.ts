@@ -1,3 +1,4 @@
+import { groupRegistrationCode } from '../domain/registration-code.js';
 import { randomBytes, randomUUID } from 'node:crypto';
 import type pg from 'pg';
 import type {
@@ -22,7 +23,7 @@ function code() {
 function receipt(familyCode: string, nickname: string) {
   return {
     status: 'registered' as const,
-    familyCode: familyCode.match(/.{4}/g)!.join('-'),
+    familyCode: groupRegistrationCode(familyCode),
     nickname,
   };
 }

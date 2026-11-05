@@ -1,3 +1,4 @@
+import { groupRegistrationCode } from '../domain/registration-code.js';
 import { randomBytes } from 'node:crypto';
 import type { RegistrationKeyRepository } from '../repositories/registration-key.js';
 import type { SessionService } from './session.js';
@@ -6,10 +7,7 @@ import { tokenHash } from './session-security.js';
 
 export function generateRegistrationKey() {
   const alphabet = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
-  return Array.from(randomBytes(16), (byte) => alphabet[byte & 31])
-    .join('')
-    .match(/.{4}/g)!
-    .join('-');
+  return groupRegistrationCode(Array.from(randomBytes(16), (byte) => alphabet[byte & 31]).join(''));
 }
 export function createRegistrationKeyService({
   sessions,

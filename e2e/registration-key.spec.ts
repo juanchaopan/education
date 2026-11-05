@@ -23,15 +23,35 @@ test('verified parent generates, refreshes, reauthenticates, replaces and revoke
     const family = (await pool.query('INSERT INTO families DEFAULT VALUES RETURNING id')).rows[0]
       .id as string;
     families.push(family);
+    const familyCode = randomUUID().replaceAll('-', '').slice(0, 12).toUpperCase();
+    await pool.query('UPDATE families SET code=$2 WHERE id=$1', [family, familyCode]);
     await pool.query(
       'INSERT INTO parents(family_id,email,password_hash,email_verified) VALUES($1,$2,$3,true)',
       [family, email, await hashParentPassword(password)],
     );
     await page.goto('/family');
+    const origin = new URL(page.url()).origin;
+    await page.context().grantPermissions(['clipboard-read', 'clipboard-write'], { origin });
     await page.getByRole('button', { name: '已有账号？去登录' }).click();
     await page.getByLabel('登录邮箱').fill(email);
     await page.getByLabel('登录密码').fill(password);
     await page.getByRole('button', { name: '登录', exact: true }).click();
+    await expect(page.getByLabel('家庭码', { exact: true })).toHaveText(
+      familyCode.match(/.{4}/g)!.join('-'),
+    );
+    await page.getByRole('button', { name: '复制家庭码', exact: true }).click();
+    await expect(page.getByText('已复制家庭码。', { exact: true })).toBeVisible();
+    const displayedCode = familyCode.match(/.{4}/g)!.join('-');
+    expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(displayedCode);
+    await page.context().clearPermissions();
+    await page.context().grantPermissions([], { origin });
+    await page.getByRole('button', { name: '复制家庭码', exact: true }).click();
+    await expect(
+      page.getByText('暂时无法自动复制，请长按或选中上面的家庭码复制。', { exact: true }),
+    ).toBeVisible();
+    await expect(page.getByText('已复制家庭码。', { exact: true })).toHaveCount(0);
+    await expect(page.getByLabel('家庭码', { exact: true })).toHaveText(displayedCode);
+
     await page.getByRole('button', { name: '生成注册 KEY', exact: true }).click();
     const raw = page.getByLabel('本次生成的注册 KEY');
     await expect(raw).toHaveText(/^[0-9A-HJKMNP-TV-Z]{4}(-[0-9A-HJKMNP-TV-Z]{4}){3}$/);
@@ -39,6 +59,9 @@ test('verified parent generates, refreshes, reauthenticates, replaces and revoke
     await page.reload();
     await expect(page.getByText('待使用', { exact: true })).toBeVisible();
     await expect(raw).toHaveCount(0);
+    await expect(page.getByLabel('家庭码', { exact: true })).toHaveText(
+      familyCode.match(/.{4}/g)!.join('-'),
+    );
     await pool.query(
       "UPDATE parent_sessions SET password_verified_at=now()-interval '6 minutes' WHERE parent_id IN (SELECT id FROM parents WHERE email=$1)",
       [email],

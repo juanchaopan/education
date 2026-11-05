@@ -1,3 +1,4 @@
+import { groupRegistrationCode } from '../domain/registration-code.js';
 import type pg from 'pg';
 import type { RegistrationKeyInfo } from '@education/contracts';
 import type { RegistrationKeyRepository } from './registration-key.js';
@@ -43,7 +44,16 @@ export function createRegistrationKeyRepository(pool: pg.Pool): RegistrationKeyR
             [parent.familyId],
           )
         ).rows[0];
-        return { key: row ? info(row) : null, reauthenticationRequired: !parent.recent };
+        const family = (
+          await client.query<{ code: string | null }>('SELECT code FROM families WHERE id=$1', [
+            parent.familyId,
+          ])
+        ).rows[0]!;
+        return {
+          key: row ? info(row) : null,
+          reauthenticationRequired: !parent.recent,
+          ...(family.code ? { familyCode: groupRegistrationCode(family.code) } : {}),
+        };
       }),
     generate: (hash, keyHash) =>
       withParentSession(pool, hash, async (client, parent) => {

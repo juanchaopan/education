@@ -1,3 +1,4 @@
+import { FamilyCode } from './family.js';
 import { Type, type Static } from '@sinclair/typebox';
 
 export const ChildRegistration = Type.Object(
@@ -13,7 +14,7 @@ export type ChildRegistration = Static<typeof ChildRegistration>;
 export const ChildRegistrationReceipt = Type.Object(
   {
     status: Type.Literal('registered'),
-    familyCode: Type.String({ pattern: '^[0-9A-HJKMNP-TV-Z]{4}(-[0-9A-HJKMNP-TV-Z]{4}){2}$' }),
+    familyCode: FamilyCode,
     nickname: Type.String({ minLength: 1, maxLength: 24 }),
   },
   { additionalProperties: false },
