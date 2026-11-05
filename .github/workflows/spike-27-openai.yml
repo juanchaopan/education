@@ -1,0 +1,27 @@
+name: Spike 27 OpenAI benchmark
+on:
+  push:
+    branches: ['spike/27-openai-models']
+    paths:
+      - '.github/workflows/spike-27-openai.yml'
+      - 'spikes/27-openai-models/**'
+
+permissions:
+  contents: read
+
+jobs:
+  measure:
+    if: github.repository == 'juanchaopan/education'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Benchmark with synthetic input
+        env:
+          SPIKE_OPENAI_API_KEY: ${{ secrets.SPIKE_OPENAI_API_KEY }}
+        run: node spikes/27-openai-models/benchmark.mjs
