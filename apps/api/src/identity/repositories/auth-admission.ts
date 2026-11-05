@@ -4,7 +4,7 @@ import { SocketAddress } from 'node:net';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { sql } from 'drizzle-orm';
 import type pg from 'pg';
-import type { AuthAdmission } from '../domain/authentication.js';
+import type { AuthAdmission, AuthScope } from '../domain/authentication.js';
 import { RequestError } from '../../shared/request-error.js';
 
 const busy = () => new RequestError(429, '尝试较多，请稍后再试。');
@@ -56,18 +56,13 @@ async function claimSlot(client: pg.PoolClient) {
 export function createAuthAdmission(pool: pg.Pool, secret: string): AuthAdmission {
   let active = 0;
   const bucket = (value: string) => createHmac('sha256', secret).update(value).digest('hex');
-  return async (work, email, source, scope = 'authentication') => {
+  return async (work, identity, source, scope = 'authentication') => {
     if (active >= 2) throw busy();
     active++;
     let client: pg.PoolClient | undefined;
     try {
       client = await pool.connect();
-      const prefix = scope === 'recovery' ? 'recovery:' : '';
-      await reserveBudget(client, [
-        { key: bucket(`${prefix}authentication`), recent: 100, daily: 500 },
-        { key: bucket(`${prefix}ip:${sourceGroup(source)}`), recent: 30, daily: 200 },
-        ...(email ? [{ key: bucket(`${prefix}email:${email}`), recent: 10, daily: 50 }] : []),
-      ]);
+      await reserveBudget(client, admissionBudgets(scope, identity, source, bucket));
       await claimSlot(client);
       return await work();
     } finally {
@@ -76,4 +71,31 @@ export function createAuthAdmission(pool: pg.Pool, secret: string): AuthAdmissio
       active--;
     }
   };
+}
+
+function admissionBudgets(
+  scope: AuthScope,
+  identity: string,
+  source: string,
+  bucket: (value: string) => string,
+): Budget[] {
+  const prefix = scope === 'authentication' ? '' : `${scope}:`;
+  const redeem = scope === 'child-registration';
+  return [
+    { key: bucket(`${prefix}authentication`), recent: 100, daily: 500 },
+    {
+      key: bucket(`${prefix}ip:${sourceGroup(source)}`),
+      recent: redeem ? 10 : 30,
+      daily: redeem ? 50 : 200,
+    },
+    ...(identity
+      ? [
+          {
+            key: bucket(`${prefix}${redeem ? 'key' : 'email'}:${identity}`),
+            recent: redeem ? 5 : 10,
+            daily: redeem ? 500 : 50,
+          },
+        ]
+      : []),
+  ];
 }

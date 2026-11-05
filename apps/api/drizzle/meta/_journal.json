@@ -43,6 +43,13 @@
       "when": 1793892799523,
       "tag": "0005_opposite_sphinx",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793895599188,
+      "tag": "0006_round_scream",
+      "breakpoints": true
     }
   ]
 }

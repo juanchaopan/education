@@ -17,6 +17,8 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env) {
   if (!Value.Check(schema, config)) throw new Error('Invalid application configuration');
   checkBoolean(env.PAID_AI_ENABLED);
   checkBoolean(env.REGISTRATION_ENABLED);
+  if (env.PIN_PEPPER && !/^[a-fA-F0-9]{64}$/.test(env.PIN_PEPPER))
+    throw new Error('PIN_PEPPER must contain 64 hexadecimal characters');
   return { ...config, ...readRegistrationConfig(env) };
 }
 
@@ -41,6 +43,7 @@ function readRegistrationConfig(env: NodeJS.ProcessEnv) {
   }
   if (registrationEnabled) validateRegistrationSecrets(env);
   return {
+    pinPepper: env.PIN_PEPPER,
     registrationEnabled,
     origin,
     databaseUrl: env.DATABASE_URL,
