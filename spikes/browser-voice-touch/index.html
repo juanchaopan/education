@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>#28 普通话与触摸测试</title>
+<style>
+  body { font: 1rem/1.5 system-ui, sans-serif; color: #182637; background: #f2f6fa; }
+  main { max-width: 44rem; margin: auto; padding: 1rem; }
+  section { background: white; padding: 1rem; margin-block: 1rem; border-radius: 0.75rem; }
+  h1, h2 { margin-top: 0; }
+  h2 { font-size: 1.2rem; }
+  button, input { font: inherit; min-height: 44px; margin: 0.25rem; }
+  canvas { display: block; width: 100%; height: 180px; touch-action: none; outline: 1px solid #8293a8; }
+  pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+</style>
+<main>
+  <h1>普通话与触摸测试</h1>
+  <p>仅供成人测试。请读测试短句，避免说出姓名或其他个人信息。</p>
+  <p><strong>我把十二平均分成三份，每份是四。</strong></p>
+  <section>
+    <h2>1. 麦克风</h2>
+    <button id="record">开始录音</button><button id="stop-record" disabled>结束录音</button>
+    <audio id="clip" controls hidden></audio>
+    <p>先允许麦克风并录音，再试拒绝。重新允许后录音时切到另一应用，回来检查结果。</p>
+  </section>
+  <section>
+    <h2>2. 普通话识别</h2>
+    <button id="recognize-local">设备端识别</button><button id="recognize-online">浏览器在线识别</button>
+    <p>在线识别可能将短句发送给浏览器的语音服务。页面不会上传录音。</p>
+    <label for="answer">文字输入或修改识别结果</label><br>
+    <input id="answer" autocomplete="off" maxlength="80">
+  </section>
+  <section>
+    <h2>3. 中文朗读</h2>
+    <button id="speak">播放测试短句</button><button id="stop-speak">停止</button>
+    <p>确认实际听到普通话，再试重播和停止。</p>
+  </section>
+  <section>
+    <h2>4. 绘图</h2>
+    <canvas id="drawing" aria-label="测试画布"></canvas>
+    <button id="clear">清空</button>
+    <p>在画布画一条线，然后在画布外滚动。</p>
+  </section>
+  <section>
+    <h2>测试记录</h2>
+    <button id="copy">复制记录</button>
+    <pre id="log" aria-live="polite"></pre>
+  </section>
+</main>
+<script type="module" src="./probe.js"></script>
+
