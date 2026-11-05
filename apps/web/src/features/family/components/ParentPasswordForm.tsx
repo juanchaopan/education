@@ -1,9 +1,15 @@
 export function ParentPasswordForm({
+  id = 'key-parent-password',
+  label = '确认家长密码',
+  purpose = '管理 KEY',
   password,
   pending,
   onChange,
   onSubmit,
 }: {
+  id?: string;
+  label?: string;
+  purpose?: string;
   password: string;
   pending?: boolean;
   onChange: (value: string) => void;
@@ -16,10 +22,10 @@ export function ParentPasswordForm({
         onSubmit();
       }}
     >
-      <p>为保护家庭，请先确认家长密码；确认后 5 分钟内可管理 KEY。</p>
-      <label htmlFor="key-parent-password">确认家长密码</label>
+      <p>为保护家庭，请先确认家长密码；确认后 5 分钟内可{purpose}。</p>
+      <label htmlFor={id}>{label}</label>
       <input
-        id="key-parent-password"
+        id={id}
         type="password"
         autoComplete="current-password"
         maxLength={128}

@@ -30,7 +30,7 @@ export function FamilyCodeCard({ code, loading, failed, notice, onCopy }: Family
         <p>孩子首次成功注册后，家庭码会显示在这里。</p>
       )}
       <p className={styles.hint}>
-        家庭码用于后续孩子登录；一次性注册 KEY 只用来加入家庭。孩子登录将在下一版本开放。
+        家庭码用于孩子登录；一次性注册 KEY 只用来加入家庭。重置 PIN 后仍使用同一个家庭码。
       </p>
     </section>
   );

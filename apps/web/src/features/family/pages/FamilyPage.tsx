@@ -1,3 +1,4 @@
+import { ChildAccessPanel } from './ChildAccessPanel';
 import { RegistrationKeyPanel } from './RegistrationKeyPanel';
 import { VerificationPanel } from './VerificationPanel';
 import styles from './FamilyPage.module.css';
@@ -36,7 +37,13 @@ export function FamilyPage() {
             onLogout={leave}
           />
           {session.data.access === 'verified' && (
-            <RegistrationKeyPanel key={session.data.csrfToken} csrf={session.data.csrfToken} />
+            <>
+              <RegistrationKeyPanel key={session.data.csrfToken} csrf={session.data.csrfToken} />
+              <ChildAccessPanel
+                key={`children-${session.data.csrfToken}`}
+                csrf={session.data.csrfToken}
+              />
+            </>
           )}
           {!session.data.emailVerified && <VerificationPanel csrf={session.data.csrfToken} />}
         </>

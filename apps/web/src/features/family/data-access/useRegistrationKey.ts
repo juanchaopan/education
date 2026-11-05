@@ -1,10 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Value } from '@sinclair/typebox/value';
-import {
-  GeneratedRegistrationKey,
-  RegistrationKeyStatus,
-  ParentSession,
-} from '@education/contracts';
+import { GeneratedRegistrationKey, RegistrationKeyStatus } from '@education/contracts';
 import { sessionRequest } from './session-request';
 import type { TSchema, Static } from '@sinclair/typebox';
 
@@ -58,20 +54,6 @@ export function useManageRegistrationKey(csrf: string) {
     },
     onSettled: async () => {
       await client.invalidateQueries({ queryKey: key });
-    },
-  });
-}
-export function useParentReauthentication(csrf: string) {
-  const client = useQueryClient();
-  return useMutation({
-    retry: false,
-    gcTime: 0,
-    mutationFn: async (password: string) =>
-      read(await request('parents/reauthenticate', { password }, csrf), ParentSession),
-    onSuccess: async (session) => {
-      await client.cancelQueries({ queryKey: ['parent-session'] });
-      client.setQueryData(['parent-session'], session);
-      client.removeQueries({ queryKey: key });
     },
   });
 }

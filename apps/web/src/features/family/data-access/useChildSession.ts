@@ -1,3 +1,4 @@
+import { clearFamilyManagement } from './family-cache';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Value } from '@sinclair/typebox/value';
 import { ChildSession, type ChildLogin } from '@education/contracts';
@@ -53,7 +54,7 @@ export function useChildLogin() {
       client.setQueryData(['parent-session'], null);
       await client.cancelQueries({ queryKey: key });
       client.setQueryData(key, session);
-      client.removeQueries({ queryKey: ['parent-registration-key'] });
+      await clearFamilyManagement(client);
     },
   });
 }
