@@ -1,0 +1,51 @@
+{
+  "observed_at_utc": "2026-11-05T20:47:03.926686+00:00",
+  "meaning": "Executor HTTPS proxy CONNECT denial; vendor page and policy not read; not mainland accessibility evidence.",
+  "attempts": [
+    {
+      "id": "openai-supported-regions",
+      "url": "https://help.openai.com/en/articles/5347006-openai-api-supported-countries-and-territories",
+      "status": null,
+      "error_type": "URLError",
+      "elapsed_ms": 53,
+      "transport_error": "Tunnel connection failed: 403 Forbidden",
+      "observed_at_utc": "2026-11-05T20:46:17.924357+00:00"
+    },
+    {
+      "id": "openai-under-18",
+      "url": "https://platform.openai.com/docs/guides/safety-best-practices/under-18-api-guidance",
+      "status": null,
+      "error_type": "URLError",
+      "elapsed_ms": 11,
+      "transport_error": "Tunnel connection failed: 403 Forbidden",
+      "observed_at_utc": "2026-11-05T20:46:17.924394+00:00"
+    },
+    {
+      "id": "alibaba-model-studio",
+      "url": "https://help.aliyun.com/zh/model-studio/",
+      "status": null,
+      "error_type": "URLError",
+      "elapsed_ms": 12,
+      "transport_error": "Tunnel connection failed: 403 Forbidden",
+      "observed_at_utc": "2026-11-05T20:46:17.924398+00:00"
+    },
+    {
+      "id": "siliconflow-docs",
+      "url": "https://docs.siliconflow.cn/",
+      "status": null,
+      "error_type": "URLError",
+      "elapsed_ms": 10,
+      "transport_error": "Tunnel connection failed: 403 Forbidden",
+      "observed_at_utc": "2026-11-05T20:46:17.924401+00:00"
+    },
+    {
+      "id": "cloudflare-workers-ai",
+      "url": "https://developers.cloudflare.com/workers-ai/",
+      "status": null,
+      "error_type": "URLError",
+      "elapsed_ms": 10,
+      "transport_error": "Tunnel connection failed: 403 Forbidden",
+      "observed_at_utc": "2026-11-05T20:46:17.924403+00:00"
+    }
+  ]
+}

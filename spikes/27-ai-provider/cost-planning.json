@@ -1,0 +1,29 @@
+{
+  "kind": "planning-only, not measured tokens or vendor prices",
+  "assumptions": {
+    "families": 10,
+    "children_per_family": 2,
+    "ai_requests_per_child_per_day": 10,
+    "days": 30,
+    "images": 0,
+    "retries": 0
+  },
+  "scenarios": [
+    {
+      "name": "bounded-step",
+      "requests": 6000,
+      "input_tokens_per_request": 800,
+      "output_tokens_per_request": 160,
+      "input_million_tokens": 4.8,
+      "output_million_tokens": 0.96
+    },
+    {
+      "name": "full-history-comparison",
+      "requests": 6000,
+      "input_tokens_per_request": 4000,
+      "output_tokens_per_request": 500,
+      "input_million_tokens": 24.0,
+      "output_million_tokens": 3.0
+    }
+  ]
+}
