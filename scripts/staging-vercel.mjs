@@ -14,9 +14,18 @@ export function vercelApi(token, teamId) {
       },
     );
     // Provider responses and request bodies can contain environment credentials.
-    if (!response.ok) throw new Error(`Vercel ${method} failed (HTTP ${response.status})`);
+    if (!response.ok) throw await vercelFailure(response, method, path);
     return response.status === 204 ? {} : response.json();
   };
+}
+
+async function vercelFailure(response, method, path) {
+  const summary = `Vercel ${method} failed (HTTP ${response.status})`;
+  // Alias requests contain only a public hostname; deployment errors may echo environment values.
+  if (!path.endsWith('/aliases')) return new Error(summary);
+  const data = await response.json().catch(() => ({}));
+  const detail = data.error?.message;
+  return new Error(typeof detail === 'string' ? `${summary}: ${detail.slice(0, 400)}` : summary);
 }
 
 export async function releaseFiles() {

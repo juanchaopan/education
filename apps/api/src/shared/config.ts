@@ -45,6 +45,7 @@ function readRegistrationConfig(env: NodeJS.ProcessEnv) {
     origin,
     databaseUrl: env.DATABASE_URL,
     rateLimitKey: env.AUTH_RATE_LIMIT_KEY,
+    connectionTimeoutMs: env.VERCEL === '1' ? 3000 : 1000,
   };
 }
 

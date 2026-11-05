@@ -6,6 +6,7 @@ import { registerCatalog } from './catalog/routes/catalog.js';
 import { registerParentRegistration } from './identity/routes/registration.js';
 import type { RegistrationService } from './identity/services/registration.js';
 import { RequestError } from './shared/request-error.js';
+import { readinessErrorCode } from './shared/readiness-error.js';
 
 export function buildApp(
   options: {
@@ -33,8 +34,8 @@ export function buildApp(
     let ready = false;
     try {
       ready = (await options.ready?.()) === true;
-    } catch {
-      app.log.warn('Database readiness unavailable');
+    } catch (error) {
+      app.log.warn({ code: readinessErrorCode(error) }, 'Database readiness unavailable');
     }
     return reply
       .code(ready ? 200 : 503)
