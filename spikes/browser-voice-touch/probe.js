@@ -208,7 +208,7 @@ function speak() {
   const voices = synth?.getVoices() ?? [];
   const voice = voices.find((entry) => /^zh(?:-Hans)?(?:-CN)?$/i.test(entry.lang) && entry.localService);
   if (!voice) {
-    speechStatus.textContent = "当前没有可用的本地普通话声音。请试试预录示例。";
+    speechStatus.textContent = "当前没有可用的本地普通话声音。可以阅读上方短句。";
     return log(synth ? "speech-no-local-mandarin-voice" : "speech-unavailable", { voices: voices.length });
   }
 
@@ -227,14 +227,18 @@ function speak() {
   utterance.onstart = () => {
     if (currentSpeech !== utterance) return;
     clearTimeout(speechTimer);
-    speechStatus.textContent = "正在朗读。";
+    speechStatus.textContent = "设备报告开始朗读（" + voice.name + "）。请确认能否听见。";
     log("speech-start", { voice: voice.name, lang: voice.lang, startMs: ms(started) });
+    speechTimer = setTimeout(() => {
+      finish("speech-timeout", "设备未报告朗读结束。可以阅读上方短句。");
+      synth.cancel();
+    }, 15000);
   };
-  utterance.onend = () => finish("speech-end", "朗读结束。");
-  utterance.onerror = (event) => finish("speech-error", "朗读失败。请试试预录示例。", { error: event.error });
+  utterance.onend = () => finish("speech-end", "设备报告朗读结束。");
+  utterance.onerror = (event) => finish("speech-error", "设备朗读失败。可以阅读上方短句。", { error: event.error });
   speechStatus.textContent = "正在启动朗读…";
   speechTimer = setTimeout(() => {
-    finish("speech-timeout", "朗读没有启动。请试试预录示例。");
+    finish("speech-timeout", "设备朗读没有启动。可以阅读上方短句。");
     synth.cancel();
   }, 3000);
   synth.speak(utterance);
