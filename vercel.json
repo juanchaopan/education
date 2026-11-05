@@ -7,7 +7,7 @@
   "regions": ["sin1"],
   "functions": {
     "api/index.mjs": {
-      "includeFiles": "{apps/api/drizzle/**,apps/api/dist/release.json,apps/web/dist/index.html}",
+      "includeFiles": "{apps/api/drizzle/**,apps/api/dist/release.json}",
       "maxDuration": 30
     }
   },
@@ -16,6 +16,6 @@
     { "src": "/(?:api|health)(?:/.*)?", "dest": "/api/index" },
     { "src": "/version.json", "dest": "/api/index" },
     { "handle": "filesystem" },
-    { "src": "/.*", "dest": "/api/index" }
+    { "src": "/.*", "dest": "/index.html", "headers": { "Cache-Control": "no-cache" } }
   ]
 }

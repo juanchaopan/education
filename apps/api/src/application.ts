@@ -3,7 +3,6 @@ import { createSessionService } from './identity/services/session.js';
 import { createSessionRepository } from './identity/repositories/postgres-session.js';
 import { fileURLToPath } from 'node:url';
 import { existsSync } from 'node:fs';
-import fastifyStatic from '@fastify/static';
 import { buildApp } from './app.js';
 import { readConfig } from './shared/config.js';
 import pg from 'pg';
@@ -53,13 +52,14 @@ export async function createApplication(env: NodeJS.ProcessEnv = process.env) {
   app.addHook('onClose', async () => {
     await pool?.end();
   });
-  await registerWeb(app);
+  if (env.VERCEL !== '1') await registerWeb(app);
   return app;
 }
 
 async function registerWeb(app: ReturnType<typeof buildApp>) {
   const webRoot = fileURLToPath(new URL('../../web/dist/', import.meta.url));
   if (existsSync(webRoot)) {
+    const { default: fastifyStatic } = await import('@fastify/static');
     await app.register(fastifyStatic, { root: webRoot, cacheControl: false });
     app.addHook('onSend', async (request, reply) => {
       if (reply.getHeader('Cache-Control') === undefined) {

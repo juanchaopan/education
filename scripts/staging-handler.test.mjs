@@ -3,6 +3,34 @@ import { createServer } from 'node:http';
 import { once } from 'node:events';
 import { test } from 'node:test';
 import { readFile } from 'node:fs/promises';
+import { spawnSync } from 'node:child_process';
+
+test('serverless starts without CommonJS require(ESM) support or the static server plugin', () => {
+  const result = spawnSync(
+    process.execPath,
+    [
+      '--no-experimental-require-module',
+      '--input-type=module',
+      '-e',
+      `
+    import assert from 'node:assert/strict';
+    import { createServer } from 'node:http';
+    import { once } from 'node:events';
+    process.env.VERCEL = '1';
+    process.env.REGISTRATION_ENABLED = 'false';
+    const { default: handler } = await import('./api/index.mjs');
+    const server = createServer(handler).listen(0, '127.0.0.1');
+    await once(server, 'listening');
+    const response = await fetch('http://127.0.0.1:' + server.address().port + '/health/live');
+    assert.equal(response.status, 200);
+    server.closeAllConnections();
+    await new Promise(resolve => server.close(resolve));
+  `,
+    ],
+    { encoding: 'utf8', timeout: 15000 },
+  );
+  assert.equal(result.status, 0, result.stderr);
+});
 
 test('compiled Vercel handler preserves request validation, static routes and release identity', async () => {
   process.env.REGISTRATION_ENABLED = 'false';
