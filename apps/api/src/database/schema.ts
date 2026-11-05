@@ -12,6 +12,7 @@ import {
 } from 'drizzle-orm/pg-core';
 
 export const families = pgTable('families', {
+  code: text('code').unique(),
   authEpoch: integer('auth_epoch').default(1).notNull(),
   id: uuid('id').defaultRandom().primaryKey(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
@@ -45,9 +46,11 @@ export const children = pgTable(
       .notNull()
       .references(() => families.id, { onDelete: 'cascade' }),
     nickname: text('nickname').notNull(),
+    canonicalNickname: text('canonical_nickname').notNull(),
+    pinPepperVersion: integer('pin_pepper_version'),
     pinHash: text('pin_hash').notNull(),
   },
-  (table) => [uniqueIndex('child_family_nickname').on(table.familyId, table.nickname)],
+  (table) => [uniqueIndex('child_family_nickname').on(table.familyId, table.canonicalNickname)],
 );
 
 export const registrationKeys = pgTable(
@@ -159,3 +162,17 @@ function mailIntentColumns() {
     consumedAt: timestamp('consumed_at', { withTimezone: true }),
   };
 }
+
+export const childRegistrations = pgTable('child_registrations', {
+  requestHash: text('request_hash').primaryKey(),
+  fingerprint: text('fingerprint').notNull(),
+  childId: uuid('child_id')
+    .notNull()
+    .unique()
+    .references(() => children.id, { onDelete: 'cascade' }),
+  keyId: uuid('key_id')
+    .notNull()
+    .unique()
+    .references(() => registrationKeys.id, { onDelete: 'cascade' }),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+});

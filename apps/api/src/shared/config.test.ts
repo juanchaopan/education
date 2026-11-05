@@ -48,3 +48,9 @@ it('requires verified TLS and direct PostgreSQL sessions on Vercel', () => {
     }).registrationEnabled,
   ).toBe(true);
 });
+
+it('accepts only a separate valid PIN pepper and leaves parent services usable when it is absent', () => {
+  expect(readConfig(env).pinPepper).toBeUndefined();
+  expect(readConfig({ ...env, PIN_PEPPER: 'ab'.repeat(32) }).pinPepper).toBe('ab'.repeat(32));
+  expect(() => readConfig({ ...env, PIN_PEPPER: 'too-short' })).toThrow('PIN_PEPPER');
+});

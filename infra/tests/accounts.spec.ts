@@ -1,4 +1,5 @@
-import { randomUUID } from 'node:crypto';
+import { randomUUID, createHash } from 'node:crypto';
+import { generateRegistrationKey } from '../../apps/api/src/identity/services/registration-key.js';
 import { expect, test } from '@playwright/test';
 import { command, compose, database } from '../../scripts/accounts-compose.mjs';
 
@@ -193,4 +194,34 @@ test('database outage fails readiness and registration without losing form input
   await page.getByRole('button', { name: '提交注册' }).click();
   await expect(page.getByRole('heading', { name: '注册申请已受理' })).toBeVisible();
   expect(await database(`SELECT count(*) FROM parents WHERE email='${email}';`)).toBe('1');
+});
+
+test('redeems a KEY on A and safely replays the same registration through the packaged function on B', async ({
+  request,
+}) => {
+  const family = randomUUID();
+  const key = generateRegistrationKey();
+  const keyHash = createHash('sha256').update(key.replaceAll('-', '')).digest('hex');
+  await database(
+    `INSERT INTO families(id) VALUES('${family}'); INSERT INTO registration_keys(family_id,key_hash,expires_at) VALUES('${family}','${keyHash}',now()+interval '1 day');`,
+  );
+  const data = { requestId: randomUUID(), key, nickname: '小探索家', pin: '018274' };
+  const childHeaders = { Origin: origin, 'X-Education-Request': 'child-registration' };
+  const first = await request.post(`${origin}/api/v1/children/register`, {
+    headers: childHeaders,
+    data,
+  });
+  expect(first.status()).toBe(200);
+  const replay = await request.post(`${other}/api/v1/children/register`, {
+    headers: childHeaders,
+    data,
+  });
+  expect(replay.status()).toBe(200);
+  expect(await replay.json()).toEqual(await first.json());
+  const reused = await request.post(`${other}/api/v1/children/register`, {
+    headers: childHeaders,
+    data: { ...data, requestId: randomUUID() },
+  });
+  expect(reused.status()).toBe(409);
+  expect(await database(`SELECT count(*) FROM children WHERE family_id='${family}';`)).toBe('1');
 });

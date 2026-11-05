@@ -9,6 +9,7 @@ x-app: &app
     APP_ORIGIN: https://localhost:${ACCOUNTS_PORT_A:-8443}
     REGISTRATION_ENABLED: 'true'
     AUTH_RATE_LIMIT_KEY: ${AUTH_RATE_LIMIT_KEY:?Required}
+    PIN_PEPPER: ${PIN_PEPPER:?Required}
   depends_on:
     migrate:
       condition: service_completed_successfully

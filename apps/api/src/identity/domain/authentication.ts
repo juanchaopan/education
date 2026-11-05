@@ -1,6 +1,7 @@
+export type AuthScope = 'authentication' | 'recovery' | 'child-registration';
 export type AuthAdmission = <T>(
   work: () => Promise<T>,
-  email: string,
+  identity: string,
   source: string,
-  scope?: 'authentication' | 'recovery',
+  scope?: AuthScope,
 ) => Promise<T>;

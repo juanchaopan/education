@@ -1,3 +1,6 @@
+import { createChildRegistrationService } from './identity/services/child-registration.js';
+import { createChildRegistrationRepository } from './identity/repositories/postgres-child-registration.js';
+import { createChildPin } from './identity/services/child-pin.js';
 import { createRegistrationKeyService } from './identity/services/registration-key.js';
 import { createRegistrationKeyRepository } from './identity/repositories/postgres-registration-key.js';
 import { createReauthenticationService } from './identity/services/reauthentication.js';
@@ -58,6 +61,7 @@ export async function createApplication(env: NodeJS.ProcessEnv = process.env) {
     origin: config.origin,
     registration,
     sessions,
+    childRegistration: createChildRegistration(pool, config, admit),
     ...createFamilyManagement(pool, sessions, admit),
     verification: createVerification(pool, mailConfig, admit),
     recovery: createRecovery(pool, mailConfig, admit),
@@ -148,4 +152,18 @@ function createFamilyManagement(
       verify: verifyParentPassword,
     }),
   };
+}
+
+function createChildRegistration(
+  pool: pg.Pool | undefined,
+  config: ReturnType<typeof readConfig>,
+  admit: ReturnType<typeof createAuthAdmission> | undefined,
+) {
+  if (!pool || !config.pinPepper || !admit) return undefined;
+  return createChildRegistrationService({
+    repository: createChildRegistrationRepository(pool),
+    admit,
+    hashPin: createChildPin(config.pinPepper),
+    fingerprintKey: config.rateLimitKey!,
+  });
 }

@@ -15,18 +15,15 @@ afterAll(async () => {
 
 it('enforces nickname uniqueness inside a family and cascades temporary drafts', async () => {
   const child = randomUUID();
-  await pool.query('INSERT INTO children(id,family_id,nickname,pin_hash) VALUES ($1,$2,$3,$4)', [
-    child,
-    family,
-    '测试昵称',
-    'test-only-hash',
-  ]);
+  await pool.query(
+    'INSERT INTO children(id,family_id,nickname,canonical_nickname,pin_hash) VALUES ($1,$2,$3,$3,$4)',
+    [child, family, '测试昵称', 'test-only-hash'],
+  );
   await expect(
-    pool.query('INSERT INTO children(family_id,nickname,pin_hash) VALUES ($1,$2,$3)', [
-      family,
-      '测试昵称',
-      'test-only-hash',
-    ]),
+    pool.query(
+      'INSERT INTO children(family_id,nickname,canonical_nickname,pin_hash) VALUES ($1,$2,$2,$3)',
+      [family, '测试昵称', 'test-only-hash'],
+    ),
   ).rejects.toMatchObject({ code: '23505' });
   await pool.query(
     'INSERT INTO drafts(child_id,problem_id,problem_version,content,expires_at) VALUES ($1,$2,1,$3,now())',

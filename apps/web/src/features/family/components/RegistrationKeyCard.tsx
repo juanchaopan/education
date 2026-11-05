@@ -92,7 +92,7 @@ export function RegistrationKeyCard(props: RegistrationKeyCardProps) {
           刷新 KEY 状态
         </button>
       </div>
-      <p className={styles.hint}>孩子填写 KEY 的注册页面将在下一项功能开放。</p>
+      <p className={styles.hint}>请让孩子前往导航中的“孩子注册”，填写 KEY、昵称和六位 PIN。</p>
     </section>
   );
 }
