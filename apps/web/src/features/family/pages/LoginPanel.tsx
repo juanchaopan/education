@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { useState } from 'react';
 import { LoginForm } from '../components/LoginForm';
 import { useParentLogin } from '../data-access/useParentSession';
@@ -18,14 +19,17 @@ export function LoginPanel() {
     );
   };
   return (
-    <LoginForm
-      email={email}
-      password={password}
-      onEmailChange={setEmail}
-      onPasswordChange={setPassword}
-      onSubmit={submit}
-      pending={login.isPending}
-      error={login.error?.message}
-    />
+    <>
+      <LoginForm
+        email={email}
+        password={password}
+        onEmailChange={setEmail}
+        onPasswordChange={setPassword}
+        onSubmit={submit}
+        pending={login.isPending}
+        error={login.error?.message}
+      />
+      <Link to="/family/recover">忘记密码？通过邮箱找回</Link>
+    </>
   );
 }
