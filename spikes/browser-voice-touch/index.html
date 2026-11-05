@@ -27,6 +27,8 @@
     <h2>2. 普通话识别</h2>
     <button id="recognize-local">设备端识别</button><button id="recognize-online">浏览器在线识别</button>
     <p>在线识别可能将短句发送给浏览器的语音服务。页面不会上传录音。</p>
+    <p id="transcript" aria-live="polite"></p>
+    <button id="use-transcript" disabled>使用识别结果</button><br>
     <label for="answer">文字输入或修改识别结果</label><br>
     <input id="answer" autocomplete="off" maxlength="80">
   </section>

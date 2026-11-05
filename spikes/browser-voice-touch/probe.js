@@ -111,6 +111,8 @@ async function recognize(local) {
   if (recording || permissionRequest || activeRecognition) return log("recognition-busy", { mode });
   if (!local && !confirm("允许浏览器语音服务处理这句测试用语？")) return;
 
+  el("transcript").textContent = "";
+  el("use-transcript").disabled = true;
   const recognition = new Recognition();
   recognition.lang = "zh-CN";
   const started = performance.now();
@@ -129,10 +131,13 @@ async function recognize(local) {
   recognition.onresult = (event) => {
     if (activeRecognition?.recognition !== recognition) return;
     const result = event.results[event.resultIndex][0];
-    el("answer").value = result.transcript;
+    const transcript = result.transcript.trim();
+    if (!transcript) return finish("recognition-no-result");
+    el("transcript").textContent = transcript;
+    el("use-transcript").disabled = false;
     const normalize = (value) => value.replace(/十二/g, "12").replace(/三/g, "3")
       .replace(/四/g, "4").replace(/[\p{P}\p{Z}]/gu, "");
-    finish("recognition-result", { fixtureMatch: normalize(result.transcript) === normalize(phrase) });
+    finish("recognition-result", { fixtureMatch: normalize(transcript) === normalize(phrase) });
   };
   recognition.onerror = (event) => finish("recognition-error", { error: event.error });
   recognition.onend = () => finish("recognition-no-result");
@@ -153,6 +158,10 @@ async function recognize(local) {
 }
 el("recognize-local").onclick = () => recognize(true);
 el("recognize-online").onclick = () => recognize(false);
+el("use-transcript").onclick = () => {
+  el("answer").value = el("transcript").textContent;
+  el("answer").focus();
+};
 
 function speak() {
   if (!window.speechSynthesis) return log("speech-unavailable");
