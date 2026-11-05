@@ -6,13 +6,13 @@
 
 1. 核实并记录实际 Google 账号用途/资格、当前额度、超额及风控恢复、应用密码要求。2026-11-05 维护者提供了[个人 Gmail 发信限制](https://support.google.com/mail/answer/22839)和[应用密码](https://support.google.com/accounts/answer/185833)的展开正文，核对结果见 [#21 供应商说明](../evidence/21/README.md#gmail-供应商说明)。开发环境访问官方帮助页仍被代理拒绝，来源为维护者复制的正文，不声称独立抓取或获得 Google 业务批准；[Google 条款](https://policies.google.com/terms)仍适用。
 2. 使用专用个人 Gmail 发件地址，启用两步验证并创建新的应用密码。权限不是只允许发送的细粒度凭据，账号发件箱及供应商留存仍受 Google 条款影响。
-3. 设置以下 GitHub Actions Secrets；不进入前端、仓库、聊天或日志：
+3. 在 GitHub Actions 配置以下值。密码和密钥仅保存在 Secrets，不进入前端、仓库、聊天或日志：
 
-| Secret                       | 内容                                                            |
-| ---------------------------- | --------------------------------------------------------------- |
-| `STAGING_GMAIL_USER`         | 完整的专用 `@gmail.com` 发件地址                                |
-| `STAGING_GMAIL_APP_PASSWORD` | 新的 16 位应用密码，去掉显示空格                                |
-| `STAGING_MAIL_PAYLOAD_KEY`   | 密码管理器生成的 64 位十六进制随机值（32 字节），独立于其他密钥 |
+| 名称                         | 位置      | 内容                                                            |
+| ---------------------------- | --------- | --------------------------------------------------------------- |
+| `STAGING_GMAIL_USER`         | Variables | 完整的专用 `@gmail.com` 发件地址                                |
+| `STAGING_GMAIL_APP_PASSWORD` | Secrets   | 新的 16 位应用密码，去掉显示空格                                |
+| `STAGING_MAIL_PAYLOAD_KEY`   | Secrets   | 密码管理器生成的 64 位十六进制随机值（32 字节），独立于其他密钥 |
 
 4. 供应商核实完成后，设置 Actions Variables `STAGING_MAIL_PROVIDER_APPROVED=true` 和 `STAGING_MAIL_ENABLED=true`，手动运行 main 的 staging workflow。缺配置或核实开关会拒绝候选发布；不能为了部署成功跳过校验。生产不自动启用。
 
