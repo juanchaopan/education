@@ -4,7 +4,7 @@
 
 ## 启用前
 
-1. 核实并记录实际 Google 账号用途/资格、当前额度、超额及风控恢复、应用密码要求；官方参考：[应用密码](https://support.google.com/accounts/answer/185833)、[个人 Gmail 发信限制](https://support.google.com/mail/answer/22839)、[Google 条款](https://policies.google.com/terms)。链接是待核实来源，不表示已读取当前内容。当前开发环境访问官方帮助页被代理拒绝，发信 gate 仍关闭。
+1. 核实并记录实际 Google 账号用途/资格、当前额度、超额及风控恢复、应用密码要求。2026-11-05 维护者提供了[个人 Gmail 发信限制](https://support.google.com/mail/answer/22839)和[应用密码](https://support.google.com/accounts/answer/185833)的展开正文，核对结果见 [#21 供应商说明](../evidence/21/README.md#gmail-供应商说明)。开发环境访问官方帮助页仍被代理拒绝，来源为维护者复制的正文，不声称独立抓取或获得 Google 业务批准；[Google 条款](https://policies.google.com/terms)仍适用。
 2. 使用专用个人 Gmail 发件地址，启用两步验证并创建新的应用密码。权限不是只允许发送的细粒度凭据，账号发件箱及供应商留存仍受 Google 条款影响。
 3. 设置以下 GitHub Actions Secrets；不进入前端、仓库、聊天或日志：
 
