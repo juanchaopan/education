@@ -1,4 +1,6 @@
 import { registerChildRegistration } from './identity/routes/child-registration.js';
+import { registerChildSessions } from './identity/routes/child-session.js';
+import type { ChildSessionService } from './identity/services/child-session.js';
 import type { ChildRegistrationService } from './identity/services/child-registration.js';
 import {
   registerRegistrationKeys,
@@ -21,6 +23,7 @@ import { RequestError } from './shared/request-error.js';
 import { readinessErrorCode } from './shared/readiness-error.js';
 
 type AppOptions = {
+  childSessions?: ChildSessionService;
   childRegistration?: ChildRegistrationService;
   origin?: string;
   registration?: RegistrationService;
@@ -97,6 +100,7 @@ function registerIdentity(app: FastifyInstance, options: AppOptions) {
   const origin = options.origin ?? 'http://127.0.0.1:5173';
   registerParentRegistration(app, origin, options.registration);
   registerChildRegistration(app, origin, options.childRegistration);
+  registerChildSessions(app, origin, options.childSessions);
   registerParentSessions(app, origin, options.sessions);
   registerVerification(app, {
     origin: origin,

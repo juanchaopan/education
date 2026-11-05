@@ -30,3 +30,4 @@ export * from './recovery.js';
 export * from './registration-key.js';
 
 export * from './child-registration.js';
+export * from './child-session.js';

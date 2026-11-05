@@ -10,6 +10,7 @@ const tables = [
   'drafts',
   'registration_attempts',
   'parent_sessions',
+  'child_sessions',
   'email_verifications',
   'verification_attempts',
   'password_resets',

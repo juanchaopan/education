@@ -29,8 +29,10 @@ export function createSessionRepository(pool: pg.Pool): SessionRepository {
         )
           return false;
         await tx.execute(sql`DELETE FROM parent_sessions WHERE expires_at <= now()`);
-        if (previousHash)
+        if (previousHash) {
           await tx.execute(sql`DELETE FROM parent_sessions WHERE token_hash=${previousHash}`);
+          await tx.execute(sql`DELETE FROM child_sessions WHERE token_hash=${previousHash}`);
+        }
         await tx.execute(sql`INSERT INTO parent_sessions
         (token_hash, parent_id, credential_version, family_epoch, verified, password_verified_at, expires_at)
         VALUES (${hash}, ${account.id}, ${account.credentialVersion}, ${account.familyEpoch}, ${account.emailVerified}, now(),
