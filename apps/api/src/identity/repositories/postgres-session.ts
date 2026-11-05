@@ -1,11 +1,10 @@
+import { accountColumns, currentSession } from './session-query.js';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { sql } from 'drizzle-orm';
 import type pg from 'pg';
 import type { ParentAccount } from '../domain/session.js';
 import type { SessionRepository } from './session.js';
 
-const accountColumns = sql`p.id, p.family_id AS "familyId", p.email, p.password_hash AS "passwordHash",
-  p.email_verified AS "emailVerified", p.credential_version AS "credentialVersion", f.auth_epoch AS "familyEpoch"`;
 export function createSessionRepository(pool: pg.Pool): SessionRepository {
   const db = drizzle(pool);
   return {
@@ -47,11 +46,7 @@ export function createSessionRepository(pool: pg.Pool): SessionRepository {
         }>(sql`
       UPDATE parent_sessions s SET last_seen_at=now()
       FROM parents p, families f
-      WHERE s.token_hash=${hash} AND s.parent_id=p.id AND p.family_id=f.id
-        AND s.credential_version=p.credential_version AND s.family_epoch=f.auth_epoch
-        AND (NOT s.verified OR p.email_verified)
-        AND s.expires_at > now()
-        AND s.last_seen_at > now() - CASE WHEN s.verified THEN interval '12 hours' ELSE interval '15 minutes' END
+      WHERE s.token_hash=${hash} AND ${currentSession}
       RETURNING p.email, p.email_verified AS "emailVerified",
         CASE WHEN s.verified AND p.email_verified THEN 'verified' ELSE 'verification-only' END AS access`)
       ).rows[0],
