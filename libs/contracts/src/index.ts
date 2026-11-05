@@ -31,3 +31,4 @@ export * from './registration-key.js';
 
 export * from './child-registration.js';
 export * from './child-session.js';
+export * from './child-access.js';

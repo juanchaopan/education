@@ -7,5 +7,5 @@ export const accountColumns = sql`p.id, p.family_id AS "familyId", p.email, p.pa
 export const currentSession = sql`s.parent_id=p.id AND p.family_id=f.id
   AND s.credential_version=p.credential_version AND s.family_epoch=f.auth_epoch
   AND (NOT s.verified OR p.email_verified)
-  AND s.expires_at > now()
-  AND s.last_seen_at > now() - CASE WHEN s.verified THEN interval '12 hours' ELSE interval '15 minutes' END`;
+  AND s.expires_at > clock_timestamp()
+  AND s.last_seen_at > clock_timestamp() - CASE WHEN s.verified THEN interval '12 hours' ELSE interval '15 minutes' END`;
