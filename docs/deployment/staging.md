@@ -11,7 +11,7 @@
 | 数据库        | 维护者指定 Supabase 项目 `telkaiyxprpetmqthyhn`；us-east-1（维护者确认）；项目保持不变，Vercel 按用户要求固定 Singapore/sin1 |
 | 当前测试地址  | <https://education-access-spike.hyp.app/>；已完成 Singapore 账号候选的发布与域名读回，详见验收记录                           |
 
-Vercel 测试项目关闭默认登录保护，让不携带平台登录 cookie 的候选版本冒烟可以执行；这是公开的合成数据测试站。无 Gmail/AI 凭据。自管账号的服务端会话与权限不受此设置替代。
+Vercel 测试项目关闭默认登录保护，让不携带平台登录 cookie 的候选版本冒烟可以执行；这是公开的测试站，不接收儿童学习资料。验证邮件使用独立配置的 Gmail 凭据，配置与验收见 [家长验证邮件](mail.md)；没有 AI 凭据。自管账号的服务端会话与权限不受此设置替代。
 
 ## 一次性配置
 
