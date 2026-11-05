@@ -56,13 +56,17 @@ async function claimSlot(client: pg.PoolClient) {
 export function createAuthAdmission(pool: pg.Pool, secret: string): AuthAdmission {
   let active = 0;
   const bucket = (value: string) => createHmac('sha256', secret).update(value).digest('hex');
-  return async (work, identity, source, scope = 'authentication') => {
+  return async (work, identity, source, scope = 'authentication', family) => {
     if (active >= 2) throw busy();
     active++;
     let client: pg.PoolClient | undefined;
     try {
       client = await pool.connect();
-      await reserveBudget(client, admissionBudgets(scope, identity, source, bucket));
+      const budgets =
+        scope === 'child-login'
+          ? childLoginBudgets(identity, source, family, bucket)
+          : admissionBudgets(scope, identity, source, bucket);
+      await reserveBudget(client, budgets);
       await claimSlot(client);
       return await work();
     } finally {
@@ -71,6 +75,20 @@ export function createAuthAdmission(pool: pg.Pool, secret: string): AuthAdmissio
       active--;
     }
   };
+}
+
+function childLoginBudgets(
+  identity: string,
+  source: string,
+  family: string | undefined,
+  bucket: (value: string) => string,
+): Budget[] {
+  return [
+    { key: bucket('authentication'), recent: 100, daily: 500 },
+    { key: bucket(`ip:${sourceGroup(source)}`), recent: 30, daily: 200 },
+    ...(family ? [{ key: bucket(`family:${family}`), recent: 50, daily: 200 }] : []),
+    ...(identity ? [{ key: bucket(`child:${identity}`), recent: 5, daily: 20 }] : []),
+  ];
 }
 
 function admissionBudgets(

@@ -46,6 +46,8 @@ export function useParentLogin() {
     gcTime: 0,
     mutationFn: async (input: ParentLogin) => read(await request('parents/login', input)),
     onSuccess: async (session) => {
+      await client.cancelQueries({ queryKey: ['child-session'] });
+      client.setQueryData(['child-session'], null);
       await client.cancelQueries({ queryKey: key });
       client.setQueryData(key, session);
     },

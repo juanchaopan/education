@@ -1,4 +1,7 @@
 import { createChildRegistrationService } from './identity/services/child-registration.js';
+import { createChildSessionService } from './identity/services/child-session.js';
+import { createChildSessionRepository } from './identity/repositories/postgres-child-session.js';
+import { createPinMaterial } from './identity/services/child-pin.js';
 import { createChildRegistrationRepository } from './identity/repositories/postgres-child-registration.js';
 import { createChildPin } from './identity/services/child-pin.js';
 import { createRegistrationKeyService } from './identity/services/registration-key.js';
@@ -49,19 +52,13 @@ export async function createApplication(env: NodeJS.ProcessEnv = process.env) {
         hash: hashParentPassword,
       })
     : undefined;
-  const sessions = pool
-    ? createSessionService({
-        repository: createSessionRepository(pool),
-        admit: admit!,
-        verify: verifyParentPassword,
-        dummyHash: await hashParentPassword(randomBytes(32).toString('base64url')),
-      })
-    : undefined;
+  const { sessions, childSessions } = await createIdentitySessions(pool, config, admit);
   const app = buildApp({
     origin: config.origin,
     registration,
     sessions,
     childRegistration: createChildRegistration(pool, config, admit),
+    childSessions,
     ...createFamilyManagement(pool, sessions, admit),
     verification: createVerification(pool, mailConfig, admit),
     recovery: createRecovery(pool, mailConfig, admit),
@@ -75,6 +72,31 @@ export async function createApplication(env: NodeJS.ProcessEnv = process.env) {
   });
   if (env.VERCEL !== '1') await registerWeb(app);
   return app;
+}
+
+async function createIdentitySessions(
+  pool: pg.Pool | undefined,
+  config: ReturnType<typeof readConfig>,
+  admit: ReturnType<typeof createAuthAdmission> | undefined,
+) {
+  if (!pool || !admit) return { sessions: undefined, childSessions: undefined };
+  const dummyHash = await hashParentPassword(randomBytes(32).toString('base64url'));
+  const sessions = createSessionService({
+    repository: createSessionRepository(pool),
+    admit,
+    verify: verifyParentPassword,
+    dummyHash,
+  });
+  const childSessions = config.pinPepper
+    ? createChildSessionService({
+        repository: createChildSessionRepository(pool),
+        admit,
+        material: createPinMaterial(config.pinPepper),
+        verify: verifyParentPassword,
+        dummyHash,
+      })
+    : undefined;
+  return { sessions, childSessions };
 }
 
 async function registerWeb(app: ReturnType<typeof buildApp>) {

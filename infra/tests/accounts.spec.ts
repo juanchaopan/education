@@ -225,3 +225,73 @@ test('redeems a KEY on A and safely replays the same registration through the pa
   expect(reused.status()).toBe(409);
   expect(await database(`SELECT count(*) FROM children WHERE family_id='${family}';`)).toBe('1');
 });
+
+test('child login survives a server restart, shares authentication and logout across A/B, and denies parent access', async ({
+  context,
+  page,
+}) => {
+  const data = await registeredChild(context.request);
+  const login = await context.request.post(`${other}/api/v1/children/login`, { headers, data });
+  expect(login.status()).toBe(200);
+  const csrf = (await login.json()).csrfToken;
+  expect((await context.request.get(`${origin}/api/v1/children/session`)).status()).toBe(200);
+  expect((await context.request.get(`${other}/api/v1/session`)).status()).toBe(401);
+  expect(
+    (
+      await context.request.post(`${origin}/api/v1/parents/registration-keys`, {
+        headers: { ...headers, 'X-CSRF-Token': csrf },
+        data: {},
+      })
+    ).status(),
+  ).toBe(401);
+  await page.goto('/child');
+  await expect(page.getByRole('heading', { name: '小鹿，欢迎回来！' })).toBeVisible();
+  await compose(['restart', 'app-a', 'app-b']);
+  for (const base of [origin, other])
+    await expect
+      .poll(
+        async () => {
+          try {
+            return (await context.request.get(`${base}/health/ready`)).status();
+          } catch {
+            return 0;
+          }
+        },
+        { timeout: 30000 },
+      )
+      .toBe(200);
+  await page.reload();
+  await expect(page.getByRole('heading', { name: '小鹿，欢迎回来！' })).toBeVisible();
+  expect(
+    (
+      await context.request.post(`${other}/api/v1/children/logout`, {
+        headers: { ...headers, 'X-CSRF-Token': csrf },
+        data: {},
+      })
+    ).status(),
+  ).toBe(204);
+  expect((await context.request.get(`${origin}/api/v1/children/session`)).status()).toBe(401);
+  for (let i = 0; i < 5; i++) {
+    const wrong = await context.request.post(`${i % 2 ? origin : other}/api/v1/children/login`, {
+      headers,
+      data: { ...data, pin: '937261' },
+    });
+    expect(wrong.status()).toBe(i < 4 ? 401 : 429);
+  }
+});
+
+async function registeredChild(request: import('@playwright/test').APIRequestContext) {
+  const family = randomUUID(),
+    key = generateRegistrationKey();
+  const keyHash = createHash('sha256').update(key.replaceAll('-', '')).digest('hex');
+  await database(
+    `INSERT INTO families(id) VALUES('${family}'); INSERT INTO registration_keys(family_id,key_hash,expires_at) VALUES('${family}','${keyHash}',now()+interval '1 day');`,
+  );
+  const registered = await request.post(`${origin}/api/v1/children/register`, {
+    headers: { Origin: origin, 'X-Education-Request': 'child-registration' },
+    data: { requestId: randomUUID(), key, nickname: '小鹿', pin: '018274' },
+  });
+  expect(registered.status()).toBe(200);
+  const { familyCode } = await registered.json();
+  return { familyCode, nickname: '小鹿', pin: '018274' };
+}

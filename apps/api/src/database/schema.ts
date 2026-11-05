@@ -41,6 +41,7 @@ export const registrationAttempts = pgTable(
 export const children = pgTable(
   'children',
   {
+    credentialVersion: integer('credential_version').default(1).notNull(),
     id: uuid('id').defaultRandom().primaryKey(),
     familyId: uuid('family_id')
       .notNull()
@@ -120,6 +121,25 @@ export const parentSessions = pgTable(
   (table) => [
     index('parent_sessions_parent').on(table.parentId),
     index('parent_sessions_expiry').on(table.expiresAt),
+  ],
+);
+
+export const childSessions = pgTable(
+  'child_sessions',
+  {
+    tokenHash: text('token_hash').primaryKey(),
+    childId: uuid('child_id')
+      .notNull()
+      .references(() => children.id, { onDelete: 'cascade' }),
+    credentialVersion: integer('credential_version').notNull(),
+    familyEpoch: integer('family_epoch').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    lastSeenAt: timestamp('last_seen_at', { withTimezone: true }).defaultNow().notNull(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  },
+  (table) => [
+    index('child_sessions_child').on(table.childId),
+    index('child_sessions_expiry').on(table.expiresAt),
   ],
 );
 

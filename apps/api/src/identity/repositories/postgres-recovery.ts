@@ -49,6 +49,10 @@ async function consume(pool: pg.Pool, hash: string, passwordHash: string) {
       parent.family_id,
     ]);
     await client.query(
+      'DELETE FROM child_sessions WHERE child_id IN (SELECT id FROM children WHERE family_id=$1)',
+      [parent.family_id],
+    );
+    await client.query(
       'DELETE FROM parent_sessions WHERE parent_id IN (SELECT id FROM parents WHERE family_id=$1)',
       [parent.family_id],
     );
