@@ -29,6 +29,13 @@ describe('SMTP outcomes', () => {
     expect(mail.from).toBe('sender@gmail.com');
     expect(mail.text).toContain('https://school.example/family/verify#token=');
     expect(mail.text).not.toContain('hyp.app');
+    const links = [...mail.html.matchAll(/<a\b[^>]*\bhref="([^"]+)"/g)].map((match) => match[1]);
+    expect(links).toEqual(
+      Array(2).fill(`https://school.example/family/verify#token=${'a'.repeat(43)}`),
+    );
+    expect(mail.html).toContain('>验证家长邮箱</a>');
+    expect(mail.html).toContain('<html lang="zh-CN">');
+    expect(mail.html).not.toMatch(/<(script|img|link|form)\b/i);
     expect(close).toHaveBeenCalledOnce();
   });
 });
