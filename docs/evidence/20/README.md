@@ -1,6 +1,6 @@
 # #20 staging 接入记录
 
-状态：实现与本地验证；尚未取得真实 staging 发布/数据库验收证据，不关闭 #20。维护者提供 Supabase 项目编号；连接串与部署秘密只通过 GitHub 安全配置。
+状态：真实 Singapore staging 发布、数据库迁移、账号冒烟及自动域名绑定通过；浏览器与重部署持久化仍待确认，#20 保持开放。维护者提供 Supabase 项目编号；连接串与部署秘密只通过 GitHub 安全配置。
 
 ## 范围
 
@@ -70,3 +70,13 @@ PR #62 经维护者确认已合并为 main `10600074c5fd3209b9c40c358d92bb70a88d
 确认旧探针仍拥有 Project Domain 后，读取 Vercel 官方 SDK moveProjectDomain 端点及请求模式，使用原子移动将 education-access-spike.hyp.app 转交 staging 项目；读回 verified=true，既有 alias 指向保持不变。
 
 维护者随后明确不新建 Supabase，并要求 Vercel 仍为 Singapore。已将项目默认函数区域恢复 sin1；现有数据库与凭据保持不变，现有已验证版本仅作为退路。当前代码扩展跨区连接建立预算、增加不含私密信息的错误分类及有界启动探测；实际 sin1 发布与持久化尚待验收。未宣称故障一定由网络延迟造成，下一轮日志将提供允许列表中的错误分类。
+
+## Singapore 首次成功发布与合并时序（2026-11-05 UTC）
+
+PR #63 经维护者确认后合并为 `16fcaa675b3887ae92c6261ffdf57cd79ff1c848`。staging 运行 [41974913097](https://github.com/juanchaopan/education/actions/runs/41974913097) 的准备任务于 05:35:21 结束并跳过发布，PR 于 05:35:24 才合并。原来的十五秒关联检查窗口早于原生自动合并完成。回归用例先重现三十秒后才合并时漏派发的问题，再将等待限定为每五秒检查、最多两分钟；无论等多久，未合并、外仓库和错误 head 都不获得发布许可。超过窗口的异常情况仍需人工触发，不声称无限等待。
+
+手动启动 staging [41975178909](https://github.com/juanchaopan/education/actions/runs/41975178909)，在同一次运行中派发并等待精确 main 的完整 CI [41975192383](https://github.com/juanchaopan/education/actions/runs/41975192383)。两者最终均为 success。发布候选为 `dpl_9Ez9gzBfmZ2urRX8AmrxJ8K2TJem`，URL 为 `education-staging-3qrzivxqd-juanchaopan1.vercel.app`；Vercel API 读回 READY、target staging、regions `["sin1"]`。Supabase 仍是现有 us-east-1 项目。
+
+发布步骤成功意味着受控迁移、表权限加固、精确版本/数据库就绪及注册/登录/会话/退出/旧 cookie 拒绝检查均通过，合成账号由 finally 定向清理。GitHub Actions 使用已配置的 STAGING_VERCEL_TOKEN 成功提交域名绑定，不再返回之前的 403。独立 API 读回 education-access-spike.hyp.app 的 deploymentId 与上述候选相等，projectId 为 staging 项目。没有取得完整日志中的逐次耗时，不补造延迟数字，也不将这次发布等同于大陆性能达标。
+
+合并等待修复的 staging 回归共 35 项通过，完整常规检查通过，jscpd 为 0 clones。真实浏览器刷新、同数据库重新部署后的账号和会话持久化仍待维护者验证；本节不提前勾选该项。隔离邮件仍返回 not-sent，没有开启 Gmail 或 AI。后续将通过本修复的实际自动触发核对发布链路，不能把上述手动启动冒充合并自动触发。
