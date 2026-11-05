@@ -69,4 +69,4 @@
 
 ## #23 注册 KEY 管理
 
-家长近期密码重认证、KEY 生成/一次显示/状态读取/撤销和原子替换已实现；新表 `key_generation_attempts` 用于跨实例生成预算。代码和本地验证见 [#23 证据](evidence/23/README.md)，PR 与真实 staging 验收待完成。儿童兑换属于 #24，不在本轮开放。
+家长近期密码重认证、KEY 生成/一次显示/状态读取/撤销和原子替换已实现；新表 `key_generation_attempts` 用于跨实例生成预算。PR #73 已合并发布到 Singapore staging，维护者确认真实生成/复制、刷新隐藏原文、重新生成及撤销均正常；验证范围见 [#23 证据](evidence/23/README.md)。下一项为 #24 儿童使用 KEY 注册，尚未开放。

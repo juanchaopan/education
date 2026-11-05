@@ -24,7 +24,11 @@ KEY 使用 CSPRNG 生成 16 位 Crockford Base32 字符（80 bit），分四组�
 
 截图使用合成账号与合成 KEY，本机 Chromium，仅作为界面审阅证据：[改动前](before.png)、[桌面生成后](after.png)、[手机](after-mobile.png)、[重认证](reauthentication.png)。Storybook 展示空、加载、处理、生成、重认证、失败和长文。已检查手机无横向溢出及控件间距。既有项目尚无固定官方 Playwright Docker 镜像的像素基准，本轮没有宣称像素回归通过。
 
-#23 尚未完成维护者的真实 staging 浏览器验收，也不证明大陆完整链路或普通操作 2 秒目标。PR 合并后需核对 main 的 CI、staging 发布及实际版本，再验证真实生成、刷新和撤销。儿童兑换页面和原子消费属于 #24；本轮验证 KEY 状态与管理权限，没有声称已走通真实儿童注册。KEY 到期、撤销或更新不会删除孩子账号和进度；后续兑换必须同时检查未撤销、未消费和期限。
+[PR #73](https://github.com/juanchaopan/education/pull/73) 已合并，实际验收版本为 `1c1fab570c5e29cac400be37621b0e594b693202`。[PR CI](https://github.com/juanchaopan/education/actions/runs/42059550522)、[对应 main CI](https://github.com/juanchaopan/education/actions/runs/42059964561) 和 [staging 发布](https://github.com/juanchaopan/education/actions/runs/42059584565) 均通过。发布后通过 Vercel API 核对自定义域名 `education-access-spike.hyp.app` 指向 READY 部署 `dpl_CdMW66F4DAVbHmzFvUGM2HW7BddJ`，实际版本匹配且区域为 Singapore（`sin1`）；工作流事件的旧 headSha 不作为实际发布版本。
+
+维护者已按真实浏览器步骤确认：生成 KEY 可看到四组字符并复制；刷新后原文消失，状态仍为“待使用”；重新生成后撤销，显示“已撤销”。维护者回复 “all good”，据此接受 #23 的正式 staging 界面流程。没有收集真实 KEY、密码或账号数据；精确设备、地区与延迟未提供，不据此证明大陆完整链路或普通操作 2 秒目标。
+
+儿童兑换页面和原子消费属于 #24；本轮验证 KEY 状态与管理权限，没有声称已走通真实儿童注册。KEY 到期、撤销或更新不会删除孩子账号和进度；后续兑换必须同时检查未撤销、未消费和期限。
 
 ## 审查
 
