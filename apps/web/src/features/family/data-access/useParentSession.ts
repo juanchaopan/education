@@ -1,3 +1,4 @@
+import { sessionRequest } from './session-request';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Value } from '@sinclair/typebox/value';
 import { ParentSession, type ParentLogin } from '@education/contracts';
@@ -5,22 +6,7 @@ import { ParentSession, type ParentLogin } from '@education/contracts';
 const key = ['parent-session'];
 async function request(path: string, body?: object, csrf?: string) {
   try {
-    return await fetch(`/api/v1/${path}`, {
-      credentials: 'same-origin',
-      cache: 'no-store',
-      signal: AbortSignal.timeout(10_000),
-      ...(body
-        ? {
-            method: 'POST',
-            body: JSON.stringify(body),
-            headers: {
-              'Content-Type': 'application/json',
-              'X-Education-Request': 'session',
-              ...(csrf ? { 'X-CSRF-Token': csrf } : {}),
-            },
-          }
-        : {}),
-    });
+    return await sessionRequest(path, body, csrf);
   } catch {
     throw new Error('连接中断，请稍后重试。');
   }
