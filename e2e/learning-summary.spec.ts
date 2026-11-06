@@ -1,24 +1,35 @@
 import { expect, test } from '@playwright/test';
-import { randomUUID } from 'node:crypto';
+import { randomBytes, randomUUID } from 'node:crypto';
 import pg from 'pg';
-import { hashParentPassword } from '../apps/api/src/identity/services/password.js';
+import { tokenHash } from '../apps/api/src/identity/services/session-security.js';
+
+async function verifiedParentSession(pool: pg.Pool, family: string) {
+  const { rows } = await pool.query<{ id: string }>(
+    `INSERT INTO parents(family_id,email,password_hash,email_verified)
+     VALUES($1,$2,'fixture',true) RETURNING id`,
+    [family, `${family}@example.test`],
+  );
+  const token = randomBytes(32).toString('base64url');
+  await pool.query(
+    `INSERT INTO parent_sessions(token_hash,parent_id,credential_version,family_epoch,expires_at,verified)
+     VALUES($1,$2,1,1,now()+interval '1 hour',true)`,
+    [tokenHash(token), rows[0]!.id],
+  );
+  return token;
+}
 
 test('parent can switch children and see the evidence for a review suggestion', async ({
   page,
+  baseURL,
 }, info) => {
   test.skip(!process.env.DATABASE_URL, 'Isolated database required');
   const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
   const family = randomUUID(),
     learner = randomUUID(),
     sibling = randomUUID();
-  const email = `${randomUUID()}@example.test`,
-    password = 'synthetic password for summary browser test';
   try {
     await pool.query('INSERT INTO families(id) VALUES($1)', [family]);
-    await pool.query(
-      'INSERT INTO parents(family_id,email,password_hash,email_verified) VALUES($1,$2,$3,true)',
-      [family, email, await hashParentPassword(password)],
-    );
+    const token = await verifiedParentSession(pool, family);
     await pool.query(
       `INSERT INTO children(id,family_id,nickname,canonical_nickname,pin_hash,pin_pepper_version)
        VALUES($1,$3,'小鹿','小鹿','fixture',1),($2,$3,'小猫','小猫','fixture',1)`,
@@ -34,11 +45,19 @@ test('parent can switch children and see the evidence for a review suggestion', 
        VALUES($1,'pattern-practice',1,$2,'observe')`,
       [learner, randomUUID()],
     );
+    // Share the real session boundary without consuming the login suite's loopback budget.
+    await page.context().addCookies([
+      {
+        name: '__Host-education_session',
+        value: token,
+        domain: new URL(baseURL!).hostname,
+        path: '/',
+        httpOnly: true,
+        secure: true,
+        sameSite: 'Lax',
+      },
+    ]);
     await page.goto('/family');
-    await page.getByRole('button', { name: '已有账号？去登录' }).click();
-    await page.getByLabel('登录邮箱').fill(email);
-    await page.getByLabel('登录密码').fill(password);
-    await page.getByRole('button', { name: '登录', exact: true }).click();
     const panel = page.getByRole('region', { name: '学习摘要' });
     const select = panel.getByLabel('选择孩子');
     await expect(select).toHaveValue('');
