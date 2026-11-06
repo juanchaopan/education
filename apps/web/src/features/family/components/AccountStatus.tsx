@@ -25,7 +25,7 @@ export function AccountStatus({
       <p role="status">
         {session.emailVerified ? '邮箱已验证' : '邮箱待验证，仅可查看账号验证状态'}
       </p>
-      <p>{verified ? '您已安全登录，可以在下方管理孩子的注册 KEY 和登录 PIN。' : notice}</p>
+      <p>{verified ? '您已安全登录，可以在下方查看学习摘要，管理注册 KEY 和登录 PIN。' : notice}</p>
       {refreshing && <p role="status">暂时无法刷新账号状态，请稍后重试。</p>}
       {error && (
         <p role="alert" className={styles.notice}>
