@@ -1,0 +1,20 @@
+.button {
+  min-block-size: var(--space-8);
+  padding-inline: var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--teal-light);
+  color: var(--teal-dark);
+  font: inherit;
+  font-weight: 700;
+}
+
+.button:disabled {
+  background: var(--paper);
+  color: var(--muted);
+}
+
+.button:focus-visible {
+  outline: 2px solid var(--teal-dark);
+  outline-offset: 2px;
+}
