@@ -12,6 +12,7 @@ const tables = [
   'progress',
   'help_events',
   'assignments',
+  'ai_consents',
   'registration_attempts',
   'parent_sessions',
   'child_sessions',

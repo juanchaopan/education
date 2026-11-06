@@ -6,6 +6,7 @@ export async function clearFamilyManagement(client: QueryClient) {
     ['parent-registration-key'],
     ['parent-children'],
     ['parent-learning-summary'],
+    ['parent-ai-consent'],
     practiceQueryKey,
   ];
   await Promise.all(keys.map((queryKey) => client.cancelQueries({ queryKey })));

@@ -21,6 +21,23 @@ export const families = pgTable('families', {
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
+export const aiConsents = pgTable(
+  'ai_consents',
+  {
+    familyId: uuid('family_id')
+      .notNull()
+      .references(() => families.id, { onDelete: 'cascade' }),
+    scope: text('scope').notNull(),
+    policyVersion: integer('policy_version').notNull(),
+    granted: boolean('granted').notNull(),
+    revision: uuid('revision').defaultRandom().notNull(),
+    changedAt: timestamp('changed_at', { withTimezone: true })
+      .default(sql`clock_timestamp()`)
+      .notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.familyId, table.scope] })],
+).enableRLS();
+
 export const parents = pgTable('parents', {
   credentialVersion: integer('credential_version').default(1).notNull(),
   id: uuid('id').defaultRandom().primaryKey(),
