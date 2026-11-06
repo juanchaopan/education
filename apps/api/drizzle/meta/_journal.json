@@ -71,6 +71,13 @@
       "when": 1793972171452,
       "tag": "0009_learning_attempts",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1793979546934,
+      "tag": "0010_practice_assignments",
+      "breakpoints": true
     }
   ]
 }

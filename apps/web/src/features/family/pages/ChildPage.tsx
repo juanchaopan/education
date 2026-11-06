@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { ChildLoginForm, type ChildLoginFields } from '../components/ChildLoginForm';
 import { ChildAccount } from '../components/ChildAccount';
+import { ChildPracticePanel } from './ChildPracticePanel';
 import { useChildSession, useChildLogin, useChildLogout } from '../data-access/useChildSession';
 import { rememberedChild, rememberChild } from '../data-access/child-locator';
 
@@ -51,12 +52,15 @@ export function ChildPage() {
       ) : session.isError ? (
         <p role="alert">暂时无法确认登录状态，请稍后刷新。你的账号不会丢失。</p>
       ) : session.data ? (
-        <ChildAccount
-          session={session.data}
-          pending={logout.isPending}
-          error={error}
-          onLogout={leave}
-        />
+        <>
+          <ChildAccount
+            session={session.data}
+            pending={logout.isPending}
+            error={error}
+            onLogout={leave}
+          />
+          <ChildPracticePanel key={session.data.csrfToken} csrf={session.data.csrfToken} />
+        </>
       ) : (
         <ChildLoginForm
           {...fields}

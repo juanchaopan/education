@@ -1,5 +1,6 @@
 import { ChildAccessPanel } from './ChildAccessPanel';
 import { LearningSummaryPanel } from './LearningSummaryPanel';
+import { ParentPracticePanel } from './ParentPracticePanel';
 import { RegistrationKeyPanel } from './RegistrationKeyPanel';
 import { VerificationPanel } from './VerificationPanel';
 import styles from './FamilyPage.module.css';
@@ -41,6 +42,10 @@ export function FamilyPage() {
             <>
               <LearningSummaryPanel
                 key={`summary-${session.data.csrfToken}`}
+                csrf={session.data.csrfToken}
+              />
+              <ParentPracticePanel
+                key={`practice-${session.data.csrfToken}`}
                 csrf={session.data.csrfToken}
               />
               <RegistrationKeyPanel key={session.data.csrfToken} csrf={session.data.csrfToken} />

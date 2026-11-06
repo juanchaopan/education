@@ -1,5 +1,5 @@
 import { useSearchParams } from 'react-router-dom';
-import { useCatalog } from '../data-access/useCatalog';
+import { useCatalog } from '../../../shared/lib/useCatalog';
 import { EmptyState } from '../../../shared/ui/EmptyState';
 import { CatalogNavigation } from '../components/CatalogNavigation';
 import { WelcomeHero, LearningPrinciples } from '../components/Welcome';

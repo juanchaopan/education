@@ -73,6 +73,7 @@ export function useChildLogout() {
     onSuccess: async () => {
       await client.cancelQueries({ queryKey: key });
       client.setQueryData(key, null);
+      await clearFamilyManagement(client);
     },
     onError: () => {
       void client.invalidateQueries({ queryKey: key });
