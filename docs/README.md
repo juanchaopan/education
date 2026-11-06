@@ -51,3 +51,5 @@
 [ADR-0012](adr/0012-browser-voice-touch-spike.md)：#28 接受 GPT-Transcribe 试点语音转写及 Pointer Events 绘图。正式朗读的普通话声音交 #42 试听验收；iPad 和大陆端到端验证交 #51。
 
 [ADR-0013](adr/0013-per-problem-interactive-teaching.md) 记录 #48 的逐题教学设计、三道原型的验证证据、跨工具出课流程和后续课堂语音联动的验收边界。
+
+[#31 共享课堂交互](evidence/31/README.md) 记录逐题复用边界、接入约定和两道原型的验证。
