@@ -20,6 +20,9 @@ export const reservationCost = usageCost({
   outputTokens: MAX_TUTORING_OUTPUT_TOKENS,
 });
 
-export function withinTutoringBounds({ inputTokens, outputTokens }: Usage) {
-  return inputTokens <= MAX_INPUT_TOKENS && outputTokens <= MAX_TUTORING_OUTPUT_TOKENS;
+export function withinTutoringBounds(
+  { inputTokens, outputTokens }: Usage,
+  maxOutputTokens: number,
+) {
+  return inputTokens <= MAX_INPUT_TOKENS && outputTokens <= maxOutputTokens;
 }

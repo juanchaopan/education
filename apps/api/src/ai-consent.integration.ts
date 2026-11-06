@@ -7,6 +7,7 @@ import { createAiConsent } from './ai-consent-application.js';
 import { createAiTutoring } from './ai-tutoring-application.js';
 import { reservationCost } from './ai/domain/tutoring-cost.js';
 import { createTutoringUsage } from './ai/repositories/postgres-tutoring-usage.js';
+import { hintTask } from './ai/services/hint-task.js';
 import { csrfToken, tokenHash } from './identity/services/session-security.js';
 
 if (!process.env.DATABASE_URL?.endsWith('/education_test'))
@@ -134,8 +135,8 @@ it('admits only one reservation across pools, releases a rejected send and holds
   expect((await status.read(parent)).tutoringBudget).toBe('available');
   const otherPool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
   const { started, finish, send } = pendingProvider();
-  const a = createAiTutoring(pool, env, send);
-  const b = createAiTutoring(otherPool, env, send);
+  const a = hintGateway(pool, env, send);
+  const b = hintGateway(otherPool, env, send);
   const firstRequest = a(first.credentials, tutoringContext);
   const secondRequest = b(second.credentials, tutoringContext);
   const both = Promise.all([firstRequest, secondRequest]);
@@ -169,7 +170,7 @@ it('admits only one reservation across pools, releases a rejected send and holds
 it('records only billing metadata and settles once even if a later completion disagrees', async () => {
   const owner = await tutoringHousehold();
   const send = vi.fn<typeof fetch>().mockImplementation(async () => usageResponse());
-  const request = createAiTutoring(pool, tutoringEnv, send);
+  const request = hintGateway(pool, tutoringEnv, send);
   await expect(request(owner.credentials, tutoringContext)).resolves.toMatchObject({
     reason: 'unavailable',
   });
@@ -192,7 +193,7 @@ it('records only billing metadata and settles once even if a later completion di
 it('limits repeated requests even with no monetary cap', async () => {
   const owner = await tutoringHousehold();
   const send = vi.fn<typeof fetch>().mockImplementation(async () => usageResponse());
-  const request = createAiTutoring(pool, tutoringEnv, send);
+  const request = hintGateway(pool, tutoringEnv, send);
   const results = await Promise.all(
     Array.from({ length: 8 }, () => request(owner.credentials, tutoringContext)),
   );
@@ -204,6 +205,15 @@ it('limits repeated requests even with no monetary cap', async () => {
 
 const tutoringEnv = { OPENAI_API_KEY: 'synthetic-key', OPENAI_TUTORING_ELIGIBLE: 'true' };
 const tutoringContext = { step: '数一数左边的物体。', question: '从哪里开始？' };
+
+function hintGateway(db: pg.Pool, env: NodeJS.ProcessEnv, send: typeof fetch) {
+  const gateway = createAiTutoring(db, env, send);
+  return (
+    credentials: Parameters<typeof gateway>[1],
+    context: typeof tutoringContext,
+    signal?: AbortSignal,
+  ) => gateway(hintTask, credentials, context, signal);
+}
 
 async function tutoringHousehold() {
   const owner = await household();
@@ -244,7 +254,7 @@ async function verifyCancelledReservation(
 ) {
   const provider = pendingProvider();
   const controller = new AbortController();
-  const request = createAiTutoring(pool, env, provider.send);
+  const request = hintGateway(pool, env, provider.send);
   const running = request(owner.credentials, tutoringContext, controller.signal);
   await Promise.race([
     provider.started,
@@ -366,11 +376,11 @@ it('commits consent dispatch before upstream headers arrive and denies new tutor
     return headers;
   });
   const env = { OPENAI_API_KEY: 'synthetic-key' };
-  await expect(createAiTutoring(pool, env, send)(child, context)).resolves.toEqual({
+  await expect(hintGateway(pool, env, send)(child, context)).resolves.toEqual({
     status: 'fallback',
     reason: 'ineligible',
   });
-  const request = createAiTutoring(pool, { ...env, OPENAI_TUTORING_ELIGIBLE: 'true' }, send);
+  const request = hintGateway(pool, { ...env, OPENAI_TUTORING_ELIGIBLE: 'true' }, send);
   await expect(request(child, context)).resolves.toMatchObject({ reason: 'unauthorized' });
   await recent(owner.parent);
   expect((await change(owner.parent, await decision(owner.parent))).statusCode).toBe(200);

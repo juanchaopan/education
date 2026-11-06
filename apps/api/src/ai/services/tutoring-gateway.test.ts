@@ -1,5 +1,6 @@
 import { afterEach, expect, it, vi } from 'vitest';
 import { RequestError } from '../../shared/request-error.js';
+import { hintTask } from './hint-task.js';
 import { createTutoringGateway } from './tutoring-gateway.js';
 
 const input = { step: '观察两组物体的数量。', question: '先数哪一组？' };
@@ -49,7 +50,13 @@ function setup(config = settings) {
       .mockResolvedValue('id'),
     settle: vi.fn<Parameters<typeof createTutoringGateway>[2]['settle']>().mockResolvedValue(),
   };
-  return { send, authorize, meter, request: createTutoringGateway(config, authorize, meter, send) };
+  const gateway = createTutoringGateway(config, authorize, meter, send);
+  const request = (
+    credentials: Parameters<typeof gateway>[1],
+    context: typeof input,
+    signal?: AbortSignal,
+  ) => gateway(hintTask, credentials, context, signal);
+  return { send, authorize, meter, request };
 }
 
 afterEach(() => vi.useRealTimers());
@@ -88,7 +95,7 @@ it('starts one bounded stateless request and decodes a completion across UTF-8 c
   const context = { ...input, history: 'private past answer', answerKey: 'private solution' };
   await expect(request(credentials, context)).resolves.toMatchObject({
     status: 'ready',
-    text: '先看看左边有几个。',
+    value: '先看看左边有几个。',
     usage: { inputTokens: 82, outputTokens: 12 },
   });
   expect(authorize).toHaveBeenCalledTimes(1);
