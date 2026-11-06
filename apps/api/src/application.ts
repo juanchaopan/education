@@ -39,6 +39,7 @@ import { createAnswering } from './answer-application.js';
 import { createLearningSummary } from './learning-summary-application.js';
 import { createPracticeAssignments } from './practice-application.js';
 import { createAiConsent } from './ai-consent-application.js';
+import { createTeachingFeedback } from './teaching-feedback-application.js';
 
 export async function createApplication(env: NodeJS.ProcessEnv = process.env) {
   const config = readConfig(env);
@@ -59,11 +60,8 @@ export async function createApplication(env: NodeJS.ProcessEnv = process.env) {
         hash: hashParentPassword,
       })
     : undefined;
-  const { sessions, childSessions, drafts, answering } = await createIdentitySessions(
-    pool,
-    config,
-    admit,
-  );
+  const { sessions, childSessions, drafts, answering, teachingFeedback } =
+    await createIdentitySessions(pool, config, admit, env);
   const app = buildApp({
     origin: config.origin,
     registration,
@@ -72,6 +70,7 @@ export async function createApplication(env: NodeJS.ProcessEnv = process.env) {
     childSessions,
     drafts,
     answering,
+    teachingFeedback,
     childAccess: createChildAccess(pool, sessions, admit, config),
     ...createFamilyManagement(pool, sessions, admit, config.aiMonthlyBudget),
     verification: createVerification(pool, mailConfig, admit),
@@ -92,6 +91,7 @@ async function createIdentitySessions(
   pool: pg.Pool | undefined,
   config: ReturnType<typeof readConfig>,
   admit: ReturnType<typeof createAuthAdmission> | undefined,
+  env: NodeJS.ProcessEnv,
 ) {
   if (!pool || !admit)
     return {
@@ -99,6 +99,7 @@ async function createIdentitySessions(
       childSessions: undefined,
       drafts: undefined,
       answering: undefined,
+      teachingFeedback: undefined,
     };
   const dummyHash = await hashParentPassword(randomBytes(32).toString('base64url'));
   const sessions = createSessionService({
@@ -122,6 +123,7 @@ async function createIdentitySessions(
     ...(childSessions && {
       drafts: createDrafts(pool),
       answering: createAnswering(pool, config.rateLimitKey!),
+      teachingFeedback: createTeachingFeedback(pool, env),
     }),
   };
 }

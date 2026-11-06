@@ -7,6 +7,9 @@ const stepId = Type.String({ pattern: identifier.source });
 
 export const feedbackTextMaxLength = 500;
 export const feedbackInstructionMaxLength = 160;
+// Shown whenever the input cannot be understood reliably; it never counts as a mistake.
+export const uncertainFeedbackInstruction =
+  '我还不能确定你的意思。你可以确认一下，或者换个方法再试。';
 export const feedbackImageMaxBytes = 512 * 1024;
 // Four base64 characters carry three bytes; the body adds a small JSON envelope.
 const feedbackImageMaxLength = Math.ceil(feedbackImageMaxBytes / 3) * 4;

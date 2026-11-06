@@ -16,8 +16,10 @@ export function createAiTutoring(pool: pg.Pool, env = process.env, send = fetch)
     },
     (credentials, start) => consent.dispatch(credentials, 'openai-tutoring', start),
     {
-      reserve: (credentials) =>
-        consent.withChildConsent(credentials, 'openai-tutoring', usage.reserve),
+      reserve: (credentials, amount) =>
+        consent.withChildConsent(credentials, 'openai-tutoring', (client, child) =>
+          usage.reserve(client, child, amount),
+        ),
       settle: usage.settle,
     },
     send,

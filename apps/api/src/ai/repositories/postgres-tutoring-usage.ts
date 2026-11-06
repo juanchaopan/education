@@ -16,7 +16,7 @@ const budgetAllowsNext = `
 
 export function createTutoringUsage(pool: pg.Pool, cap: bigint | null) {
   return {
-    async reserve(client: pg.PoolClient, child: string) {
+    async reserve(client: pg.PoolClient, child: string, amount: bigint) {
       // The statement after acquiring the transaction lock sees prior committed reservations.
       await client.query('SELECT pg_advisory_xact_lock(351907, 39)');
       const result = await client.query<{ id: string }>(
@@ -34,14 +34,7 @@ export function createTutoringUsage(pool: pg.Pool, cap: bigint | null) {
            AND (SELECT count(*) FROM ai_usage
                 WHERE child_id=c.id AND admitted_at>l.now-interval '1 minute') < $6
          RETURNING id`,
-        [
-          cap,
-          reservationCost,
-          child,
-          TUTORING_MODEL,
-          FAMILY_REQUESTS_PER_MINUTE,
-          CHILD_REQUESTS_PER_MINUTE,
-        ],
+        [cap, amount, child, TUTORING_MODEL, FAMILY_REQUESTS_PER_MINUTE, CHILD_REQUESTS_PER_MINUTE],
       );
       return result.rows[0]?.id ?? null;
     },

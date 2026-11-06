@@ -4,11 +4,12 @@ import { RequestError } from '../../shared/request-error.js';
 import {
   type BillingResult,
   MAX_TUTORING_BODY_BYTES,
+  reservationCostFor,
   TUTORING_MODEL,
   type Usage,
   withinTutoringBounds,
 } from '../domain/tutoring-cost.js';
-import type { ModelTask } from './model-task.js';
+import type { ModelRequest, ModelTask } from './model-task.js';
 import { readOpenAiResponse } from './openai-response.js';
 
 type Credentials = { token?: string; csrf?: string };
@@ -19,7 +20,7 @@ type Authorize = (
   start: (signal: AbortSignal) => Promise<InFlight>,
 ) => Promise<InFlight>;
 type Meter = {
-  reserve(credentials: Credentials): Promise<string | null>;
+  reserve(credentials: Credentials, amount: bigint): Promise<string | null>;
   settle(id: string, result: BillingResult): Promise<void>;
 };
 
@@ -29,6 +30,16 @@ function fallback(reason: AiHelpFallback) {
   return { status: 'fallback', reason } as const;
 }
 
+// Image data is priced by the provider's image tokens, not by its bytes, so only
+// the text part of the request counts against the byte bound.
+function mediaLength({ content }: ModelRequest) {
+  if (typeof content === 'string') return 0;
+  return content.reduce(
+    (sum, part) => sum + (part.type === 'input_image' ? part.image_url.length : 0),
+    0,
+  );
+}
+
 function requestBody<I, O>(task: ModelTask<I, O>, input: I) {
   const request = task.request(input);
   if (!request) return;
@@ -36,13 +47,16 @@ function requestBody<I, O>(task: ModelTask<I, O>, input: I) {
     model: TUTORING_MODEL,
     instructions: request.instructions,
     input: [{ role: 'user', content: request.content }],
+    ...(request.format && {
+      text: { format: { type: 'json_schema', strict: true, ...request.format } },
+    }),
     reasoning: { effort: 'none' },
     max_output_tokens: task.maxOutputTokens,
     service_tier: 'default',
     store: false,
     stream: true,
   });
-  if (Buffer.byteLength(body) <= MAX_TUTORING_BODY_BYTES) return body;
+  if (Buffer.byteLength(body) - mediaLength(request) <= MAX_TUTORING_BODY_BYTES) return body;
 }
 
 function unavailable(settings: Settings): AiHelpFallback | undefined {
@@ -105,7 +119,7 @@ async function meteredRequest<I, O>(
   credentials: Credentials,
   dispatch: (onSend: () => void) => Promise<InFlight>,
 ) {
-  const id = await meter.reserve(credentials);
+  const id = await meter.reserve(credentials, reservationCostFor(task.maxOutputTokens));
   if (!id) return fallback('usage-limited');
   let billing: BillingResult = { status: 'released' };
   try {
