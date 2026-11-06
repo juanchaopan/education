@@ -20,6 +20,8 @@
 | [架构总览](architecture/overview.md) | 指标、组件、交互、数据与故障处理 |
 | [决策记录](adr/)                     | 已选择技术及提议的实现细节       |
 
+[逐题设计互动教学与验收手册](design/interactive-lesson-authoring.md) 记录逐题分镜、交互与音画验收要求，提供开发者自查卡。
+
 [框架进度与后续工作](development-status.md)：实际实现范围、前置条件和开发顺序。
 
 [ADR-0007](adr/0007-typescript-7-toolchain.md)：按用户 TS7 目标调整编译、lint 与架构解析工具链。
