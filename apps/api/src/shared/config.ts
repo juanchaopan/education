@@ -19,7 +19,19 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env) {
   checkBoolean(env.REGISTRATION_ENABLED);
   if (env.PIN_PEPPER && !/^[a-fA-F0-9]{64}$/.test(env.PIN_PEPPER))
     throw new Error('PIN_PEPPER must contain 64 hexadecimal characters');
-  return { ...config, ...readRegistrationConfig(env) };
+  return {
+    ...config,
+    ...readRegistrationConfig(env),
+    aiMonthlyBudget: readAiMonthlyBudget(env.AI_MONTHLY_BUDGET_USD),
+  };
+}
+
+function readAiMonthlyBudget(value: string | undefined) {
+  if (!value) return null;
+  if (!/^\d{1,9}(\.\d{1,9})?$/.test(value))
+    throw new Error('AI_MONTHLY_BUDGET_USD must be a nonnegative decimal USD amount');
+  const [dollars, fraction = ''] = value.split('.');
+  return BigInt(dollars!) * 1_000_000_000n + BigInt(fraction.padEnd(9, '0'));
 }
 
 function checkBoolean(value: string | undefined) {

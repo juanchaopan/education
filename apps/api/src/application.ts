@@ -73,7 +73,7 @@ export async function createApplication(env: NodeJS.ProcessEnv = process.env) {
     drafts,
     answering,
     childAccess: createChildAccess(pool, sessions, admit, config),
-    ...createFamilyManagement(pool, sessions, admit),
+    ...createFamilyManagement(pool, sessions, admit, config.aiMonthlyBudget),
     verification: createVerification(pool, mailConfig, admit),
     recovery: createRecovery(pool, mailConfig, admit),
     ready: pool ? await createReadinessCheck(pool) : undefined,
@@ -187,12 +187,13 @@ function createFamilyManagement(
   pool: pg.Pool | undefined,
   sessions: ReturnType<typeof createSessionService> | undefined,
   admit: ReturnType<typeof createAuthAdmission> | undefined,
+  monthlyBudget: bigint | null,
 ) {
   if (!pool || !sessions || !admit) return {};
   return {
     learningSummary: createLearningSummary(pool),
     practice: createPracticeAssignments(pool),
-    aiConsent: createAiConsent(pool),
+    aiConsent: createAiConsent(pool, monthlyBudget),
     registrationKeys: createRegistrationKeyService({
       sessions,
       repository: createRegistrationKeyRepository(pool),

@@ -23,6 +23,11 @@ export const AiConsentChange = Type.Object(
 );
 export const AiConsentView = Type.Object({
   reauthenticationRequired: Type.Boolean(),
+  tutoringBudget: Type.Union([
+    Type.Literal('unset'),
+    Type.Literal('available'),
+    Type.Literal('limited'),
+  ]),
   policies: Type.Array(
     Type.Composite([
       policy,

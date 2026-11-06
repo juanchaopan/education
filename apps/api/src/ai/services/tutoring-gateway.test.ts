@@ -43,7 +43,13 @@ function setup(config = settings) {
   const authorize = vi.fn<Parameters<typeof createTutoringGateway>[1]>(async (_, start) =>
     start(new AbortController().signal),
   );
-  return { send, authorize, request: createTutoringGateway(config, authorize, send) };
+  const meter = {
+    reserve: vi
+      .fn<Parameters<typeof createTutoringGateway>[2]['reserve']>()
+      .mockResolvedValue('id'),
+    settle: vi.fn<Parameters<typeof createTutoringGateway>[2]['settle']>().mockResolvedValue(),
+  };
+  return { send, authorize, meter, request: createTutoringGateway(config, authorize, meter, send) };
 }
 
 afterEach(() => vi.useRealTimers());
@@ -107,7 +113,7 @@ it('starts one bounded stateless request and decodes a completion across UTF-8 c
 
 it('times out despite early headers, deltas and a stream that stays open', async () => {
   vi.useFakeTimers();
-  const { request, send } = setup();
+  const { request, send, meter } = setup();
   send.mockImplementation(async (_, options) => {
     const body = new ReadableStream({
       start(controller) {
@@ -124,10 +130,11 @@ it('times out despite early headers, deltas and a stream that stays open', async
   await expect(pending).resolves.toEqual({ status: 'fallback', reason: 'timeout' });
   expect(send.mock.calls[0]?.[1]?.signal?.aborted).toBe(true);
   expect(send).toHaveBeenCalledTimes(1);
+  expect(meter.settle).toHaveBeenCalledExactlyOnceWith('id', { status: 'unknown' });
 });
 
 it('cancels pending authorization and does not send when it eventually returns', async () => {
-  const { request, send, authorize } = setup();
+  const { request, send, authorize, meter } = setup();
   const controller = new AbortController();
   let release = () => {};
   authorize.mockImplementation(async (_, start) => {
@@ -137,11 +144,40 @@ it('cancels pending authorization and does not send when it eventually returns',
     return start(new AbortController().signal);
   });
   const pending = request(credentials, input, controller.signal);
+  await Promise.resolve();
   controller.abort('synthetic private error');
   await expect(pending).resolves.toEqual({ status: 'fallback', reason: 'cancelled' });
   release();
-  await Promise.resolve();
+  await vi.waitFor(() =>
+    expect(meter.settle).toHaveBeenCalledExactlyOnceWith('id', { status: 'released' }),
+  );
   expect(send).not.toHaveBeenCalled();
+});
+
+it('falls back at admission without dispatching or settling', async () => {
+  const { request, send, meter } = setup();
+  meter.reserve.mockResolvedValueOnce(null);
+  await expect(request(credentials, input)).resolves.toMatchObject({ reason: 'usage-limited' });
+  expect(send).not.toHaveBeenCalled();
+  expect(meter.settle).not.toHaveBeenCalled();
+});
+
+it('settles reported usage for unusable hints and flags out-of-bounds responses', async () => {
+  const { request, send, meter } = setup();
+  send.mockResolvedValueOnce(stream(encoder.encode(done.replace('output_text', 'refusal'))));
+  await expect(request(credentials, input)).resolves.toMatchObject({ reason: 'unavailable' });
+  expect(meter.settle).toHaveBeenNthCalledWith(1, 'id', {
+    status: 'settled',
+    usage: { inputTokens: 82, outputTokens: 12 },
+  });
+  send.mockResolvedValueOnce(
+    stream(encoder.encode(done.replace('"output_tokens":12', '"output_tokens":129'))),
+  );
+  await expect(request(credentials, input)).resolves.toMatchObject({ reason: 'unavailable' });
+  expect(meter.settle).toHaveBeenNthCalledWith(2, 'id', {
+    status: 'out-of-bounds',
+    usage: { inputTokens: 82, outputTokens: 129 },
+  });
 });
 
 it.each([

@@ -1,11 +1,13 @@
 import type pg from 'pg';
 import { createAiConsent } from './ai-consent-application.js';
+import { createTutoringUsage } from './ai/repositories/postgres-tutoring-usage.js';
 import { createTutoringGateway } from './ai/services/tutoring-gateway.js';
 import { readConfig } from './shared/config.js';
 
 export function createAiTutoring(pool: pg.Pool, env = process.env, send = fetch) {
-  const consent = createAiConsent(pool);
-  const { paidAiEnabled } = readConfig(env);
+  const { paidAiEnabled, aiMonthlyBudget } = readConfig(env);
+  const consent = createAiConsent(pool, aiMonthlyBudget);
+  const usage = createTutoringUsage(pool, aiMonthlyBudget);
   return createTutoringGateway(
     {
       paidAiEnabled,
@@ -13,6 +15,11 @@ export function createAiTutoring(pool: pg.Pool, env = process.env, send = fetch)
       eligible: env.OPENAI_TUTORING_ELIGIBLE === 'true',
     },
     (credentials, start) => consent.dispatch(credentials, 'openai-tutoring', start),
+    {
+      reserve: (credentials) =>
+        consent.withChildConsent(credentials, 'openai-tutoring', usage.reserve),
+      settle: usage.settle,
+    },
     send,
   );
 }

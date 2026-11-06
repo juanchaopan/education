@@ -6,6 +6,7 @@ export type AiHelpFallback =
   | 'ineligible'
   | 'unauthorized'
   | 'invalid-input'
+  | 'usage-limited'
   | 'unavailable'
   | 'timeout'
   | 'cancelled';

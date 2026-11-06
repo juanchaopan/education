@@ -1,8 +1,9 @@
+import type { Usage } from '../domain/tutoring-cost.js';
+
 const MAX_STREAM_BYTES = 65_536;
 const MAX_HINT_LENGTH = 160;
 
 type JsonObject = Record<string, unknown>;
-type Usage = { inputTokens: number; outputTokens: number };
 
 function object(value: unknown): JsonObject {
   return value && typeof value === 'object' && !Array.isArray(value) ? (value as JsonObject) : {};
@@ -30,12 +31,9 @@ function assistantText(output: unknown) {
   if (type === 'output_text' && typeof text === 'string') return text.trim();
 }
 
-function hint(value: unknown) {
-  const { status, output, usage: tokens } = object(value);
-  if (status !== 'completed') return;
+function hint(output: unknown) {
   const sentence = assistantText(output);
-  if (sentence && sentence.length <= MAX_HINT_LENGTH && !/[\r\n]/.test(sentence))
-    return { text: sentence, usage: usage(tokens) };
+  if (sentence && sentence.length <= MAX_HINT_LENGTH && !/[\r\n]/.test(sentence)) return sentence;
 }
 
 function streamEvent(frame: string) {
@@ -76,14 +74,29 @@ function isEventStream(response: Response) {
   return response.ok && mime === 'text/event-stream';
 }
 
+function terminalResult(eventType: string, response: unknown) {
+  const { status, output, usage: tokens, service_tier: tier } = object(response);
+  return {
+    text: eventType === 'response.completed' && status === 'completed' ? hint(output) : undefined,
+    usage: usage(tokens),
+    unexpectedTier: tier != null && tier !== 'default',
+  };
+}
+
 export async function readOpenAiResponse(response: Response) {
   if (!response.body || !isEventStream(response)) {
     void response.body?.cancel().catch(() => {});
     return;
   }
   for await (const frame of frames(response.body)) {
-    const { type, response: completed } = streamEvent(frame);
-    if (type === 'response.completed') return hint(completed);
-    if (type === 'error' || type === 'response.failed' || type === 'response.incomplete') return;
+    const { type, response: terminal } = streamEvent(frame);
+    switch (type) {
+      case 'error':
+        return;
+      case 'response.completed':
+      case 'response.failed':
+      case 'response.incomplete':
+        return terminalResult(type, terminal);
+    }
   }
 }

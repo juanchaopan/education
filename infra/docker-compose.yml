@@ -25,6 +25,7 @@ services:
       HOST: 0.0.0.0
       PORT: 3001
       PAID_AI_ENABLED: ${PAID_AI_ENABLED:-true}
+      AI_MONTHLY_BUDGET_USD: ${AI_MONTHLY_BUDGET_USD:-}
     ports:
       - '127.0.0.1:3001:3001'
     depends_on:

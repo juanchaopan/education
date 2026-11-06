@@ -13,6 +13,11 @@ const policy = {
   providerRetention: '供应商默认的安全监测日志可能保留内容最多 30 天。',
   revision: null,
 };
+const awaitingPassword = {
+  reauthenticationRequired: true,
+  tutoringBudget: 'unset',
+  policies: [{ ...policy, state: 'ungranted' }],
+} as const;
 const meta = {
   component: AiConsentCard,
   args: {
@@ -23,7 +28,7 @@ const meta = {
     onConfirm: fn(),
     onChange: fn(),
     onRefresh: fn(),
-    view: { reauthenticationRequired: true, policies: [{ ...policy, state: 'ungranted' }] },
+    view: { ...awaitingPassword, policies: [...awaitingPassword.policies] },
   },
 } satisfies Meta<typeof AiConsentCard>;
 export default meta;
@@ -32,6 +37,13 @@ type Story = StoryObj<typeof meta>;
 export const ConfirmPassword: Story = {};
 export const PolicyChanged: Story = {
   args: {
-    view: { reauthenticationRequired: false, policies: [{ ...policy, state: 'policy-changed' }] },
+    view: {
+      reauthenticationRequired: false,
+      tutoringBudget: 'available',
+      policies: [{ ...policy, state: 'policy-changed' }],
+    },
   },
+};
+export const BudgetLimited: Story = {
+  args: { view: { ...meta.args.view, tutoringBudget: 'limited' } },
 };
