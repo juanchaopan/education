@@ -58,7 +58,7 @@ async function bounded<T>(
   signal.addEventListener('abort', cancel, { once: true });
   const timer = setTimeout(() => controller.abort(), AI_HELP_TIMEOUT_MS);
   try {
-    return await Promise.race([run(signal), stopped.promise]);
+    return await Promise.race([run(signal), stopped]);
   } finally {
     clearTimeout(timer);
     signal.removeEventListener('abort', cancel);
