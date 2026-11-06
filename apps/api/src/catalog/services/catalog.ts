@@ -2,6 +2,7 @@ import {
   parseProblemVersion,
   type CatalogCategory,
   type CatalogResponse,
+  type ProblemDetail,
 } from '@education/contracts';
 import { problemRegistry } from '@education/problems/server';
 
@@ -32,9 +33,11 @@ export function createCatalog(registry = problemRegistry) {
 
   return {
     list: () => listing,
-    detail: (id: string, rawVersion: string) => {
+    detail: (id: string, rawVersion: string): ProblemDetail | undefined => {
       const version = parseProblemVersion(rawVersion);
-      return version === undefined ? undefined : registry.find(id, version)?.summary;
+      const plugin = version === undefined ? undefined : registry.find(id, version);
+      if (!plugin) return undefined;
+      return { ...plugin.summary, teaching: plugin.teaching };
     },
   };
 }

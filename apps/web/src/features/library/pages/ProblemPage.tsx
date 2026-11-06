@@ -1,12 +1,20 @@
-import { Fragment } from 'react';
+import { Fragment, type ReactNode } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import type { ProblemSummary } from '@education/contracts';
+import type { ProblemDetail, TeachingDefinition } from '@education/contracts';
 import { EmptyState } from '../../../shared/ui/EmptyState';
 import { useProblem } from '../data-access/useProblem';
 import { catalogPath, problemPath } from '../model';
 import { problemPages, type ProblemPages } from './problem-pages';
 
-export function ProblemPage({ pages = problemPages }: { pages?: ProblemPages }) {
+type RenderTeaching = (title: string, teaching: TeachingDefinition) => ReactNode;
+
+export function ProblemPage({
+  pages = problemPages,
+  renderTeaching,
+}: {
+  pages?: ProblemPages;
+  renderTeaching?: RenderTeaching;
+}) {
   const { id = '', version = '' } = useParams();
   const query = useProblem(id, version);
   const problem = query.data;
@@ -25,7 +33,9 @@ export function ProblemPage({ pages = problemPages }: { pages?: ProblemPages }) 
           }}
         />
       )}
-      {query.isSuccess && <ProblemContent problem={query.data} pages={pages} />}
+      {query.isSuccess && (
+        <ProblemContent problem={query.data} pages={pages} renderTeaching={renderTeaching} />
+      )}
     </section>
   );
 }
@@ -33,14 +43,19 @@ export function ProblemPage({ pages = problemPages }: { pages?: ProblemPages }) 
 function ProblemContent({
   problem,
   pages,
+  renderTeaching,
 }: {
-  problem: ProblemSummary | null;
+  problem: ProblemDetail | null;
   pages: ProblemPages;
+  renderTeaching?: RenderTeaching;
 }) {
   if (problem) {
     const path = problemPath(problem.id, problem.version);
     const renderPage = pages.get(path);
     if (renderPage) return <Fragment key={path}>{renderPage(problem)}</Fragment>;
+    if (problem.teaching?.steps.length && renderTeaching) {
+      return <Fragment key={path}>{renderTeaching(problem.title, problem.teaching)}</Fragment>;
+    }
   }
   return (
     <EmptyState

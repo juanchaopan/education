@@ -1,5 +1,6 @@
 export { ParentRegistration, RegistrationReceipt, passwordIssue } from './registration.js';
 export * from './catalog.js';
+export * from './teaching.js';
 
 export type TeachingFeedback = {
   status: 'correct' | 'needs-work' | 'uncertain' | 'recognition-failed';
