@@ -1,10 +1,10 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { Type } from '@sinclair/typebox';
 import { draftBodyLimit, DraftCommand, DraftResponse, ProblemParams } from '@education/contracts';
+import { problemRequest } from '../../shared/problem-request.js';
 import { RequestError } from '../../shared/request-error.js';
 import { sessionWriteGuard } from '../../shared/session-guard.js';
 import type { DraftService } from '../services/draft.js';
-import { problemRequest } from './problem-request.js';
 
 const path = '/api/v1/problems/:id/:version/draft';
 const schema = {

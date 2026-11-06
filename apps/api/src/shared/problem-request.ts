@@ -1,7 +1,7 @@
 import { parseProblemVersion, type ProblemParams } from '@education/contracts';
 import type { FastifyRequest } from 'fastify';
-import { RequestError } from '../../shared/request-error.js';
-import { readSessionCookie } from '../../shared/session-cookie.js';
+import { RequestError } from './request-error.js';
+import { readSessionCookie } from './session-cookie.js';
 
 export function problemRequest(request: FastifyRequest<{ Params: ProblemParams }>) {
   const { id, version: raw } = request.params;
