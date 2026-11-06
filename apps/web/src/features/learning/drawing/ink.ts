@@ -1,9 +1,13 @@
+import {
+  drawingSheetHeight as sheetHeight,
+  drawingSheetWidth as sheetWidth,
+} from '@education/contracts';
+
 type InkPoint = Readonly<{ x: number; y: number }>;
 type Stroke = readonly InkPoint[];
 export type Drawing = readonly Stroke[];
 
-export const sheetWidth = 1024;
-export const sheetHeight = 768;
+export { sheetHeight, sheetWidth };
 
 const clamp = (value: number) => Math.max(0, Math.min(1, value));
 

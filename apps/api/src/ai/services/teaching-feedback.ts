@@ -21,24 +21,11 @@ type AskModel = (
   signal?: AbortSignal,
 ) => Promise<ModelReply>;
 
-function authoredStep(plugin: FeedbackProblem | undefined, stepId: string): FeedbackStep {
-  const steps = plugin?.feedback;
+function authoredStep(plugin: FeedbackProblem, stepId: string): FeedbackStep {
+  const steps = plugin.feedback;
   const step = steps && Object.hasOwn(steps, stepId) ? steps[stepId] : undefined;
   if (!step) throw new RequestError(404, '这一步暂时不能提交。');
   return step;
-}
-
-async function askAboutStep(
-  ask: (input: FeedbackModelInput) => Promise<ModelReply>,
-  step: FeedbackStep,
-  scope: FeedbackStepScope,
-  { text, image }: FeedbackRequest,
-): Promise<TeachingFeedbackResult> {
-  const imageUrl = image === undefined ? undefined : feedbackImageUrl(image);
-  if (image !== undefined && !imageUrl) return { status: 'fallback', reason: 'invalid-input' };
-  const reply = await ask({ prompt: step.prompt, text, imageUrl });
-  if (reply.status === 'fallback') return reply;
-  return { status: 'ready', source: 'ai', feedback: modelFeedbackFor(reply.value, scope) };
 }
 
 // Feedback is advice only. Nothing here records an attempt, changes progress or
@@ -51,17 +38,23 @@ export function createTeachingFeedbackService(
   return async (
     credentials: Credentials,
     problem: Problem,
-    request: FeedbackRequest,
+    { stepId, text, image }: FeedbackRequest,
     signal?: AbortSignal,
   ): Promise<TeachingFeedbackResult> => {
     await authenticate(credentials);
     const plugin = find(problem.id, problem.version);
-    const step = authoredStep(plugin, request.stepId);
-    const scope = { stepId: request.stepId, area: step.area };
-    const rule = await plugin?.checkStep?.({ stepId: request.stepId, answer: request.text });
+    if (!plugin) throw new RequestError(404, '这一步暂时不能提交。');
+    const step = authoredStep(plugin, stepId);
+    const scope: FeedbackStepScope = { stepId, area: step.area };
+    const rule = await plugin.checkStep?.({ stepId, answer: text });
     const ruled = rule && ruleFeedbackFor(rule, scope);
     if (ruled) return { status: 'ready', source: 'rules', feedback: ruled };
-    return askAboutStep((input) => askModel(credentials, input, signal), step, scope, request);
+
+    const imageUrl = image === undefined ? undefined : feedbackImageUrl(image);
+    if (image !== undefined && !imageUrl) return { status: 'fallback', reason: 'invalid-input' };
+    const reply = await askModel(credentials, { prompt: step.prompt, text, imageUrl }, signal);
+    if (reply.status === 'fallback') return reply;
+    return { status: 'ready', source: 'ai', feedback: modelFeedbackFor(reply.value, scope) };
   };
 }
 

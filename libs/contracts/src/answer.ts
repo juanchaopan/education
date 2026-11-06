@@ -1,15 +1,15 @@
 import { Type, type Static } from '@sinclair/typebox';
+import { identifierPattern } from './patterns.js';
 
 const closed = { additionalProperties: false };
 const uuid = Type.String({
   pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$',
 });
-const identifier = /^[a-z][a-z0-9-]{0,63}$/;
 const scalar = Type.Union([Type.String({ maxLength: 2000 }), Type.Number(), Type.Boolean()]);
 const value = Type.Union([scalar, Type.Array(scalar, { maxItems: 32 })]);
 const input = Type.Union([
   value,
-  Type.Record(Type.String({ pattern: identifier.source }), value, {
+  Type.Record(Type.String({ pattern: identifierPattern.source }), value, {
     ...closed,
     maxProperties: 32,
   }),
@@ -37,7 +37,7 @@ export const AskForHint = Type.Object(
   {
     action: Type.Literal('hint'),
     round: uuid,
-    hintId: Type.String({ pattern: identifier.source }),
+    hintId: Type.String({ pattern: identifierPattern.source }),
   },
   closed,
 );

@@ -1,6 +1,6 @@
 import { feedbackTextMaxLength } from '@education/contracts';
 import { MAX_FEEDBACK_OUTPUT_TOKENS } from '../domain/tutoring-cost.js';
-import { parseModelFeedback, type ModelFeedback } from '../domain/teaching-feedback.js';
+import { ModelFeedback, parseModelFeedback } from '../domain/teaching-feedback.js';
 import type { ContentPart, ModelTask } from './model-task.js';
 
 const MAX_PROMPT_LENGTH = 1_200;
@@ -13,30 +13,6 @@ const INSTRUCTIONS =
   '指出具体位置并给下一步，把最后一步留给孩子，不含链接、HTML、Markdown 或个人信息。' +
   'confidence 是 0 到 1 之间你对读懂孩子输入的把握。需要指出图中位置时，highlight 用占整张图的比例给出 ' +
   'x、y、width、height，否则为 null。';
-
-const region = {
-  type: 'object',
-  additionalProperties: false,
-  required: ['x', 'y', 'width', 'height'],
-  properties: {
-    x: { type: 'number' },
-    y: { type: 'number' },
-    width: { type: 'number' },
-    height: { type: 'number' },
-  },
-};
-const schema = {
-  type: 'object',
-  additionalProperties: false,
-  required: ['status', 'instruction', 'confidence', 'injection', 'highlight'],
-  properties: {
-    status: { type: 'string', enum: ['correct', 'needs-work', 'uncertain'] },
-    instruction: { type: 'string' },
-    confidence: { type: 'number' },
-    injection: { type: 'boolean' },
-    highlight: { anyOf: [region, { type: 'null' }] },
-  },
-};
 
 // The model sees the step the author wrote and what the child just submitted,
 // never earlier answers, the child's identity or the answer key.
@@ -55,7 +31,11 @@ export const feedbackTask: ModelTask<FeedbackModelInput, ModelFeedback> = {
       },
     ];
     if (imageUrl) content.push({ type: 'input_image', image_url: imageUrl, detail: 'low' });
-    return { instructions: INSTRUCTIONS, content, format: { name: 'teaching_feedback', schema } };
+    return {
+      instructions: INSTRUCTIONS,
+      content,
+      format: { name: 'teaching_feedback', schema: ModelFeedback },
+    };
   },
   accept: parseModelFeedback,
 };

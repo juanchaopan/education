@@ -1,4 +1,4 @@
-import { expect, it, vi } from 'vitest';
+import { expect, it } from 'vitest';
 import { reservationCostFor } from '../domain/tutoring-cost.js';
 import { completion, credentials, encoder, setupGateway, stream } from './gateway-fixtures.js';
 import { feedbackTask, type FeedbackModelInput } from './feedback-task.js';
@@ -13,7 +13,7 @@ const reply = {
 const input = { prompt: '数一数左边的点。', text: '我数了三个' };
 
 function setup() {
-  const { gateway, ...rest } = setupGateway(vi.fn);
+  const { gateway, ...rest } = setupGateway();
   const request = (context: FeedbackModelInput = input) =>
     gateway(feedbackTask, credentials, context);
   return { ...rest, request };

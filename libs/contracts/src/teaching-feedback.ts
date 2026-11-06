@@ -1,15 +1,16 @@
 import { Type, type Static } from '@sinclair/typebox';
 import { AiHelpFallbackSchema } from './ai-help.js';
+import { identifierPattern } from './patterns.js';
 
 const closed = { additionalProperties: false };
-const identifier = /^[a-z][a-z0-9-]{0,63}$/;
-const stepId = Type.String({ pattern: identifier.source });
+const stepId = Type.String({ pattern: identifierPattern.source });
+
+// The drawing sheet, in pixels at full scale. Exported images are never larger.
+export const drawingSheetWidth = 1024;
+export const drawingSheetHeight = 768;
 
 export const feedbackTextMaxLength = 500;
 export const feedbackInstructionMaxLength = 160;
-// Shown whenever the input cannot be understood reliably; it never counts as a mistake.
-export const uncertainFeedbackInstruction =
-  '我还不能确定你的意思。你可以确认一下，或者换个方法再试。';
 export const feedbackImageMaxBytes = 512 * 1024;
 // Four base64 characters carry three bytes; the body adds a small JSON envelope.
 const feedbackImageMaxLength = Math.ceil(feedbackImageMaxBytes / 3) * 4;
@@ -65,3 +66,25 @@ export type FeedbackRegion = Static<typeof FeedbackRegion>;
 export type TeachingFeedback = Static<typeof TeachingFeedback>;
 export type FeedbackRequest = Static<typeof FeedbackRequest>;
 export type TeachingFeedbackResult = Static<typeof TeachingFeedbackResult>;
+
+// A region must lie on the drawing sheet, and inside `area` when one is given.
+export function regionFits(region: FeedbackRegion, area?: FeedbackRegion) {
+  const { x, y, width, height } = region;
+  if (![x, y, width, height].every(Number.isFinite) || width <= 0 || height <= 0) return false;
+  const bounds = area ?? { x: 0, y: 0, width: 1, height: 1 };
+  return (
+    x >= bounds.x &&
+    y >= bounds.y &&
+    x + width <= bounds.x + bounds.width &&
+    y + height <= bounds.y + bounds.height
+  );
+}
+
+// Shown whenever the input cannot be understood reliably; it never counts as a mistake.
+export function uncertainFeedback(stepId: string): TeachingFeedback {
+  return {
+    status: 'uncertain',
+    instruction: '我还不能确定你的意思。你可以确认一下，或者换个方法再试。',
+    stepId,
+  };
+}

@@ -1,9 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { uncertainFeedbackInstruction } from '@education/contracts';
+import { regionFits, uncertainFeedback } from '@education/contracts';
 import {
   modelFeedbackFor,
   parseModelFeedback,
-  regionFits,
   ruleFeedbackFor,
   type ModelFeedback,
 } from './teaching-feedback.js';
@@ -16,11 +15,7 @@ const reply: ModelFeedback = {
   injection: false,
   highlight: { x: 0.1, y: 0.2, width: 0.3, height: 0.2 },
 };
-const uncertain = {
-  status: 'uncertain',
-  instruction: uncertainFeedbackInstruction,
-  stepId: 'count-left',
-};
+const uncertain = uncertainFeedback('count-left');
 
 describe('model reply parsing', () => {
   it('accepts exactly the agreed shape', () => {

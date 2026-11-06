@@ -1,4 +1,4 @@
-import { uncertainFeedbackInstruction, type TeachingFeedback } from '@education/contracts';
+import { uncertainFeedback, type TeachingFeedback } from '@education/contracts';
 
 type HelpKind = 'hint' | 'replay' | 'retry';
 type HelpEvent = Readonly<{ stepId: string; kind: HelpKind }>;
@@ -18,5 +18,5 @@ export function feedbackForStep(
   feedback?: TeachingFeedback,
 ): TeachingFeedback | undefined {
   if (feedback) return feedback.stepId === stepId ? feedback : undefined;
-  return { stepId, status: 'uncertain', instruction: uncertainFeedbackInstruction };
+  return uncertainFeedback(stepId);
 }

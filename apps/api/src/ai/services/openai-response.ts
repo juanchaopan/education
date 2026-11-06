@@ -3,7 +3,7 @@ import type { Usage } from '../domain/tutoring-cost.js';
 const MAX_STREAM_BYTES = 65_536;
 
 type JsonObject = Record<string, unknown>;
-export type Accept<T> = (text: string) => T | undefined;
+type Accept<T> = (text: string) => T | undefined;
 
 function object(value: unknown): JsonObject {
   return value && typeof value === 'object' && !Array.isArray(value) ? (value as JsonObject) : {};
@@ -71,8 +71,8 @@ function isEventStream(response: Response) {
 
 function terminalResult<T>(eventType: string, response: unknown, accept: Accept<T>) {
   const { status, output, usage: tokens, service_tier: tier } = object(response);
-  const text =
-    eventType === 'response.completed' && status === 'completed' && assistantText(output);
+  const completed = eventType === 'response.completed' && status === 'completed';
+  const text = completed ? assistantText(output) : undefined;
   return {
     value: text ? accept(text) : undefined,
     usage: usage(tokens),

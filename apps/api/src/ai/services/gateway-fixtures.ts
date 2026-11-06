@@ -1,8 +1,6 @@
-import type { vi } from 'vitest';
+import { vi } from 'vitest';
 import { createTutoringGateway } from './tutoring-gateway.js';
 
-// Shared by gateway tests. The mock factory is passed in so this module never
-// imports the test runner at run time.
 export const settings = { paidAiEnabled: true, eligible: true, apiKey: 'synthetic-key' };
 export const credentials = { token: 'synthetic-session' };
 export const encoder = new TextEncoder();
@@ -34,14 +32,16 @@ export function stream(...chunks: Uint8Array[]) {
   );
 }
 
-export function setupGateway(mock: typeof vi.fn, config = settings) {
-  const send = mock<typeof fetch>();
-  const authorize = mock<Parameters<typeof createTutoringGateway>[1]>(async (_, start) =>
+export function setupGateway(config = settings) {
+  const send = vi.fn<typeof fetch>();
+  const authorize = vi.fn<Parameters<typeof createTutoringGateway>[1]>(async (_, start) =>
     start(new AbortController().signal),
   );
   const meter = {
-    reserve: mock<Parameters<typeof createTutoringGateway>[2]['reserve']>().mockResolvedValue('id'),
-    settle: mock<Parameters<typeof createTutoringGateway>[2]['settle']>().mockResolvedValue(),
+    reserve: vi
+      .fn<Parameters<typeof createTutoringGateway>[2]['reserve']>()
+      .mockResolvedValue('id'),
+    settle: vi.fn<Parameters<typeof createTutoringGateway>[2]['settle']>().mockResolvedValue(),
   };
   return { send, authorize, meter, gateway: createTutoringGateway(config, authorize, meter, send) };
 }

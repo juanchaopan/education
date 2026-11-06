@@ -11,7 +11,6 @@ type Props = {
   onGuide: () => void;
 };
 
-// A drawing's feedback is read out on the drawing board, beside the outlined region.
 function message(state: FeedbackState) {
   switch (state.status) {
     case 'pending':
@@ -21,6 +20,7 @@ function message(state: FeedbackState) {
     case 'guidance':
       return guidanceMessage;
     case 'ready':
+      // A drawing's feedback is read out on the drawing board, beside the outlined region.
       return state.drawing.length ? '' : state.feedback.instruction;
     default:
       return '';

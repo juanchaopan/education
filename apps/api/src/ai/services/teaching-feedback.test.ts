@@ -1,4 +1,4 @@
-import { uncertainFeedbackInstruction } from '@education/contracts';
+import { uncertainFeedback } from '@education/contracts';
 import { describe, expect, it, vi } from 'vitest';
 import { RequestError } from '../../shared/request-error.js';
 import type { ModelFeedback } from '../domain/teaching-feedback.js';
@@ -113,11 +113,7 @@ describe('model feedback', () => {
     ).resolves.toEqual({
       status: 'ready',
       source: 'ai',
-      feedback: {
-        status: 'uncertain',
-        instruction: uncertainFeedbackInstruction,
-        stepId: 'count-left',
-      },
+      feedback: uncertainFeedback('count-left'),
     });
   });
 

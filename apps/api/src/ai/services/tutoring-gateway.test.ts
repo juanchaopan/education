@@ -15,7 +15,7 @@ const input = { step: '观察两组物体的数量。', question: '先数哪一�
 const done = completion('先看看左边有几个。');
 
 function setup(config = settings) {
-  const { gateway, ...rest } = setupGateway(vi.fn, config);
+  const { gateway, ...rest } = setupGateway(config);
   const request = (
     credentials: Parameters<typeof gateway>[1],
     context: typeof input,

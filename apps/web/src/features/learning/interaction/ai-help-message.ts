@@ -1,9 +1,10 @@
 import type { AiHelpFallback } from '@education/contracts';
 
+const resting = 'AI 老师现在休息了。你的作答还在，我们用提示继续。';
 const copy: Record<AiHelpFallback, string> = {
-  disabled: 'AI 老师现在休息了。你的作答还在，我们用提示继续。',
-  'missing-key': 'AI 老师现在休息了。你的作答还在，我们用提示继续。',
-  ineligible: 'AI 老师现在休息了。你的作答还在，我们用提示继续。',
+  disabled: resting,
+  'missing-key': resting,
+  ineligible: resting,
   unauthorized: '需要家长先同意 AI 帮助。你的作答还在，我们用提示继续。',
   'invalid-input': '这次的内容没法发给 AI 老师。可以少写一点，或者重新画一次。',
   'usage-limited': 'AI 老师现在忙不过来了。你的作答还在，我们用提示继续。',
