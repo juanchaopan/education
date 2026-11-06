@@ -4,8 +4,7 @@ import { spawnSync } from 'node:child_process';
 
 function captureAudio() {
   const NativeAudio = window.Audio;
-  const AudioContext = window.AudioContext;
-  const context = new AudioContext();
+  const context = new window.AudioContext();
   const output = context.createMediaStreamDestination();
   const connect = window.AudioNode.prototype.connect;
   const events = [];
@@ -34,20 +33,28 @@ function captureAudio() {
       const began = clock();
       recorder.ondataavailable = ({ data }) => parts.push(data);
       recorder.start();
-      document.addEventListener('pointerdown', () => void context.resume(), {
-        once: true,
-        capture: true,
-      });
-      document.addEventListener('keydown', () => void context.resume(), {
-        once: true,
-        capture: true,
-      });
+      let audioBegan;
+      const resume = () => {
+        void context.resume().then(() => {
+          audioBegan ??= clock();
+        });
+      };
+      for (const event of ['pointerdown', 'keydown']) {
+        document.addEventListener(event, resume, { once: true, capture: true });
+      }
       this.stop = () =>
         new Promise((done) => {
           const end = clock();
           recorder.onstop = () => {
             const reader = new FileReader();
-            reader.onload = () => done({ audio: reader.result.split(',')[1], began, end, events });
+            reader.onload = () =>
+              done({
+                audio: reader.result.split(',')[1],
+                began,
+                audioBegan: audioBegan ?? began,
+                end,
+                events,
+              });
             reader.readAsDataURL(new Blob(parts, { type: recorder.mimeType }));
           };
           recorder.stop();
@@ -77,6 +84,7 @@ async function startScreencast(page) {
 }
 
 async function writeFrames(dir, frames, began, end) {
+  frames.sort((a, b) => a.at - b.at);
   const first = Math.max(
     0,
     frames.findLastIndex((frame) => frame.at <= began),
@@ -98,7 +106,7 @@ async function writeFrames(dir, frames, began, end) {
   await writeFile(join(dir, 'frames.ffconcat'), playlist.join('\n') + '\n');
 }
 
-function muxLesson(dir) {
+function muxLesson(dir, audioOffset) {
   const video = join(dir, 'lesson-review.mp4');
   const ffmpeg = spawnSync(
     'ffmpeg',
@@ -115,6 +123,8 @@ function muxLesson(dir) {
       'frames.ffconcat',
       '-i',
       'browser-audio.webm',
+      '-af',
+      'adelay=' + audioOffset + ':all=1,apad',
       '-vf',
       'fps=25,scale=trunc(iw/2)*2:trunc(ih/2)*2',
       '-c:v',
@@ -154,14 +164,14 @@ export async function recordLesson(page, outputDirectory, interact) {
     await session.send('Page.stopScreencast').catch(() => {});
     await session.detach();
   }
-  const { audio, began, end, events } = result;
+  const { audio, began, audioBegan, end, events } = result;
   if (!audio || !frames.length)
     throw new Error('Lesson recording is missing picture or audio data');
   await writeFrames(dir, frames, began, end);
   await writeFile(join(dir, 'browser-audio.webm'), Buffer.from(audio, 'base64'));
   const timeline = join(dir, 'playback-events.json');
-  await writeFile(timeline, JSON.stringify({ began, end, events }, null, 2));
-  const video = muxLesson(dir);
+  await writeFile(timeline, JSON.stringify({ began, audioBegan, end, events }, null, 2));
+  const video = muxLesson(dir, Math.max(0, Math.round((audioBegan - began) * 1000)));
   if (failure) throw failure;
   return { video, timeline };
 }
