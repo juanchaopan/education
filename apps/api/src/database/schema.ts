@@ -5,7 +5,9 @@ import {
   index,
   integer,
   jsonb,
+  pgEnum,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   uniqueIndex,
@@ -104,6 +106,67 @@ export const drafts = pgTable(
     index('draft_expiry').on(table.expiresAt),
   ],
 );
+
+const learningSlot = () => ({
+  childId: uuid('child_id')
+    .notNull()
+    .references(() => children.id, { onDelete: 'cascade' }),
+  problemId: text('problem_id').notNull(),
+  problemVersion: bigint('problem_version', { mode: 'number' }).notNull(),
+});
+
+export const attemptOutcome = pgEnum('attempt_outcome', [
+  'independent',
+  'assisted',
+  'incorrect',
+  'uncertain',
+]);
+
+export const attempts = pgTable(
+  'attempts',
+  {
+    ...learningSlot(),
+    attemptId: uuid('attempt_id').notNull(),
+    round: uuid('round').notNull(),
+    fingerprint: text('fingerprint').notNull(),
+    outcome: attemptOutcome('outcome').notNull(),
+    submittedAt: timestamp('submitted_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    primaryKey({
+      columns: [table.childId, table.problemId, table.problemVersion, table.attemptId],
+    }),
+  ],
+).enableRLS();
+
+export const progress = pgTable(
+  'progress',
+  {
+    ...learningSlot(),
+    round: uuid('round').notNull(),
+    independent: integer('independent').default(0).notNull(),
+    assisted: integer('assisted').default(0).notNull(),
+    incorrect: integer('incorrect').default(0).notNull(),
+    uncertain: integer('uncertain').default(0).notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.childId, table.problemId, table.problemVersion] })],
+).enableRLS();
+
+export const helpEvents = pgTable(
+  'help_events',
+  {
+    ...learningSlot(),
+    round: uuid('round').notNull(),
+    hintId: text('hint_id').notNull(),
+    requestedAt: timestamp('requested_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    primaryKey({
+      columns: [table.childId, table.problemId, table.problemVersion, table.round, table.hintId],
+    }),
+  ],
+).enableRLS();
 
 export const parentSessions = pgTable(
   'parent_sessions',

@@ -31,10 +31,7 @@ export function draftsFor(client: pg.PoolClient, child: string) {
 
 async function currentDraft(client: pg.PoolClient, child: string, problem: Slot) {
   const params = key(child, problem);
-  // The slot also needs serialization when no row exists yet.
-  await client.query('SELECT pg_advisory_xact_lock(hashtextextended($1, 33))', [
-    JSON.stringify(params),
-  ]);
+  await lockLearningSlot(client, child, problem);
   await client.query(
     `DELETE FROM drafts WHERE ${matches} AND expires_at<=clock_timestamp()`,
     params,
@@ -48,6 +45,13 @@ async function currentDraft(client: pg.PoolClient, child: string, problem: Slot)
   if (Value.Check(DraftContent, row.content)) return snapshot(row);
   await deleteDraftRevision(client, child, problem, row.revision);
   return null;
+}
+
+export async function lockLearningSlot(client: pg.PoolClient, child: string, problem: Slot) {
+  // Drafts and attempts share the lock, including when neither has a row yet.
+  await client.query('SELECT pg_advisory_xact_lock(hashtextextended($1, 33))', [
+    JSON.stringify(key(child, problem)),
+  ]);
 }
 
 function snapshot(row: Row): SavedDraft {

@@ -25,11 +25,14 @@ import { RequestError } from './shared/request-error.js';
 import { readinessErrorCode } from './shared/readiness-error.js';
 import { registerDrafts } from './learning/routes/draft.js';
 import type { DraftService } from './learning/services/draft.js';
+import { registerAnswering } from './learning/routes/answer.js';
+import type { AnswerService } from './learning/services/answer.js';
 
 const localOrigin = 'http://127.0.0.1:5173';
 type AppOptions = {
   childAccess?: ChildAccessService;
   drafts?: DraftService;
+  answering?: AnswerService;
   childSessions?: ChildSessionService;
   childRegistration?: ChildRegistrationService;
   origin?: string;
@@ -70,6 +73,7 @@ export function buildApp(options: AppOptions = {}) {
   });
   registerCatalog(app);
   registerDrafts(app, options.origin ?? localOrigin, options.drafts);
+  registerAnswering(app, options.origin ?? localOrigin, options.answering);
   app.get('/version.json', (_request, reply) =>
     reply.header('Cache-Control', 'no-store').send({ revision: options.revision ?? null }),
   );

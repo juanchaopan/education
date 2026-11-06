@@ -19,3 +19,4 @@ export * from './child-registration.js';
 export * from './child-session.js';
 export * from './child-access.js';
 export * from './draft.js';
+export * from './answer.js';

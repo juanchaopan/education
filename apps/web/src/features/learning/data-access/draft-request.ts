@@ -1,8 +1,9 @@
 import { DraftCommand, DraftResponse, draftBodyLimit } from '@education/contracts';
 import { Value } from '@sinclair/typebox/value';
 import type { Drawing } from '../drawing/ink';
+import { requestLearning, type LearningScope } from './learning-request';
 
-export type DraftScope = { id: string; version: number; csrf: string };
+export type DraftScope = LearningScope;
 export type LocalDraft = Readonly<{ stepId: string; drawing: Drawing }>;
 export type DraftWrite =
   | { action: 'save'; revision: string | null; content: LocalDraft }
@@ -17,22 +18,11 @@ function encodeCommand(command: DraftWrite) {
 }
 
 export async function requestDraft(scope: DraftScope, command?: DraftWrite, cancel?: AbortSignal) {
-  const timeout = AbortSignal.timeout(10000);
-  const response = await fetch(
-    `/api/v1/problems/${encodeURIComponent(scope.id)}/${scope.version}/draft`,
-    {
-      method: command ? 'POST' : 'GET',
-      credentials: 'same-origin',
-      cache: 'no-store',
-      signal: cancel ? AbortSignal.any([cancel, timeout]) : timeout,
-      body: command ? encodeCommand(command) : undefined,
-      headers: {
-        'X-CSRF-Token': scope.csrf,
-        ...(command
-          ? { 'Content-Type': 'application/json', 'X-Education-Request': 'session' }
-          : {}),
-      },
-    },
+  const response = await requestLearning(
+    scope,
+    'draft',
+    command ? encodeCommand(command) : undefined,
+    cancel,
   );
   const conflict = response.status === 409 && !!command;
   if (!response.ok && !conflict) throw new Error('暂时连不上草稿，请重试。');

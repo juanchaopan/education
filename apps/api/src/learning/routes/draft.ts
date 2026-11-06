@@ -1,16 +1,10 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { Type } from '@sinclair/typebox';
-import {
-  draftBodyLimit,
-  DraftCommand,
-  DraftResponse,
-  parseProblemVersion,
-  ProblemParams,
-} from '@education/contracts';
+import { draftBodyLimit, DraftCommand, DraftResponse, ProblemParams } from '@education/contracts';
 import { RequestError } from '../../shared/request-error.js';
-import { readSessionCookie } from '../../shared/session-cookie.js';
 import { sessionWriteGuard } from '../../shared/session-guard.js';
 import type { DraftService } from '../services/draft.js';
+import { problemRequest } from './problem-request.js';
 
 const path = '/api/v1/problems/:id/:version/draft';
 const schema = {
@@ -25,16 +19,8 @@ function draftRequest(
   command?: DraftCommand,
 ) {
   if (!drafts) throw new RequestError(503, '草稿暂时不可用，请稍后重试。');
-  const { id, version: raw } = request.params;
-  const version = parseProblemVersion(raw);
-  if (version === undefined) throw new RequestError(404, '这道题或这个版本暂时不可用。');
-  const token = readSessionCookie(request);
-  const csrf = request.headers['x-csrf-token'];
-  return drafts(
-    { token, csrf: typeof csrf === 'string' ? csrf : undefined },
-    { id, version },
-    command,
-  );
+  const { credentials, problem } = problemRequest(request);
+  return drafts(credentials, problem, command);
 }
 
 export function registerDrafts(app: FastifyInstance, origin: string, drafts?: DraftService) {
