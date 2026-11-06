@@ -7,7 +7,7 @@ import {
   type ModelFeedback,
 } from './teaching-feedback.js';
 
-const scope = { stepId: 'count-left' };
+const scope = { stepId: 'count-left', drawn: true };
 const reply: ModelFeedback = {
   status: 'needs-work',
   instruction: '再数一数左边圆圈里的点。',
@@ -25,6 +25,15 @@ describe('model reply parsing', () => {
     });
   });
 
+  it.each(['3 < 5，5 > 2', '先算 4 & 1 再比大小', '比一比：3<5 对吗？'])(
+    'keeps comparison signs in maths feedback: %s',
+    (instruction) => {
+      expect(parseModelFeedback(JSON.stringify({ ...reply, instruction }))).toMatchObject({
+        instruction,
+      });
+    },
+  );
+
   it.each([
     ['not JSON', 'sure, here you go'],
     ['an array', '[]'],
@@ -33,7 +42,9 @@ describe('model reply parsing', () => {
     ['an unknown status', JSON.stringify({ ...reply, status: 'recognition-failed' })],
     ['an empty instruction', JSON.stringify({ ...reply, instruction: '' })],
     ['a long instruction', JSON.stringify({ ...reply, instruction: '答'.repeat(161) })],
-    ['HTML', JSON.stringify({ ...reply, instruction: '看<b>这里</b>' })],
+    ['an HTML tag', JSON.stringify({ ...reply, instruction: '看<b>这里</b>' })],
+    ['an HTML comment', JSON.stringify({ ...reply, instruction: '看这里<!-- x -->' })],
+    ['an HTML entity', JSON.stringify({ ...reply, instruction: '看&lt;script&gt;' })],
     ['a link', JSON.stringify({ ...reply, instruction: '打开 https://example.test 看看' })],
     ['markdown', JSON.stringify({ ...reply, instruction: '[点这里](x)' })],
     ['a line break', JSON.stringify({ ...reply, instruction: '看这里\n再数一遍' })],
@@ -99,6 +110,17 @@ describe('model feedback for a step', () => {
       'highlight',
     );
     expect(modelFeedbackFor({ ...reply, highlight: null }, scope)).not.toHaveProperty('highlight');
+  });
+
+  it('never outlines a drawing the child did not make', () => {
+    const text = { ...scope, drawn: false };
+    expect(modelFeedbackFor(reply, text)).toEqual({
+      status: 'needs-work',
+      instruction: reply.instruction,
+      stepId: 'count-left',
+    });
+    const offSheet = { ...reply, highlight: { x: 0.9, y: 0.9, width: 0.5, height: 0.5 } };
+    expect(modelFeedbackFor(offSheet, text)).not.toHaveProperty('highlight');
   });
 });
 

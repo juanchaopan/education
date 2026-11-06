@@ -30,10 +30,12 @@ export const ModelFeedback = Type.Object(
   { additionalProperties: false },
 );
 export type ModelFeedback = Static<typeof ModelFeedback>;
-export type FeedbackStepScope = { stepId: string; area?: FeedbackRegion };
+// `drawn` is whether the child submitted a drawing, the only thing a highlight can point at.
+export type FeedbackStepScope = { stepId: string; area?: FeedbackRegion; drawn: boolean };
 
-// Markup, links and control characters never belong in a sentence shown to a child.
-const unsafeText = /[<>&`]|\]\(|:\/\/|www\.|[\p{Cc}\p{Cf}]/u;
+// HTML tags and entities, markdown, links and control characters never belong in a sentence
+// shown to a child. Comparison signs in maths feedback are ordinary text.
+const unsafeText = /<[a-zA-Z/!?]|&#?\w+;|`|\]\(|:\/\/|www\.|[\p{Cc}\p{Cf}]/u;
 
 function isInstruction(value: string) {
   return (
@@ -60,8 +62,8 @@ export function parseModelFeedback(text: string): ModelFeedback | undefined {
 // whenever the reply cannot be trusted. The reply decides only what the child
 // reads and which region is outlined.
 export function modelFeedbackFor(reply: ModelFeedback, scope: FeedbackStepScope): TeachingFeedback {
-  const { stepId, area } = scope;
-  const { highlight } = reply;
+  const { stepId, area, drawn } = scope;
+  const highlight = drawn ? reply.highlight : null;
   if (reply.injection || reply.confidence < MIN_FEEDBACK_CONFIDENCE)
     return uncertainFeedback(stepId);
   if (highlight && !regionFits(highlight, area)) return uncertainFeedback(stepId);

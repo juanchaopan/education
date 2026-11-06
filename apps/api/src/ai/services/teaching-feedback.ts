@@ -28,6 +28,14 @@ function authoredStep(plugin: FeedbackProblem, stepId: string): FeedbackStep {
   return step;
 }
 
+// Rules read text only, so a submission with a drawing is never judged by rules
+// that cannot see it.
+async function ruleResult(plugin: FeedbackProblem, scope: FeedbackStepScope, text?: string) {
+  if (scope.drawn || text === undefined) return;
+  const rule = await plugin.checkStep?.({ stepId: scope.stepId, answer: text });
+  return rule && ruleFeedbackFor(rule, scope);
+}
+
 // Feedback is advice only. Nothing here records an attempt, changes progress or
 // touches permissions, so a late or failed model reply never alters learning.
 export function createTeachingFeedbackService(
@@ -45,9 +53,8 @@ export function createTeachingFeedbackService(
     const plugin = find(problem.id, problem.version);
     if (!plugin) throw new RequestError(404, '这一步暂时不能提交。');
     const step = authoredStep(plugin, stepId);
-    const scope: FeedbackStepScope = { stepId, area: step.area };
-    const rule = await plugin.checkStep?.({ stepId, answer: text });
-    const ruled = rule && ruleFeedbackFor(rule, scope);
+    const scope = { stepId, area: step.area, drawn: image !== undefined };
+    const ruled = await ruleResult(plugin, scope, text);
     if (ruled) return { status: 'ready', source: 'rules', feedback: ruled };
 
     const imageUrl = image === undefined ? undefined : feedbackImageUrl(image);

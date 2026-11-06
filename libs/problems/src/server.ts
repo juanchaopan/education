@@ -24,12 +24,11 @@ export type ProblemPlugin = {
   summary: ProblemSummary;
   answering?: AnsweringPolicy;
   feedback?: Readonly<Record<string, FeedbackStep>>;
-  // Authored rules run before any model. `answer` is the child's text, or
-  // undefined for a drawing, which rules cannot read; an 'uncertain' or
-  // 'recognition-failed' result leaves the step to the model.
+  // Authored rules run on the child's text before any model; they cannot read a
+  // drawing. An 'uncertain' or 'recognition-failed' result leaves the step to the model.
   checkStep?: (input: {
     stepId: string;
-    answer: string | undefined;
+    answer: string;
   }) => TeachingFeedback | Promise<TeachingFeedback>;
 };
 

@@ -14,7 +14,8 @@ function pngBase64() {
   header.write('IHDR', 12, 'latin1');
   header.writeUInt32BE(512, 16);
   header.writeUInt32BE(384, 20);
-  return header.toString('base64');
+  const end = Buffer.from('0000000049454e44ae426082', 'hex');
+  return Buffer.concat([header, end]).toString('base64');
 }
 
 const modelReply: ModelFeedback = {
@@ -48,8 +49,9 @@ function setup(
 const withStep = { feedback: { 'count-left': step } };
 
 describe('rules before the model', () => {
+  const rule = { status: 'correct' as const, instruction: '数对了！', stepId: 'count-left' };
+
   it('answers from authored rules without contacting the model', async () => {
-    const rule = { status: 'correct' as const, instruction: '数对了！', stepId: 'count-left' };
     const checkStep = vi.fn(async () => rule);
     const { request, askModel } = setup({ ...withStep, checkStep });
     await expect(
@@ -73,6 +75,31 @@ describe('rules before the model', () => {
       expect(reply).toMatchObject({ status: 'ready', source: 'ai' });
       expect(askModel).toHaveBeenCalledOnce();
     }
+  });
+
+  it('never lets text rules judge a submission that includes a drawing', async () => {
+    const checkStep = vi.fn(async () => rule);
+    const { request, askModel } = setup({ ...withStep, checkStep });
+    const image = pngBase64();
+    await expect(
+      request(credentials, problem, { stepId: 'count-left', text: '三个', image }),
+    ).resolves.toMatchObject({ source: 'ai' });
+    await request(credentials, problem, { stepId: 'count-left', image });
+    expect(checkStep).not.toHaveBeenCalled();
+    expect(askModel).toHaveBeenCalledTimes(2);
+  });
+
+  it('surfaces a failing rule instead of silently paying for a model call', async () => {
+    const { request, askModel } = setup({
+      ...withStep,
+      checkStep: () => {
+        throw new Error('authoring bug');
+      },
+    });
+    await expect(
+      request(credentials, problem, { stepId: 'count-left', text: '三个' }),
+    ).rejects.toThrow('authoring bug');
+    expect(askModel).not.toHaveBeenCalled();
   });
 });
 
@@ -102,6 +129,17 @@ describe('model feedback', () => {
     });
   });
 
+  it('outlines nothing for a text-only submission', async () => {
+    const { request } = setup(withStep);
+    await expect(
+      request(credentials, problem, { stepId: 'count-left', text: '我数了四个' }),
+    ).resolves.toEqual({
+      status: 'ready',
+      source: 'ai',
+      feedback: { status: 'needs-work', instruction: modelReply.instruction, stepId: 'count-left' },
+    });
+  });
+
   it('turns unreliable replies into a request to confirm', async () => {
     const { request, askModel } = setup(withStep);
     askModel.mockResolvedValueOnce({
@@ -109,7 +147,7 @@ describe('model feedback', () => {
       value: { ...modelReply, highlight: { x: 0.4, y: 0.1, width: 0.3, height: 0.2 } },
     });
     await expect(
-      request(credentials, problem, { stepId: 'count-left', text: '好了' }),
+      request(credentials, problem, { stepId: 'count-left', image: pngBase64() }),
     ).resolves.toEqual({
       status: 'ready',
       source: 'ai',

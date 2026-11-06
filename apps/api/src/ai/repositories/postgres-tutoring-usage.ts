@@ -2,7 +2,7 @@ import type pg from 'pg';
 import type { AiConsentView } from '@education/contracts';
 import {
   type BillingResult,
-  reservationCost,
+  largestReservationCost,
   TUTORING_MODEL,
   usageCost,
 } from '../domain/tutoring-cost.js';
@@ -56,7 +56,7 @@ export function createTutoringUsage(pool: pg.Pool, cap: bigint | null) {
       if (cap === null) return 'unset';
       const { rows } = await client.query<{ allowed: boolean }>(
         `SELECT ${budgetAllowsNext} AS allowed FROM ai_usage WHERE budget_month=(SELECT ${currentMonth})`,
-        [cap, reservationCost],
+        [cap, largestReservationCost],
       );
       return rows[0]?.allowed ? 'available' : 'limited';
     },

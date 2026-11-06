@@ -5,7 +5,7 @@ import type { AiConsentChange, AiConsentView } from '@education/contracts';
 import { buildApp } from './app.js';
 import { createAiConsent } from './ai-consent-application.js';
 import { createAiTutoring } from './ai-tutoring-application.js';
-import { reservationCost } from './ai/domain/tutoring-cost.js';
+import { largestReservationCost, reservationCost } from './ai/domain/tutoring-cost.js';
 import { createTutoringUsage } from './ai/repositories/postgres-tutoring-usage.js';
 import { hintTask } from './ai/services/hint-task.js';
 import { csrfToken, tokenHash } from './identity/services/session-security.js';
@@ -130,7 +130,7 @@ it('admits only one reservation across pools, releases a rejected send and holds
   const first = await tutoringHousehold();
   const second = await tutoringHousehold();
   const env = { ...tutoringEnv, AI_MONTHLY_BUDGET_USD: '0.002112' };
-  const status = createAiConsent(pool, reservationCost);
+  const status = createAiConsent(pool, largestReservationCost);
   const parent = { token: first.parent, csrf: csrfToken(first.parent) };
   expect((await status.read(parent)).tutoringBudget).toBe('available');
   const otherPool = new pg.Pool({ connectionString: process.env.DATABASE_URL });

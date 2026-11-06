@@ -132,7 +132,6 @@ it('sends only the step and the submission to the model and settles the usage', 
       status: 'needs-work',
       instruction: modelReply.instruction,
       stepId: 'count-left',
-      highlight: modelReply.highlight,
     },
   });
   const body = String(send.mock.calls[0]?.[1]?.body);
