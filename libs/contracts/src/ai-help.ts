@@ -16,10 +16,9 @@ export const aiHelpFallbackReasons = [
 
 export type AiHelpFallback = (typeof aiHelpFallbackReasons)[number];
 
-export const AiHelpFallbackSchema = Type.Unsafe<AiHelpFallback>({
-  type: 'string',
-  enum: [...aiHelpFallbackReasons],
-});
+export const AiHelpFallbackSchema = Type.Union(
+  aiHelpFallbackReasons.map((reason) => Type.Literal(reason)),
+);
 
 export type AiHelpResult =
   { status: 'ready'; text: string } | { status: 'fallback'; reason: AiHelpFallback };

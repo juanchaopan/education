@@ -2,7 +2,7 @@ export type LearningScope = Readonly<{ id: string; version: number; csrf: string
 
 export function requestLearning(
   scope: LearningScope,
-  resource: 'draft' | 'answer',
+  resource: 'draft' | 'answer' | 'feedback',
   body?: string,
   cancel?: AbortSignal,
 ) {
