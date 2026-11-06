@@ -49,9 +49,12 @@ async function bounded<T>(
 ) {
   const controller = new AbortController();
   const signal = external ? AbortSignal.any([external, controller.signal]) : controller.signal;
-  const stopped = Promise.withResolvers<ReturnType<typeof fallback>>();
-  const cancel = () => stopped.resolve(fallback(external?.aborted ? 'cancelled' : 'timeout'));
   if (signal.aborted) return fallback('cancelled');
+  let stop!: (result: ReturnType<typeof fallback>) => void;
+  const stopped = new Promise<ReturnType<typeof fallback>>((resolve) => {
+    stop = resolve;
+  });
+  const cancel = () => stop(fallback(external?.aborted ? 'cancelled' : 'timeout'));
   signal.addEventListener('abort', cancel, { once: true });
   const timer = setTimeout(() => controller.abort(), AI_HELP_TIMEOUT_MS);
   try {

@@ -197,11 +197,17 @@ it('commits consent dispatch before upstream headers arrive and denies new tutor
   const owner = await household();
   const child = { token: owner.child, csrf: csrfToken(owner.child) };
   const context = { step: '观察左边的物体。', question: '从哪里开始？' };
-  const entered = Promise.withResolvers<void>();
-  const headers = Promise.withResolvers<Response>();
+  let entered!: () => void;
+  let release!: (response: Response) => void;
+  const started = new Promise<void>((resolve) => {
+    entered = resolve;
+  });
+  const headers = new Promise<Response>((resolve) => {
+    release = resolve;
+  });
   const send = vi.fn<typeof fetch>(() => {
-    entered.resolve();
-    return headers.promise;
+    entered();
+    return headers;
   });
   const env = { OPENAI_API_KEY: 'synthetic-key' };
   await expect(createAiTutoring(pool, env, send)(child, context)).resolves.toEqual({
@@ -216,7 +222,7 @@ it('commits consent dispatch before upstream headers arrive and denies new tutor
   const running = request(child, context);
   try {
     await Promise.race([
-      entered.promise,
+      started,
       running.then(() => {
         throw new Error('Dispatch never started');
       }),
@@ -225,7 +231,7 @@ it('commits consent dispatch before upstream headers arrive and denies new tutor
     await expect(request(child, context)).resolves.toMatchObject({ reason: 'unauthorized' });
     expect(send).toHaveBeenCalledTimes(1);
   } finally {
-    headers.resolve(new Response('synthetic private provider error', { status: 503 }));
+    release(new Response('synthetic private provider error', { status: 503 }));
     await expect(running).resolves.toMatchObject({ reason: 'unavailable' });
   }
 });
