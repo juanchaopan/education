@@ -11,6 +11,7 @@ const tables = [
   'attempts',
   'progress',
   'help_events',
+  'assignments',
   'registration_attempts',
   'parent_sessions',
   'child_sessions',

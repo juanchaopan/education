@@ -30,12 +30,16 @@ import type { AnswerService } from './learning/services/answer.js';
 import { registerLearningSummary } from './learning/routes/learning-summary.js';
 import type { LearningSummaryService } from './learning/services/learning-summary.js';
 
+import { registerPractice } from './learning/routes/practice.js';
+import type { PracticeService } from './learning/services/practice.js';
+
 const localOrigin = 'http://127.0.0.1:5173';
 type AppOptions = {
   childAccess?: ChildAccessService;
   drafts?: DraftService;
   answering?: AnswerService;
   learningSummary?: LearningSummaryService;
+  practice?: PracticeService;
   childSessions?: ChildSessionService;
   childRegistration?: ChildRegistrationService;
   origin?: string;
@@ -78,6 +82,7 @@ export function buildApp(options: AppOptions = {}) {
   registerDrafts(app, options.origin ?? localOrigin, options.drafts);
   registerAnswering(app, options.origin ?? localOrigin, options.answering);
   registerLearningSummary(app, options.learningSummary);
+  registerPractice(app, options.origin ?? localOrigin, options.practice);
   app.get('/version.json', (_request, reply) =>
     reply.header('Cache-Control', 'no-store').send({ revision: options.revision ?? null }),
   );

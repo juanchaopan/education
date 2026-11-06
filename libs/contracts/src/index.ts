@@ -21,3 +21,4 @@ export * from './child-access.js';
 export * from './draft.js';
 export * from './answer.js';
 export * from './learning-summary.js';
+export * from './practice.js';

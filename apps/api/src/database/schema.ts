@@ -115,6 +115,10 @@ const learningSlot = () => ({
   problemVersion: bigint('problem_version', { mode: 'number' }).notNull(),
 });
 
+export const assignments = pgTable('assignments', learningSlot(), (table) => [
+  primaryKey({ columns: [table.childId, table.problemId, table.problemVersion] }),
+]).enableRLS();
+
 export const attemptOutcome = pgEnum('attempt_outcome', [
   'independent',
   'assisted',

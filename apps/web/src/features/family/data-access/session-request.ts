@@ -3,16 +3,10 @@ export function sessionRequest(path: string, body?: object, csrf?: string, timeo
     credentials: 'same-origin',
     cache: 'no-store',
     signal: AbortSignal.timeout(timeout),
-    ...(body
-      ? {
-          method: 'POST',
-          body: JSON.stringify(body),
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Education-Request': 'session',
-            ...(csrf ? { 'X-CSRF-Token': csrf } : {}),
-          },
-        }
-      : {}),
+    ...(body && { method: 'POST', body: JSON.stringify(body) }),
+    headers: {
+      ...(body && { 'Content-Type': 'application/json', 'X-Education-Request': 'session' }),
+      ...(csrf && { 'X-CSRF-Token': csrf }),
+    },
   });
 }

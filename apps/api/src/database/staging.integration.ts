@@ -33,7 +33,7 @@ it('denies anonymous Supabase-style table access while the server owner can use 
           "SELECT count(*)::int n FROM pg_class WHERE relnamespace='public'::regnamespace AND relkind='r' AND relrowsecurity",
         )
       ).rows[0].n,
-    ).toBe(17);
+    ).toBe(18);
     for (const role of ['anon', 'authenticated']) {
       expect(
         (
@@ -63,6 +63,7 @@ async function expectTablesPrivate(pool: pg.Pool) {
     'attempts',
     'progress',
     'help_events',
+    'assignments',
   ]) {
     expect(
       (
