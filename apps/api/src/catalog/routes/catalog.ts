@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { Type } from '@sinclair/typebox';
-import { CatalogResponse, ProblemParams, ProblemSummary } from '@education/contracts';
+import { CatalogResponse, ProblemDetail, ProblemParams } from '@education/contracts';
 import { createCatalog } from '../services/catalog.js';
 
 export function registerCatalog(app: FastifyInstance, catalog = createCatalog()) {
@@ -11,7 +11,7 @@ export function registerCatalog(app: FastifyInstance, catalog = createCatalog())
       attachValidation: true,
       schema: {
         params: ProblemParams,
-        response: { 200: ProblemSummary, 404: Type.Object({ message: Type.String() }) },
+        response: { 200: ProblemDetail, 404: Type.Object({ message: Type.String() }) },
       },
     },
     (request, reply) => {

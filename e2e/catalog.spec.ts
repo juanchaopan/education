@@ -48,6 +48,8 @@ test('the production browser bundle excludes fixture content and server checking
   expect(scripts.length).toBeGreaterThan(0);
   for (const file of scripts) {
     const code = await readFile(new URL(file, assets), 'utf8');
-    expect(code).not.toMatch(/fixture-circle|fixture-review|private-answer-rule-sentinel/);
+    expect(code).not.toMatch(
+      /fixture-circle|fixture-review|fixture-guide|private-answer-rule-sentinel/,
+    );
   }
 });
