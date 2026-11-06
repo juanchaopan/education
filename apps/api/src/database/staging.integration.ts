@@ -33,7 +33,7 @@ it('denies anonymous Supabase-style table access while the server owner can use 
           "SELECT count(*)::int n FROM pg_class WHERE relnamespace='public'::regnamespace AND relkind='r' AND relrowsecurity",
         )
       ).rows[0].n,
-    ).toBe(14);
+    ).toBe(17);
     for (const role of ['anon', 'authenticated']) {
       expect(
         (
@@ -44,14 +44,14 @@ it('denies anonymous Supabase-style table access while the server owner can use 
         ).rows[0].allowed,
       ).toBe(false);
     }
-    await expectMailTablesPrivate(pool);
+    await expectTablesPrivate(pool);
     await expect(pool.query('SELECT count(*) FROM parents')).resolves.toBeDefined();
   } finally {
     await pool.end();
   }
 });
 
-async function expectMailTablesPrivate(pool: pg.Pool) {
+async function expectTablesPrivate(pool: pg.Pool) {
   for (const table of [
     'email_verifications',
     'verification_attempts',
@@ -60,6 +60,9 @@ async function expectMailTablesPrivate(pool: pg.Pool) {
     'key_generation_attempts',
     'child_registrations',
     'child_sessions',
+    'attempts',
+    'progress',
+    'help_events',
   ]) {
     expect(
       (

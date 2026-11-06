@@ -7,6 +7,7 @@ import { createDrafts } from './draft-application.js';
 import { cleanupExpiredDrafts } from './database/draft-retention.js';
 import { csrfToken, tokenHash } from './identity/services/session-security.js';
 import { deleteDraftRevision } from './learning/repositories/postgres-draft.js';
+import { createAnswering } from './answer-application.js';
 
 if (!process.env.DATABASE_URL?.endsWith('/education_test'))
   throw new Error('Use isolated education_test');
@@ -17,9 +18,23 @@ const problem = { id: 'test-draft', version: 1 };
 const path = '/api/v1/problems/test-draft/1/draft';
 const content = { stepId: 'compare', drawing: [[{ x: 0.3, y: 0.4 }]] };
 const next = { ...content, stepId: 'explain' };
+const answerPath = path.replace('/draft', '/answer');
+const findAnswering = (id: string, version: number) =>
+  id === problem.id && [1, Number.MAX_SAFE_INTEGER].includes(version)
+    ? {
+        hints: { compare: '先比较叶片两边。' },
+        checkCompletion: (input: unknown) =>
+          input === '对称'
+            ? ('correct' as const)
+            : input === '不对称'
+              ? ('incorrect' as const)
+              : ('uncertain' as const),
+      }
+    : undefined;
 const makeApp = () =>
   buildApp({
     origin,
+    answering: createAnswering(pool, 'fixture-key', findAnswering),
     drafts: createDrafts(
       pool,
       (id, version) => id === problem.id && (version === 1 || version === Number.MAX_SAFE_INTEGER),
@@ -188,4 +203,161 @@ it('supports separate drafts for catalog versions and caps request bytes before 
       })
     ).statusCode,
   ).toBe(413);
+});
+
+function answer(headers: Record<string, string>, payload?: object, app = first, url = answerPath) {
+  return app.inject({ method: payload ? 'POST' : 'GET', url, headers, payload });
+}
+
+async function roundFor(headers: Record<string, string>, url = answerPath) {
+  const result = await answer(headers, undefined, first, url);
+  expect(result.statusCode).toBe(200);
+  return result.json<{ round: string }>().round;
+}
+
+const submission = (round: string, draftRevision: string | null = null) => ({
+  action: 'submit',
+  round,
+  attemptId: randomUUID(),
+  input: '对称',
+  draftRevision,
+});
+
+it('keeps help across sessions and retries, then opens a new round only after completion', async () => {
+  const owner = await child();
+  const a = await owner.session();
+  const b = await owner.session();
+  const round = await roundFor(a);
+  const hint = { action: 'hint', round, hintId: 'compare' };
+  expect((await answer(a, hint)).json()).toEqual({ hint: '先比较叶片两边。' });
+  expect((await answer(b, hint, second)).statusCode).toBe(200);
+  const attempt = submission(round);
+  expect((await answer(b, { ...attempt, input: '?' }, second)).json()).toMatchObject({
+    outcome: 'uncertain',
+  });
+  expect(
+    (await answer(b, { ...attempt, input: '不对称', attemptId: randomUUID() }, second)).json(),
+  ).toMatchObject({ outcome: 'incorrect' });
+  const complete = await answer(b, submission(round), second);
+  expect(complete.json()).toMatchObject({ outcome: 'assisted' });
+  expect((await answer(a, submission(round))).statusCode).toBe(409);
+  expect((await answer(a, hint)).statusCode).toBe(409);
+  const newRound = await roundFor(a);
+  expect(newRound).not.toBe(round);
+  expect((await answer(a, submission(newRound))).json()).toMatchObject({ outcome: 'independent' });
+  const progress = await pool.query(
+    'SELECT independent, assisted, incorrect, uncertain FROM progress WHERE child_id=$1',
+    [owner.id],
+  );
+  expect(progress.rows).toEqual([{ independent: 1, assisted: 1, incorrect: 1, uncertain: 1 }]);
+  expect(
+    (await pool.query('SELECT hint_id FROM help_events WHERE child_id=$1', [owner.id])).rows,
+  ).toEqual([{ hint_id: 'compare' }]);
+});
+
+it('returns one receipt across concurrent instances and preserves drafts from later edits', async () => {
+  const owner = await child();
+  const a = await owner.session();
+  const b = await owner.session();
+  const saved = (await save(a, null)).json().draft;
+  const attempt = submission(await roundFor(a), saved.revision);
+  const replies = await Promise.all([answer(a, attempt), answer(b, attempt, second)]);
+  expect(replies.map((reply) => reply.statusCode)).toEqual([200, 200]);
+  expect(replies[0]!.json()).toEqual(replies[1]!.json());
+  expect((await first.inject({ url: path, headers: a })).json()).toEqual({ draft: null });
+  const fresh = (await save(b, null, next)).json();
+  expect((await answer(a, attempt)).json()).toEqual(replies[0]!.json());
+  expect((await answer(a, { ...attempt, input: '不对称' })).statusCode).toBe(409);
+  expect((await first.inject({ url: path, headers: a })).json()).toEqual(fresh);
+  expect((await pool.query('SELECT 1 FROM attempts WHERE child_id=$1', [owner.id])).rowCount).toBe(
+    1,
+  );
+  expect(
+    (await pool.query('SELECT independent FROM progress WHERE child_id=$1', [owner.id])).rows,
+  ).toEqual([{ independent: 1 }]);
+  const newRound = await roundFor(a);
+  expect((await answer(a, submission(newRound, saved.revision))).statusCode).toBe(200);
+  expect((await first.inject({ url: path, headers: a })).json()).toEqual(fresh);
+});
+
+it('serializes concurrent hint disclosure and completion across sessions', async () => {
+  const owner = await child();
+  const a = await owner.session();
+  const b = await owner.session();
+  const round = await roundFor(a);
+  const [hint, result] = await Promise.all([
+    answer(a, { action: 'hint', round, hintId: 'compare' }),
+    answer(b, submission(round), second),
+  ]);
+  expect([200, 409]).toContain(hint.statusCode);
+  expect(result.statusCode).toBe(200);
+  expect(result.json()).toMatchObject({
+    outcome: hint.statusCode === 200 ? 'assisted' : 'independent',
+  });
+  expect((await answer(a, submission(round))).statusCode).toBe(409);
+});
+
+it('replays a structured answer with reordered keys and rejects changed observations', async () => {
+  const headers = await (await child()).session();
+  const attempt = {
+    ...submission(await roundFor(headers)),
+    input: { marks: [1, 2], folded: true },
+  };
+  const initial = await answer(headers, attempt);
+  expect(initial.statusCode).toBe(200);
+  const reordered = { ...attempt, input: { folded: true, marks: [1, 2] } };
+  expect((await answer(headers, reordered)).json()).toEqual(initial.json());
+  expect(
+    (await answer(headers, { ...attempt, input: { marks: [2, 1], folded: true } })).statusCode,
+  ).toBe(409);
+});
+
+it('does not commit an attempt or progress if its matching draft cannot be removed', async () => {
+  const owner = await child();
+  const a = await owner.session();
+  const saved = (await save(a, null)).json();
+  const attempt = submission(await roundFor(a), saved.draft.revision);
+  await pool.query(`CREATE FUNCTION fail_fixture_draft_delete() RETURNS trigger LANGUAGE plpgsql
+    AS $$ BEGIN RAISE EXCEPTION 'fixture'; END; $$;
+    CREATE TRIGGER fail_fixture_draft_delete BEFORE DELETE ON drafts FOR EACH ROW
+    WHEN (OLD.child_id = '${owner.id}') EXECUTE FUNCTION fail_fixture_draft_delete();`);
+  try {
+    expect((await answer(a, attempt)).statusCode).toBe(503);
+    expect(
+      (await pool.query('SELECT 1 FROM attempts WHERE child_id=$1', [owner.id])).rowCount,
+    ).toBe(0);
+    expect(
+      (await pool.query('SELECT 1 FROM progress WHERE child_id=$1', [owner.id])).rowCount,
+    ).toBe(0);
+    expect((await first.inject({ url: path, headers: a })).json()).toEqual(saved);
+  } finally {
+    await pool.query(
+      'DROP TRIGGER fail_fixture_draft_delete ON drafts; DROP FUNCTION fail_fixture_draft_delete()',
+    );
+  }
+  expect((await answer(a, attempt)).statusCode).toBe(200);
+});
+
+it('isolates children and versions and rejects forged outcomes, hints and stale credentials', async () => {
+  const owner = await child();
+  const a = await owner.session();
+  const b = await (await child()).session();
+  const round = await roundFor(a);
+  const versionPath = answerPath.replace('/1/', `/${Number.MAX_SAFE_INTEGER}/`);
+  const attempt = submission(round);
+  expect((await answer(a, { action: 'hint', round, hintId: 'missing' })).statusCode).toBe(404);
+  expect((await answer(a, { action: 'hint', round, hintId: 'compare' })).statusCode).toBe(200);
+  expect(
+    (await answer(a, { ...attempt, outcome: 'independent', assisted: false })).statusCode,
+  ).toBe(400);
+  expect((await answer(a, { ...attempt, feedback: { status: 'correct' } })).statusCode).toBe(400);
+  expect((await answer(a, attempt, first, versionPath)).json()).toMatchObject({
+    outcome: 'independent',
+  });
+  expect((await answer(b, attempt)).json()).toMatchObject({ outcome: 'independent' });
+  expect((await answer(a, attempt)).json()).toMatchObject({ outcome: 'assisted' });
+  expect((await answer({ ...a, origin: 'https://other.example' }, attempt)).statusCode).toBe(403);
+  expect((await answer({ ...a, 'x-csrf-token': 'wrong' }, attempt)).statusCode).toBe(403);
+  await pool.query('UPDATE children SET credential_version=2 WHERE id=$1', [owner.id]);
+  expect((await answer(a, attempt)).statusCode).toBe(401);
 });

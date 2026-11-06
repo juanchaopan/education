@@ -3,10 +3,18 @@ import {
   type CatalogCategory,
   type ProblemSummary,
   type TeachingFeedback,
+  type SubmitAnswer,
 } from '@education/contracts';
+
+export type AnsweringPolicy = {
+  hints?: Readonly<Record<string, string>>;
+  // Completion checks run locally and synchronously, using authored rules.
+  checkCompletion: (input: SubmitAnswer['input']) => 'correct' | 'incorrect' | 'uncertain';
+};
 
 export type ProblemPlugin = {
   summary: ProblemSummary;
+  answering?: AnsweringPolicy;
   checkStep?: (input: {
     stepId: string;
     answer: unknown;

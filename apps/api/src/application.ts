@@ -35,6 +35,7 @@ import { createReadinessCheck } from './database/readiness.js';
 import { databaseOptions } from './shared/database-config.js';
 import { readRevision } from './shared/revision.js';
 import { createDrafts } from './draft-application.js';
+import { createAnswering } from './answer-application.js';
 
 export async function createApplication(env: NodeJS.ProcessEnv = process.env) {
   const config = readConfig(env);
@@ -55,7 +56,11 @@ export async function createApplication(env: NodeJS.ProcessEnv = process.env) {
         hash: hashParentPassword,
       })
     : undefined;
-  const { sessions, childSessions, drafts } = await createIdentitySessions(pool, config, admit);
+  const { sessions, childSessions, drafts, answering } = await createIdentitySessions(
+    pool,
+    config,
+    admit,
+  );
   const app = buildApp({
     origin: config.origin,
     registration,
@@ -63,6 +68,7 @@ export async function createApplication(env: NodeJS.ProcessEnv = process.env) {
     childRegistration: createChildRegistration(pool, config, admit),
     childSessions,
     drafts,
+    answering,
     childAccess: createChildAccess(pool, sessions, admit, config),
     ...createFamilyManagement(pool, sessions, admit),
     verification: createVerification(pool, mailConfig, admit),
@@ -84,7 +90,13 @@ async function createIdentitySessions(
   config: ReturnType<typeof readConfig>,
   admit: ReturnType<typeof createAuthAdmission> | undefined,
 ) {
-  if (!pool || !admit) return { sessions: undefined, childSessions: undefined };
+  if (!pool || !admit)
+    return {
+      sessions: undefined,
+      childSessions: undefined,
+      drafts: undefined,
+      answering: undefined,
+    };
   const dummyHash = await hashParentPassword(randomBytes(32).toString('base64url'));
   const sessions = createSessionService({
     repository: createSessionRepository(pool),
@@ -101,7 +113,14 @@ async function createIdentitySessions(
         dummyHash,
       })
     : undefined;
-  return { sessions, childSessions, drafts: childSessions ? createDrafts(pool) : undefined };
+  return {
+    sessions,
+    childSessions,
+    ...(childSessions && {
+      drafts: createDrafts(pool),
+      answering: createAnswering(pool, config.rateLimitKey!),
+    }),
+  };
 }
 
 async function registerWeb(app: ReturnType<typeof buildApp>) {
