@@ -4,6 +4,7 @@ import { afterAll, expect, it, vi } from 'vitest';
 import type { AiConsentChange, AiConsentView } from '@education/contracts';
 import { buildApp } from './app.js';
 import { createAiConsent } from './ai-consent-application.js';
+import { createAiTutoring } from './ai-tutoring-application.js';
 import { csrfToken, tokenHash } from './identity/services/session-security.js';
 
 if (!process.env.DATABASE_URL?.endsWith('/education_test'))
@@ -189,5 +190,42 @@ it('holds the family lock during dispatch and denies further sends after revocat
   } finally {
     release('cleanup');
     await Promise.allSettled([running, revoked]);
+  }
+});
+
+it('commits consent dispatch before upstream headers arrive and denies new tutoring after withdrawal', async () => {
+  const owner = await household();
+  const child = { token: owner.child, csrf: csrfToken(owner.child) };
+  const context = { step: '观察左边的物体。', question: '从哪里开始？' };
+  const entered = Promise.withResolvers<void>();
+  const headers = Promise.withResolvers<Response>();
+  const send = vi.fn<typeof fetch>(() => {
+    entered.resolve();
+    return headers.promise;
+  });
+  const env = { OPENAI_API_KEY: 'synthetic-key' };
+  await expect(createAiTutoring(pool, env, send)(child, context)).resolves.toEqual({
+    status: 'fallback',
+    reason: 'ineligible',
+  });
+  const request = createAiTutoring(pool, { ...env, OPENAI_TUTORING_ELIGIBLE: 'true' }, send);
+  await expect(request(child, context)).resolves.toMatchObject({ reason: 'unauthorized' });
+  await recent(owner.parent);
+  expect((await change(owner.parent, await decision(owner.parent))).statusCode).toBe(200);
+  const revoke = { ...(await decision(owner.parent)), granted: false };
+  const running = request(child, context);
+  try {
+    await Promise.race([
+      entered.promise,
+      running.then(() => {
+        throw new Error('Dispatch never started');
+      }),
+    ]);
+    expect((await change(owner.parent, revoke)).statusCode).toBe(200);
+    await expect(request(child, context)).resolves.toMatchObject({ reason: 'unauthorized' });
+    expect(send).toHaveBeenCalledTimes(1);
+  } finally {
+    headers.resolve(new Response('synthetic private provider error', { status: 503 }));
+    await expect(running).resolves.toMatchObject({ reason: 'unavailable' });
   }
 });
