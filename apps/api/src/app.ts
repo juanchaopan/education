@@ -23,9 +23,13 @@ import { registerParentRegistration } from './identity/routes/registration.js';
 import type { RegistrationService } from './identity/services/registration.js';
 import { RequestError } from './shared/request-error.js';
 import { readinessErrorCode } from './shared/readiness-error.js';
+import { registerDrafts } from './learning/routes/draft.js';
+import type { DraftService } from './learning/services/draft.js';
 
+const localOrigin = 'http://127.0.0.1:5173';
 type AppOptions = {
   childAccess?: ChildAccessService;
+  drafts?: DraftService;
   childSessions?: ChildSessionService;
   childRegistration?: ChildRegistrationService;
   origin?: string;
@@ -65,6 +69,7 @@ export function buildApp(options: AppOptions = {}) {
       .send({ status: ready ? 'ready' : 'unavailable' });
   });
   registerCatalog(app);
+  registerDrafts(app, options.origin ?? localOrigin, options.drafts);
   app.get('/version.json', (_request, reply) =>
     reply.header('Cache-Control', 'no-store').send({ revision: options.revision ?? null }),
   );
@@ -100,7 +105,7 @@ function registerErrors(app: FastifyInstance) {
 }
 
 function registerIdentity(app: FastifyInstance, options: AppOptions) {
-  const origin = options.origin ?? 'http://127.0.0.1:5173';
+  const origin = options.origin ?? localOrigin;
   registerParentRegistration(app, origin, options.registration);
   registerChildRegistration(app, origin, options.childRegistration);
   registerChildSessions(app, origin, options.childSessions);

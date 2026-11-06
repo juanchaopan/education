@@ -1,6 +1,7 @@
 import pg from 'pg';
 import { databaseOptions } from '../apps/api/dist/shared/database-config.js';
 import { cleanupAccountMail } from '../apps/api/dist/database/mail-retention.js';
+import { cleanupExpiredDrafts } from '../apps/api/dist/database/draft-retention.js';
 import { validateSupabaseDatabase } from './staging-release.mjs';
 
 async function cleanup() {
@@ -12,7 +13,21 @@ async function cleanup() {
     statement_timeout: 10000,
   });
   try {
-    console.log(`Expired account mail payloads cleared: ${await cleanupAccountMail(pool)}`);
+    const results = await Promise.allSettled([
+      cleanupAccountMail(pool),
+      cleanupExpiredDrafts(pool),
+    ]);
+    for (const [index, label] of [
+      'Account mail records cleared',
+      'Expired drafts cleared',
+    ].entries()) {
+      const result = results[index];
+      if (result.status === 'fulfilled') console.log(`${label}: ${result.value}`);
+      else {
+        console.error(`${label}: cleanup failed`);
+        process.exitCode = 1;
+      }
+    }
   } finally {
     await pool.end();
   }
@@ -20,6 +35,6 @@ async function cleanup() {
 try {
   await cleanup();
 } catch {
-  console.error('Staging mail retention failed; inspect database availability.');
+  console.error('Staging retention failed; inspect database availability.');
   process.exitCode = 1;
 }
