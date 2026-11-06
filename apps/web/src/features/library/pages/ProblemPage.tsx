@@ -1,20 +1,12 @@
-import { Fragment, type ReactNode } from 'react';
+import { Fragment } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import type { ProblemDetail, TeachingDefinition } from '@education/contracts';
+import type { ProblemSummary } from '@education/contracts';
 import { EmptyState } from '../../../shared/ui/EmptyState';
 import { useProblem } from '../data-access/useProblem';
 import { catalogPath, problemPath } from '../model';
 import { problemPages, type ProblemPages } from './problem-pages';
 
-type RenderTeaching = (title: string, teaching: TeachingDefinition) => ReactNode;
-
-export function ProblemPage({
-  pages = problemPages,
-  renderTeaching,
-}: {
-  pages?: ProblemPages;
-  renderTeaching?: RenderTeaching;
-}) {
+export function ProblemPage({ pages = problemPages }: { pages?: ProblemPages }) {
   const { id = '', version = '' } = useParams();
   const query = useProblem(id, version);
   const problem = query.data;
@@ -33,9 +25,7 @@ export function ProblemPage({
           }}
         />
       )}
-      {query.isSuccess && (
-        <ProblemContent problem={query.data} pages={pages} renderTeaching={renderTeaching} />
-      )}
+      {query.isSuccess && <ProblemContent problem={query.data} pages={pages} />}
     </section>
   );
 }
@@ -43,19 +33,14 @@ export function ProblemPage({
 function ProblemContent({
   problem,
   pages,
-  renderTeaching,
 }: {
-  problem: ProblemDetail | null;
+  problem: ProblemSummary | null;
   pages: ProblemPages;
-  renderTeaching?: RenderTeaching;
 }) {
   if (problem) {
     const path = problemPath(problem.id, problem.version);
     const renderPage = pages.get(path);
     if (renderPage) return <Fragment key={path}>{renderPage(problem)}</Fragment>;
-    if (problem.teaching?.steps.length && renderTeaching) {
-      return <Fragment key={path}>{renderTeaching(problem.title, problem.teaching)}</Fragment>;
-    }
   }
   return (
     <EmptyState

@@ -704,7 +704,7 @@ REQ-001、REQ-009；见 [产品需求](product/requirements.md)、[架构总览]
 
 <a id="issue-31"></a>
 
-## [#31](https://github.com/juanchaopan/education/issues/31) 逐步教学、重复指令与提示阶梯
+## [#31](https://github.com/juanchaopan/education/issues/31) 从样例题提炼可复用教学组件
 
 ### 类型
 
@@ -712,15 +712,16 @@ REQ-001、REQ-009；见 [产品需求](product/requirements.md)、[架构总览]
 
 ### 目标
 
-提供每次一个目标、重听/重试、小提示到示范的通用教学页面。
+从维护者提供的样例题库和已确认的逐题教学计划中提炼组件，由每道题的专属页面自行组合。收到样例前暂缓定义组件和实现教学界面。
 
 ### 对应需求
 
-REQ-004、REQ-006；见 [产品需求](product/requirements.md)、[架构总览](architecture/overview.md) 及相关 ADR。
+REQ-001、REQ-004、REQ-006；见 [产品需求](product/requirements.md)、[架构总览](architecture/overview.md) 及相关 ADR。
 
 ### 验收标准
 
-- [ ] Given 题目教学定义，When 请求提示或重试，Then 显示具体下一步并记录帮助事件，不责备、不惩罚重试。
+- [ ] 从已确认的样例题教学计划中列出可复用组件。每个共享组件都指出它服务的题目和学习动作，专属页面能根据题意安排不同的画面、操作和提示时机。
+- [ ] 在不同的样例题场景中验证共享组件，展示孩子如何得到当前操作对应的提示或重试机会，并记录帮助事件。
 - [ ] Given 无法确定的输入，Then 请求确认；规则不能判断时不标知识错误，不伪造掌握。
 
 ### 涉及的组件
@@ -731,7 +732,7 @@ REQ-004、REQ-006；见 [产品需求](product/requirements.md)、[架构总览]
 
 ### 依赖
 
-[#30](https://github.com/juanchaopan/education/issues/30)
+[#30](https://github.com/juanchaopan/education/issues/30)、[#48](https://github.com/juanchaopan/education/issues/48)。#48 需要维护者提供样例题库。
 
 ### 大小和风险
 
@@ -740,7 +741,7 @@ REQ-004、REQ-006；见 [产品需求](product/requirements.md)、[架构总览]
 
 ### 测试要点
 
-夹具覆盖连续重试、重复指令、步骤切换、提示事件和键盘操作。
+根据实际样例选择交互验证，覆盖重复讲解或重试、提示事件、键盘操作及输入不确定。
 
 <a id="issue-32"></a>
 
@@ -1396,7 +1397,7 @@ REQ-001、REQ-002、REQ-005、REQ-008、REQ-009；见 [产品需求](product/req
 
 ### 目标
 
-收到用户题目后，为每题确定步骤、常见错误、提示阶梯、绘图区域和相似题迁移验证。
+收到样例题库后，为每题设计专属画面、讲解和操作，确定常见错误、对应提示和变化题验证。把各题实际需要的交互标在设计中，供 #31 提炼共享组件。
 
 ### 对应需求
 
@@ -1404,8 +1405,10 @@ REQ-001、REQ-003、REQ-004、REQ-005；见 [产品需求](product/requirements.
 
 ### 验收标准
 
-- [ ] Given 用户提供的题目，Then 产出可评审教学计划，明确规则能判断与需要模型的部分。
+- [ ] 对用户提供的各道样例题给出可评审的教学方案。画面有儿童游戏的视觉感，每一步标明希望孩子观察、尝试或发现什么，画面与声音如何反馈，孩子卡住时如何通过开放式语音提问获得当前题目的 AI 引导。明确规则能判断与需要模型的部分。
 - [ ] Given 缺少相似题或有效评估证据，Then 不宣称掌握；每题内容与计划由用户确认后实施。
+
+视觉参考为 [EF Small Stars 官方设计案例](https://ef.design/work/small-stars/)，包括角色、插画、短动画和配乐。样例题的画面与互动按其教学目标设计。
 
 ### 涉及的组件
 
@@ -1414,7 +1417,7 @@ REQ-001、REQ-003、REQ-004、REQ-005；见 [产品需求](product/requirements.
 
 ### 依赖
 
-[#31](https://github.com/juanchaopan/education/issues/31)；外部依赖：用户提供题目。
+外部依赖为维护者提供样例题库。
 
 ### 大小和风险
 

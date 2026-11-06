@@ -1,5 +1,4 @@
 import { Type, type Static } from '@sinclair/typebox';
-import { TeachingDefinition } from './teaching.js';
 
 const problemIdPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const versionParamPattern = /^[1-9][0-9]*$/;
@@ -28,11 +27,6 @@ export const CatalogResponse = Type.Object({
   categories: Type.Optional(Type.Array(CatalogCategory)),
 });
 
-export const ProblemDetail = Type.Composite([
-  ProblemSummary,
-  Type.Object({ teaching: Type.Optional(TeachingDefinition) }),
-]);
-
 export const ProblemParams = Type.Object({
   id: ProblemId,
   version: Type.String({ pattern: versionParamPattern.source, maxLength: 16 }),
@@ -49,6 +43,5 @@ export function parseProblemVersion(raw: string) {
 
 export type CatalogCategory = Static<typeof CatalogCategory>;
 export type ProblemSummary = Static<typeof ProblemSummary>;
-export type ProblemDetail = Static<typeof ProblemDetail>;
 export type CatalogResponse = Static<typeof CatalogResponse>;
 export type ProblemParams = Static<typeof ProblemParams>;
