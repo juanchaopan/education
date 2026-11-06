@@ -3,8 +3,8 @@ import { Type } from '@sinclair/typebox';
 import { ChildLogin, ChildSession } from '@education/contracts';
 import type { ChildSessionService } from '../services/child-session.js';
 import { childSessionLifetime } from '../domain/child-session.js';
-import { sessionWriteGuard } from './session-guard.js';
-import { readSessionCookie, writeSessionCookie } from './session-cookie.js';
+import { sessionWriteGuard } from '../../shared/session-guard.js';
+import { readSessionCookie, writeSessionCookie } from '../../shared/session-cookie.js';
 import { RequestError } from '../../shared/request-error.js';
 
 const empty = Type.Object({}, { additionalProperties: false });

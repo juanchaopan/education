@@ -1,10 +1,10 @@
-import { sessionWriteGuard } from './session-guard.js';
+import { sessionWriteGuard } from '../../shared/session-guard.js';
 import type { FastifyInstance } from 'fastify';
 import { Type } from '@sinclair/typebox';
 import { ParentLogin, ParentSession } from '@education/contracts';
 import type { SessionService } from '../services/session.js';
 import { RequestError } from '../../shared/request-error.js';
-import { readSessionCookie, writeSessionCookie } from './session-cookie.js';
+import { readSessionCookie, writeSessionCookie } from '../../shared/session-cookie.js';
 
 function serviceOrUnavailable(service?: SessionService) {
   if (!service) throw new RequestError(503, '登录服务尚未配置，请稍后再来。');

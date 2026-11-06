@@ -1,5 +1,6 @@
 import { sql } from 'drizzle-orm';
 import {
+  bigint,
   boolean,
   index,
   integer,
@@ -93,13 +94,14 @@ export const drafts = pgTable(
       .notNull()
       .references(() => children.id, { onDelete: 'cascade' }),
     problemId: text('problem_id').notNull(),
-    problemVersion: integer('problem_version').notNull(),
+    problemVersion: bigint('problem_version', { mode: 'number' }).notNull(),
     revision: integer('revision').default(1).notNull(),
     content: jsonb('content').$type<Record<string, unknown>>().notNull(),
     expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
   },
   (table) => [
     uniqueIndex('draft_child_problem').on(table.childId, table.problemId, table.problemVersion),
+    index('draft_expiry').on(table.expiresAt),
   ],
 );
 

@@ -4,6 +4,7 @@ import { bindInk } from '../drawing/bind-ink';
 import { drawingFeedback } from '../drawing/drawing-feedback';
 import type { Drawing } from '../drawing/ink';
 import styles from './DrawingBoard.module.css';
+import action from './LessonAction.module.css';
 
 type Props = {
   stepId: string;
@@ -59,12 +60,18 @@ export function DrawingBoard({ stepId, label, drawing, onDrawingChange, feedback
       <div className={styles.actions}>
         <button
           type="button"
+          className={action.button}
           disabled={!drawing.length}
           onClick={() => onDrawingChange(drawing.slice(0, -1))}
         >
           撤销一笔
         </button>
-        <button type="button" disabled={!drawing.length} onClick={() => onDrawingChange([])}>
+        <button
+          type="button"
+          className={action.button}
+          disabled={!drawing.length}
+          onClick={() => onDrawingChange([])}
+        >
           清空画板
         </button>
       </div>

@@ -10,8 +10,8 @@ import type { VerificationService } from '../services/verification.js';
 import type { SessionService } from '../services/session.js';
 import { csrfMatches } from '../services/session-security.js';
 import { RequestError } from '../../shared/request-error.js';
-import { readSessionCookie } from './session-cookie.js';
-import { sessionWriteGuard } from './session-guard.js';
+import { readSessionCookie } from '../../shared/session-cookie.js';
+import { sessionWriteGuard } from '../../shared/session-guard.js';
 
 export function registerVerification(
   app: FastifyInstance,

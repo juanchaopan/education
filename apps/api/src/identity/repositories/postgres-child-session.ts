@@ -56,6 +56,14 @@ function sameCredentials(current: ChildAccount, expected: ChildAccount) {
   );
 }
 function read(pool: pg.Pool, hash: string) {
+  return withChildSession(pool, hash, (_client, account) => Promise.resolve(account));
+}
+
+export function withChildSession<T>(
+  pool: pg.Pool,
+  hash: string,
+  work: (client: pg.PoolClient, account: { id: string; nickname: string }) => Promise<T>,
+) {
   return transaction(pool, async (client) => {
     const owner = (
       await client.query<{ child_id: string; family_id: string }>(
@@ -67,16 +75,17 @@ function read(pool: pg.Pool, hash: string) {
     if (!owner) return;
     await client.query('SELECT id FROM families WHERE id=$1 FOR SHARE', [owner.family_id]);
     await client.query('SELECT id FROM children WHERE id=$1 FOR SHARE', [owner.child_id]);
-    return (
-      await client.query<{ nickname: string }>(
+    const account = (
+      await client.query<{ id: string; nickname: string }>(
         `UPDATE child_sessions s
       SET last_seen_at=clock_timestamp(),expires_at=clock_timestamp()+interval '180 days'
       FROM children c,families f WHERE s.token_hash=$1 AND s.child_id=c.id AND c.family_id=f.id
       AND c.family_id=$2 AND c.pin_pepper_version=1 AND s.credential_version=c.credential_version
       AND s.family_epoch=f.auth_epoch AND s.expires_at>clock_timestamp()
-      AND s.last_seen_at>clock_timestamp()-interval '180 days' RETURNING c.nickname`,
+      AND s.last_seen_at>clock_timestamp()-interval '180 days' RETURNING c.id,c.nickname`,
         [hash, owner.family_id],
       )
     ).rows[0];
+    return account ? work(client, account) : undefined;
   });
 }

@@ -34,6 +34,7 @@ import { createAuthAdmission } from './identity/repositories/auth-admission.js';
 import { createReadinessCheck } from './database/readiness.js';
 import { databaseOptions } from './shared/database-config.js';
 import { readRevision } from './shared/revision.js';
+import { createDrafts } from './draft-application.js';
 
 export async function createApplication(env: NodeJS.ProcessEnv = process.env) {
   const config = readConfig(env);
@@ -54,13 +55,14 @@ export async function createApplication(env: NodeJS.ProcessEnv = process.env) {
         hash: hashParentPassword,
       })
     : undefined;
-  const { sessions, childSessions } = await createIdentitySessions(pool, config, admit);
+  const { sessions, childSessions, drafts } = await createIdentitySessions(pool, config, admit);
   const app = buildApp({
     origin: config.origin,
     registration,
     sessions,
     childRegistration: createChildRegistration(pool, config, admit),
     childSessions,
+    drafts,
     childAccess: createChildAccess(pool, sessions, admit, config),
     ...createFamilyManagement(pool, sessions, admit),
     verification: createVerification(pool, mailConfig, admit),
@@ -99,7 +101,7 @@ async function createIdentitySessions(
         dummyHash,
       })
     : undefined;
-  return { sessions, childSessions };
+  return { sessions, childSessions, drafts: childSessions ? createDrafts(pool) : undefined };
 }
 
 async function registerWeb(app: ReturnType<typeof buildApp>) {
