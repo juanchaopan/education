@@ -1,6 +1,16 @@
 import { expect, it } from 'vitest';
 import { readConfig } from './config.js';
 
+it('distinguishes an unset AI budget from zero and parses exact USD amounts', () => {
+  expect(readConfig({}).aiMonthlyBudget).toBeNull();
+  expect(readConfig({}).paidAiEnabled).toBe(true);
+  expect(readConfig({ AI_MONTHLY_BUDGET_USD: '0' }).aiMonthlyBudget).toBe(0n);
+  expect(readConfig({ AI_MONTHLY_BUDGET_USD: '1.000000001' }).aiMonthlyBudget).toBe(1_000_000_001n);
+  for (const value of ['-1', '1e2', '0.0000000001', 'Infinity']) {
+    expect(() => readConfig({ AI_MONTHLY_BUDGET_USD: value })).toThrow('AI_MONTHLY_BUDGET_USD');
+  }
+});
+
 const env = {
   REGISTRATION_ENABLED: 'true',
   DATABASE_URL: 'postgres://localhost/isolated',

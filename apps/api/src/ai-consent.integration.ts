@@ -1,10 +1,12 @@
 import { randomBytes, randomUUID } from 'node:crypto';
 import pg from 'pg';
-import { afterAll, expect, it, vi } from 'vitest';
+import { afterAll, afterEach, expect, it, vi } from 'vitest';
 import type { AiConsentChange, AiConsentView } from '@education/contracts';
 import { buildApp } from './app.js';
 import { createAiConsent } from './ai-consent-application.js';
 import { createAiTutoring } from './ai-tutoring-application.js';
+import { reservationCost } from './ai/domain/tutoring-cost.js';
+import { createTutoringUsage } from './ai/repositories/postgres-tutoring-usage.js';
 import { csrfToken, tokenHash } from './identity/services/session-security.js';
 
 if (!process.env.DATABASE_URL?.endsWith('/education_test'))
@@ -18,6 +20,10 @@ const app = buildApp({ origin, aiConsent: consent });
 const url = '/api/v1/parents/ai-consent';
 const tutoring = 'openai-tutoring';
 const transcription = 'openai-transcription';
+
+afterEach(async () => {
+  await pool.query('DELETE FROM ai_usage WHERE family_id=ANY($1::uuid[])', [families]);
+});
 
 afterAll(async () => {
   await app.close();
@@ -90,6 +96,7 @@ it('defaults to denial, then permits only the authorized purpose and family', as
   const saved = await change(owner.parent, grant);
   expect(saved.statusCode).toBe(200);
   expect(saved.headers['cache-control']).toBe('no-store');
+  expect(saved.json<AiConsentView>().tutoringBudget).toBe('unset');
   expect(saved.json<AiConsentView>().policies).toEqual([
     expect.objectContaining({ scope: tutoring, state: 'granted' }),
     expect.objectContaining({ scope: transcription, state: 'ungranted' }),
@@ -117,6 +124,155 @@ it('defaults to denial, then permits only the authorized purpose and family', as
     (await pool.query('SELECT 1 FROM ai_consents WHERE family_id=$1', [owner.family])).rowCount,
   ).toBe(0);
 });
+
+it('admits only one reservation across pools, releases a rejected send and holds a cancelled one', async () => {
+  const first = await tutoringHousehold();
+  const second = await tutoringHousehold();
+  const env = { ...tutoringEnv, AI_MONTHLY_BUDGET_USD: '0.002112' };
+  const status = createAiConsent(pool, reservationCost);
+  const parent = { token: first.parent, csrf: csrfToken(first.parent) };
+  expect((await status.read(parent)).tutoringBudget).toBe('available');
+  const otherPool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+  const { started, finish, send } = pendingProvider();
+  const a = createAiTutoring(pool, env, send);
+  const b = createAiTutoring(otherPool, env, send);
+  const firstRequest = a(first.credentials, tutoringContext);
+  const secondRequest = b(second.credentials, tutoringContext);
+  const both = Promise.all([firstRequest, secondRequest]);
+  try {
+    await Promise.race([
+      started,
+      both.then(() => {
+        throw new Error('Provider was not called');
+      }),
+    ]);
+    expect((await status.read(parent)).tutoringBudget).toBe('limited');
+    await expect(Promise.race([firstRequest, secondRequest])).resolves.toMatchObject({
+      reason: 'usage-limited',
+    });
+    finish(new Response(null, { status: 401 }));
+    expect(await both).toContainEqual({ status: 'fallback', reason: 'unavailable' });
+    expect((await status.read(parent)).tutoringBudget).toBe('available');
+    await verifyCancelledReservation(env, second);
+    expect((await status.read(parent)).tutoringBudget).toBe('limited');
+    await expect(b(first.credentials, tutoringContext)).resolves.toMatchObject({
+      reason: 'usage-limited',
+    });
+    expect(send).toHaveBeenCalledTimes(1);
+  } finally {
+    finish(new Response(null, { status: 401 }));
+    await both;
+    await otherPool.end();
+  }
+});
+
+it('records only billing metadata and settles once even if a later completion disagrees', async () => {
+  const owner = await tutoringHousehold();
+  const send = vi.fn<typeof fetch>().mockImplementation(async () => usageResponse());
+  const request = createAiTutoring(pool, tutoringEnv, send);
+  await expect(request(owner.credentials, tutoringContext)).resolves.toMatchObject({
+    reason: 'unavailable',
+  });
+  const settled = await usageRows(owner.family);
+  expect(settled).toEqual([
+    {
+      id: expect.any(String),
+      state: 'settled',
+      amount: '16250',
+      model: 'gpt-6-luna',
+      input_tokens: '82',
+      output_tokens: '12',
+    },
+  ]);
+  const ledger = createTutoringUsage(pool, null);
+  await ledger.settle(settled[0]!.id, { status: 'released' });
+  expect(await usageRows(owner.family)).toEqual(settled);
+});
+
+it('limits repeated requests even with no monetary cap', async () => {
+  const owner = await tutoringHousehold();
+  const send = vi.fn<typeof fetch>().mockImplementation(async () => usageResponse());
+  const request = createAiTutoring(pool, tutoringEnv, send);
+  const results = await Promise.all(
+    Array.from({ length: 8 }, () => request(owner.credentials, tutoringContext)),
+  );
+  expect(
+    results.filter((result) => result.status === 'fallback' && result.reason === 'usage-limited'),
+  ).toHaveLength(2);
+  expect(send).toHaveBeenCalledTimes(6);
+});
+
+const tutoringEnv = { OPENAI_API_KEY: 'synthetic-key', OPENAI_TUTORING_ELIGIBLE: 'true' };
+const tutoringContext = { step: '数一数左边的物体。', question: '从哪里开始？' };
+
+async function tutoringHousehold() {
+  const owner = await household();
+  await recent(owner.parent);
+  expect((await change(owner.parent, await decision(owner.parent))).statusCode).toBe(200);
+  return { ...owner, credentials: { token: owner.child, csrf: csrfToken(owner.child) } };
+}
+
+function pendingProvider() {
+  let enter!: () => void;
+  let finish!: (response: Response) => void;
+  const started = new Promise<void>((resolve) => {
+    enter = resolve;
+  });
+  const response = new Promise<Response>((resolve) => {
+    finish = resolve;
+  });
+  const send = vi.fn<typeof fetch>(() => {
+    enter();
+    return response;
+  });
+  return { started, finish, send };
+}
+
+function usageResponse() {
+  const body = {
+    type: 'response.incomplete',
+    response: { status: 'incomplete', usage: { input_tokens: 82, output_tokens: 12 } },
+  };
+  return new Response(`data: ${JSON.stringify(body)}\n\n`, {
+    headers: { 'content-type': 'text/event-stream' },
+  });
+}
+
+async function verifyCancelledReservation(
+  env: typeof tutoringEnv,
+  owner: Awaited<ReturnType<typeof tutoringHousehold>>,
+) {
+  const provider = pendingProvider();
+  const controller = new AbortController();
+  const request = createAiTutoring(pool, env, provider.send);
+  const running = request(owner.credentials, tutoringContext, controller.signal);
+  await Promise.race([
+    provider.started,
+    running.then(() => {
+      throw new Error('Provider was not called');
+    }),
+  ]);
+  controller.abort();
+  await expect(running).resolves.toMatchObject({ reason: 'cancelled' });
+  expect(await usageRows(owner.family)).toEqual([
+    expect.objectContaining({ state: 'reserved', amount: reservationCost.toString() }),
+  ]);
+  provider.finish(new Response(null, { status: 503 }));
+  await vi.waitFor(async () => {
+    expect(await usageRows(owner.family)).toEqual([
+      expect.objectContaining({ state: 'unknown', amount: reservationCost.toString() }),
+    ]);
+  });
+}
+
+async function usageRows(family: string) {
+  const result = await pool.query<{ id: string }>(
+    `SELECT id,state,model,amount_nanodollars::text AS amount,input_tokens::text,output_tokens::text
+     FROM ai_usage WHERE family_id=$1`,
+    [family],
+  );
+  return result.rows;
+}
 
 it('requires verified sessions, CSRF, exact origin, and the current policy and decision revision', async () => {
   const owner = await household();

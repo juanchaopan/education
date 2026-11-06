@@ -13,6 +13,7 @@ const tables = [
   'help_events',
   'assignments',
   'ai_consents',
+  'ai_usage',
   'registration_attempts',
   'parent_sessions',
   'child_sessions',

@@ -38,6 +38,7 @@ test('parent reads both disclosures, confirms their password, grants and revokes
     ]);
     await page.goto('/family');
     const panel = page.getByRole('region', { name: '外部 AI 授权' });
+    await expect(panel.getByText('AI 解题提示预算未设置。')).toBeVisible();
     const tutoring = panel.getByRole('group', { name: 'AI 解题提示' });
     const speech = panel.getByRole('group', { name: '语音转写' });
     const grant = tutoring.getByRole('button', { name: '授权 AI 解题提示' });

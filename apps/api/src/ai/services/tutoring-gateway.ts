@@ -1,6 +1,13 @@
 import { AI_HELP_TIMEOUT_MS } from '@education/contracts';
 import type { AiHelpFallback } from '@education/contracts';
 import { RequestError } from '../../shared/request-error.js';
+import {
+  type BillingResult,
+  MAX_TUTORING_BODY_BYTES,
+  MAX_TUTORING_OUTPUT_TOKENS,
+  TUTORING_MODEL,
+  withinTutoringBounds,
+} from '../domain/tutoring-cost.js';
 import { readOpenAiResponse } from './openai-response.js';
 
 type Credentials = { token?: string; csrf?: string };
@@ -11,8 +18,11 @@ type Authorize = (
   credentials: Credentials,
   start: (signal: AbortSignal) => Promise<InFlight>,
 ) => Promise<InFlight>;
+type Meter = {
+  reserve(credentials: Credentials): Promise<string | undefined>;
+  settle(id: string, result: BillingResult): Promise<void>;
+};
 
-const MODEL = 'gpt-6-luna';
 const ENDPOINT = 'https://api.openai.com/v1/responses';
 const INSTRUCTIONS =
   '你正在给儿童当前题目的一步提示。用一句简短、能马上操作的中文直接对孩子说话，' +
@@ -25,16 +35,17 @@ function fallback(reason: AiHelpFallback) {
 
 function requestBody({ step, question }: Context) {
   if (!step.trim() || step.length > 1_200 || !question.trim() || question.length > 500) return;
-  return JSON.stringify({
-    model: MODEL,
+  const body = JSON.stringify({
+    model: TUTORING_MODEL,
     instructions: INSTRUCTIONS,
     input: [{ role: 'user', content: JSON.stringify({ step, question }) }],
     reasoning: { effort: 'none' },
-    max_output_tokens: 128,
+    max_output_tokens: MAX_TUTORING_OUTPUT_TOKENS,
     service_tier: 'default',
     store: false,
     stream: true,
   });
+  if (Buffer.byteLength(body) <= MAX_TUTORING_BODY_BYTES) return body;
 }
 
 function unavailable(settings: Settings): AiHelpFallback | undefined {
@@ -66,7 +77,58 @@ async function bounded<T>(
   }
 }
 
-export function createTutoringGateway(settings: Settings, authorize: Authorize, send = fetch) {
+function sendRequest(send: typeof fetch, apiKey: string, body: string, signal: AbortSignal) {
+  const response = send(ENDPOINT, {
+    method: 'POST',
+    headers: { authorization: `Bearer ${apiKey}`, 'content-type': 'application/json' },
+    redirect: 'error',
+    body,
+    signal,
+  });
+  void response.catch(() => {});
+  return { response };
+}
+
+function classifyBilling(
+  status: number,
+  result: Awaited<ReturnType<typeof readOpenAiResponse>>,
+): BillingResult {
+  // An authentication or permission rejection occurs before inference.
+  if (status === 401 || status === 403) return { status: 'released' };
+  const usage = result?.usage;
+  if (result?.unexpectedTier || (usage && !withinTutoringBounds(usage)))
+    return { status: 'out-of-bounds', usage: usage ?? undefined };
+  return usage ? { status: 'settled', usage } : { status: 'unknown' };
+}
+
+async function meteredRequest(
+  meter: Meter,
+  credentials: Credentials,
+  dispatch: (onSend: () => void) => Promise<InFlight>,
+) {
+  const id = await meter.reserve(credentials);
+  if (!id) return fallback('usage-limited');
+  let billing: BillingResult = { status: 'released' };
+  try {
+    const { response } = await dispatch(() => {
+      billing = { status: 'unknown' };
+    });
+    const reply = await response;
+    const result = await readOpenAiResponse(reply);
+    billing = classifyBilling(reply.status, result);
+    if (billing.status === 'out-of-bounds' || !result?.text) return fallback('unavailable');
+    return { status: 'ready', text: result.text, usage: result.usage } as const;
+  } finally {
+    await meter.settle(id, billing);
+  }
+}
+
+export function createTutoringGateway(
+  settings: Settings,
+  authorize: Authorize,
+  meter: Meter,
+  send = fetch,
+) {
   return async (credentials: Credentials, context: Context, external?: AbortSignal) => {
     const reason = unavailable(settings);
     if (reason) return fallback(reason);
@@ -75,29 +137,18 @@ export function createTutoringGateway(settings: Settings, authorize: Authorize, 
     const started = performance.now();
     try {
       return await bounded(external, async (signal) => {
-        const { response } = await authorize(credentials, async (authorizationSignal) => {
-          const dispatchSignal = AbortSignal.any([signal, authorizationSignal]);
-          dispatchSignal.throwIfAborted();
-          // Return a handle immediately. Neither headers nor the stream hold the family lock.
-          const response = send(ENDPOINT, {
-            method: 'POST',
-            headers: {
-              authorization: `Bearer ${settings.apiKey}`,
-              'content-type': 'application/json',
-            },
-            redirect: 'error',
-            body,
-            signal: dispatchSignal,
-          });
-          void response.catch(() => {});
-          return { response };
-        });
-        const hint = await readOpenAiResponse(await response);
-        if (!hint) return fallback('unavailable');
+        const result = await meteredRequest(meter, credentials, (onSend) =>
+          authorize(credentials, async (authorizationSignal) => {
+            const dispatchSignal = AbortSignal.any([signal, authorizationSignal]);
+            dispatchSignal.throwIfAborted();
+            onSend();
+            return sendRequest(send, settings.apiKey, body, dispatchSignal);
+          }),
+        );
+        if (result.status === 'fallback') return result;
         return {
-          status: 'ready',
-          ...hint,
-          model: MODEL,
+          ...result,
+          model: TUTORING_MODEL,
           elapsedMs: performance.now() - started,
         } as const;
       });

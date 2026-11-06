@@ -24,6 +24,12 @@ const states: Record<Policy['state'], string> = {
   'policy-changed': '政策已更新，需要重新授权',
 };
 
+const budgets: Record<AiConsentView['tutoringBudget'], string> = {
+  unset: 'AI 解题提示预算未设置。',
+  available: 'AI 解题提示已设置费用上限。',
+  limited: 'AI 解题提示的可用额度不足，可继续使用题目引导。',
+};
+
 export function AiConsentCard(props: Props) {
   const { view, pending, onChange } = props;
   return (
@@ -31,6 +37,7 @@ export function AiConsentCard(props: Props) {
       <h2 id="ai-consent-title">外部 AI 授权</h2>
       <p>按用途为本家庭的孩子选择授权。服务通过启用检查后，才会处理已授权的输入。</p>
       <p>撤回后将停止新的发送。此前已发送的内容仍按供应商的保留政策处理。</p>
+      {view && <p role="status">{budgets[view.tutoringBudget]}</p>}
       <p>
         <a href="https://developers.openai.com/api/docs/guides/your-data">
           查看 OpenAI 的数据保留说明

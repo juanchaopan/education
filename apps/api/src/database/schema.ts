@@ -2,6 +2,7 @@ import { sql } from 'drizzle-orm';
 import {
   bigint,
   boolean,
+  date,
   index,
   integer,
   jsonb,
@@ -73,6 +74,35 @@ export const children = pgTable(
   },
   (table) => [uniqueIndex('child_family_nickname').on(table.familyId, table.canonicalNickname)],
 );
+
+export const aiUsageState = pgEnum('ai_usage_state', [
+  'reserved',
+  'released',
+  'unknown',
+  'settled',
+  'out-of-bounds',
+]);
+
+export const aiUsage = pgTable(
+  'ai_usage',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    familyId: uuid('family_id').references(() => families.id, { onDelete: 'set null' }),
+    childId: uuid('child_id').references(() => children.id, { onDelete: 'set null' }),
+    model: text('model').notNull(),
+    budgetMonth: date('budget_month').notNull(),
+    admittedAt: timestamp('admitted_at', { withTimezone: true }).notNull(),
+    state: aiUsageState('state').default('reserved').notNull(),
+    amount: bigint('amount_nanodollars', { mode: 'bigint' }).notNull(),
+    inputTokens: bigint('input_tokens', { mode: 'number' }),
+    outputTokens: bigint('output_tokens', { mode: 'number' }),
+  },
+  (table) => [
+    index('ai_usage_month').on(table.budgetMonth),
+    index('ai_usage_family_time').on(table.familyId, table.admittedAt),
+    index('ai_usage_child_time').on(table.childId, table.admittedAt),
+  ],
+).enableRLS();
 
 export const registrationKeys = pgTable(
   'registration_keys',

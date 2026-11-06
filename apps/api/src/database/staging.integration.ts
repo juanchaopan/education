@@ -65,6 +65,7 @@ async function expectTablesPrivate(pool: pg.Pool) {
     'help_events',
     'assignments',
     'ai_consents',
+    'ai_usage',
   ]) {
     expect(
       (
