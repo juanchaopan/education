@@ -10,8 +10,8 @@ import {
 import type { RegistrationKeyService } from '../services/registration-key.js';
 import type { ReauthenticationService } from '../services/reauthentication.js';
 import { RequestError } from '../../shared/request-error.js';
-import { sessionWriteGuard } from './session-guard.js';
-import { readSessionCookie, writeSessionCookie } from './session-cookie.js';
+import { sessionWriteGuard } from '../../shared/session-guard.js';
+import { readSessionCookie, writeSessionCookie } from '../../shared/session-cookie.js';
 
 const empty = Type.Object({}, { additionalProperties: false });
 function available<T>(service: T | undefined): T {

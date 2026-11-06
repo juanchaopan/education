@@ -1,5 +1,5 @@
 import type { FastifyRequest, FastifyReply } from 'fastify';
-import { RequestError } from '../../shared/request-error.js';
+import { RequestError } from './request-error.js';
 
 export function sessionWriteGuard(origin: string) {
   return async (request: FastifyRequest, reply: FastifyReply) => {

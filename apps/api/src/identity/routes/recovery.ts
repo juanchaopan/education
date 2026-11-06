@@ -6,9 +6,9 @@ import {
   PasswordResetResult,
 } from '@education/contracts';
 import type { RecoveryService } from '../services/recovery.js';
-import { sessionWriteGuard } from './session-guard.js';
+import { sessionWriteGuard } from '../../shared/session-guard.js';
 import { RequestError } from '../../shared/request-error.js';
-import { writeSessionCookie } from './session-cookie.js';
+import { writeSessionCookie } from '../../shared/session-cookie.js';
 export function registerRecovery(app: FastifyInstance, origin: string, recovery?: RecoveryService) {
   const configured = () => {
     if (!recovery) throw new RequestError(503, '密码恢复尚未开放，请稍后再来。');
