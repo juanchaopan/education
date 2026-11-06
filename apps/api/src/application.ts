@@ -36,6 +36,7 @@ import { databaseOptions } from './shared/database-config.js';
 import { readRevision } from './shared/revision.js';
 import { createDrafts } from './draft-application.js';
 import { createAnswering } from './answer-application.js';
+import { createLearningSummary } from './learning-summary-application.js';
 
 export async function createApplication(env: NodeJS.ProcessEnv = process.env) {
   const config = readConfig(env);
@@ -69,6 +70,7 @@ export async function createApplication(env: NodeJS.ProcessEnv = process.env) {
     childSessions,
     drafts,
     answering,
+    learningSummary: pool ? createLearningSummary(pool) : undefined,
     childAccess: createChildAccess(pool, sessions, admit, config),
     ...createFamilyManagement(pool, sessions, admit),
     verification: createVerification(pool, mailConfig, admit),
