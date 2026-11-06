@@ -2,10 +2,6 @@ import type { CatalogCategory, CatalogResponse } from '@education/contracts';
 
 export type CategoryLevel = keyof CatalogCategory;
 
-export function problemPath(id: string, version: number) {
-  return `/problems/${encodeURIComponent(id)}/${version}`;
-}
-
 export function catalogPath({ grade, subject, category }: CatalogCategory) {
   return `/?${new URLSearchParams({ grade, subject, category })}`;
 }

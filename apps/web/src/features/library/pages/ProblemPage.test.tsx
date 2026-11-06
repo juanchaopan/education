@@ -5,7 +5,7 @@ import { Link, MemoryRouter, Route, Routes } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ProblemSummary } from '@education/contracts';
 import { ProblemPage } from './ProblemPage';
-import { problemPath } from '../model';
+import { problemPath } from '../../../shared/lib/problem-path';
 
 const current: ProblemSummary = {
   id: 'fixture-review',

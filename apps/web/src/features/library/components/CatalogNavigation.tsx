@@ -2,7 +2,8 @@ import { useId } from 'react';
 import { Link } from 'react-router-dom';
 import type { ProblemSummary } from '@education/contracts';
 import { EmptyState } from '../../../shared/ui/EmptyState';
-import { problemPath, type CategoryLevel } from '../model';
+import type { CategoryLevel } from '../model';
+import { problemPath } from '../../../shared/lib/problem-path';
 import styles from './CatalogNavigation.module.css';
 
 const levels = [

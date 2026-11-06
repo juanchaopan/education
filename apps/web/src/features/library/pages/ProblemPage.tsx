@@ -3,7 +3,8 @@ import { Link, useParams } from 'react-router-dom';
 import type { ProblemSummary } from '@education/contracts';
 import { EmptyState } from '../../../shared/ui/EmptyState';
 import { useProblem } from '../data-access/useProblem';
-import { catalogPath, problemPath } from '../model';
+import { catalogPath } from '../model';
+import { problemPath } from '../../../shared/lib/problem-path';
 import { problemPages, type ProblemPages } from './problem-pages';
 
 export function ProblemPage({ pages = problemPages }: { pages?: ProblemPages }) {
