@@ -38,6 +38,7 @@ import { createDrafts } from './draft-application.js';
 import { createAnswering } from './answer-application.js';
 import { createLearningSummary } from './learning-summary-application.js';
 import { createPracticeAssignments } from './practice-application.js';
+import { createAiConsent } from './ai-consent-application.js';
 
 export async function createApplication(env: NodeJS.ProcessEnv = process.env) {
   const config = readConfig(env);
@@ -191,6 +192,7 @@ function createFamilyManagement(
   return {
     learningSummary: createLearningSummary(pool),
     practice: createPracticeAssignments(pool),
+    aiConsent: createAiConsent(pool),
     registrationKeys: createRegistrationKeyService({
       sessions,
       repository: createRegistrationKeyRepository(pool),

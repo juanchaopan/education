@@ -1,4 +1,5 @@
 import { ChildAccessPanel } from './ChildAccessPanel';
+import { AiConsentPanel } from './AiConsentPanel';
 import { LearningSummaryPanel } from './LearningSummaryPanel';
 import { ParentPracticePanel } from './ParentPracticePanel';
 import { RegistrationKeyPanel } from './RegistrationKeyPanel';
@@ -46,6 +47,10 @@ export function FamilyPage() {
               />
               <ParentPracticePanel
                 key={`practice-${session.data.csrfToken}`}
+                csrf={session.data.csrfToken}
+              />
+              <AiConsentPanel
+                key={`ai-consent-${session.data.csrfToken}`}
                 csrf={session.data.csrfToken}
               />
               <RegistrationKeyPanel key={session.data.csrfToken} csrf={session.data.csrfToken} />

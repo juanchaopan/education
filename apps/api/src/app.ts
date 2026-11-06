@@ -1,5 +1,7 @@
 import { registerChildAccess } from './identity/routes/child-access.js';
 import type { ChildAccessService } from './identity/services/child-access.js';
+import { registerAiConsent } from './identity/routes/ai-consent.js';
+import type { AiConsentService } from './identity/services/ai-consent.js';
 import { registerChildRegistration } from './identity/routes/child-registration.js';
 import { registerChildSessions } from './identity/routes/child-session.js';
 import type { ChildSessionService } from './identity/services/child-session.js';
@@ -36,6 +38,7 @@ import type { PracticeService } from './learning/services/practice.js';
 const localOrigin = 'http://127.0.0.1:5173';
 type AppOptions = {
   childAccess?: ChildAccessService;
+  aiConsent?: AiConsentService;
   drafts?: DraftService;
   answering?: AnswerService;
   learningSummary?: LearningSummaryService;
@@ -123,6 +126,7 @@ function registerIdentity(app: FastifyInstance, options: AppOptions) {
   registerChildRegistration(app, origin, options.childRegistration);
   registerChildSessions(app, origin, options.childSessions);
   registerChildAccess(app, origin, options.childAccess);
+  registerAiConsent(app, origin, options.aiConsent);
   registerParentSessions(app, origin, options.sessions);
   registerVerification(app, {
     origin: origin,
