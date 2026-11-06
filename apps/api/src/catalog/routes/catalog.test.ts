@@ -11,14 +11,6 @@ const rules = () => ({
   stepId: 'start',
 });
 
-const step = {
-  id: 'observe',
-  instruction: '看看左边的图形。',
-  retryInstruction: '从左上角开始看。',
-  hint: '找找有没有尖角。',
-  demonstration: '先沿着边走一圈，再数角。',
-};
-
 function plugin(id: string, fields: Partial<ProblemSummary> = {}) {
   return {
     summary: {
@@ -94,38 +86,6 @@ describe('versioned catalog', () => {
   it('rejects duplicate version keys', () => {
     expect(() => createProblemRegistry([plugin('shape-a'), plugin('shape-a')])).toThrow(
       'Duplicate problem version: shape-a/1',
-    );
-  });
-
-  it('publishes only the teaching definition for the requested version', async () => {
-    const teaching = { steps: [{ ...step, privateRule: 'private-answer-rule-sentinel' }] };
-    const previous = { ...plugin('shape-a'), teaching };
-    const current = plugin('shape-a', { version: 2 });
-    const app = Fastify();
-    registerCatalog(app, createCatalog(createProblemRegistry([previous, current])));
-    try {
-      const [listing, oldDetail, newDetail] = await Promise.all([
-        app.inject('/api/v1/problems'),
-        app.inject('/api/v1/problems/shape-a/1'),
-        app.inject('/api/v1/problems/shape-a/2'),
-      ]);
-      expect(oldDetail.statusCode).toBe(200);
-      expect(oldDetail.json().teaching).toEqual({ steps: [step] });
-      expect(oldDetail.body).not.toMatch(/private-answer-rule-sentinel|checkStep/);
-      expect(newDetail.json()).toEqual(current.summary);
-      expect(listing.body).not.toContain('teaching');
-    } finally {
-      await app.close();
-    }
-  });
-
-  it.each([
-    { reason: 'no steps', steps: [] },
-    { reason: 'a blank step ID', steps: [{ ...step, id: ' ' }] },
-    { reason: 'duplicate step IDs', steps: [step, step] },
-  ])('rejects a teaching definition with $reason', ({ steps }) => {
-    expect(() => createProblemRegistry([{ ...plugin('shape-a'), teaching: { steps } }])).toThrow(
-      'Teaching steps require unique, nonempty IDs: shape-a/1',
     );
   });
 });

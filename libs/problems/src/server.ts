@@ -2,13 +2,11 @@ import {
   isProblemId,
   type CatalogCategory,
   type ProblemSummary,
-  type TeachingDefinition,
   type TeachingFeedback,
 } from '@education/contracts';
 
 export type ProblemPlugin = {
   summary: ProblemSummary;
-  teaching?: TeachingDefinition;
   checkStep?: (input: {
     stepId: string;
     answer: unknown;
@@ -28,7 +26,6 @@ export function createProblemRegistry(
     }
     const key = `${id}/${version}`;
     if (versions.has(key)) throw new Error(`Duplicate problem version: ${key}`);
-    if (plugin.teaching) validateSteps(plugin.teaching, key);
     versions.set(key, plugin);
     const current = latest.get(id);
     if (!current || version > current.version) latest.set(id, plugin.summary);
@@ -38,13 +35,6 @@ export function createProblemRegistry(
     categories,
     find: (id: string, version: number) => versions.get(`${id}/${version}`),
   };
-}
-
-function validateSteps({ steps }: TeachingDefinition, key: string) {
-  const ids = new Set(steps.map((step) => step.id.trim()));
-  if (!steps.length || ids.has('') || ids.size !== steps.length) {
-    throw new Error(`Teaching steps require unique, nonempty IDs: ${key}`);
-  }
 }
 
 // Register maintained content here. Test fixtures supply their own registry.
