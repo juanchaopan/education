@@ -43,17 +43,17 @@ export function createTutoringUsage(pool: pg.Pool, cap: bigint | null) {
           CHILD_REQUESTS_PER_MINUTE,
         ],
       );
-      return result.rows[0]?.id;
+      return result.rows[0]?.id ?? null;
     },
     async settle(id: string, result: BillingResult) {
       const usage = 'usage' in result ? result.usage : undefined;
       const amount = usage ? usageCost(usage) : null;
       await pool.query(
-        `UPDATE ai_usage SET state=$2, input_tokens=$3, output_tokens=$4,
-          amount_nanodollars=CASE
-            WHEN $2='released' THEN 0
-            WHEN $2='settled' THEN $5
-            WHEN $2='out-of-bounds' THEN greatest(amount_nanodollars,$5)
+        `UPDATE ai_usage SET state=$2::ai_usage_state, input_tokens=$3, output_tokens=$4,
+          amount_nanodollars=CASE $2::ai_usage_state
+            WHEN 'released' THEN 0
+            WHEN 'settled' THEN $5::bigint
+            WHEN 'out-of-bounds' THEN greatest(amount_nanodollars,$5::bigint)
             ELSE amount_nanodollars END
          WHERE id=$1 AND state='reserved'`,
         [id, result.status, usage?.inputTokens, usage?.outputTokens, amount],

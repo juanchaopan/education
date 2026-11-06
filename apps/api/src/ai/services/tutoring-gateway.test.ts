@@ -156,7 +156,7 @@ it('cancels pending authorization and does not send when it eventually returns',
 
 it('falls back at admission without dispatching or settling', async () => {
   const { request, send, meter } = setup();
-  meter.reserve.mockResolvedValueOnce(undefined);
+  meter.reserve.mockResolvedValueOnce(null);
   await expect(request(credentials, input)).resolves.toMatchObject({ reason: 'usage-limited' });
   expect(send).not.toHaveBeenCalled();
   expect(meter.settle).not.toHaveBeenCalled();

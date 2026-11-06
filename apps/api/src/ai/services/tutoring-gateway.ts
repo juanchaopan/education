@@ -19,7 +19,7 @@ type Authorize = (
   start: (signal: AbortSignal) => Promise<InFlight>,
 ) => Promise<InFlight>;
 type Meter = {
-  reserve(credentials: Credentials): Promise<string | undefined>;
+  reserve(credentials: Credentials): Promise<string | null>;
   settle(id: string, result: BillingResult): Promise<void>;
 };
 

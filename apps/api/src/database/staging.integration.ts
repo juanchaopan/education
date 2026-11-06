@@ -33,7 +33,7 @@ it('denies anonymous Supabase-style table access while the server owner can use 
           "SELECT count(*)::int n FROM pg_class WHERE relnamespace='public'::regnamespace AND relkind='r' AND relrowsecurity",
         )
       ).rows[0].n,
-    ).toBe(19);
+    ).toBe(20);
     for (const role of ['anon', 'authenticated']) {
       expect(
         (
