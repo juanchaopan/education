@@ -1,6 +1,6 @@
 # 小小探索家
 
-中文儿童交互式解题网站。当前是**空框架**，已实现家长注册、邮箱验证、登录、读取本人账号状态、退出及密码恢复，以及家长 KEY 管理、儿童兑换注册、PIN 持久登录和家长重置儿童 PIN。没有演示题或正式题目，学习记录、AI 对话和生产部署尚未实现。各项真实 staging 验收范围与限制见文档。
+中文儿童交互式解题网站。当前是**空框架**：家长注册、邮箱验证、登录、退出及密码恢复，家长 KEY 管理、儿童兑换注册、PIN 持久登录和家长重置儿童 PIN，家长的学习摘要、练习安排、外部 AI 授权、家庭导出和删除都已实现。正式题库为空，没有演示题或伪造的学习进度；每题专属页面、已打开页面在新版本发布后的自动刷新和生产部署尚未实现。各项真实 staging 验收范围与限制见文档，空框架的整体验收见 [#47](docs/evidence/47/README.md)。
 
 ## 本地开发
 
@@ -91,13 +91,13 @@ npm run test:visual
 npm run storybook
 ```
 
-端到端测试前需 `npm run build`，并安装匹配的 Playwright Chromium：`npx playwright install chromium`。本机已有兼容 Chromium 时可临时设置 `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH`。
+端到端测试前需 `npm run build`，并安装匹配的 Playwright Chromium：`npx playwright install chromium`。本机已有兼容 Chromium 时可临时设置 `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH`。`e2e/empty-framework.spec.ts` 用两个家庭走通空框架，需要 `DATABASE_URL` 和 `DELETION_LEDGER_URL`；它和家长账号测试各有自己的 API 服务，登录预算不和其他测试相加。
 
 `npm run test:visual` 需要 Docker 正在运行：它在固定版本的官方 Playwright 镜像里构建应用和 Storybook，把每个 story 和关键页面在桌面、平板、手机三个视口下与经维护者评审的基准截图对比，并检查 WCAG 2.2 AA、键盘、减少动画、触摸目标和缩放。外观有意改变时用 `npm run test:visual -- --update` 重新生成基准，随代码提交并由维护者评审。做法见 [视觉基准与可访问性检查](docs/design/visual-baselines.md)。
 
 ## 配置和安全
 
-`PAID_AI_ENABLED` 默认 `true`。当前没有调用供应商的接口，不产生 AI 费用。后续实现仍需后端密钥、家长授权、地区与条款资格验证，以及 token 控制。密钥不得进入前端变量、源码或日志。
+`PAID_AI_ENABLED` 默认 `true`。只有同时配置后端 `OPENAI_API_KEY`、对应服务的资格开关（`OPENAI_TUTORING_ELIGIBLE`、`OPENAI_TRANSCRIPTION_ELIGIBLE`）并取得家长授权后才会调用供应商；缺少任何一项时不发出请求、不产生费用，孩子用题目提示继续，家长页的“外部 AI 授权”逐项显示“暂未启用”。资格开关只能在核实地区、条款和儿童数据处理资格后打开。密钥不得进入前端变量、源码或日志。
 
 `AI_MONTHLY_BUDGET_USD` 可设置文字解题提示的部署级月度上限，留空表示预算未设置。配置及结算规则见 [AI 用量与费用上限](docs/evidence/39/README.md)。
 
@@ -119,7 +119,7 @@ npm run storybook
 
 访问 `/child`，首次使用家庭码、注册昵称和六位 PIN 登录；家庭码可随时从家长页复制，不用背下来。成功后默认保持登录，有效访问顺延 180 天不活动期限，不设七天绝对退出。退出、清理 cookie 或长期不活动后使用原凭据登录，不重新注册或申请 KEY。家长与孩子在同一浏览器切换登录会替换当前会话，其他设备的独立会话不会因此退出。
 
-页面默认仅在本设备记住家庭码与昵称，可取消；PIN 表单支持浏览器密码管理器，网站不在 localStorage/sessionStorage 保存明文 PIN 或会话令牌。儿童会话不能访问家长账号或管理 KEY。沿用现有 `PIN_PEPPER` 和数据库，不需新增秘密，不能更换 pepper 来排错。真实数据库、浏览器测试及已确认的 staging 验收范围见 [#25 记录](docs/evidence/25/README.md)；家长重置儿童 PIN 见下文 #26；保存草稿后自动刷新版本属于 #47。
+页面默认仅在本设备记住家庭码与昵称，可取消；PIN 表单支持浏览器密码管理器，网站不在 localStorage/sessionStorage 保存明文 PIN 或会话令牌。儿童会话不能访问家长账号或管理 KEY。沿用现有 `PIN_PEPPER` 和数据库，不需新增秘密，不能更换 pepper 来排错。真实数据库、浏览器测试及已确认的 staging 验收范围见 [#25 记录](docs/evidence/25/README.md)；家长重置儿童 PIN 见下文 #26；新版本发布后已打开页面先保存草稿再刷新由 [#118](https://github.com/juanchaopan/education/issues/118) 实现。
 
 ## 家长重置孩子 PIN（#26）
 
