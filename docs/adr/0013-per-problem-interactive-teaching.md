@@ -13,7 +13,7 @@ Codex 与 Claude Code 从同一个仓库手册执行 `/change` 加 PDF。逐题�
 
 ## 证据
 
-两份样例均已逐题形成设计。三道本地原型验证了不同的场景操作。收尾保存[样例索引与验证记录](assets/0048-interactive-teaching-evidence.md)，原始题库、可执行探针和实录保留在本地。
+两份样例均已逐题形成设计。三道原型验证了不同的场景操作。收尾保存[样例索引与验证记录](assets/0048-interactive-teaching-evidence.md)。原型与构建脚本归档为 [archive/spike-48-interactive-lessons](https://github.com/juanchaopan/education/tree/archive/spike-48-interactive-lessons)，提交 `39521e8a399a2aeac934495624394b07e6e2b42d`，不进入正式分支。原始题库、录屏和语音模型保留在本地。
 
 - 菜园天平在同一秤上逐组替换，让等量关系可见。
 - 彩铅用连线、收藏和逐排清点呈现无序配对。实录帮助发现并缩短红黄之后的等待，配对提示与相关旁白对齐。
