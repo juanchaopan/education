@@ -19,12 +19,14 @@ npm run dev
 cp infra/.env.example infra/.env
 # 修改本地 POSTGRES_PASSWORD；不要提交 .env
 docker compose --env-file infra/.env -f infra/docker-compose.yml up -d db
-# 在当前 shell 安全设置 DATABASE_URL，指向这个开发数据库
+# 删除清单使用同一 PostgreSQL 服务中的另一个数据库
+docker compose --env-file infra/.env -f infra/docker-compose.yml exec db createdb -U education education_ledger
+# 在当前 shell 安全设置 DATABASE_URL 和 DELETION_LEDGER_URL，分别指向这两个开发数据库
 npm run db:migrate
 npm run test:db
 ```
 
-`DATABASE_URL` 必须指向隔离的开发/测试数据库；数据库测试会创建并删除测试记录。迁移可重复运行，但不要在应用每个实例启动时并发执行。
+`DATABASE_URL` 必须指向隔离的开发/测试数据库；数据库测试会创建并删除测试记录。迁移可重复运行，但不要在应用每个实例启动时并发执行。设置 `DELETION_LEDGER_URL` 时，迁移同时建立删除清单库的表。数据库测试要求两者分别指向名为 `education_test` 和 `education_ledger_test` 的隔离库。
 
 ```sh
 docker compose --env-file infra/.env -f infra/docker-compose.yml up --build -d
@@ -50,12 +52,13 @@ CA 公钥的临时副本与本地 TLS 文件存放在 `infra/.env.accounts-*`：
 
 先迁移隔离开发数据库，再在启动 API 的环境中配置：
 
-| 变量                   | 说明                                                                                                                   |
-| ---------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `REGISTRATION_ENABLED` | 显式设为 `true`，同时启用本地注册与登录；默认关闭，不会连接数据库。                                                    |
-| `DATABASE_URL`         | 已迁移的 PostgreSQL **直连或会话级连接**；本实现使用会话 advisory lock，不能接事务级连接池。                           |
-| `AUTH_RATE_LIMIT_KEY`  | 独立随机密钥，建议生成 32 随机字节并编码为 hex；所有实例保持一致，不提交或放入 `VITE_*`。                              |
-| `APP_ORIGIN`           | 浏览器实际访问的精确 Origin；Vite 默认 `http://127.0.0.1:5173`，不能带路径或末尾 `/`。生产启用账号服务时必须为 HTTPS。 |
+| 变量                   | 说明                                                                                                                                                             |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `REGISTRATION_ENABLED` | 显式设为 `true`，同时启用本地注册与登录；默认关闭，不会连接数据库。                                                                                              |
+| `DATABASE_URL`         | 已迁移的 PostgreSQL **直连或会话级连接**；本实现使用会话 advisory lock，不能接事务级连接池。                                                                     |
+| `DELETION_LEDGER_URL`  | 可选。已迁移的删除清单库，必须是与 `DATABASE_URL` 不同的数据库，并且不在应用库的备份里。未设置时家长不能删除家庭。托管环境的证书放在 `DELETION_LEDGER_CA_CERT`。 |
+| `AUTH_RATE_LIMIT_KEY`  | 独立随机密钥，建议生成 32 随机字节并编码为 hex；所有实例保持一致，不提交或放入 `VITE_*`。                                                                        |
+| `APP_ORIGIN`           | 浏览器实际访问的精确 Origin；Vite 默认 `http://127.0.0.1:5173`，不能带路径或末尾 `/`。生产启用账号服务时必须为 HTTPS。                                           |
 
 运行 `npm run dev` 后访问 `/family`。密码按原样使用异步 Argon2id 保存；同邮箱重复提交不会覆盖密码或创建多余家庭。注册不会签发会话或授予 KEY 权限。已有账号可点击“已有账号？去登录”；页面通过服务端会话显示真实邮箱验证状态。未验证家长只能读取自己的受限验证状态和退出，不开放家庭资料或 KEY。
 
@@ -68,6 +71,16 @@ CA 公钥的临时副本与本地 TLS 文件存放在 `infra/.env.accounts-*`：
 `npm run test:e2e` 在提供已迁移的隔离 `DATABASE_URL` 时运行真实注册和登录测试，并删除自己的账号夹具；未提供时明确跳过数据库相关浏览器用例。不要对真实家庭数据库运行测试。
 
 云环境构建通过 BuildKit 临时挂载平台 CA，保持 TLS 校验；证书不复制进镜像。构建后移除开发依赖；生产迁移可在 API 目录执行 `node dist/database/migrate.js`，应作为受控发布步骤单独运行。生产前仍需完成发布检查。
+
+### 家庭删除的维护任务（#44）
+
+家长删除家庭时，删除先记入删除清单，再在同一事务里清除家庭数据。事务失败时会单独重试一次；仍失败的删除保持“处理中”，由维护命令按受理顺序完成：
+
+```sh
+npm run db:complete-deletions -w @education/api
+```
+
+部署后用 `node dist/complete-deletions.js` 按计划（例如每小时）运行，需要同样的 `DATABASE_URL` 和 `DELETION_LEDGER_URL`。命令只输出完成和失败的数量；有失败时以非零状态退出，下次运行会重试。
 
 ## 检查与组件预览
 
