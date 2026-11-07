@@ -14,7 +14,10 @@ export function createTeachingFeedback(
   const gateway = createAiTutoring(pool, env, send);
   const authorized = childSessionTransaction(pool);
   return createTeachingFeedbackService(
-    async (credentials) => authorized(credentials, async () => {}),
+    async (credentials) => {
+      // The transaction reads an undefined result as a missing session.
+      await authorized(credentials, async () => true);
+    },
     find,
     (credentials, input, signal) => gateway(feedbackTask, credentials, input, signal),
   );
