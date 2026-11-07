@@ -31,7 +31,6 @@ import { registerAnswering } from './learning/routes/answer.js';
 import type { AnswerService } from './learning/services/answer.js';
 import { registerLearningSummary } from './learning/routes/learning-summary.js';
 import type { LearningSummaryService } from './learning/services/learning-summary.js';
-
 import { registerPractice } from './learning/routes/practice.js';
 import type { PracticeService } from './learning/services/practice.js';
 import { registerTeachingFeedback } from './ai/routes/teaching-feedback.js';
