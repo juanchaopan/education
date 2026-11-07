@@ -73,50 +73,69 @@ function outcome(ending: Ending, chunks: Blob[], recorder: MediaRecorder, choice
   return audio.size ? { audio, format: choice.format } : 'empty';
 }
 
+function createRecorder({ stream, Recorder, choice }: Microphone) {
+  try {
+    return new Recorder(stream, {
+      mimeType: choice.mimeType,
+      audioBitsPerSecond: transcriptionAudioBitsPerSecond,
+    });
+  } catch {
+    return undefined;
+  }
+}
+
 // Records until stopped, the time limit, the page being hidden, the track
-// ending or a recorder error. The microphone is released as soon as it ends.
-function record(
-  host: RecorderHost,
-  { stream, Recorder, choice }: Microphone,
-  done: (result: Outcome) => void,
-) {
-  const recorder = new Recorder(stream, {
-    mimeType: choice.mimeType,
-    audioBitsPerSecond: transcriptionAudioBitsPerSecond,
-  });
+// ending or a recorder error. The first of these decides the outcome, and the
+// microphone is released as soon as it happens. Returns nothing, with the
+// microphone released, when the browser refuses to record in the chosen format.
+function record(host: RecorderHost, microphone: Microphone, done: (result: Outcome) => void) {
+  const recorder = createRecorder(microphone);
+  if (!recorder) {
+    release(microphone.stream);
+    return;
+  }
   const chunks: Blob[] = [];
-  let ending: Ending = 'keep';
-  const hidden = () => {
-    if (host.document.hidden) end('interrupted');
-  };
+  const listeners = new AbortController();
+  let ending: Ending | undefined;
   const timer = setTimeout(() => end('keep'), transcriptionMaxSeconds * 1000);
-  function end(how: Ending) {
+  const end = (how: Ending) => {
+    if (ending) return;
     ending = how;
     clearTimeout(timer);
+    listeners.abort();
     if (recorder.state !== 'inactive') recorder.stop();
-    release(stream);
-  }
+    release(microphone.stream);
+  };
   recorder.ondataavailable = (event) => {
     if (event.data.size) chunks.push(event.data);
   };
   recorder.onerror = () => end('interrupted');
   recorder.onstop = () => {
-    host.document.removeEventListener('visibilitychange', hidden);
-    done(outcome(ending, chunks, recorder, choice));
+    end('interrupted');
+    done(outcome(ending ?? 'interrupted', chunks, recorder, microphone.choice));
   };
-  stream
-    .getAudioTracks()
-    .forEach((track) => track.addEventListener('ended', () => end('interrupted'), { once: true }));
-  host.document.addEventListener('visibilitychange', hidden);
-  recorder.start();
+  const { signal } = listeners;
+  for (const track of microphone.stream.getAudioTracks())
+    track.addEventListener('ended', () => end('interrupted'), { signal });
+  const hidden = () => {
+    if (host.document.hidden) end('interrupted');
+  };
+  host.document.addEventListener('visibilitychange', hidden, { signal });
+  try {
+    recorder.start();
+  } catch {
+    end('unsupported');
+    return;
+  }
   return { end };
 }
 
 // One short recording at a time, started only by the child. Stopping keeps it
 // for transcription; cancelling, leaving the page, losing the microphone or a
-// recorder error drops it. The audio exists only in memory until it is handed on.
+// recorder error drops it. A start the child cancelled ends silently, and the
+// audio exists only in memory until it is handed on.
 export function createVoiceRecorder(events: Events, host: RecorderHost = browserHost()) {
-  let session: ReturnType<typeof record> | undefined;
+  let session: ReturnType<typeof record>;
   let opening: { cancelled: boolean } | undefined;
 
   function report(result: Outcome) {
@@ -127,16 +146,19 @@ export function createVoiceRecorder(events: Events, host: RecorderHost = browser
 
   return {
     async start() {
-      if (session || opening) return;
+      if (session || (opening && !opening.cancelled)) return;
       const request = { cancelled: false };
       opening = request;
-      const microphone = await openMicrophone(host).finally(() => {
-        opening = undefined;
-      });
+      const microphone = await openMicrophone(host);
+      if (opening === request) opening = undefined;
+      if (request.cancelled) {
+        if (typeof microphone !== 'string') release(microphone.stream);
+        return;
+      }
       if (typeof microphone === 'string') return events.onFail(microphone);
-      if (request.cancelled) return release(microphone.stream);
       session = record(host, microphone, report);
-      events.onStart();
+      if (session) events.onStart();
+      else events.onFail('unsupported');
     },
     stop: () => session?.end('keep'),
     cancel() {
@@ -145,5 +167,3 @@ export function createVoiceRecorder(events: Events, host: RecorderHost = browser
     },
   };
 }
-
-export type VoiceRecorder = ReturnType<typeof createVoiceRecorder>;

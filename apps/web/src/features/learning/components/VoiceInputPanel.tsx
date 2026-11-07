@@ -1,12 +1,8 @@
-import { feedbackTextMaxLength, transcriptionMaxSeconds } from '@education/contracts';
+import { feedbackTextMaxLength } from '@education/contracts';
 import type { VoiceState } from '../data-access/useVoiceInput';
-import {
-  recorderFailureMessage,
-  unheardMessage,
-  voiceFallbackMessage,
-  voiceGuidanceMessage,
-} from '../interaction/voice-message';
+import { voiceMessage } from '../interaction/voice-message';
 import action from './LessonAction.module.css';
+import panel from './LessonPanel.module.css';
 import styles from './VoiceInputPanel.module.css';
 
 type Props = {
@@ -19,29 +15,6 @@ type Props = {
   onConfirm: () => void;
   onDiscard: () => void;
 };
-
-function message(state: VoiceState) {
-  switch (state.status) {
-    case 'starting':
-      return '正在打开麦克风…';
-    case 'recording':
-      return `正在录音。说完点「说完了」，最长 ${transcriptionMaxSeconds} 秒。`;
-    case 'transcribing':
-      return '正在听你说的话…';
-    case 'review':
-      return '我听到的是下面这句。不对的地方可以直接改，改好再点「用这句话」。';
-    case 'unheard':
-      return unheardMessage;
-    case 'guidance':
-      return voiceGuidanceMessage;
-    case 'unavailable':
-      return recorderFailureMessage(state.reason);
-    case 'fallback':
-      return voiceFallbackMessage(state.reason);
-    default:
-      return '';
-  }
-}
 
 function Button({
   label,
@@ -96,9 +69,9 @@ function Actions({ state, ...on }: Props) {
 export function VoiceInputPanel(props: Props) {
   const { state, onEdit } = props;
   return (
-    <section className={styles.panel} aria-label="用说的回答">
-      <p role="status" className={styles.message}>
-        {message(state)}
+    <section className={panel.panel} aria-label="用说的回答">
+      <p role="status" className={panel.message}>
+        {voiceMessage(state)}
       </p>
       {state.status === 'review' && (
         <label className={styles.review}>
@@ -112,7 +85,7 @@ export function VoiceInputPanel(props: Props) {
           />
         </label>
       )}
-      <div className={styles.actions}>
+      <div className={panel.actions}>
         <Actions {...props} />
       </div>
     </section>

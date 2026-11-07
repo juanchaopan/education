@@ -1,4 +1,4 @@
-import type { AiHelpFallback } from '@education/contracts';
+import type { AiHelpFallback, TranscriptionResult } from '@education/contracts';
 import { createVoiceRecorder, type RecorderFailure, type RecorderHost } from '../voice/recorder';
 import { createAiHelpRequest } from './ai-help-request';
 import type { LearningScope } from './learning-request';
@@ -10,10 +10,9 @@ export type VoiceState =
   | { status: 'unavailable'; reason: RecorderFailure }
   | { status: 'fallback'; reason: AiHelpFallback };
 
-// An empty text means the provider heard nothing.
-type Heard = { status: 'ready'; text: string };
-type RequestState =
-  Heard | { status: 'pending' | 'guidance' } | { status: 'fallback'; reason: AiHelpFallback };
+type RequestState = TranscriptionResult | { status: 'pending' | 'guidance' };
+type Target = { scope: LearningScope; stepId: string };
+type Transcriptions = ReturnType<typeof createAiHelpRequest<TranscriptionResult>>;
 
 function fromRequest(state: RequestState): VoiceState {
   switch (state.status) {
@@ -22,34 +21,48 @@ function fromRequest(state: RequestState): VoiceState {
     case 'guidance':
       return { status: 'guidance' };
     case 'ready':
-      return state.text ? { status: 'review', text: state.text } : { status: 'unheard' };
+      return { status: 'review', text: state.text };
     default:
       return state;
   }
 }
 
-// Records one answer for a step and asks for its transcription. One request
-// runs at a time, a slow one can be abandoned for typing, and a late reply
-// after that is ignored.
-export function createVoiceInput(update: (state: VoiceState) => void, host?: RecorderHost) {
-  const requests = createAiHelpRequest<Heard>((next) => update(fromRequest(next)));
-  let target: { scope: LearningScope; stepId: string } | undefined;
-  const recorder = createVoiceRecorder(
+// A finished recording is sent once, for the step it was started on.
+function transcribingRecorder(
+  set: (state: VoiceState) => void,
+  requests: Transcriptions,
+  target: () => Target | undefined,
+  host?: RecorderHost,
+) {
+  return createVoiceRecorder(
     {
-      onStart: () => update({ status: 'recording' }),
-      onFail: (reason) => update({ status: 'unavailable', reason }),
+      onStart: () => set({ status: 'recording' }),
+      onFail: (reason) => set({ status: 'unavailable', reason }),
       onStop(recording) {
-        if (!target) return;
-        const { scope, stepId } = target;
-        void requests.request(async (signal) => {
-          const result = await requestTranscription(scope, { stepId, recording }, signal);
-          if (result.status === 'fallback') return result;
-          return { status: 'ready', text: result.status === 'ready' ? result.text : '' };
-        });
+        const step = target();
+        if (!step) return;
+        void requests.request((signal) =>
+          requestTranscription(step.scope, { stepId: step.stepId, recording }, signal),
+        );
       },
     },
     host,
   );
+}
+
+// Records one answer for a step, asks for its transcription and holds what was
+// heard while the child corrects it. One request runs at a time, a slow one can
+// be abandoned for typing, a late reply after that is ignored, and only a
+// confirmed, non-empty text is handed on.
+export function createVoiceInput(update: (state: VoiceState) => void, host?: RecorderHost) {
+  let state: VoiceState = { status: 'idle' };
+  let target: Target | undefined;
+  const set = (next: VoiceState) => {
+    state = next;
+    update(next);
+  };
+  const requests = createAiHelpRequest<TranscriptionResult>((next) => set(fromRequest(next)));
+  const recorder = transcribingRecorder(set, requests, () => target, host);
   const dispose = () => {
     recorder.cancel();
     requests.dispose();
@@ -58,15 +71,33 @@ export function createVoiceInput(update: (state: VoiceState) => void, host?: Rec
     start(scope: LearningScope, stepId: string) {
       dispose();
       target = { scope, stepId };
-      update({ status: 'starting' });
+      set({ status: 'starting' });
       void recorder.start();
     },
-    stop: recorder.stop,
+    // Recognition starts as soon as the recording closes, so the child sees it
+    // is being handled and cannot drop the finished recording by mistake.
+    stop() {
+      if (state.status !== 'recording') return;
+      set({ status: 'transcribing' });
+      recorder.stop();
+    },
     cancel() {
       dispose();
-      update({ status: 'idle' });
+      set({ status: 'idle' });
     },
     guide: requests.guide,
+    edit(text: string) {
+      if (state.status === 'review') set({ status: 'review', text });
+    },
+    // Returns the text the child confirmed, if there is any to confirm.
+    confirm() {
+      const text = state.status === 'review' ? state.text.trim() : '';
+      if (text) set({ status: 'idle' });
+      return text || undefined;
+    },
+    discard() {
+      if (state.status === 'review') set({ status: 'idle' });
+    },
     dispose,
   };
 }

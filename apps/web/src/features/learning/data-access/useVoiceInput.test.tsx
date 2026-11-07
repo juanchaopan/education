@@ -1,6 +1,6 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { FakeRecorder, fakeMicrophone } from '../voice/fake-recorder';
+import { FakeRecorder, fakeMicrophone } from '../../../test/fake-recorder';
 import { requestTranscription } from './transcription-request';
 import { useVoiceInput } from './useVoiceInput';
 
@@ -40,7 +40,20 @@ it('records, proposes the heard text for correction and confirms only the edited
   expect(result.current.state).toEqual({ status: 'idle' });
 });
 
-it('never confirms an emptied text and lets the child drop the proposal', async () => {
+it('shows recognition under way as soon as the child finishes speaking', async () => {
+  vi.mocked(requestTranscription).mockReturnValue(new Promise(() => {}));
+  const microphone = fakeMicrophone();
+  const { result } = setup(microphone);
+  await act(() => result.current.start());
+  FakeRecorder.last!.deferStop = true;
+  act(() => result.current.stop());
+  expect(result.current.state).toEqual({ status: 'transcribing' });
+  act(() => result.current.stop());
+  act(() => FakeRecorder.last!.onstop?.());
+  await waitFor(() => expect(requestTranscription).toHaveBeenCalledOnce());
+});
+
+it('never confirms an emptied text and ignores edits outside review', async () => {
   vi.mocked(requestTranscription).mockResolvedValue({ status: 'ready', text: '四' });
   const { result, onConfirm } = setup();
   await recordAndStop(result);
@@ -49,6 +62,8 @@ it('never confirms an emptied text and lets the child drop the proposal', async 
   act(() => result.current.confirm());
   expect(onConfirm).not.toHaveBeenCalled();
   act(() => result.current.discard());
+  expect(result.current.state).toEqual({ status: 'idle' });
+  act(() => result.current.edit('迟到的输入'));
   expect(result.current.state).toEqual({ status: 'idle' });
 });
 
@@ -96,7 +111,7 @@ it('ignores a late transcription once the child chooses to type instead', async 
   );
   const { result } = setup();
   await recordAndStop(result);
-  await waitFor(() => expect(result.current.state).toEqual({ status: 'transcribing' }));
+  await waitFor(() => expect(requestTranscription).toHaveBeenCalledOnce());
   act(() => result.current.guide());
   expect(result.current.state).toEqual({ status: 'guidance' });
   await act(async () => finish({ status: 'ready', text: '四' }));

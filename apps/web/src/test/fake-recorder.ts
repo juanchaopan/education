@@ -1,8 +1,9 @@
 import { vi } from 'vitest';
-import type { RecorderHost } from './recorder';
+import type { RecorderHost } from '../features/learning/voice/recorder';
 
 // Test doubles for the browser's microphone and MediaRecorder. Stopping the
-// fake recorder delivers one short chunk, as a real recorder does on stop.
+// fake recorder delivers one short chunk and then the stop event, as a real
+// recorder does; `deferStop` holds the stop event back as real browsers do.
 export class FakeTrack extends EventTarget {
   stopped = false;
   stop() {
@@ -13,20 +14,24 @@ export class FakeTrack extends EventTarget {
 export class FakeRecorder {
   static supported = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4'];
   static last: FakeRecorder | undefined;
+  static refuse = false;
   static isTypeSupported(type: string) {
     return FakeRecorder.supported.includes(type);
   }
   static reset() {
     FakeRecorder.supported = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4'];
     FakeRecorder.last = undefined;
+    FakeRecorder.refuse = false;
   }
   state: RecordingState = 'inactive';
+  deferStop = false;
   ondataavailable: ((event: { data: Blob }) => void) | null = null;
   onerror: (() => void) | null = null;
   onstop: (() => void) | null = null;
   readonly stream: MediaStream;
   readonly options: MediaRecorderOptions;
   constructor(stream: MediaStream, options: MediaRecorderOptions) {
+    if (FakeRecorder.refuse) throw new DOMException('refused', 'NotSupportedError');
     this.stream = stream;
     this.options = options;
     FakeRecorder.last = this;
@@ -40,7 +45,7 @@ export class FakeRecorder {
   stop() {
     this.state = 'inactive';
     this.ondataavailable?.({ data: new Blob(['voice'], { type: this.mimeType }) });
-    this.onstop?.();
+    if (!this.deferStop) this.onstop?.();
   }
 }
 

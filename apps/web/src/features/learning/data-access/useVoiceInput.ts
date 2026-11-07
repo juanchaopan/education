@@ -18,20 +18,13 @@ export function useVoiceInput(
   const [state, setState] = useState<VoiceState>({ status: 'idle' });
   const [voice] = useState(() => createVoiceInput(setState, host));
   useEffect(() => () => voice.dispose(), [voice]);
-
-  const reset = () => setState({ status: 'idle' });
   return {
+    ...voice,
     state,
     start: () => voice.start(scope, stepId),
-    stop: voice.stop,
-    cancel: voice.cancel,
-    guide: voice.guide,
-    edit: (text: string) => setState({ status: 'review', text }),
     confirm() {
-      if (state.status !== 'review' || !state.text.trim()) return;
-      onConfirm(state.text.trim());
-      reset();
+      const text = voice.confirm();
+      if (text) onConfirm(text);
     },
-    discard: reset,
   };
 }

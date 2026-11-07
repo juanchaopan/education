@@ -1,11 +1,30 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { FakeRecorder, fakeMicrophone } from './fake-recorder';
+import { FakeRecorder, fakeMicrophone } from '../../../test/fake-recorder';
 import { createVoiceRecorder, recordingFormat, type RecorderHost } from './recorder';
 
 function setup(getUserMedia?: RecorderHost['getUserMedia']) {
   const microphone = fakeMicrophone(getUserMedia);
   const events = { onStart: vi.fn(), onStop: vi.fn(), onFail: vi.fn() };
   return { ...microphone, events, recorder: createVoiceRecorder(events, microphone.host) };
+}
+
+// A microphone prompt the test answers later.
+function prompt() {
+  const answers: ((answer: MediaStream | Error | DOMException) => void)[] = [];
+  const getUserMedia = () =>
+    new Promise<MediaStream>((resolve, reject) => {
+      answers.push((answer) =>
+        answer instanceof DOMException || answer instanceof Error
+          ? reject(answer)
+          : resolve(answer),
+      );
+    });
+  return { getUserMedia, answers };
+}
+
+function hide(document: Document) {
+  Object.assign(document, { hidden: true });
+  document.dispatchEvent(new Event('visibilitychange'));
 }
 
 beforeEach(() => FakeRecorder.reset());
@@ -50,14 +69,7 @@ type Context = ReturnType<typeof setup>;
 
 it.each([
   ['the child cancels', (context: Context) => context.recorder.cancel(), undefined],
-  [
-    'the page is hidden',
-    ({ document }: Context) => {
-      Object.assign(document, { hidden: true });
-      document.dispatchEvent(new Event('visibilitychange'));
-    },
-    'interrupted',
-  ],
+  ['the page is hidden', ({ document }: Context) => hide(document), 'interrupted'],
   [
     'the microphone goes away',
     ({ track }: Context) => track.dispatchEvent(new Event('ended')),
@@ -74,6 +86,19 @@ it.each([
   else expect(context.events.onFail).not.toHaveBeenCalled();
 });
 
+it('keeps a finished recording when the page hides before the recorder closes', async () => {
+  const { recorder, events, document } = setup();
+  await recorder.start();
+  const fake = FakeRecorder.last!;
+  fake.deferStop = true;
+  recorder.stop();
+  hide(document);
+  recorder.cancel();
+  fake.onstop?.();
+  expect(events.onStop).toHaveBeenCalledOnce();
+  expect(events.onFail).not.toHaveBeenCalled();
+});
+
 it('reports a refused microphone and a browser without recording', async () => {
   const denied = setup(
     vi.fn(async () => Promise.reject(new DOMException('no', 'NotAllowedError'))),
@@ -87,21 +112,42 @@ it('reports a refused microphone and a browser without recording', async () => {
   expect(unsupported.host.getUserMedia).not.toHaveBeenCalled();
 });
 
-it('releases a microphone granted after the child cancelled', async () => {
-  let grant!: () => void;
-  const context = setup(
-    () =>
-      new Promise((resolve) => {
-        grant = () => resolve(context.stream);
-      }),
-  );
-  const starting = context.recorder.start();
+it('releases the microphone and reports it when the browser refuses the recording format', async () => {
+  FakeRecorder.refuse = true;
+  const { recorder, events, track } = setup();
+  await recorder.start();
+  expect(track.stopped).toBe(true);
+  expect(events.onStart).not.toHaveBeenCalled();
+  expect(events.onFail).toHaveBeenCalledExactlyOnceWith('unsupported');
+});
+
+it('ends a cancelled start silently, whether the prompt is granted or refused', async () => {
+  const { getUserMedia, answers } = prompt();
+  const context = setup(getUserMedia);
+  const granted = context.recorder.start();
   context.recorder.cancel();
-  grant();
-  await starting;
+  answers[0]!(context.stream);
+  await granted;
   expect(context.track.stopped).toBe(true);
+  const refused = context.recorder.start();
+  context.recorder.cancel();
+  answers[1]!(new DOMException('no', 'NotAllowedError'));
+  await refused;
   expect(context.events.onStart).not.toHaveBeenCalled();
   expect(context.events.onFail).not.toHaveBeenCalled();
+});
+
+it('starts again after a cancel even while the first prompt is still open', async () => {
+  const { getUserMedia, answers } = prompt();
+  const context = setup(getUserMedia);
+  const first = context.recorder.start();
+  context.recorder.cancel();
+  const second = context.recorder.start();
+  expect(answers).toHaveLength(2);
+  answers[0]!(context.stream);
+  answers[1]!(context.stream);
+  await Promise.all([first, second]);
+  expect(context.events.onStart).toHaveBeenCalledOnce();
 });
 
 it('releases a microphone granted while the page is hidden and reports the interruption', async () => {
@@ -117,10 +163,7 @@ it('reports an empty recording instead of sending silence', async () => {
   const { recorder, events } = setup();
   await recorder.start();
   const fake = FakeRecorder.last!;
-  fake.stop = function stop() {
-    this.state = 'inactive';
-    this.onstop?.();
-  };
+  fake.ondataavailable = null;
   recorder.stop();
   expect(events.onFail).toHaveBeenCalledExactlyOnceWith('empty');
 });
