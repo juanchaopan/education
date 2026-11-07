@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Value } from '@sinclair/typebox/value';
 import { ParentSession } from '@education/contracts';
 import { sessionRequest } from './session-request';
-import { clearFamilyManagement } from './family-cache';
+import { replaceParentSession } from './family-cache';
 
 async function confirmPassword(password: string, csrf: string): Promise<ParentSession> {
   let response: Response;
@@ -26,10 +26,6 @@ export function useParentReauthentication(csrf: string) {
     retry: false,
     gcTime: 0,
     mutationFn: (password: string) => confirmPassword(password, csrf),
-    onSuccess: async (session) => {
-      await client.cancelQueries({ queryKey: ['parent-session'] });
-      await clearFamilyManagement(client);
-      client.setQueryData(['parent-session'], session);
-    },
+    onSuccess: (session) => replaceParentSession(client, session),
   });
 }

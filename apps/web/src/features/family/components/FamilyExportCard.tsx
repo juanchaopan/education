@@ -1,5 +1,6 @@
 import { familyExportScope } from '@education/contracts';
 import { ParentPasswordForm } from './ParentPasswordForm';
+import { ScopeList } from './ScopeList';
 import card from './RegistrationForm.module.css';
 import panel from './RegistrationKeyCard.module.css';
 
@@ -23,18 +24,8 @@ export function FamilyExportCard(props: Props) {
         把本家庭的数据保存成一个 JSON
         文件，可以用文本编辑器打开。文件在下载时生成，服务器不保留副本。
       </p>
-      <h3>文件包含</h3>
-      <ul>
-        {familyExportScope.includes.map((item) => (
-          <li key={item}>{item}</li>
-        ))}
-      </ul>
-      <h3>文件不包含</h3>
-      <ul>
-        {familyExportScope.excludes.map((item) => (
-          <li key={item}>{item}</li>
-        ))}
-      </ul>
+      <ScopeList title="文件包含" items={familyExportScope.includes} />
+      <ScopeList title="文件不包含" items={familyExportScope.excludes} />
       {props.preparing && <p role="status">正在准备导出文件…</p>}
       {props.saved && (
         <p role="status">
