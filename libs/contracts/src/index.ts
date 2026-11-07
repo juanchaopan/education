@@ -18,3 +18,4 @@ export * from './practice.js';
 export * from './ai-consent.js';
 export * from './ai-help.js';
 export * from './teaching-feedback.js';
+export * from './transcription.js';
