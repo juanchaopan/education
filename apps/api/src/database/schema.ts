@@ -2,6 +2,7 @@ import { sql } from 'drizzle-orm';
 import {
   bigint,
   boolean,
+  check,
   date,
   index,
   integer,
@@ -312,3 +313,17 @@ export const childRegistrations = pgTable('child_registrations', {
     .references(() => registrationKeys.id, { onDelete: 'cascade' }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
+
+// Whether the service is open: one row while it is. Backups leave this table's
+// row out, so a restored database stays closed until the deletions recorded
+// since the backup are replayed and the result is checked.
+export const serviceGate = pgTable(
+  'service_gate',
+  {
+    open: boolean('open').default(true).primaryKey(),
+    openedAt: timestamp('opened_at', { withTimezone: true })
+      .default(sql`clock_timestamp()`)
+      .notNull(),
+  },
+  (table) => [check('service_gate_single_row', sql`${table.open}`)],
+).enableRLS();

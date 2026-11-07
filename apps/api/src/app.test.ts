@@ -40,6 +40,31 @@ describe('framework HTTP contract', () => {
     expect(response.json()).toEqual({ status: 'ready' });
     expect((await app.inject('/health/live')).statusCode).toBe(200);
   });
+  it('answers no API request while the database is not ready, and reopens with it', async () => {
+    let healthy = false;
+    const app = buildApp({ ready: async () => healthy, revision: 'b'.repeat(40) });
+    apps.push(app);
+    const closed = await app.inject('/api/v1/problems');
+    expect(closed.statusCode).toBe(503);
+    expect(closed.json()).toEqual({ message: '网站正在维护，请稍后再试。' });
+    expect(closed.headers['cache-control']).toBe('no-store');
+    expect(closed.headers['retry-after']).toBe('300');
+    expect((await app.inject('/version.json')).statusCode).toBe(200);
+    expect((await app.inject('/health/live')).statusCode).toBe(200);
+    healthy = true;
+    expect((await app.inject('/api/v1/problems')).statusCode).toBe(200);
+  });
+  it('treats a failed readiness check as closed for API requests', async () => {
+    const app = buildApp({
+      ready: async () => {
+        throw new Error('relation "service_gate" does not exist');
+      },
+    });
+    apps.push(app);
+    const warning = vi.spyOn(app.log, 'warn');
+    expect((await app.inject('/api/v1/problems')).statusCode).toBe(503);
+    expect(JSON.stringify(warning.mock.calls)).not.toContain('service_gate');
+  });
   it('does not reveal database errors or report readiness without a configured check', async () => {
     for (const ready of [
       undefined,

@@ -43,6 +43,7 @@ import { registerTranscription } from './ai/routes/transcription.js';
 import type { VoiceTranscriptionService } from './ai/services/voice-transcription.js';
 
 const localOrigin = 'http://127.0.0.1:5173';
+type Ready = () => Promise<boolean>;
 type AppOptions = {
   childAccess?: ChildAccessService;
   aiConsent?: AiConsentService;
@@ -63,7 +64,7 @@ type AppOptions = {
   recovery?: RecoveryService;
   registrationKeys?: RegistrationKeyService;
   reauthentication?: ReauthenticationService;
-  ready?: () => Promise<boolean>;
+  ready?: Ready;
   revision?: string;
 };
 export function buildApp(options: AppOptions = {}) {
@@ -81,17 +82,13 @@ export function buildApp(options: AppOptions = {}) {
     () => ({ status: 'ok' }),
   );
   app.get('/health/ready', async (_request, reply) => {
-    let ready = false;
-    try {
-      ready = (await options.ready?.()) === true;
-    } catch (error) {
-      app.log.warn({ code: readinessErrorCode(error) }, 'Database readiness unavailable');
-    }
+    const ready = await isReady(app, options.ready);
     return reply
       .code(ready ? 200 : 503)
       .header('Cache-Control', 'no-store')
       .send({ status: ready ? 'ready' : 'unavailable' });
   });
+  registerServiceGate(app, options.ready);
   registerCatalog(app);
   registerDrafts(app, options.origin ?? localOrigin, options.drafts);
   registerAnswering(app, options.origin ?? localOrigin, options.answering);
@@ -105,6 +102,31 @@ export function buildApp(options: AppOptions = {}) {
   registerIdentity(app, options);
   registerErrors(app);
   return app;
+}
+
+// A failed check counts as not ready; only an allowlisted error category is logged.
+async function isReady(app: FastifyInstance, ready: Ready | undefined) {
+  try {
+    return (await ready?.()) === true;
+  } catch (error) {
+    app.log.warn({ code: readinessErrorCode(error) }, 'Database readiness unavailable');
+    return false;
+  }
+}
+
+// With a database configured, the API answers only while the database is ready.
+// A database being restored, or one whose restore was not checked, has a closed
+// service gate, so no family can sign in or read anything from it.
+function registerServiceGate(app: FastifyInstance, ready: Ready | undefined) {
+  if (!ready) return;
+  app.addHook('onRequest', async (request, reply) => {
+    if (!request.url.startsWith('/api/') || (await isReady(app, ready))) return;
+    return reply
+      .code(503)
+      .header('Cache-Control', 'no-store')
+      .header('Retry-After', '300')
+      .send({ message: '网站正在维护，请稍后再试。' });
+  });
 }
 
 function httpErrorStatus(error: FastifyError) {
