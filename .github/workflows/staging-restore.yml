@@ -1,0 +1,58 @@
+name: staging-restore
+on:
+  workflow_dispatch:
+    inputs:
+      backup_run:
+        description: Run ID of the staging-backup run to restore; empty restores the latest successful one
+        required: false
+permissions:
+  contents: read
+  actions: read
+# Backup, restore and maintenance of the staging databases never overlap.
+concurrency:
+  group: staging-database
+  cancel-in-progress: false
+jobs:
+  restore:
+    if: vars.STAGING_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: staging
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          persist-credentials: false
+      - uses: ./.github/actions/backup-tools
+        with:
+          postgres-major: ${{ vars.STAGING_POSTGRES_MAJOR || '17' }}
+      - name: Download the backup
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BACKUP_RUN: ${{ inputs.backup_run }}
+        run: |
+          run="${BACKUP_RUN:-$(gh run list --workflow staging-backup.yml --status success --limit 1 --json databaseId --jq '.[0].databaseId')}"
+          [[ "$run" =~ ^[0-9]+$ ]] || { echo "::error::No staging backup run to restore"; exit 1; }
+          gh run download "$run" --name staging-backup --dir "$RUNNER_TEMP/download"
+          echo "Backup run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$run" >> "$GITHUB_STEP_SUMMARY"
+      - name: Decrypt the backup
+        env:
+          BACKUP_IDENTITY: ${{ secrets.STAGING_BACKUP_IDENTITY }}
+        run: |
+          : "${BACKUP_IDENTITY:?Set the STAGING_BACKUP_IDENTITY secret to the backup private key}"
+          umask 077
+          mkdir -p "$RUNNER_TEMP/backup"
+          printf '%s\n' "$BACKUP_IDENTITY" > "$RUNNER_TEMP/backup-identity"
+          age -d -i "$RUNNER_TEMP/backup-identity" "$RUNNER_TEMP/download/staging-backup.tar.age" | tar -C "$RUNNER_TEMP/backup" -xf -
+          rm -f "$RUNNER_TEMP/backup-identity" "$RUNNER_TEMP/download/staging-backup.tar.age"
+      - name: Restore, replay the deletion ledger, check and reopen
+        env:
+          STAGING_DATABASE: 'true'
+          STAGING_DATABASE_HOST: ${{ vars.STAGING_DATABASE_HOST }}
+          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+          DATABASE_CA_CERT: ${{ secrets.STAGING_DATABASE_CA_CERT }}
+          DELETION_LEDGER_URL: ${{ secrets.STAGING_DELETION_LEDGER_URL }}
+          DELETION_LEDGER_CA_CERT: ${{ secrets.STAGING_DELETION_LEDGER_CA_CERT }}
+        run: node scripts/staging-restore.mjs "$RUNNER_TEMP/backup"
+      - if: always()
+        run: rm -rf "$RUNNER_TEMP/backup" "$RUNNER_TEMP/download" "$RUNNER_TEMP/backup-identity"
