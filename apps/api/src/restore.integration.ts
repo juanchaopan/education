@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import pg from 'pg';
 import { afterAll, expect, it } from 'vitest';
 import { buildApp } from './app.js';
-import { createReadinessCheck } from './database/readiness.js';
+import { createMigrationCheck, createReadinessCheck } from './database/readiness.js';
 import { closeService, openService, serviceOpen } from './database/service-gate.js';
 import { tableCounts } from './database/table-counts.js';
 import { createDeletionLedger } from './identity/repositories/postgres-deletion-ledger.js';
@@ -85,6 +85,8 @@ it('keeps a restored database closed until every deleted family is gone, then op
     await closeService(pool);
     expect((await app.inject('/api/v1/problems')).statusCode).toBe(503);
     expect((await app.inject('/health/ready')).statusCode).toBe(503);
+    // The migration is checked on its own, without the gate.
+    expect(await (await createMigrationCheck(pool))()).toBe(true);
 
     const unreachable = new pg.Pool({
       connectionString: 'postgres://education:unused@127.0.0.1:1/ledger',

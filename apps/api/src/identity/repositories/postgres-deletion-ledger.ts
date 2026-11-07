@@ -8,7 +8,7 @@ export type DeletionLedger = {
 };
 
 // What restoring a backup and ledger maintenance need from it.
-export type LedgerHistory = {
+type LedgerHistory = {
   recorded(): Promise<string[]>;
   prune(retentionDays: number): Promise<number>;
 };
