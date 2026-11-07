@@ -5,9 +5,8 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
-# Backup, restore and maintenance of the staging databases never overlap.
 concurrency:
-  group: staging-database
+  group: staging-backup
   cancel-in-progress: false
 jobs:
   backup:
@@ -15,6 +14,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     environment: staging
+    defaults:
+      run:
+        shell: bash
     steps:
       - uses: actions/checkout@v7
         with:

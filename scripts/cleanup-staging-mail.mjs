@@ -4,6 +4,7 @@ import { maintenancePool } from '../apps/api/dist/shared/maintenance-pool.js';
 import { cleanupAccountMail } from '../apps/api/dist/database/mail-retention.js';
 import { cleanupExpiredDrafts } from '../apps/api/dist/database/draft-retention.js';
 import { stagingDatabases } from './staging-database-env.mjs';
+import { withStagingDatabaseLock } from './staging-database-lock.mjs';
 
 const run = promisify(execFile);
 
@@ -57,7 +58,7 @@ function configuredDatabases() {
 
 const databases = configuredDatabases();
 try {
-  await cleanup(databases);
+  await withStagingDatabaseLock(databases.hosted, () => cleanup(databases));
 } catch {
   console.error('Staging retention failed; inspect database availability.');
   process.exitCode = 1;

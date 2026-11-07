@@ -5,6 +5,7 @@ import { appendFile } from 'node:fs/promises';
 import { setTimeout } from 'node:timers/promises';
 import { deletionLedgerDatabase } from '../apps/api/dist/shared/database-config.js';
 import { maintenancePool } from '../apps/api/dist/shared/maintenance-pool.js';
+import { withStagingDatabaseLock } from './staging-database-lock.mjs';
 import { migrateStaging } from './staging-migrate.mjs';
 import { releaseStaging } from './staging-release.mjs';
 import { releaseFiles, vercelApi } from './staging-vercel.mjs';
@@ -59,20 +60,22 @@ async function deploy() {
     ...(databases.ledger ? [maintenancePool(databases.hosted, deletionLedgerDatabase)] : []),
   ];
   try {
-    const result = await releaseStaging({
-      revision,
-      teamId,
-      origin: required('STAGING_ORIGIN'),
-      projectId: required('STAGING_VERCEL_PROJECT_ID'),
-      api: vercelApi(required('VERCEL_TOKEN'), teamId),
-      files: await releaseFiles(),
-      runtimeEnv,
-      wait: setTimeout,
-      stillCurrent: () => assertCurrent(revision),
-      migrate: () => migrateStaging(databases.hosted, pools),
-      smoke: (url, origin, sha) =>
-        smokeAccount(url, origin, sha, (email) => cleanupAccount(pool, email)),
-    });
+    const result = await withStagingDatabaseLock(databases.hosted, async () =>
+      releaseStaging({
+        revision,
+        teamId,
+        origin: required('STAGING_ORIGIN'),
+        projectId: required('STAGING_VERCEL_PROJECT_ID'),
+        api: vercelApi(required('VERCEL_TOKEN'), teamId),
+        files: await releaseFiles(),
+        runtimeEnv,
+        wait: setTimeout,
+        stillCurrent: () => assertCurrent(revision),
+        migrate: () => migrateStaging(databases.hosted, pools),
+        smoke: (url, origin, sha) =>
+          smokeAccount(url, origin, sha, (email) => cleanupAccount(pool, email)),
+      }),
+    );
     console.log(JSON.stringify(result));
     if (process.env.GITHUB_STEP_SUMMARY)
       await appendFile(

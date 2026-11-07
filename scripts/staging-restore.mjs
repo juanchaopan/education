@@ -19,6 +19,7 @@ import {
   manifestFile,
 } from './staging-backup-manifest.mjs';
 import { stagingDatabases } from './staging-database-env.mjs';
+import { withStagingDatabaseLock } from './staging-database-lock.mjs';
 import { migrateStaging } from './staging-migrate.mjs';
 import { libpqConnection, postgresTool } from './staging-postgres-tools.mjs';
 
@@ -52,11 +53,11 @@ function stages() {
   };
 }
 
-// Runs with the service gate closed. The gate opens only after every row is
-// loaded, every family in the deletion ledger is removed again, the schema is
-// migrated to this release and the ledger, read again, names no family the
-// database holds. Every backup carries the gate table without its row, so
-// nothing before the last step can open the service.
+// Runs with the service gate closed. Every backup carries the gate table
+// without its row and migrations never touch it, so only the last step opens
+// the service: after every row is loaded, the schema is migrated to this
+// release, every family in the deletion ledger is removed again under that
+// schema, and the ledger, read again, names no family the database holds.
 async function restoreClosed({ hosted, pool, ledgerPool, connection, folder, manifest, run }) {
   const restored = createRestoredDatabase(pool, ledgerPool);
   await run('clear', () =>
@@ -72,13 +73,13 @@ async function restoreClosed({ hosted, pool, ledgerPool, connection, folder, man
     if (await serviceOpen(pool)) throw new Error('Restored database came with an open gate');
     checkCounts(manifest.counts, await tableCounts(pool));
   });
-  const replayed = await run('replay', () => restored.replay());
-  await run('migrate', () => migrateStaging(hosted, [pool, ledgerPool]));
-  await run('open', async () => {
+  await run('migrate', async () => {
+    await migrateStaging(hosted, [pool, ledgerPool]);
     if (!(await (await createMigrationCheck(pool))()))
       throw new Error('Restored database is not migrated to this release');
-    await restored.open();
   });
+  const replayed = await run('replay', () => restored.replay());
+  await run('open', () => restored.open());
   return replayed;
 }
 
@@ -93,21 +94,17 @@ async function restore(folder, scratch) {
   const ledgerPool = maintenancePool(hosted, deletionLedgerDatabase);
   const { timings, run } = stages();
   try {
-    await run('close', () =>
-      closeService(pool).catch((error) => {
-        if (error.code !== missingTable) throw error;
-      }),
-    );
-    const replayed = await restoreClosed({
-      hosted,
-      pool,
-      ledgerPool,
-      connection,
-      folder,
-      manifest,
-      run,
-    }).catch((error) => {
-      throw new ServiceStaysClosed(error.message, { cause: error });
+    const replayed = await withStagingDatabaseLock(hosted, async () => {
+      await run('close', () =>
+        closeService(pool).catch((error) => {
+          if (error.code !== missingTable) throw error;
+        }),
+      );
+      return restoreClosed({ hosted, pool, ledgerPool, connection, folder, manifest, run }).catch(
+        (error) => {
+          throw new ServiceStaysClosed(error.message, { cause: error });
+        },
+      );
     });
     const total = Object.values(timings).reduce((sum, ms) => sum + ms, 0);
     console.log(

@@ -7,6 +7,7 @@ import { serviceGateTable, serviceOpen } from '../apps/api/dist/database/service
 import { tableCounts } from '../apps/api/dist/database/table-counts.js';
 import { dumpFile, fileChecksum, manifestFile } from './staging-backup-manifest.mjs';
 import { stagingDatabases } from './staging-database-env.mjs';
+import { withStagingDatabaseLock } from './staging-database-lock.mjs';
 import { libpqConnection, postgresTool } from './staging-postgres-tools.mjs';
 
 // Dumps the staging application database into a folder with its manifest. The
@@ -14,11 +15,8 @@ import { libpqConnection, postgresTool } from './staging-postgres-tools.mjs';
 // same data. A closed database is not backed up: it is being restored, or its
 // restore was not checked. The dump leaves out the service gate's row, so a
 // restored copy starts closed.
-async function backup(folder, scratch) {
-  const databases = stagingDatabases(process.env);
-  await mkdir(folder, { recursive: true, mode: 0o700 });
-  const connection = await libpqConnection(databases.hosted, applicationDatabase, scratch);
-  const pool = maintenancePool(databases.hosted);
+async function dump(hosted, folder, connection) {
+  const pool = maintenancePool(hosted);
   const client = await pool.connect();
   try {
     await client.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');
@@ -36,22 +34,32 @@ async function backup(folder, scratch) {
       `--file=${join(folder, dumpFile)}`,
     ]);
     await client.query('COMMIT');
-    const manifest = {
-      environment: 'staging',
-      host: process.env.STAGING_DATABASE_HOST.trim().toLowerCase(),
-      createdAt: rows[0].createdAt.toISOString(),
-      sha256: await fileChecksum(join(folder, dumpFile)),
-      counts,
-    };
-    await writeFile(join(folder, manifestFile), `${JSON.stringify(manifest, null, 2)}\n`, {
-      mode: 0o600,
-    });
-    const total = Object.values(counts).reduce((sum, count) => sum + count, 0);
-    console.log(`Backup taken at ${manifest.createdAt}: ${total} rows`);
+    return { createdAt: rows[0].createdAt.toISOString(), counts };
   } finally {
     client.release();
     await pool.end();
   }
+}
+
+async function backup(folder, scratch) {
+  const { hosted } = stagingDatabases(process.env);
+  await mkdir(folder, { recursive: true, mode: 0o700 });
+  const connection = await libpqConnection(hosted, applicationDatabase, scratch);
+  const { createdAt, counts } = await withStagingDatabaseLock(hosted, () =>
+    dump(hosted, folder, connection),
+  );
+  const manifest = {
+    environment: 'staging',
+    host: process.env.STAGING_DATABASE_HOST.trim().toLowerCase(),
+    createdAt,
+    sha256: await fileChecksum(join(folder, dumpFile)),
+    counts,
+  };
+  await writeFile(join(folder, manifestFile), `${JSON.stringify(manifest, null, 2)}\n`, {
+    mode: 0o600,
+  });
+  const total = Object.values(counts).reduce((sum, count) => sum + count, 0);
+  console.log(`Backup taken at ${createdAt}: ${total} rows`);
 }
 
 const scratch = await mkdtemp(join(tmpdir(), 'staging-backup-'));

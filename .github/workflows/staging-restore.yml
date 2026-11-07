@@ -8,9 +8,8 @@ on:
 permissions:
   contents: read
   actions: read
-# Backup, restore and maintenance of the staging databases never overlap.
 concurrency:
-  group: staging-database
+  group: staging-restore
   cancel-in-progress: false
 jobs:
   restore:
@@ -18,6 +17,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment: staging
+    defaults:
+      run:
+        shell: bash
     steps:
       - uses: actions/checkout@v7
         with:
