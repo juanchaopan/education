@@ -1,10 +1,7 @@
 import type pg from 'pg';
 import type { AiConsentView } from '@education/contracts';
-import {
-  type BillingResult,
-  largestReservationCost,
-  ledgerCharge,
-} from '../domain/tutoring-cost.js';
+import { largestReservationCost } from '../domain/ai-budget.js';
+import { type BillingResult, ledgerCharge } from '../domain/tutoring-cost.js';
 
 const FAMILY_REQUESTS_PER_MINUTE = 18;
 const CHILD_REQUESTS_PER_MINUTE = 6;

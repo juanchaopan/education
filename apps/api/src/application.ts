@@ -40,6 +40,7 @@ import { createLearningSummary } from './learning-summary-application.js';
 import { createPracticeAssignments } from './practice-application.js';
 import { createAiConsent } from './ai-consent-application.js';
 import { createTeachingFeedback } from './teaching-feedback-application.js';
+import { createVoiceTranscription } from './voice-transcription-application.js';
 
 export async function createApplication(env: NodeJS.ProcessEnv = process.env) {
   const config = readConfig(env);
@@ -60,7 +61,7 @@ export async function createApplication(env: NodeJS.ProcessEnv = process.env) {
         hash: hashParentPassword,
       })
     : undefined;
-  const { sessions, childSessions, drafts, answering, teachingFeedback } =
+  const { sessions, childSessions, drafts, answering, teachingFeedback, voiceTranscription } =
     await createIdentitySessions(pool, config, admit, env);
   const app = buildApp({
     origin: config.origin,
@@ -71,6 +72,7 @@ export async function createApplication(env: NodeJS.ProcessEnv = process.env) {
     drafts,
     answering,
     teachingFeedback,
+    voiceTranscription,
     childAccess: createChildAccess(pool, sessions, admit, config),
     ...createFamilyManagement(pool, sessions, admit, config.aiMonthlyBudget),
     verification: createVerification(pool, mailConfig, admit),
@@ -101,6 +103,7 @@ async function createIdentitySessions(
       drafts: undefined,
       answering: undefined,
       teachingFeedback: undefined,
+      voiceTranscription: undefined,
     };
   const dummyHash = await hashParentPassword(randomBytes(32).toString('base64url'));
   const sessions = createSessionService({
@@ -125,6 +128,7 @@ async function createIdentitySessions(
       drafts: createDrafts(pool),
       answering: createAnswering(pool, config.rateLimitKey!),
       teachingFeedback: createTeachingFeedback(pool, env),
+      voiceTranscription: createVoiceTranscription(pool, env),
     }),
   };
 }
