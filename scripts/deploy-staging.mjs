@@ -5,7 +5,7 @@ import { appendFile } from 'node:fs/promises';
 import { setTimeout } from 'node:timers/promises';
 import { deletionLedgerDatabase } from '../apps/api/dist/shared/database-config.js';
 import { maintenancePool } from '../apps/api/dist/shared/maintenance-pool.js';
-import { hardenStagingTables, revokeStagingDefaults } from '../apps/api/dist/database/staging.js';
+import { migrateStaging } from './staging-migrate.mjs';
 import { releaseStaging } from './staging-release.mjs';
 import { releaseFiles, vercelApi } from './staging-vercel.mjs';
 import { smokeAccount } from './staging-smoke.mjs';
@@ -34,22 +34,6 @@ function assertCurrent(revision) {
   ).trim();
   if (head !== revision)
     throw new Error('Main changed; leave staging unchanged until its next successful CI');
-}
-
-// The migration covers every configured database; each one's tables are then
-// closed to the hosted data API roles.
-async function migrate(hosted, pools) {
-  await Promise.all(pools.map(revokeStagingDefaults));
-  try {
-    execFileSync(process.execPath, ['apps/api/dist/database/migrate.js'], {
-      stdio: 'pipe',
-      timeout: 60000,
-      env: hosted,
-    });
-  } catch {
-    throw new Error('Controlled staging migration failed');
-  }
-  await Promise.all(pools.map((pool) => hardenStagingTables(pool)));
 }
 
 async function deploy() {
@@ -85,7 +69,7 @@ async function deploy() {
       runtimeEnv,
       wait: setTimeout,
       stillCurrent: () => assertCurrent(revision),
-      migrate: () => migrate(databases.hosted, pools),
+      migrate: () => migrateStaging(databases.hosted, pools),
       smoke: (url, origin, sha) =>
         smokeAccount(url, origin, sha, (email) => cleanupAccount(pool, email)),
     });
