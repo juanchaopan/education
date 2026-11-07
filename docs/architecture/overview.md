@@ -15,7 +15,7 @@
 | 一致性     | KEY 兑换、家庭权限、作答去重、预算预留必须事务化             | 架构提议，对应 REQ-002、005、008               |
 | 维护与容量 | 按小规模试点设计；人员、保留期限与增长量尚未确认             | 不虚构数据量或运维能力                         |
 | 可用性     | 不承诺免费服务 SLA；外部 AI 故障可继续引导                   | REQ-006                                        |
-| 恢复       | RPO/RTO 在选择实际数据库和备份位置后确定                     | 发布前待定                                     |
+| 恢复       | RPO/RTO 由 #45 按 Neon 数据库和独立备份位置确定              | 发布前待定；ADR-0014                           |
 
 ## 架构风格与组件
 
@@ -92,7 +92,7 @@ sequenceDiagram
 
 ## 数据与一致性（数据库已确认，细节设计）
 
-PostgreSQL 经 Drizzle 访问，保存 families、parents、children、sessions、registration_keys、assignments、attempts、progress、drafts、consents、ai_usage。身份模块拥有账号与家庭，学习模块拥有作答与进度，AI 模块仅拥有用量账本；跨模块经服务接口访问。
+PostgreSQL 经 Drizzle 访问，保存 families、parents、children、sessions、registration_keys、assignments、attempts、progress、drafts、consents、ai_usage。身份模块拥有账号与家庭，学习模块拥有作答与进度，AI 模块仅拥有用量账本；跨模块经服务接口访问。家庭删除清单放在另一个 PostgreSQL 数据库里，不进入应用库的备份，见 [ADR-0005](../adr/0005-data-consistency.md)。
 
 - 服务端从会话确定家庭和儿童，不信任客户端传入的 family_id；所有读写、导出和删除按家庭授权。
 - 作答使用请求幂等键及唯一约束；草稿使用版本号做乐观并发控制，冲突提示选择而不静默覆盖。
@@ -114,6 +114,8 @@ OpenAI 必须验证当前地区和使用条款，包括目标用户资格；服�
 建议构建一个可移植应用镜像；开发环境用容器编排启动 API 和数据库，前端开发服务器代理 API。生产同源 HTTPS，数据库独立且持久化；不依赖应用容器磁盘保存进度。初期一实例应用、一数据库，接受试点单点局限，增加实例前统一会话、限流、预算与清理任务协调。
 
 免费平台、用户自有服务器为候选路径，均须测试 HTML、静态资源、注册邮件、API、数据库依赖和 AI 整条链路。所有字体与前端资源优先随应用提供，不依赖不可达的第三方 CDN。自有服务器的位置、TLS、存储、备份和出站访问待用户提供后验证；若位于大陆需核查适用部署要求。
+
+应用托管在 Vercel，见 [ADR-0008](../adr/0008-hosting-spike.md)。staging 和生产的应用库、删除清单库各用一个 Neon Free 项目，区域都是 Singapore，见 [ADR-0014](../adr/0014-neon-databases.md)。应用使用直连地址和 `sslmode=verify-full`；空闲后计算缩到零，第一次请求会多一些延迟；免费额度用尽时应用不可用。
 
 用户确认 PR 运行 CI，隔离 staging，平台支持时提供 PR 预览，生产显式手动发布。各环境使用独立数据和密钥，预览不使用生产家庭记录或生产 AI 密钥。按提交镜像回滚，迁移保持向后兼容；不能用回滚应用替代恢复已删除数据或破坏性迁移。
 
@@ -148,8 +150,9 @@ Playwright 覆盖注册、儿童关联与恢复、家庭隔离、导航空状态
 flowchart TB
   browser[手机、平板、桌面浏览器] -->|HTTPS| ingress[TLS 入口]
   ingress --> app[单应用实例：Fastify API 与构建后的 React]
-  app --> pg[(PostgreSQL 持久存储)]
-  pg -. 受控备份 .-> backup[独立备份位置：待配置]
+  app --> pg[(应用库：Neon 项目)]
+  app --> ledger[(删除清单库：另一个 Neon 项目)]
+  pg -. 受控备份 .-> backup[独立备份位置：由 #45 确定]
   app --> email[邮件适配器]
   app --> provider[AI/语音适配器]
 ```

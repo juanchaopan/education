@@ -19,6 +19,7 @@
 | ------------------------------------ | -------------------------------- |
 | [架构总览](architecture/overview.md) | 指标、组件、交互、数据与故障处理 |
 | [决策记录](adr/)                     | 已选择技术及提议的实现细节       |
+| [变更记录](changes/)                 | 需求和架构变更的原因、决定与拆分 |
 
 [逐题设计互动教学与验收手册](design/interactive-lesson-authoring.md) 记录逐题分镜、交互与音画验收要求，提供开发者自查卡。
 
@@ -27,6 +28,8 @@
 [ADR-0007](adr/0007-typescript-7-toolchain.md)：按用户 TS7 目标调整编译、lint 与架构解析工具链。
 
 [ADR-0008](adr/0008-hosting-spike.md)：#14 托管探针已获维护者验收，接受 Vercel Hobby + 自定义域名用于 staging；证据、归档和后续验证范围见文档。
+
+[ADR-0014](adr/0014-neon-databases.md)：staging 和生产的应用库、删除清单库各用一个 Neon Free 项目，区域为 Singapore；staging 切换由 #111 实施，生产库随 #45/#52 创建。原因和决定见 [变更记录](changes/2026-11-07-neon-databases.md)。
 
 [ADR-0009](adr/0009-account-security-spike.md)：#15 账号探针已结束，接受家庭定位/六位 PIN、注册 KEY、安全参数及默认持久登录；部署更新先保存草稿再刷新。仅文档与本地证据，实际账号及目标资源验收未完成。#16 邮件探针结论见下文；#17 可按已接受基线开始本地实现。
 
