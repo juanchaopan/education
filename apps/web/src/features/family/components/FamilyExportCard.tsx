@@ -13,6 +13,8 @@ type Props = {
   onExport: () => void;
 };
 
+// The password field and its button are named for the export, so they stay
+// distinct from the other password confirmations on the parent page.
 export function FamilyExportCard(props: Props) {
   return (
     <section className={`${card.card} ${panel.panel}`} aria-labelledby="family-export-title">
@@ -44,11 +46,11 @@ export function FamilyExportCard(props: Props) {
           {props.error}
         </p>
       )}
-      <p className={card.hint}>确认家长密码后，浏览器会直接下载文件。</p>
       <ParentPasswordForm
         id="export-parent-password"
-        label="导出前确认家长密码"
+        label="导出前输入家长密码"
         purpose="导出家庭数据"
+        submitLabel="确认并下载"
         password={props.password}
         pending={props.pending}
         onChange={props.onPassword}

@@ -26,6 +26,7 @@ const session = {
   access: 'verified',
   csrfToken: renewed,
 };
+const passwordLabel = '导出前输入家长密码';
 
 const create = vi.fn((_blob: Blob) => 'blob:family-data');
 let downloads: string[] = [];
@@ -64,8 +65,8 @@ function setup(reply: { password?: Response; file?: Response } = {}) {
 
 async function exportWithPassword() {
   const user = userEvent.setup();
-  await user.type(screen.getByLabelText('导出前确认家长密码'), 'parent-password');
-  await user.click(screen.getByRole('button', { name: '确认密码' }));
+  await user.type(screen.getByLabelText(passwordLabel), 'parent-password');
+  await user.click(screen.getByRole('button', { name: '确认并下载' }));
 }
 
 const csrfOf = (call: unknown[]) =>
@@ -76,6 +77,12 @@ it('explains what the file holds before the parent confirms anything', () => {
   expect(screen.getByRole('heading', { name: '文件包含' })).toBeVisible();
   expect(screen.getByText('密码和 PIN 的哈希')).toBeVisible();
   expect(screen.getByText(/JSON 文件/)).toBeVisible();
+});
+
+it('names its password field and button apart from the other password confirmations', () => {
+  setup();
+  expect(screen.queryByLabelText(/确认家长密码/)).toBeNull();
+  expect(screen.queryByRole('button', { name: '确认密码' })).toBeNull();
 });
 
 it('confirms the password, then downloads the export with the renewed session', async () => {
@@ -90,7 +97,7 @@ it('confirms the password, then downloads the export with the renewed session', 
   expect(csrfOf(fetcher.mock.calls[1]!)).toBe(renewed);
   expect(downloads).toEqual(['family-data-2026-11-07.json']);
   expect(await create.mock.calls[0]![0].text()).toBe(JSON.stringify(file));
-  expect(screen.getByLabelText('导出前确认家长密码')).toHaveValue('');
+  expect(screen.getByLabelText(passwordLabel)).toHaveValue('');
 });
 
 it('does not ask for the file when the password is wrong', async () => {
