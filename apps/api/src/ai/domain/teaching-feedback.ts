@@ -30,6 +30,7 @@ export const ModelFeedback = Type.Object(
   { additionalProperties: false },
 );
 export type ModelFeedback = Static<typeof ModelFeedback>;
+
 // `drawn` is whether the child submitted a drawing, the only thing a highlight can point at.
 export type FeedbackStepScope = { stepId: string; area?: FeedbackRegion; drawn: boolean };
 

@@ -60,11 +60,8 @@ export async function createApplication(env: NodeJS.ProcessEnv = process.env) {
         hash: hashParentPassword,
       })
     : undefined;
-  const { sessions, childSessions, drafts, answering } = await createIdentitySessions(
-    pool,
-    config,
-    admit,
-  );
+  const { sessions, childSessions, drafts, answering, teachingFeedback } =
+    await createIdentitySessions(pool, config, admit, env);
   const app = buildApp({
     origin: config.origin,
     registration,
@@ -73,7 +70,7 @@ export async function createApplication(env: NodeJS.ProcessEnv = process.env) {
     childSessions,
     drafts,
     answering,
-    teachingFeedback: createChildFeedback(pool, childSessions, env),
+    teachingFeedback,
     childAccess: createChildAccess(pool, sessions, admit, config),
     ...createFamilyManagement(pool, sessions, admit, config.aiMonthlyBudget),
     verification: createVerification(pool, mailConfig, admit),
@@ -90,10 +87,12 @@ export async function createApplication(env: NodeJS.ProcessEnv = process.env) {
   return app;
 }
 
+// Parent sessions, child sessions, and the services that need a signed-in child.
 async function createIdentitySessions(
   pool: pg.Pool | undefined,
   config: ReturnType<typeof readConfig>,
   admit: ReturnType<typeof createAuthAdmission> | undefined,
+  env: NodeJS.ProcessEnv,
 ) {
   if (!pool || !admit)
     return {
@@ -101,6 +100,7 @@ async function createIdentitySessions(
       childSessions: undefined,
       drafts: undefined,
       answering: undefined,
+      teachingFeedback: undefined,
     };
   const dummyHash = await hashParentPassword(randomBytes(32).toString('base64url'));
   const sessions = createSessionService({
@@ -124,6 +124,7 @@ async function createIdentitySessions(
     ...(childSessions && {
       drafts: createDrafts(pool),
       answering: createAnswering(pool, config.rateLimitKey!),
+      teachingFeedback: createTeachingFeedback(pool, env),
     }),
   };
 }
@@ -154,14 +155,6 @@ async function registerWeb(app: ReturnType<typeof buildApp>) {
       return reply.sendFile('index.html');
     });
   }
-}
-
-function createChildFeedback(
-  pool: pg.Pool | undefined,
-  childSessions: unknown,
-  env: NodeJS.ProcessEnv,
-) {
-  return pool && childSessions ? createTeachingFeedback(pool, env) : undefined;
 }
 
 function createVerification(
