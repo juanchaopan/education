@@ -7,6 +7,7 @@ import { NavLink, Route, Routes } from 'react-router-dom';
 import { LibraryPage } from '../features/library/pages/LibraryPage';
 import { ProblemPage } from '../features/library/pages/ProblemPage';
 import { FamilyPage } from '../features/family/pages/FamilyPage';
+import { StandaloneLink } from '../shared/ui/StandaloneLink';
 import styles from './App.module.css';
 
 export function App() {
@@ -43,7 +44,7 @@ export function App() {
             element={
               <section className={styles.missing}>
                 <h1>这条小路还没找到</h1>
-                <NavLink to="/">回到探索首页</NavLink>
+                <StandaloneLink to="/">回到探索首页</StandaloneLink>
               </section>
             }
           />

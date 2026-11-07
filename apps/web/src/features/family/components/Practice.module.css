@@ -13,8 +13,9 @@
   overflow-wrap: anywhere;
 }
 
+/* A practice link fills its row, so tapping anywhere on the row opens it. */
 .item a {
-  display: block;
+  display: flex;
 }
 
 .fields {

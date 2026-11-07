@@ -1,0 +1,7 @@
+/* A link on its own line is a control, so it gets a full touch target. */
+.link {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: var(--touch-target);
+  min-inline-size: var(--touch-target);
+}

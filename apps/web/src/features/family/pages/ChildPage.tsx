@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
+import { StandaloneLink } from '../../../shared/ui/StandaloneLink';
 import { ChildLoginForm, type ChildLoginFields } from '../components/ChildLoginForm';
 import { ChildAccount } from '../components/ChildAccount';
 import { ChildPracticePanel } from './ChildPracticePanel';
@@ -76,10 +77,10 @@ export function ChildPage() {
         />
       )}
       <p>
-        <Link to="/join">第一次来？用家长给的 KEY 注册</Link>
+        <StandaloneLink to="/join">第一次来？用家长给的 KEY 注册</StandaloneLink>
       </p>
       <p>
-        <Link to="/family">请家长帮忙</Link>
+        <StandaloneLink to="/family">请家长帮忙</StandaloneLink>
       </p>
     </section>
   );
