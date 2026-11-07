@@ -3,6 +3,7 @@ import {
   MAX_FEEDBACK_OUTPUT_TOKENS,
   MAX_TUTORING_OUTPUT_TOKENS,
   largestReservationCost,
+  ledgerCharge,
   reservationCost,
   reservationCostFor,
   usageCost,
@@ -25,4 +26,14 @@ it('detects supplier usage outside the bounds even when the estimated cost fits'
   expect(withinTutoringBounds({ inputTokens: 16_385, outputTokens: 0 }, max)).toBe(false);
   expect(withinTutoringBounds({ inputTokens: 16_384, outputTokens: 128 }, max)).toBe(true);
   expect(withinTutoringBounds({ inputTokens: 0, outputTokens: 129 }, 256)).toBe(true);
+});
+
+it('records reported tokens with their cost, a direct amount alone, or nothing when unknown', () => {
+  const usage = { inputTokens: 82, outputTokens: 12 };
+  const tokens = { inputTokens: 82, outputTokens: 12, amount: 16_250n };
+  expect(ledgerCharge({ status: 'settled', usage })).toEqual(tokens);
+  expect(ledgerCharge({ status: 'out-of-bounds', usage })).toEqual(tokens);
+  expect(ledgerCharge({ status: 'settled', amount: 750_000n })).toEqual({ amount: 750_000n });
+  expect(ledgerCharge({ status: 'out-of-bounds' })).toEqual({});
+  expect(ledgerCharge({ status: 'unknown' })).toEqual({});
 });

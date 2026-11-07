@@ -53,7 +53,7 @@ it('requires current consent and validates context before contacting the provide
 });
 
 it('starts one bounded stateless request and decodes a completion across UTF-8 chunks', async () => {
-  const { request, authorize, send } = setup();
+  const { request, authorize, send, meter } = setup();
   const bytes = encoder.encode(event({ type: 'response.created' }) + done);
   const split = bytes.indexOf(encoder.encode('先')[0]!) + 1;
   send.mockResolvedValue(stream(bytes.slice(0, split), bytes.slice(split)));
@@ -61,6 +61,10 @@ it('starts one bounded stateless request and decodes a completion across UTF-8 c
   await expect(request(credentials, context)).resolves.toMatchObject({
     status: 'ready',
     value: '先看看左边有几个。',
+    model: 'gpt-6-luna',
+  });
+  expect(meter.settle).toHaveBeenCalledExactlyOnceWith('id', {
+    status: 'settled',
     usage: { inputTokens: 82, outputTokens: 12 },
   });
   expect(authorize).toHaveBeenCalledTimes(1);

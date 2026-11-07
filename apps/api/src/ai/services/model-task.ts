@@ -1,6 +1,7 @@
-// A task describes one kind of model call: how to build the bounded request and
-// how to accept the model's text. The gateway owns consent, metering, timeouts
-// and the provider protocol, so tasks stay free of them.
+// A task describes one kind of Responses call: how to build the bounded request
+// and how to accept the model's text. The metered call owns consent, metering,
+// timeouts and cancellation, and the tutoring gateway owns the provider
+// protocol, so tasks stay free of them.
 export type ContentPart =
   { type: 'input_text'; text: string } | { type: 'input_image'; image_url: string; detail: 'low' };
 

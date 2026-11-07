@@ -31,9 +31,8 @@ it('requests strict structured output, reserves its larger output and returns th
   await expect(request()).resolves.toMatchObject({
     status: 'ready',
     value: reply,
-    usage: { inputTokens: 900, outputTokens: 140 },
   });
-  expect(meter.reserve).toHaveBeenCalledWith(credentials, reservationCostFor(256));
+  expect(meter.reserve).toHaveBeenCalledWith(credentials, 'gpt-6-luna', reservationCostFor(256));
   expect(meter.settle).toHaveBeenCalledWith('id', {
     status: 'settled',
     usage: { inputTokens: 900, outputTokens: 140 },

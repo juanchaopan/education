@@ -6,14 +6,29 @@ const MAX_INPUT_TOKENS = 16_384;
 export const MAX_TUTORING_BODY_BYTES = MAX_INPUT_TOKENS - 512;
 
 export type Usage = { inputTokens: number; outputTokens: number };
+// A charge is either the reported token usage or, for a provider that does not
+// bill by token, an amount in USD nanodollars; never both.
+type Charge = { usage: Usage; amount?: never } | { amount: bigint; usage?: never };
 export type BillingResult =
   | { status: 'released' | 'unknown' }
-  | { status: 'settled'; usage: Usage }
-  | { status: 'out-of-bounds'; usage?: Usage };
+  | ({ status: 'settled' } & Charge)
+  | ({ status: 'out-of-bounds' } & Partial<Charge>);
 
 // USD nanodollars, using the standard 30-minute cache-write rate for all input.
 export function usageCost({ inputTokens, outputTokens }: Usage) {
   return BigInt(inputTokens) * 125n + BigInt(outputTokens) * 500n;
+}
+
+// What the ledger records for a result: the token counts when the provider
+// reported them, and the amount they or the provider's own measure cost.
+export function ledgerCharge(result: BillingResult) {
+  const usage = 'usage' in result ? result.usage : undefined;
+  const amount = 'amount' in result ? result.amount : undefined;
+  return {
+    inputTokens: usage?.inputTokens,
+    outputTokens: usage?.outputTokens,
+    amount: usage ? usageCost(usage) : amount,
+  };
 }
 
 // A request is held at the cost of its largest allowed input and output until it settles.
