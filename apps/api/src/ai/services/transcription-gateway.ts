@@ -2,10 +2,9 @@ import type { TranscriptionFormat } from '@education/contracts';
 import {
   acceptTranscript,
   TRANSCRIPTION_MODEL,
-  transcriptionBilling,
+  transcriptionCharge,
   transcriptionReservation,
 } from '../domain/transcription.js';
-import type { BillingResult } from '../domain/tutoring-cost.js';
 import {
   type Authorize,
   type Credentials,
@@ -92,10 +91,9 @@ function transcriptionExchange(
         return { billing: { status: 'released' } };
       }
       const result = await readReply(reply);
-      const billing: BillingResult = result
-        ? transcriptionBilling(result.usage)
-        : { status: 'unknown' };
-      return { value: result && acceptTranscript(result.text), billing };
+      if (!result) return { billing: { status: 'unknown' } };
+      const { billing, withinLimit } = transcriptionCharge(result.usage);
+      return { value: withinLimit ? acceptTranscript(result.text) : undefined, billing };
     },
   };
 }

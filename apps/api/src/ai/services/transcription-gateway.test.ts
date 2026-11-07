@@ -112,17 +112,14 @@ it('releases a rejected key and treats unreadable or oversized replies as unavai
   expect(meter.settle).toHaveBeenLastCalledWith('id', { status: 'unknown' });
 });
 
-it('never serves text for audio longer than was reserved', async () => {
+it('charges but never serves text for audio longer than the recording limit', async () => {
   const { transcribe, send, meter } = setup();
   send.mockResolvedValue(json({ text: '很长', usage: { type: 'duration', seconds: 600 } }));
   await expect(transcribe(credentials, input)).resolves.toEqual({
     status: 'fallback',
     reason: 'unavailable',
   });
-  expect(meter.settle).toHaveBeenCalledWith('id', {
-    status: 'out-of-bounds',
-    amount: 45_000_000n,
-  });
+  expect(meter.settle).toHaveBeenCalledWith('id', { status: 'settled', amount: 45_000_000n });
 });
 
 it('times out and cancels the upload when no reply starts in time', async () => {

@@ -51,6 +51,8 @@ export function meteredMocks() {
 
 export function setupGateway(config = settings) {
   const mocks = meteredMocks();
-  const { send, authorize, meter } = mocks;
-  return { ...mocks, gateway: createTutoringGateway(config, authorize, meter, send) };
+  return {
+    ...mocks,
+    gateway: createTutoringGateway(config, mocks.authorize, mocks.meter, mocks.send),
+  };
 }

@@ -5,7 +5,7 @@ import { largestReservationCost } from './ai-budget.js';
 import {
   acceptTranscript,
   transcriptionAudio,
-  transcriptionBilling,
+  transcriptionCharge,
   transcriptionReservation,
   vocabularyPrompt,
 } from './transcription.js';
@@ -43,14 +43,10 @@ describe('billing', () => {
     expect(largestReservationCost).toBe(2_400_000n);
   });
 
-  it('settles the measured duration, flags longer audio and keeps the hold otherwise', () => {
-    expect(transcriptionBilling({ type: 'duration', seconds: 4.98 })).toEqual({
-      status: 'settled',
-      amount: 373_500n,
-    });
-    expect(transcriptionBilling({ type: 'duration', seconds: 33 })).toEqual({
-      status: 'out-of-bounds',
-      amount: 2_475_000n,
+  it('settles the measured duration and keeps the hold when none is reported', () => {
+    expect(transcriptionCharge({ type: 'duration', seconds: 4.98 })).toEqual({
+      billing: { status: 'settled', amount: 373_500n },
+      withinLimit: true,
     });
     for (const usage of [
       undefined,
@@ -59,7 +55,18 @@ describe('billing', () => {
       { type: 'duration', seconds: Number.POSITIVE_INFINITY },
       { type: 'duration', seconds: '5' },
     ])
-      expect(transcriptionBilling(usage)).toEqual({ status: 'unknown' });
+      expect(transcriptionCharge(usage)).toEqual({
+        billing: { status: 'unknown' },
+        withinLimit: true,
+      });
+  });
+
+  it('charges audio over the limit what was measured without marking the month out of bounds', () => {
+    expect(transcriptionCharge({ type: 'duration', seconds: 32 }).withinLimit).toBe(true);
+    expect(transcriptionCharge({ type: 'duration', seconds: 130 })).toEqual({
+      billing: { status: 'settled', amount: 9_750_000n },
+      withinLimit: false,
+    });
   });
 });
 

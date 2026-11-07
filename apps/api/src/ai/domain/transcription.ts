@@ -46,16 +46,27 @@ function measuredSeconds(usage: unknown) {
 
 // The provider bills by the duration it measured; any other report keeps the
 // reservation, so an unexpected reply never costs the budget less than it held.
-export function transcriptionBilling(usage: unknown): BillingResult {
+//
+// The byte cap cannot bound the duration, because a low bit rate or encoded
+// silence packs minutes into a few kilobytes, and the server does not decode
+// audio. Audio over the limit can only come from a client that ignored it: it
+// is charged what the provider measured but its text is never used. It is not
+// treated as out of bounds, which would close paid AI for every family for the
+// month on one child's upload; the monthly cap still admits nothing further
+// once that charge is recorded.
+export function transcriptionCharge(usage: unknown): {
+  billing: BillingResult;
+  withinLimit: boolean;
+} {
   const seconds = measuredSeconds(usage);
-  if (seconds === undefined) return { status: 'unknown' };
+  if (seconds === undefined) return { billing: { status: 'unknown' }, withinLimit: true };
   // Rounding to microseconds first keeps binary fractions such as 4.98 from
   // tipping into the next millisecond.
   const milliseconds = Math.ceil(Math.round(seconds * 1e6) / 1e3);
-  const amount = BigInt(milliseconds) * NANODOLLARS_PER_MILLISECOND;
-  return seconds <= MAX_BILLED_SECONDS
-    ? { status: 'settled', amount }
-    : { status: 'out-of-bounds', amount };
+  return {
+    billing: { status: 'settled', amount: BigInt(milliseconds) * NANODOLLARS_PER_MILLISECOND },
+    withinLimit: seconds <= MAX_BILLED_SECONDS,
+  };
 }
 
 const INVISIBLE = /[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]+/gu;
