@@ -1,5 +1,5 @@
 import { vi } from 'vitest';
-import type { Authorize, Meter } from './metered-call.js';
+import type { Admission, Authorize, Meter } from './metered-call.js';
 import { createTutoringGateway } from './tutoring-gateway.js';
 
 export const settings = { paidAiEnabled: true, eligible: true, apiKey: 'synthetic-key' };
@@ -42,17 +42,19 @@ export function stream(...chunks: Uint8Array[]) {
 export function meteredMocks() {
   const send = vi.fn<typeof fetch>();
   const authorize = vi.fn<Authorize>(async (_, start) => start(new AbortController().signal));
+  const confirm = vi.fn<Admission['confirm']>().mockResolvedValue();
   const meter = {
     reserve: vi.fn<Meter['reserve']>().mockResolvedValue('id'),
     settle: vi.fn<Meter['settle']>().mockResolvedValue(),
   };
-  return { send, authorize, meter };
+  const admission: Admission = { dispatch: authorize, confirm };
+  return { send, authorize, confirm, admission, meter };
 }
 
 export function setupGateway(config = settings) {
   const mocks = meteredMocks();
   return {
     ...mocks,
-    gateway: createTutoringGateway(config, mocks.authorize, mocks.meter, mocks.send),
+    gateway: createTutoringGateway(config, mocks.admission, mocks.meter, mocks.send),
   };
 }

@@ -1,4 +1,5 @@
 import { afterEach, expect, it, vi } from 'vitest';
+import { RequestError } from '../../shared/request-error.js';
 import { credentials, meteredMocks, settings } from './gateway-fixtures.js';
 import { createTranscriptionGateway, type TranscriptionInput } from './transcription-gateway.js';
 
@@ -16,15 +17,15 @@ function json(body: object, status = 200) {
 }
 
 function setup(config = settings) {
-  const { send, authorize, meter } = meteredMocks();
-  const transcribe = createTranscriptionGateway(config, authorize, meter, send);
-  return { send, authorize, meter, transcribe };
+  const { send, authorize, confirm, admission, meter } = meteredMocks();
+  const transcribe = createTranscriptionGateway(config, admission, meter, send);
+  return { send, authorize, confirm, meter, transcribe };
 }
 
 afterEach(() => vi.useRealTimers());
 
 it('sends one consented multipart upload with the step words and settles the measured duration', async () => {
-  const { transcribe, send, meter, authorize } = setup();
+  const { transcribe, send, meter, authorize, confirm } = setup();
   send.mockResolvedValue(
     json({ text: ' 我把十二\n平均分成三份。 ', usage: { type: 'duration', seconds: 4.98 } }),
   );
@@ -34,6 +35,7 @@ it('sends one consented multipart upload with the step words and settles the mea
     model: 'gpt-transcribe',
   });
   expect(authorize).toHaveBeenCalledOnce();
+  expect(confirm).toHaveBeenCalledExactlyOnceWith(credentials);
   expect(meter.reserve).toHaveBeenCalledWith(credentials, 'gpt-transcribe', 2_400_000n);
   expect(meter.settle).toHaveBeenCalledExactlyOnceWith('id', {
     status: 'settled',
@@ -55,6 +57,20 @@ it('sends one consented multipart upload with the step words and settles the mea
   expect(file.type).toBe('audio/webm');
   expect(Buffer.from(await file.arrayBuffer())).toEqual(input.audio);
   expect([...form.keys()]).not.toContain('token');
+});
+
+it('withholds a transcript the child may no longer receive and still records what it cost', async () => {
+  const { transcribe, send, meter, confirm } = setup();
+  send.mockResolvedValue(json({ text: '四', usage: { type: 'duration', seconds: 1 } }));
+  confirm.mockRejectedValueOnce(new RequestError(401, 'synthetic private error'));
+  await expect(transcribe(credentials, input)).resolves.toEqual({
+    status: 'fallback',
+    reason: 'unauthorized',
+  });
+  expect(meter.settle).toHaveBeenCalledExactlyOnceWith('id', {
+    status: 'settled',
+    amount: 75_000n,
+  });
 });
 
 it('names an MP4 recording for the provider and leaves out an absent hint', async () => {

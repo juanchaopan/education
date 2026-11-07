@@ -10,6 +10,16 @@ export type Authorize = (
   credentials: Credentials,
   start: (signal: AbortSignal) => Promise<InFlight>,
 ) => Promise<InFlight>;
+// Who may use a provider call. dispatch starts the request while the child's
+// session and family consent are held. confirm checks them again once the reply
+// is read, so a reply is withheld when the family was deleted, the child signed
+// out or consent was withdrawn while the provider worked. The request the
+// provider already received is not recalled, and a change that lands after the
+// check only races with sending the reply back.
+export type Admission = {
+  dispatch: Authorize;
+  confirm(credentials: Credentials): Promise<void>;
+};
 export type Meter = {
   reserve(credentials: Credentials, model: string, amount: bigint): Promise<string | null>;
   settle(id: string, result: BillingResult): Promise<void>;
@@ -84,7 +94,7 @@ async function meteredRequest<O>(
 // Consent, admission, the response deadline, cancellation and settlement are
 // the same for every provider call; exchanges only speak the provider protocol.
 // The exchange is built only once paid AI is known to be usable.
-export function createMeteredCall(settings: ProviderSettings, authorize: Authorize, meter: Meter) {
+export function createMeteredCall(settings: ProviderSettings, admission: Admission, meter: Meter) {
   return async <O>(
     build: () => ProviderExchange<O> | undefined,
     credentials: Credentials,
@@ -98,7 +108,7 @@ export function createMeteredCall(settings: ProviderSettings, authorize: Authori
     try {
       return await bounded(external, async (signal) => {
         const result = await meteredRequest(exchange, meter, credentials, (onSend) =>
-          authorize(credentials, async (authorizationSignal) => {
+          admission.dispatch(credentials, async (authorizationSignal) => {
             const dispatchSignal = AbortSignal.any([signal, authorizationSignal]);
             dispatchSignal.throwIfAborted();
             onSend();
@@ -108,6 +118,7 @@ export function createMeteredCall(settings: ProviderSettings, authorize: Authori
           }),
         );
         if (result.status === 'fallback') return result;
+        await admission.confirm(credentials);
         return {
           ...result,
           model: exchange.model,
