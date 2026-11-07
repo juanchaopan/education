@@ -14,6 +14,7 @@ import {
   type ProviderExchange,
   type ProviderSettings,
 } from './metered-call.js';
+import { isSuccessful, type JsonObject, object, rejectedBeforeWork } from './provider-reply.js';
 
 const ENDPOINT = 'https://api.openai.com/v1/audio/transcriptions';
 const MAX_REPLY_BYTES = 16_384;
@@ -32,14 +33,10 @@ function form({ audio, format, prompt }: TranscriptionInput) {
   body.set('languages[]', 'zh-cn');
   body.set('response_format', 'json');
   if (prompt) body.set('prompt', prompt);
-  const file = new Blob([new Uint8Array(audio)], { type: files[format].type });
+  // The Blob copies the bytes it is given, so the decoded recording is not copied first.
+  const file = new Blob([audio as Uint8Array<ArrayBuffer>], { type: files[format].type });
   body.set('file', file, files[format].name);
   return body;
-}
-
-function isJson(response: Response) {
-  const mime = response.headers.get('content-type')?.split(';')[0]?.trim().toLowerCase();
-  return response.ok && mime === 'application/json';
 }
 
 async function boundedBytes(body: ReadableStream<Uint8Array>) {
@@ -59,23 +56,18 @@ async function boundedBytes(body: ReadableStream<Uint8Array>) {
   }
 }
 
-function jsonObject(bytes: Uint8Array): Record<string, unknown> | undefined {
-  try {
-    const value: unknown = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes));
-    if (value && typeof value === 'object' && !Array.isArray(value))
-      return value as Record<string, unknown>;
-  } catch {
-    return;
-  }
-}
-
-async function readReply(response: Response) {
-  if (!response.body || !isJson(response)) {
+async function readReply(response: Response): Promise<JsonObject | undefined> {
+  if (!response.body || !isSuccessful(response, 'application/json')) {
     void response.body?.cancel().catch(() => {});
     return;
   }
   const bytes = await boundedBytes(response.body);
-  return bytes && jsonObject(bytes);
+  if (!bytes) return;
+  try {
+    return object(JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes)));
+  } catch {
+    return;
+  }
 }
 
 function transcriptionExchange(
@@ -95,8 +87,7 @@ function transcriptionExchange(
         signal,
       }),
     async read(reply) {
-      // An authentication or permission rejection occurs before any audio is processed.
-      if (reply.status === 401 || reply.status === 403) {
+      if (rejectedBeforeWork(reply.status)) {
         void reply.body?.cancel().catch(() => {});
         return { billing: { status: 'released' } };
       }

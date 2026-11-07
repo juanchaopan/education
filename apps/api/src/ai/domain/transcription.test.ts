@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { transcriptionAudioMaxBytes } from '@education/contracts';
+import { webmRecording as webm } from '../services/gateway-fixtures.js';
 import { largestReservationCost } from './ai-budget.js';
 import {
   acceptTranscript,
@@ -9,7 +10,6 @@ import {
   vocabularyPrompt,
 } from './transcription.js';
 
-const webm = Buffer.concat([Buffer.from([0x1a, 0x45, 0xdf, 0xa3]), Buffer.alloc(96)]);
 const mp4 = Buffer.concat([
   Buffer.from([0, 0, 0, 0x18]),
   Buffer.from('ftypM4A '),

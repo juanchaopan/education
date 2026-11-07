@@ -16,6 +16,7 @@ import {
 } from './metered-call.js';
 import type { ModelRequest, ModelTask } from './model-task.js';
 import { readOpenAiResponse } from './openai-response.js';
+import { rejectedBeforeWork } from './provider-reply.js';
 
 const ENDPOINT = 'https://api.openai.com/v1/responses';
 
@@ -53,8 +54,7 @@ function classifyBilling(
   result: { usage: Usage | null; unexpectedTier: boolean } | undefined,
   maxOutputTokens: number,
 ): BillingResult {
-  // An authentication or permission rejection occurs before inference.
-  if (status === 401 || status === 403) return { status: 'released' };
+  if (rejectedBeforeWork(status)) return { status: 'released' };
   const usage = result?.usage;
   if (result?.unexpectedTier || (usage && !withinTutoringBounds(usage, maxOutputTokens)))
     return { status: 'out-of-bounds', usage: usage ?? undefined };

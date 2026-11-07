@@ -1,6 +1,7 @@
 import { expect, it, vi } from 'vitest';
 import type { ProblemPlugin } from '@education/problems/server';
 import { RequestError } from '../../shared/request-error.js';
+import { webmRecording as webm } from './gateway-fixtures.js';
 import type { TranscriptionGateway } from './transcription-gateway.js';
 import { createVoiceTranscriptionService } from './voice-transcription.js';
 
@@ -12,7 +13,6 @@ const plugin: Pick<ProblemPlugin, 'feedback'> = {
     'draw-groups': { prompt: '画出分好的三组。' },
   },
 };
-const webm = Buffer.concat([Buffer.from([0x1a, 0x45, 0xdf, 0xa3]), Buffer.alloc(96)]);
 const request = {
   stepId: 'split-evenly',
   format: 'webm',

@@ -1,6 +1,5 @@
 import { afterEach, expect, it, vi } from 'vitest';
-import { credentials, settings } from './gateway-fixtures.js';
-import type { Authorize, Meter } from './metered-call.js';
+import { credentials, meteredMocks, settings } from './gateway-fixtures.js';
 import { createTranscriptionGateway, type TranscriptionInput } from './transcription-gateway.js';
 
 const input: TranscriptionInput = {
@@ -17,12 +16,7 @@ function json(body: object, status = 200) {
 }
 
 function setup(config = settings) {
-  const send = vi.fn<typeof fetch>();
-  const authorize = vi.fn<Authorize>(async (_, start) => start(new AbortController().signal));
-  const meter = {
-    reserve: vi.fn<Meter['reserve']>().mockResolvedValue('id'),
-    settle: vi.fn<Meter['settle']>().mockResolvedValue(),
-  };
+  const { send, authorize, meter } = meteredMocks();
   const transcribe = createTranscriptionGateway(config, authorize, meter, send);
   return { send, authorize, meter, transcribe };
 }

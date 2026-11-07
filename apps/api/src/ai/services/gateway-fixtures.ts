@@ -1,9 +1,15 @@
 import { vi } from 'vitest';
+import type { Authorize, Meter } from './metered-call.js';
 import { createTutoringGateway } from './tutoring-gateway.js';
 
 export const settings = { paidAiEnabled: true, eligible: true, apiKey: 'synthetic-key' };
 export const credentials = { token: 'synthetic-session' };
 export const encoder = new TextEncoder();
+// The smallest upload that passes the WebM container check.
+export const webmRecording = Buffer.concat([
+  Buffer.from([0x1a, 0x45, 0xdf, 0xa3]),
+  Buffer.alloc(96),
+]);
 
 export function event(data: object) {
   return 'data: ' + JSON.stringify(data) + '\r\n\r\n';
@@ -32,16 +38,19 @@ export function stream(...chunks: Uint8Array[]) {
   );
 }
 
-export function setupGateway(config = settings) {
+// A provider, consent and ledger that admit every request and record each call.
+export function meteredMocks() {
   const send = vi.fn<typeof fetch>();
-  const authorize = vi.fn<Parameters<typeof createTutoringGateway>[1]>(async (_, start) =>
-    start(new AbortController().signal),
-  );
+  const authorize = vi.fn<Authorize>(async (_, start) => start(new AbortController().signal));
   const meter = {
-    reserve: vi
-      .fn<Parameters<typeof createTutoringGateway>[2]['reserve']>()
-      .mockResolvedValue('id'),
-    settle: vi.fn<Parameters<typeof createTutoringGateway>[2]['settle']>().mockResolvedValue(),
+    reserve: vi.fn<Meter['reserve']>().mockResolvedValue('id'),
+    settle: vi.fn<Meter['settle']>().mockResolvedValue(),
   };
-  return { send, authorize, meter, gateway: createTutoringGateway(config, authorize, meter, send) };
+  return { send, authorize, meter };
+}
+
+export function setupGateway(config = settings) {
+  const mocks = meteredMocks();
+  const { send, authorize, meter } = mocks;
+  return { ...mocks, gateway: createTutoringGateway(config, authorize, meter, send) };
 }
