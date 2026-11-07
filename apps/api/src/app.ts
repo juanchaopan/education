@@ -4,6 +4,8 @@ import { registerAiConsent } from './identity/routes/ai-consent.js';
 import type { AiConsentService } from './identity/services/ai-consent.js';
 import { registerFamilyExport } from './identity/routes/family-export.js';
 import type { FamilyExportService } from './identity/services/family-export.js';
+import { registerFamilyDeletion } from './identity/routes/family-deletion.js';
+import type { FamilyDeletionService } from './identity/services/family-deletion.js';
 import { registerChildRegistration } from './identity/routes/child-registration.js';
 import { registerChildSessions } from './identity/routes/child-session.js';
 import type { ChildSessionService } from './identity/services/child-session.js';
@@ -45,6 +47,7 @@ type AppOptions = {
   childAccess?: ChildAccessService;
   aiConsent?: AiConsentService;
   familyExport?: FamilyExportService;
+  familyDeletion?: FamilyDeletionService;
   drafts?: DraftService;
   answering?: AnswerService;
   learningSummary?: LearningSummaryService;
@@ -138,6 +141,7 @@ function registerIdentity(app: FastifyInstance, options: AppOptions) {
   registerChildAccess(app, origin, options.childAccess);
   registerAiConsent(app, origin, options.aiConsent);
   registerFamilyExport(app, origin, options.familyExport);
+  registerFamilyDeletion(app, origin, options.familyDeletion);
   registerParentSessions(app, origin, options.sessions);
   registerVerification(app, {
     origin: origin,

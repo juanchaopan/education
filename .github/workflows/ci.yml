@@ -41,6 +41,7 @@ jobs:
       - run: psql "$DATABASE_URL" -c 'CREATE DATABASE education_ledger_test'
       - run: npm run db:migrate
       - run: npm run test:db
+      - run: npm run db:complete-deletions -w @education/api
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
       - uses: actions/upload-artifact@v7

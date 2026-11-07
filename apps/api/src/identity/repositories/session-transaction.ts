@@ -13,7 +13,12 @@ export function withParentSession<T>(pool: pg.Pool, hash: string, work: ParentWo
   return transaction(pool, async (client) => work(client, await lockSession(client, hash)));
 }
 
-// Recovery and family writes use parent → family → session lock order.
+// Recovery and family writes use parent → family → session lock order. Parent
+// transactions lock the parent row against each other: one of them may delete
+// the family, which deletes the parent row, and a request that still held the
+// parent row shared while waiting for the family would deadlock with it. The
+// lock leaves key-share checks free, so rows that reference the parent can
+// still be inserted meanwhile.
 async function lockSession(client: pg.PoolClient, hash: string) {
   const db = drizzle(client);
   const parent = (
@@ -21,7 +26,7 @@ async function lockSession(client: pg.PoolClient, hash: string) {
     SELECT parent_id AS id FROM parent_sessions WHERE token_hash=${hash}`)
   ).rows[0];
   if (!parent) throw new RequestError(401, '登录状态已失效，请重新登录。');
-  await db.execute(sql`SELECT id FROM parents WHERE id=${parent.id} FOR SHARE`);
+  await db.execute(sql`SELECT id FROM parents WHERE id=${parent.id} FOR NO KEY UPDATE`);
   await db.execute(sql`SELECT f.id FROM families f JOIN parents p ON p.family_id=f.id
     WHERE p.id=${parent.id} FOR UPDATE OF f`);
   const account = (
