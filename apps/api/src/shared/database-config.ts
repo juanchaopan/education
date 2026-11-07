@@ -35,7 +35,11 @@ export function databaseOptions(
   };
 }
 
-const location = (url: URL) => `${url.hostname}:${url.port || '5432'}${url.pathname}`;
+// The user is part of where a connection leads: shared poolers, such as
+// Supabase's, serve every project at one host and database name and tell
+// projects apart by the user.
+const location = (url: URL) =>
+  `${url.username}@${url.hostname}:${url.port || '5432'}${url.pathname}`;
 
 function checkDistinct(env: NodeJS.ProcessEnv, source: DatabaseSource, url: URL) {
   const other = source.distinctFrom && env[source.distinctFrom.url];
