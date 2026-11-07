@@ -108,8 +108,8 @@ describe('framework HTTP contract', () => {
     }
   });
   it('enables paid AI by default without making a provider call', () => {
-    expect(readConfig({}).paidAiEnabled).toBe(true);
-    expect(readConfig({ PAID_AI_ENABLED: 'false' }).paidAiEnabled).toBe(false);
+    expect(readConfig({}).ai.paidAiEnabled).toBe(true);
+    expect(readConfig({ PAID_AI_ENABLED: 'false' }).ai.paidAiEnabled).toBe(false);
     expect(() => readConfig({ PAID_AI_ENABLED: 'yes' })).toThrow();
     expect(() => readConfig({ PORT: 'invalid' })).toThrow();
   });

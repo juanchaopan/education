@@ -1,4 +1,9 @@
-import type { AiConsentChange, AiConsentView } from '@education/contracts';
+import type {
+  AiAvailability,
+  AiConsentChange,
+  AiConsentScope,
+  AiConsentView,
+} from '@education/contracts';
 import type pg from 'pg';
 import { aiConsentPolicies } from '../domain/ai-consent-policy.js';
 import {
@@ -16,14 +21,17 @@ type ChildTransaction = <T>(
 ) => Promise<T>;
 type Decision = Awaited<ReturnType<typeof readAiConsent>>[number];
 
+// Consent is the family's decision; availability is whether this deployment
+// can call each service at all, fixed when the service is built.
 export function createAiConsentService(
   parentTransaction: ParentTransaction,
   childTransaction: ChildTransaction,
   budgetStatus: (client: pg.PoolClient) => Promise<AiConsentView['tutoringBudget']>,
+  availability: AiAvailability,
 ) {
   const withChildConsent = <T>(
     credentials: Credentials,
-    scope: AiConsentChange['scope'],
+    scope: AiConsentScope,
     work: (client: pg.PoolClient, child: string) => Promise<T>,
   ) =>
     childTransaction(credentials, async (client, child) => {
@@ -33,7 +41,7 @@ export function createAiConsentService(
     });
 
   const snapshot = async (client: pg.PoolClient, parent: AuthorizedParent, records: Decision[]) =>
-    view(parent, records, await budgetStatus(client));
+    view(parent, records, await budgetStatus(client), availability);
 
   return {
     withChildConsent,
@@ -54,7 +62,7 @@ export function createAiConsentService(
       }),
     dispatch: async <T>(
       credentials: Credentials,
-      scope: AiConsentChange['scope'],
+      scope: AiConsentScope,
       start: (signal: AbortSignal) => Promise<T>,
     ) => {
       const { response } = await withChildConsent(credentials, scope, async () => {
@@ -73,7 +81,7 @@ export function createAiConsentService(
     // Rejects unless the child is still signed in and the family still consents.
     // The child transaction reads an undefined result as a missing session, so
     // the check returns a value of its own.
-    confirm: async (credentials: Credentials, scope: AiConsentChange['scope']) => {
+    confirm: async (credentials: Credentials, scope: AiConsentScope) => {
       await withChildConsent(credentials, scope, async () => true);
     },
   };
@@ -92,6 +100,7 @@ function view(
   parent: AuthorizedParent,
   records: Decision[],
   tutoringBudget: AiConsentView['tutoringBudget'],
+  availability: AiAvailability,
 ): AiConsentView {
   return {
     reauthenticationRequired: !parent.recent,
@@ -102,6 +111,7 @@ function view(
         ...policy,
         revision: record?.revision ?? null,
         state: state(policy.policyVersion, record),
+        availability: availability[policy.scope],
       };
     }),
   };

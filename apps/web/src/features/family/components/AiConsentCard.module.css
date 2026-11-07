@@ -9,6 +9,10 @@
   margin-block: 0 var(--space-2);
 }
 
+.availability {
+  font-weight: 700;
+}
+
 .policy dt {
   margin-top: var(--space-3);
   font-weight: 700;

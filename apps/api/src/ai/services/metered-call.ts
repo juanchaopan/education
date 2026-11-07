@@ -38,7 +38,9 @@ function fallback(reason: AiHelpFallback) {
   return { status: 'fallback', reason } as const;
 }
 
-function unavailable(settings: ProviderSettings): AiHelpFallback | undefined {
+// Why a provider cannot be called in this deployment at all, before any
+// family, consent or budget is considered; undefined when it can.
+export function unavailableReason(settings: ProviderSettings): AiHelpFallback | undefined {
   if (!settings.paidAiEnabled) return 'disabled';
   if (!settings.apiKey) return 'missing-key';
   if (!settings.eligible) return 'ineligible';
@@ -100,7 +102,7 @@ export function createMeteredCall(settings: ProviderSettings, admission: Admissi
     credentials: Credentials,
     external?: AbortSignal,
   ) => {
-    const reason = unavailable(settings);
+    const reason = unavailableReason(settings);
     if (reason) return fallback(reason);
     const exchange = build();
     if (!exchange) return fallback('invalid-input');

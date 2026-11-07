@@ -14,9 +14,6 @@ export function createVoiceTranscription(
   return createVoiceTranscriptionService(
     childAuthenticator(pool),
     find,
-    createTranscriptionGateway(
-      ...aiProvider(pool, env, 'openai-transcription', 'OPENAI_TRANSCRIPTION_ELIGIBLE'),
-      send,
-    ),
+    createTranscriptionGateway(...aiProvider(pool, env, 'openai-transcription'), send),
   );
 }
