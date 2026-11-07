@@ -9,6 +9,7 @@ const other = `https://localhost:${process.env.ACCOUNTS_PORT_B ?? '8444'}`;
 const password = 'a private isolated account testing phrase';
 const headers = { Origin: origin, 'X-Education-Request': 'session' };
 const registrationHeaders = { ...headers, 'X-Education-Request': 'registration' };
+const maintenance = { message: '网站正在维护，请稍后再试。' };
 
 test.describe.configure({ mode: 'serial' });
 
@@ -41,7 +42,7 @@ test('failed migrations block startup and readiness; controlled migration is rep
       data: { email: `blocked-${randomUUID()}@example.test`, password },
     });
     expect(result.status()).toBe(503);
-    expect(await result.json()).toEqual({ message: '暂时无法完成，请稍后重试。' });
+    expect(await result.json()).toEqual(maintenance);
   }
   await database('DROP TABLE families;');
   await compose(['up', '-d', '--wait', '--wait-timeout', '90']);
@@ -93,6 +94,28 @@ test('readiness checks the required migration and permits later additive migrati
   } finally {
     await database("DELETE FROM drizzle.__drizzle_migrations WHERE hash='test-later-additive';");
   }
+});
+
+test('a closed service gate stops the API on every instance until it opens again', async ({
+  request,
+}) => {
+  await database('DELETE FROM service_gate;');
+  try {
+    for (const base of [origin, other]) {
+      expect((await request.get(`${base}/health/live`)).status()).toBe(200);
+      expect((await request.get(`${base}/health/ready`)).status()).toBe(503);
+      const closed = await request.post(`${base}/api/v1/parents/login`, {
+        headers,
+        data: { email: `closed-${randomUUID()}@example.test`, password },
+      });
+      expect(closed.status()).toBe(503);
+      expect(await closed.json()).toEqual(maintenance);
+    }
+  } finally {
+    await database('INSERT INTO service_gate DEFAULT VALUES ON CONFLICT DO NOTHING;');
+  }
+  for (const base of [origin, other])
+    expect((await request.get(`${base}/health/ready`)).status()).toBe(200);
 });
 
 test('register on A, log in on B, refresh on A, rotate and revoke across instances', async ({

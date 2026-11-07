@@ -5,7 +5,8 @@ import { appendFile } from 'node:fs/promises';
 import { setTimeout } from 'node:timers/promises';
 import { deletionLedgerDatabase } from '../apps/api/dist/shared/database-config.js';
 import { maintenancePool } from '../apps/api/dist/shared/maintenance-pool.js';
-import { hardenStagingTables, revokeStagingDefaults } from '../apps/api/dist/database/staging.js';
+import { withStagingDatabaseLock } from './staging-database-lock.mjs';
+import { migrateStaging } from './staging-migrate.mjs';
 import { releaseStaging } from './staging-release.mjs';
 import { releaseFiles, vercelApi } from './staging-vercel.mjs';
 import { smokeAccount } from './staging-smoke.mjs';
@@ -36,22 +37,6 @@ function assertCurrent(revision) {
     throw new Error('Main changed; leave staging unchanged until its next successful CI');
 }
 
-// The migration covers every configured database; each one's tables are then
-// closed to the hosted data API roles.
-async function migrate(hosted, pools) {
-  await Promise.all(pools.map(revokeStagingDefaults));
-  try {
-    execFileSync(process.execPath, ['apps/api/dist/database/migrate.js'], {
-      stdio: 'pipe',
-      timeout: 60000,
-      env: hosted,
-    });
-  } catch {
-    throw new Error('Controlled staging migration failed');
-  }
-  await Promise.all(pools.map((pool) => hardenStagingTables(pool)));
-}
-
 async function deploy() {
   const databases = stagingDatabases(process.env);
   const revision = required('RELEASE_SHA');
@@ -75,20 +60,22 @@ async function deploy() {
     ...(databases.ledger ? [maintenancePool(databases.hosted, deletionLedgerDatabase)] : []),
   ];
   try {
-    const result = await releaseStaging({
-      revision,
-      teamId,
-      origin: required('STAGING_ORIGIN'),
-      projectId: required('STAGING_VERCEL_PROJECT_ID'),
-      api: vercelApi(required('VERCEL_TOKEN'), teamId),
-      files: await releaseFiles(),
-      runtimeEnv,
-      wait: setTimeout,
-      stillCurrent: () => assertCurrent(revision),
-      migrate: () => migrate(databases.hosted, pools),
-      smoke: (url, origin, sha) =>
-        smokeAccount(url, origin, sha, (email) => cleanupAccount(pool, email)),
-    });
+    const result = await withStagingDatabaseLock(databases.hosted, async () =>
+      releaseStaging({
+        revision,
+        teamId,
+        origin: required('STAGING_ORIGIN'),
+        projectId: required('STAGING_VERCEL_PROJECT_ID'),
+        api: vercelApi(required('VERCEL_TOKEN'), teamId),
+        files: await releaseFiles(),
+        runtimeEnv,
+        wait: setTimeout,
+        stillCurrent: () => assertCurrent(revision),
+        migrate: () => migrateStaging(databases.hosted, pools),
+        smoke: (url, origin, sha) =>
+          smokeAccount(url, origin, sha, (email) => cleanupAccount(pool, email)),
+      }),
+    );
     console.log(JSON.stringify(result));
     if (process.env.GITHUB_STEP_SUMMARY)
       await appendFile(
