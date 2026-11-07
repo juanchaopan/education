@@ -31,3 +31,5 @@ jobs:
           STAGING_SUPABASE_PROJECT_REF: ${{ vars.STAGING_SUPABASE_PROJECT_REF || 'telkaiyxprpetmqthyhn' }}
           DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
           DATABASE_CA_CERT: ${{ secrets.STAGING_DATABASE_CA_CERT }}
+          DELETION_LEDGER_URL: ${{ secrets.STAGING_DELETION_LEDGER_URL }}
+          DELETION_LEDGER_CA_CERT: ${{ secrets.STAGING_DELETION_LEDGER_CA_CERT }}
