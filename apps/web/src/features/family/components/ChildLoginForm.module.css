@@ -1,7 +1,9 @@
+/* The whole label toggles the checkbox, so the label is the touch target. */
 .remember {
   display: flex;
   align-items: center;
   gap: var(--space-3);
+  min-block-size: var(--touch-target);
 }
 .remember input {
   width: auto;

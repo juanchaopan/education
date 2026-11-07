@@ -25,5 +25,7 @@
   --radius-lg: 1.5rem;
   --radius-pill: 999px;
   --shadow: 0 16px 40px #243c3710;
+  /* The smallest area a child's finger can reliably hit. */
+  --touch-target: 2.75rem;
   color-scheme: light;
 }
