@@ -88,51 +88,65 @@ function createCue(
   };
 }
 
-type Active = { cue: ReturnType<typeof createCue>; extra: boolean };
+type Clip = { step: string; source: string };
+type Active = Clip & { cue: ReturnType<typeof createCue>; extra: boolean };
 type Options = {
   createAudio?: () => HTMLAudioElement;
   onStatus?: (status: NarrationStatus) => void;
 };
 
-// The scene owns cue order: while one of its cues plays, another cannot replace
-// or queue behind it. Hearing a cue again is the child's own request: it
-// restarts the cue in place, or replays the last one once it has ended, and the
-// scene's next cue takes over from such a replay.
+function idleStatus(last: Clip | undefined): NarrationStatus {
+  return last ? 'ready' : 'silent';
+}
+
+// Every cue belongs to a step. Within a step the scene owns cue order: while one
+// of its cues plays, another cannot replace or queue behind it. A cue for a
+// different step replaces whatever an earlier step was saying. Hearing a cue
+// again is the child's own request: it restarts the cue in place, or replays
+// the last one once it has ended, and the scene's next cue takes over from such
+// a replay.
 export function createNarration({
   createAudio = () => new Audio(),
   onStatus = () => {},
 }: Options = {}) {
   let active: Active | undefined;
-  let last: string | undefined;
+  let last: Clip | undefined;
 
-  function begin(source: string, onCue: (() => void) | undefined, extra: boolean) {
+  function begin(clip: Clip, onCue: (() => void) | undefined, extra: boolean) {
     return new Promise<CueResult>((resolve) => {
       const audio = createAudio();
       const cue = createCue(audio, onCue, (result) => {
         if (active?.cue === cue) active = undefined;
-        if (result === 'unavailable') onStatus('failed');
-        else onStatus(last ? 'ready' : 'silent');
+        onStatus(result === 'unavailable' ? 'failed' : idleStatus(last));
         resolve(result);
       });
-      active = { cue, extra };
-      audio.src = source;
+      active = { ...clip, cue, extra };
+      audio.src = clip.source;
       onStatus('playing');
       cue.start();
     });
   }
 
-  function play(source: string | undefined, onCue?: () => void): Promise<CueResult> {
-    if (active && !active.extra) return Promise.resolve('busy');
-    last = source;
+  function play(step: string, source?: string, onCue?: () => void): Promise<CueResult> {
+    if (active?.step === step && !active.extra) return Promise.resolve('busy');
+    last = source ? { step, source } : undefined;
     active?.cue.stop();
-    if (source) return begin(source, onCue, false);
+    if (last) return begin(last, onCue, false);
     onStatus('silent');
     onCue?.();
     return Promise.resolve('unavailable');
   }
 
+  // Forgets every cue that does not belong to the step on screen.
+  function keep(step: string) {
+    if (last?.step !== step) last = undefined;
+    if (active && active.step !== step) active.cue.stop();
+    else if (!active) onStatus(idleStatus(last));
+  }
+
   return {
     play,
+    keep,
     replay() {
       if (active) {
         onStatus('playing');
@@ -149,7 +163,6 @@ export function createNarration({
       onStatus('playing');
       active.cue.resume();
     },
-    // Leaving the cue also forgets it, so a later step never replays an earlier one.
     stop() {
       last = undefined;
       if (active) active.cue.stop();

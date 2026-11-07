@@ -1,5 +1,5 @@
 import { act, renderHook } from '@testing-library/react';
-import { expect, it, vi } from 'vitest';
+import { afterEach, expect, it, vi } from 'vitest';
 import { useNarration } from './useNarration';
 
 function setup() {
@@ -17,17 +17,21 @@ function setup() {
   return { ...view, audios };
 }
 
+const visibility = vi.spyOn(document, 'visibilityState', 'get');
+
 function showPage(state: DocumentVisibilityState) {
-  vi.spyOn(document, 'visibilityState', 'get').mockReturnValue(state);
+  visibility.mockReturnValue(state);
   document.dispatchEvent(new Event('visibilitychange'));
 }
+
+afterEach(() => visibility.mockReset());
 
 it('shows what the child can do with the current cue', async () => {
   const { result, audios } = setup();
   expect(result.current.status).toBe('silent');
   let finished!: Promise<unknown>;
   act(() => {
-    finished = result.current.play('/count.mp3');
+    finished = result.current.play('count', '/count.mp3');
   });
   expect(result.current.status).toBe('playing');
   act(() => result.current.pause());
@@ -44,7 +48,7 @@ it('stops the previous step when the step changes and never replays it', async (
   const { result, rerender, audios } = setup();
   let finished!: Promise<unknown>;
   act(() => {
-    finished = result.current.play('/count.mp3');
+    finished = result.current.play('count', '/count.mp3');
   });
   rerender({ stepId: 'share' });
   await expect(finished).resolves.toBe('cancelled');
@@ -54,9 +58,19 @@ it('stops the previous step when the step changes and never replays it', async (
   expect(audios).toHaveLength(1);
 });
 
+it('keeps the first cue of the new step when the scene starts it while moving on', () => {
+  const { result, rerender, audios } = setup();
+  act(() => void result.current.play('count', '/count.mp3'));
+  act(() => void result.current.play('share', '/share.mp3'));
+  rerender({ stepId: 'share' });
+  expect(audios[0]!.pause).toHaveBeenCalledOnce();
+  expect(audios[1]!.pause).not.toHaveBeenCalled();
+  expect(result.current.status).toBe('playing');
+});
+
 it('pauses the cue when the page goes to the background and waits for the child', () => {
   const { result, audios } = setup();
-  act(() => void result.current.play('/count.mp3'));
+  act(() => void result.current.play('count', '/count.mp3'));
   act(() => showPage('visible'));
   expect(result.current.status).toBe('playing');
   act(() => showPage('hidden'));
@@ -68,7 +82,7 @@ it('stops the cue when the lesson closes', async () => {
   const { result, unmount, audios } = setup();
   let finished!: Promise<unknown>;
   act(() => {
-    finished = result.current.play('/count.mp3');
+    finished = result.current.play('count', '/count.mp3');
   });
   unmount();
   await expect(finished).resolves.toBe('cancelled');
