@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { releaseStaging, validateRelease, validateSupabaseDatabase } from './staging-release.mjs';
+import { releaseStaging, validateRelease } from './staging-release.mjs';
 
 const settings = {
   projectId: 'prj_fixture',
@@ -8,23 +8,6 @@ const settings = {
   origin: 'https://staging.example.test',
   revision: 'a'.repeat(40),
 };
-
-test('requires the dedicated Supabase project and session-compatible connection', () => {
-  const ref = 'telkaiyxprpetmqthyhn';
-  assert.doesNotThrow(() =>
-    validateSupabaseDatabase(
-      `postgres://postgres.${ref}:fixture@aws-0-region.pooler.supabase.com:5432/postgres`,
-      ref,
-    ),
-  );
-  for (const connection of [
-    'postgres://postgres.other:fixture@aws-0-region.pooler.supabase.com:5432/postgres',
-    `postgres://postgres.${ref}:fixture@aws-0-region.pooler.supabase.com:6543/postgres`,
-    `https://postgres.${ref}:fixture@aws-0-region.pooler.supabase.com:5432/postgres`,
-    'postgres://postgres:fixture@db.other.supabase.co:5432/postgres',
-  ])
-    assert.throws(() => validateSupabaseDatabase(connection, ref));
-});
 
 function fixture(failure) {
   const events = [];

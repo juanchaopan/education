@@ -1,17 +1,14 @@
 import { stagingMailEnv } from './staging-mail-env.mjs';
-import { stagingLedgerEnv } from './staging-ledger-env.mjs';
+import { stagingDatabases } from './staging-database-env.mjs';
 import { execFileSync } from 'node:child_process';
 import { appendFile } from 'node:fs/promises';
 import { setTimeout } from 'node:timers/promises';
 import { deletionLedgerDatabase } from '../apps/api/dist/shared/database-config.js';
 import { maintenancePool } from '../apps/api/dist/shared/maintenance-pool.js';
 import { hardenStagingTables, revokeStagingDefaults } from '../apps/api/dist/database/staging.js';
-import { releaseStaging, validateSupabaseDatabase } from './staging-release.mjs';
+import { releaseStaging } from './staging-release.mjs';
 import { releaseFiles, vercelApi } from './staging-vercel.mjs';
 import { smokeAccount } from './staging-smoke.mjs';
-
-// Release steps and the processes they start always use the hosted TLS rules.
-const hosted = { ...process.env, STAGING_DATABASE: 'true' };
 
 function required(name) {
   if (!process.env[name]) throw new Error(`Missing staging configuration: ${name}`);
@@ -41,7 +38,7 @@ function assertCurrent(revision) {
 
 // The migration covers every configured database; each one's tables are then
 // closed to the hosted data API roles.
-async function migrate(pools) {
+async function migrate(hosted, pools) {
   await Promise.all(pools.map(revokeStagingDefaults));
   try {
     execFileSync(process.execPath, ['apps/api/dist/database/migrate.js'], {
@@ -56,29 +53,26 @@ async function migrate(pools) {
 }
 
 async function deploy() {
-  validateSupabaseDatabase(required('DATABASE_URL'), required('STAGING_SUPABASE_PROJECT_REF'));
+  const databases = stagingDatabases(process.env);
   const revision = required('RELEASE_SHA');
   if (execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim() !== revision)
     throw new Error('Checkout does not match release SHA');
   execFileSync('git', ['diff', '--exit-code', 'HEAD'], { stdio: 'pipe' });
   const teamId = required('STAGING_VERCEL_TEAM_ID');
-  const ledgerEnv = stagingLedgerEnv(process.env);
   const runtimeEnv = {
     ...stagingMailEnv(process.env, required('STAGING_ORIGIN')),
-    ...ledgerEnv,
-    DATABASE_URL: required('DATABASE_URL'),
+    ...databases.runtimeEnv,
     AUTH_RATE_LIMIT_KEY: required('AUTH_RATE_LIMIT_KEY'),
     PIN_PEPPER: required('PIN_PEPPER'),
-    DATABASE_CA_CERT: process.env.DATABASE_CA_CERT ?? '',
   };
   if (runtimeEnv.AUTH_RATE_LIMIT_KEY.length < 32)
     throw new Error('Staging rate-limit key must contain at least 32 characters');
   if (!/^[a-fA-F0-9]{64}$/.test(runtimeEnv.PIN_PEPPER))
     throw new Error('Staging PIN pepper must contain 64 hexadecimal characters');
-  const pool = maintenancePool(hosted);
+  const pool = maintenancePool(databases.hosted);
   const pools = [
     pool,
-    ...(ledgerEnv.DELETION_LEDGER_URL ? [maintenancePool(hosted, deletionLedgerDatabase)] : []),
+    ...(databases.ledger ? [maintenancePool(databases.hosted, deletionLedgerDatabase)] : []),
   ];
   try {
     const result = await releaseStaging({
@@ -91,7 +85,7 @@ async function deploy() {
       runtimeEnv,
       wait: setTimeout,
       stillCurrent: () => assertCurrent(revision),
-      migrate: () => migrate(pools),
+      migrate: () => migrate(databases.hosted, pools),
       smoke: (url, origin, sha) =>
         smokeAccount(url, origin, sha, (email) => cleanupAccount(pool, email)),
     });

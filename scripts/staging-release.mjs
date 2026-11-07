@@ -8,19 +8,6 @@ export function validateRelease(settings) {
   return origin.hostname;
 }
 
-export function validateSupabaseDatabase(connection, ref) {
-  const url = new URL(connection);
-  const postgres = ['postgres:', 'postgresql:'].includes(url.protocol);
-  const direct = url.hostname === `db.${ref}.supabase.co` && ['', '5432'].includes(url.port);
-  const session =
-    url.hostname.endsWith('.pooler.supabase.com') &&
-    url.port === '5432' &&
-    decodeURIComponent(url.username).endsWith(`.${ref}`);
-  if (!/^[a-z0-9]{20}$/.test(ref) || !postgres || (!direct && !session)) {
-    throw new Error('Database must match the dedicated staging Supabase project');
-  }
-}
-
 async function waitForBuild(options, id) {
   for (let attempt = 0; attempt < 120; attempt++) {
     const deployment = await options.api('GET', `/v13/deployments/${id}`);

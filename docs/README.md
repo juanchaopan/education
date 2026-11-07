@@ -4,7 +4,7 @@
 
 [路线图](roadmap.md)：里程碑、依赖顺序与外部前置条件；[任务规格](roadmap-issues.md)：每项验收标准、组件、风险与测试。两个里程碑和 39 个任务已关联 GitHub issues，进度以 GitHub 为准。
 
-[#20 staging 配置与发布步骤](deployment/staging.md)：Vercel/Supabase、服务端秘密、发布门槛与回退；[验证记录](evidence/20/README.md)。已验证 main 自动发布、Singapore 实际区域、账号冒烟和同数据库跨部署持久登录；生产发布与大陆完整链路仍待后续验收。
+[#20 staging 配置与发布步骤](deployment/staging.md)：Vercel/Neon、服务端秘密、发布门槛与回退；[验证记录](evidence/20/README.md)。已验证 main 自动发布、Singapore 实际区域、账号冒烟和同数据库跨部署持久登录；生产发布与大陆完整链路仍待后续验收。
 
 | 文档                                  | 内容                     |
 | ------------------------------------- | ------------------------ |
@@ -80,3 +80,5 @@
 [#43 家长导出本家庭数据](evidence/43/README.md) 记录导出文件的格式和范围、近期密码确认、会话撤销时不给数据和字段白名单。
 
 [#44 家庭删除与即时访问撤销](evidence/44/README.md) 记录删除与留下的范围、独立删除清单、跨实例撤销、并发与部分失败处理、维护任务和 staging 启用步骤。
+
+[#111 staging 数据库迁到 Neon](evidence/111/README.md) 记录按主机确认目标库、清单库不同主机的检查、自动化测试和待维护者完成的 staging 验收。

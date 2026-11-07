@@ -29,7 +29,7 @@ async function readable(pool: pg.Pool, role: string, table: string) {
   return rows[0]!.allowed;
 }
 
-it('denies anonymous Supabase-style table access while the server owner can use accounts', async () => {
+it('denies the hosted data API roles table access while the server owner can use accounts', async () => {
   if (!process.env.DATABASE_URL?.endsWith('/education_test'))
     throw new Error('Use the isolated education_test database');
   const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });

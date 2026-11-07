@@ -1,12 +1,13 @@
 import { expect, it } from 'vitest';
 import { databaseOptions, deletionLedgerDatabase } from './database-config.js';
 
-const pooler = 'postgres://postgres.project:fixture@aws-0-ap-southeast-1.pooler.supabase.com';
+const hosted = (name: string, endpoint = '') =>
+  `postgres://neondb_owner:fixture@ep-${name}-a1b2c3d4${endpoint}.ap-southeast-1.aws.neon.tech`;
 
-it('accepts Supabase session pooling with certificate verification and an optional provider CA', () => {
+it('accepts a direct hosted connection with certificate verification and an optional provider CA', () => {
   const options = databaseOptions({
     STAGING_DATABASE: 'true',
-    DATABASE_URL: `${pooler}:5432/postgres?sslmode=verify-full`,
+    DATABASE_URL: `${hosted('application')}/neondb?sslmode=verify-full`,
     DATABASE_CA_CERT: 'public-provider-ca-fixture',
   });
   expect(options.connectionString).not.toContain('sslmode');
@@ -14,12 +15,13 @@ it('accepts Supabase session pooling with certificate verification and an option
 });
 
 it('rejects transaction pooling and TLS overrides before opening a connection', () => {
-  for (const suffix of [
-    ':6543/postgres?sslmode=verify-full',
-    ':5432/postgres?sslmode=no-verify',
-    ':5432/postgres?sslmode=verify-full&uselibpqcompat=true',
+  for (const connection of [
+    `${hosted('application', '-pooler')}/neondb?sslmode=verify-full`,
+    `${hosted('application')}:6543/neondb?sslmode=verify-full`,
+    `${hosted('application')}/neondb?sslmode=no-verify`,
+    `${hosted('application')}/neondb?sslmode=verify-full&channel_binding=require`,
   ]) {
-    expect(() => databaseOptions({ VERCEL: '1', DATABASE_URL: `${pooler}${suffix}` })).toThrow();
+    expect(() => databaseOptions({ VERCEL: '1', DATABASE_URL: connection })).toThrow();
   }
 });
 
@@ -28,7 +30,7 @@ it('reads the deletion ledger from its own variables under the same rules', () =
     {
       VERCEL: '1',
       DATABASE_URL: 'postgres://app.example/education',
-      DELETION_LEDGER_URL: `${pooler}:5432/postgres?sslmode=verify-full`,
+      DELETION_LEDGER_URL: `${hosted('ledger')}/neondb?sslmode=verify-full`,
       DELETION_LEDGER_CA_CERT: 'ledger-provider-ca-fixture',
     },
     deletionLedgerDatabase,
@@ -39,7 +41,7 @@ it('reads the deletion ledger from its own variables under the same rules', () =
   );
   expect(() =>
     databaseOptions(
-      { VERCEL: '1', DELETION_LEDGER_URL: `${pooler}:6543/postgres` },
+      { VERCEL: '1', DELETION_LEDGER_URL: `${hosted('ledger', '-pooler')}/neondb` },
       deletionLedgerDatabase,
     ),
   ).toThrow();
@@ -66,17 +68,17 @@ it('refuses a deletion ledger that leads to the application database', () => {
   ).toContain('education_ledger');
 });
 
-it('tells two projects behind one shared pooler apart by their users', () => {
-  const project = (ref: string) =>
-    `postgres://postgres.${ref}:fixture@aws-0-us-east-1.pooler.supabase.com:5432/postgres?sslmode=verify-full`;
+it('tells two databases behind one shared pooler apart by their users', () => {
+  const database = (user: string) =>
+    `postgres://${user}:fixture@shared.example:5432/postgres?sslmode=verify-full`;
   expect(
     databaseOptions(
       {
         STAGING_DATABASE: 'true',
-        DATABASE_URL: project('application'),
-        DELETION_LEDGER_URL: project('ledger'),
+        DATABASE_URL: database('application'),
+        DELETION_LEDGER_URL: database('ledger'),
       },
       deletionLedgerDatabase,
     ).connectionString,
-  ).toContain('postgres.ledger');
+  ).toContain('//ledger:');
 });
