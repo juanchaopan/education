@@ -1,14 +1,9 @@
 import type pg from 'pg';
 import { familyExportScope, type ChildExport, type FamilyExport } from '@education/contracts';
 import { readFamilyAccount } from '../repositories/postgres-family-account.js';
-import type { AuthorizedParent } from '../repositories/session-transaction.js';
+import type { Credentials, ParentTransaction } from './parent-transaction.js';
 import { RequestError } from '../../shared/request-error.js';
 
-type Credentials = { token?: string; csrf?: string };
-type ParentTransaction = <T>(
-  credentials: Credentials,
-  work: (client: pg.PoolClient, parent: AuthorizedParent) => Promise<T>,
-) => Promise<T>;
 type ReadChildLearning = (
   client: pg.PoolClient,
   childId: string,
