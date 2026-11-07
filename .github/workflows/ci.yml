@@ -49,6 +49,24 @@ jobs:
         with:
           name: browser-test-results
           path: test-results/
+  # Screenshots against the reviewed baselines, and the accessibility checks,
+  # in the same pinned Playwright image as a local `npm run test:visual`.
+  visual:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - run: npm run test:visual
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: visual-diff
+          path: test-results/visual/
   duplication:
     runs-on: ubuntu-latest
     steps:
@@ -78,12 +96,15 @@ jobs:
           path: test-results/accounts/
   ci:
     if: always()
-    needs: [app, duplication, accounts]
+    needs: [app, visual, duplication, accounts]
     runs-on: ubuntu-latest
     steps:
       - name: Require every check to pass
         env:
           APP: ${{ needs.app.result }}
+          VISUAL: ${{ needs.visual.result }}
           DUPLICATION: ${{ needs.duplication.result }}
           ACCOUNTS: ${{ needs.accounts.result }}
-        run: test "$APP" = success && test "$DUPLICATION" = success && test "$ACCOUNTS" = success
+        run: >-
+          test "$APP" = success && test "$VISUAL" = success && test "$DUPLICATION" = success &&
+          test "$ACCOUNTS" = success
