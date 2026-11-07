@@ -1,13 +1,9 @@
 import type { Usage } from '../domain/tutoring-cost.js';
+import { isSuccessful, object } from './provider-reply.js';
 
 const MAX_STREAM_BYTES = 65_536;
 
-type JsonObject = Record<string, unknown>;
 type Accept<T> = (text: string) => T | undefined;
-
-function object(value: unknown): JsonObject {
-  return value && typeof value === 'object' && !Array.isArray(value) ? (value as JsonObject) : {};
-}
 
 function count(value: unknown): value is number {
   return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0;
@@ -64,11 +60,6 @@ async function* frames(body: ReadableStream<Uint8Array>) {
   }
 }
 
-function isEventStream(response: Response) {
-  const mime = response.headers.get('content-type')?.split(';')[0]?.trim().toLowerCase();
-  return response.ok && mime === 'text/event-stream';
-}
-
 function terminalResult<T>(eventType: string, response: unknown, accept: Accept<T>) {
   const { status, output, usage: tokens, service_tier: tier } = object(response);
   const completed = eventType === 'response.completed' && status === 'completed';
@@ -81,7 +72,7 @@ function terminalResult<T>(eventType: string, response: unknown, accept: Accept<
 }
 
 export async function readOpenAiResponse<T>(response: Response, accept: Accept<T>) {
-  if (!response.body || !isEventStream(response)) {
+  if (!response.body || !isSuccessful(response, 'text/event-stream')) {
     void response.body?.cancel().catch(() => {});
     return;
   }

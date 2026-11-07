@@ -44,7 +44,8 @@ test('parent reads both disclosures, confirms their password, grants and revokes
     const grant = tutoring.getByRole('button', { name: '授权 AI 解题提示' });
     await expect(grant).toBeDisabled();
     await expect(tutoring.getByText(/最多 30 天/)).toBeVisible();
-    await expect(speech.getByText('应用不保存原始录音。')).toBeVisible();
+    await expect(speech.getByText(/当前题目步骤里的几个关键词/)).toBeVisible();
+    await expect(speech.getByText(/应用不保存原始录音/)).toBeVisible();
     await expect(tutoring.getByText('未授权', { exact: true })).toBeVisible();
     await panel.getByLabel('修改 AI 授权前确认家长密码').fill(password);
     await panel.getByRole('button', { name: '确认密码' }).click();

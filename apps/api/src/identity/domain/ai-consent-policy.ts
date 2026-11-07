@@ -16,12 +16,13 @@ export const aiConsentPolicies = {
   },
   'openai-transcription': {
     scope: 'openai-transcription',
-    policyVersion: 20261106,
+    policyVersion: 20261107,
     title: '语音转写',
     provider: 'OpenAI Audio Transcriptions API',
-    inputs: '孩子主动提交的短录音。',
-    purpose: '把普通话录音转成文字，供孩子检查和确认。',
-    appRetention: '应用不保存原始录音。',
+    inputs:
+      '孩子主动录下的一段不超过 30 秒的短录音，以及当前题目步骤里的几个关键词（只来自题目，不含孩子的信息）。',
+    purpose: '把普通话录音转成文字，供孩子检查、修改并确认后再提交。',
+    appRetention: '应用不保存原始录音，转写结束即丢弃；识别出的文字在孩子确认前不会提交。',
     providerRetention:
       'OpenAI 将此转写端点列为无应用状态存储、无安全监测日志保留。实际启用仍取决于服务账号的数据设置和儿童数据处理资格。',
   },

@@ -1,9 +1,9 @@
 import { Type, type Static } from '@sinclair/typebox';
 import { AiHelpFallbackSchema } from './ai-help.js';
-import { identifierPattern } from './patterns.js';
+import { base64Length, base64Pattern, identifierPattern } from './patterns.js';
 
 const closed = { additionalProperties: false };
-const stepId = Type.String({ pattern: identifierPattern.source });
+export const StepId = Type.String({ pattern: identifierPattern.source });
 
 // The drawing sheet, in pixels at full scale. Exported images are never larger.
 export const drawingSheetWidth = 1024;
@@ -12,8 +12,8 @@ export const drawingSheetHeight = 768;
 export const feedbackTextMaxLength = 500;
 export const feedbackInstructionMaxLength = 160;
 export const feedbackImageMaxBytes = 512 * 1024;
-// Four base64 characters carry three bytes; the body adds a small JSON envelope.
-const feedbackImageMaxLength = Math.ceil(feedbackImageMaxBytes / 3) * 4;
+const feedbackImageMaxLength = base64Length(feedbackImageMaxBytes);
+// The body adds a small JSON envelope to the encoded image.
 export const feedbackBodyLimit = feedbackImageMaxLength + 4 * 1024;
 
 // Fractions of the drawing sheet, with the origin at its top-left corner.
@@ -31,7 +31,7 @@ export const TeachingFeedback = Type.Object(
       Type.Literal('recognition-failed'),
     ]),
     instruction: Type.String({ minLength: 1, maxLength: feedbackInstructionMaxLength }),
-    stepId,
+    stepId: StepId,
     highlight: Type.Optional(FeedbackRegion),
   },
   closed,
@@ -41,10 +41,10 @@ export const TeachingFeedback = Type.Object(
 // the step needs a model at all.
 export const FeedbackRequest = Type.Object(
   {
-    stepId,
+    stepId: StepId,
     text: Type.Optional(Type.String({ minLength: 1, maxLength: feedbackTextMaxLength })),
     image: Type.Optional(
-      Type.String({ pattern: '^[A-Za-z0-9+/]+={0,2}$', maxLength: feedbackImageMaxLength }),
+      Type.String({ pattern: base64Pattern.source, maxLength: feedbackImageMaxLength }),
     ),
   },
   { ...closed, minProperties: 2 },

@@ -15,9 +15,12 @@ export type AnsweringPolicy = {
 
 // The only problem content a model may see for a step. `area` limits where a
 // highlight may point; without it the whole drawing sheet is allowed.
+// `vocabulary` lists the step's own words, such as 平均分 or 每份, that speech
+// recognition is told to expect; it holds problem wording, never anything a child wrote.
 export type FeedbackStep = {
   prompt: string;
   area?: FeedbackRegion;
+  vocabulary?: readonly string[];
 };
 
 export type ProblemPlugin = {

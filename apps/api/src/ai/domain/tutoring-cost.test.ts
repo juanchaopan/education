@@ -2,7 +2,6 @@ import { expect, it } from 'vitest';
 import {
   MAX_FEEDBACK_OUTPUT_TOKENS,
   MAX_TUTORING_OUTPUT_TOKENS,
-  largestReservationCost,
   ledgerCharge,
   reservationCost,
   reservationCostFor,
@@ -17,7 +16,6 @@ it('reserves for the full bounded text request at standard rates including cache
 
 it('reserves more for tasks that may produce longer output', () => {
   expect(reservationCostFor(MAX_FEEDBACK_OUTPUT_TOKENS)).toBe(2_176_000n);
-  expect(largestReservationCost).toBe(2_176_000n);
 });
 
 it('detects supplier usage outside the bounds even when the estimated cost fits', () => {

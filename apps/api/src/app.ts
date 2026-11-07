@@ -35,6 +35,8 @@ import { registerPractice } from './learning/routes/practice.js';
 import type { PracticeService } from './learning/services/practice.js';
 import { registerTeachingFeedback } from './ai/routes/teaching-feedback.js';
 import type { TeachingFeedbackService } from './ai/services/teaching-feedback.js';
+import { registerTranscription } from './ai/routes/transcription.js';
+import type { VoiceTranscriptionService } from './ai/services/voice-transcription.js';
 
 const localOrigin = 'http://127.0.0.1:5173';
 type AppOptions = {
@@ -45,6 +47,7 @@ type AppOptions = {
   learningSummary?: LearningSummaryService;
   practice?: PracticeService;
   teachingFeedback?: TeachingFeedbackService;
+  voiceTranscription?: VoiceTranscriptionService;
   childSessions?: ChildSessionService;
   childRegistration?: ChildRegistrationService;
   origin?: string;
@@ -89,6 +92,7 @@ export function buildApp(options: AppOptions = {}) {
   registerLearningSummary(app, options.learningSummary);
   registerPractice(app, options.origin ?? localOrigin, options.practice);
   registerTeachingFeedback(app, options.origin ?? localOrigin, options.teachingFeedback);
+  registerTranscription(app, options.origin ?? localOrigin, options.voiceTranscription);
   app.get('/version.json', (_request, reply) =>
     reply.header('Cache-Control', 'no-store').send({ revision: options.revision ?? null }),
   );

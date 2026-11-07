@@ -37,8 +37,6 @@ export function reservationCostFor(maxOutputTokens: number) {
 }
 
 export const reservationCost = reservationCostFor(MAX_TUTORING_OUTPUT_TOKENS);
-// What the budget must still cover for any kind of request to be admitted.
-export const largestReservationCost = reservationCostFor(MAX_FEEDBACK_OUTPUT_TOKENS);
 
 export function withinTutoringBounds(
   { inputTokens, outputTokens }: Usage,
