@@ -1,7 +1,7 @@
 import type { FeedbackState } from '../data-access/useTeachingFeedback';
 import { fallbackMessage, guidanceMessage } from '../interaction/ai-help-message';
-import styles from './FeedbackRequestPanel.module.css';
 import action from './LessonAction.module.css';
+import styles from './LessonPanel.module.css';
 
 type Props = {
   state: FeedbackState;
