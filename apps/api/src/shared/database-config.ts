@@ -1,9 +1,17 @@
 import type pg from 'pg';
 
 // Which environment variables hold a database's connection string and the CA
-// certificate its provider requires.
-export type DatabaseSource = { url: string; ca: string };
+// certificate its provider requires, and which database it must never share.
+export type DatabaseSource = { url: string; ca: string; distinctFrom?: DatabaseSource };
 export const applicationDatabase: DatabaseSource = { url: 'DATABASE_URL', ca: 'DATABASE_CA_CERT' };
+// The family deletion ledger is kept outside the application database and its
+// backups: restoring a backup that held the ledger would roll back the very
+// entries meant to clear it.
+export const deletionLedgerDatabase: DatabaseSource = {
+  url: 'DELETION_LEDGER_URL',
+  ca: 'DELETION_LEDGER_CA_CERT',
+  distinctFrom: applicationDatabase,
+};
 
 export function databaseOptions(
   env: NodeJS.ProcessEnv,
@@ -14,6 +22,7 @@ export function databaseOptions(
   const url = new URL(value);
   if (!['postgres:', 'postgresql:'].includes(url.protocol))
     throw new Error(`${source.url} must use PostgreSQL`);
+  checkDistinct(env, source, url);
   if (env.VERCEL !== '1' && env.STAGING_DATABASE !== 'true') return { connectionString: value };
   checkHostedConnection(url);
   url.search = '';
@@ -24,6 +33,16 @@ export function databaseOptions(
       ca: env[source.ca],
     },
   };
+}
+
+const location = (url: URL) => `${url.hostname}:${url.port || '5432'}${url.pathname}`;
+
+function checkDistinct(env: NodeJS.ProcessEnv, source: DatabaseSource, url: URL) {
+  const other = source.distinctFrom && env[source.distinctFrom.url];
+  if (other && location(new URL(other)) === location(url))
+    throw new Error(
+      `${source.url} must name a different database from ${source.distinctFrom!.url}`,
+    );
 }
 
 function checkHostedConnection(url: URL) {

@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { databaseOptions } from './database-config.js';
+import { databaseOptions, deletionLedgerDatabase } from './database-config.js';
 
 const pooler = 'postgres://postgres.project:fixture@aws-0-ap-southeast-1.pooler.supabase.com';
 
@@ -23,20 +23,45 @@ it('rejects transaction pooling and TLS overrides before opening a connection', 
   }
 });
 
-it('reads another database from its own variables under the same rules', () => {
-  const source = { url: 'OTHER_DATABASE_URL', ca: 'OTHER_DATABASE_CA_CERT' };
+it('reads the deletion ledger from its own variables under the same rules', () => {
   const options = databaseOptions(
     {
       VERCEL: '1',
-      DATABASE_URL: 'postgres://ignored',
-      OTHER_DATABASE_URL: `${pooler}:5432/postgres?sslmode=verify-full`,
-      OTHER_DATABASE_CA_CERT: 'other-provider-ca-fixture',
+      DATABASE_URL: 'postgres://app.example/education',
+      DELETION_LEDGER_URL: `${pooler}:5432/postgres?sslmode=verify-full`,
+      DELETION_LEDGER_CA_CERT: 'ledger-provider-ca-fixture',
     },
-    source,
+    deletionLedgerDatabase,
   );
-  expect(options.ssl).toEqual({ rejectUnauthorized: true, ca: 'other-provider-ca-fixture' });
-  expect(() => databaseOptions({}, source)).toThrow('OTHER_DATABASE_URL is required');
+  expect(options.ssl).toEqual({ rejectUnauthorized: true, ca: 'ledger-provider-ca-fixture' });
+  expect(() => databaseOptions({}, deletionLedgerDatabase)).toThrow(
+    'DELETION_LEDGER_URL is required',
+  );
   expect(() =>
-    databaseOptions({ VERCEL: '1', OTHER_DATABASE_URL: `${pooler}:6543/postgres` }, source),
+    databaseOptions(
+      { VERCEL: '1', DELETION_LEDGER_URL: `${pooler}:6543/postgres` },
+      deletionLedgerDatabase,
+    ),
   ).toThrow();
+});
+
+it('refuses a deletion ledger in the application database, whatever the credentials', () => {
+  expect(() =>
+    databaseOptions(
+      {
+        DATABASE_URL: 'postgres://app:one@db.example:5432/education',
+        DELETION_LEDGER_URL: 'postgresql://ledger:two@db.example/education',
+      },
+      deletionLedgerDatabase,
+    ),
+  ).toThrow('DELETION_LEDGER_URL must name a different database from DATABASE_URL');
+  expect(
+    databaseOptions(
+      {
+        DATABASE_URL: 'postgres://app:one@db.example:5432/education',
+        DELETION_LEDGER_URL: 'postgres://ledger:two@db.example:5432/education_ledger',
+      },
+      deletionLedgerDatabase,
+    ).connectionString,
+  ).toContain('education_ledger');
 });
