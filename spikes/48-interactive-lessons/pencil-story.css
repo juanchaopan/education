@@ -1,0 +1,32 @@
+#film{background:#452d5a}
+#plate{background-position:center;filter:saturate(1.04)}
+[data-shot="pair"] #plate,[data-shot="rolling"] #plate{transform:scale(1.08) translateY(1%)}
+[data-shot="tally"] #plate,[data-shot="end"] #plate{transform:scale(1.16)}
+.caption{background:#39284aee;border-color:#fbc4989c}.caption:before{content:"画笔老师";color:#ffd8a1}
+.vignette{background:linear-gradient(0deg,#35243cd2,transparent 30%),linear-gradient(180deg,#40274860,transparent 21%)}
+.film-title span{background:#492d58d9}.replay{background:#443054cc}
+.svg-label{font-weight:850;font-size:21px}.rack-name{fill:#fff4e4}.active-name{fill:#ffe293;font-size:23px}
+.card-label{fill:#6a4260;font-size:18px}.pair-plus{fill:#ae785e;font-size:37px}
+.archive-title,.archive-row{fill:#fff1d8;font-size:17px;font-weight:800}.archive-row{font-size:14px}.dark{fill:#6b441e}
+.tally-title{fill:#ffead4;font-size:28px}.tally-sum{fill:#ffe2a4;font-size:30px}
+.pencil-past{opacity:.55}.pencil-active{cursor:grab;animation:wiggle 1.6s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
+@keyframes wiggle{0%,100%{rotate:-3deg}50%{rotate:3deg}}
+.cartoon-pointer{animation:look-here 1.15s ease-in-out infinite}
+@keyframes look-here{0%,100%{translate:0 -6px;opacity:.75}50%{translate:0 3px;opacity:1}}
+.target{cursor:pointer;touch-action:none}.target.over rect,.target:focus-visible rect{stroke:#d58345;stroke-width:6;filter:drop-shadow(0 0 7px #fff3ae)}
+.pair-land{animation:card-land .5s cubic-bezier(.18,.7,.32,1.32) both}
+@keyframes card-land{from{translate:0 -19px;scale:.45;opacity:.2}to{translate:0 0;scale:1;opacity:1}}
+.pencil-flight{animation:pencil-flight .53s cubic-bezier(.21,.77,.32,1.1) both}
+@keyframes pencil-flight{from{translate:var(--from-x) -169px;rotate:-7deg;opacity:.35}to{translate:0 0;rotate:0;opacity:1}}
+.archive-in{animation:archive-in .48s ease-out both}
+@keyframes archive-in{from{translate:-31px 9px;opacity:.1}to{translate:0 0;opacity:1}}
+.tally-in{animation:shot-in .66s ease both}.tally-row.current{cursor:pointer;touch-action:manipulation}
+.tally-row.current:focus-visible{outline:none;filter:drop-shadow(0 0 6px #ffe595)}
+@media(max-width:610px) and (orientation:portrait){#world{transform:translateY(1.5dvh)}}
+
+.tally-row{cursor:pointer;touch-action:manipulation}.tally-guide{pointer-events:none;animation:tally-pulse 1.05s ease-in-out infinite}
+@keyframes tally-pulse{50%{opacity:.42;stroke-width:5}}
+.pair-link{pointer-events:none}.pair-link path{fill:none;stroke-width:6;stroke-linecap:round;filter:drop-shadow(0 2px 2px #92564073)}
+.auto-pair-row .pair-land{animation-delay:.72s}
+@media(prefers-reduced-motion:reduce){.auto-pair-row .pair-land{animation-delay:0s}}
+

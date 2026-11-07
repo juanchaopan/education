@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>小小探索家 · 双轨追及</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#091727;color:#ecf6ff;font:16px "Microsoft YaHei","PingFang SC",sans-serif}
+main{max-width:1060px;margin:auto;padding:24px}
+header{border-radius:28px 28px 0 0;padding:28px 34px 20px;background:radial-gradient(ellipse at 80% 20%,#255472,transparent 55%),#132b40}
+small{color:#a4dce9;letter-spacing:.16em;font-weight:700}h1{font-size:clamp(33px,6vw,58px);line-height:1.12;margin:9px 0}p{line-height:1.6}
+header p{margin-bottom:0}section{padding:16px 24px;background:#152c44}
+svg{display:block;width:100%;background:repeating-linear-gradient(90deg,#ffffff07 0 1px,transparent 1px 32px),#102239;border:1px solid #789db65e;border-radius:20px}
+.controls{display:flex;gap:9px;align-items:center;flex-wrap:wrap;padding-top:13px}
+input{width:100%;accent-color:#b2ec91;margin:12px 0;cursor:ew-resize}
+button{background:#244661;color:white;border:1px solid #6d9cbb;border-radius:12px;padding:9px 12px;font:inherit;font-weight:700;cursor:pointer;touch-action:manipulation}
+button:focus-visible,input:focus-visible{outline:3px solid #f8bd63;outline-offset:3px}button:disabled{opacity:.5;cursor:default}
+.primary{background:#c4ed9e;color:#203b2f;border-color:#c4ed9e}
+output{min-width:5.5ch;color:#ffe2a0;font-size:21px;font-weight:800}
+.legend{display:flex;flex-wrap:wrap;gap:8px 18px;color:#d9e9f8;font-size:15px;padding:0 0 10px}
+.legend span:first-child{color:#ffe2a0}.legend span:nth-child(2){color:#a6eaff}
+.feedback{min-height:52px;margin:12px 0;color:#d9e9f8}
+footer{background:#203d55;border-radius:0 0 28px 28px;padding:14px 24px 22px}
+footer p{margin:6px 0}.muted{color:#b5cedf;font-size:14px}
+[hidden]{display:none!important}
+@media(max-width:580px){main{padding:9px}header{padding:18px}section,footer{padding:12px}svg text{font-weight:700}.minor-tick{display:none} .axis-tick{font-size:20px}.legend{font-size:14px}}
+</style>
+<main>
+<header><small>六年级 · 数轴动点 · 教学探针 #48</small><h1>追上以后，距离还会是 4 吗？</h1><p id="intro"></p></header>
+<section aria-label="数轴追及实验">
+  <div class="legend"><span>● M 是线段 AB 的中点</span><span>● N 是线段 CD 的中点</span><span>两条线段都向右移动</span></div>
+  <svg id="track" viewBox="0 0 760 222" role="img" aria-label="两条线段沿数轴同时移动"></svg>
+  <div class="controls"><label for="time">拖动时间轴</label><output id="clock" for="time"></output><button id="play">播放</button><button id="measure" aria-pressed="false">打开距离尺</button><button id="mark" class="primary">标记这个时刻</button></div>
+  <input id="time" aria-label="拖动时间轴" type="range" min="0" max="16" step="0.25" value="0">
+  <p class="feedback" id="feedback" role="status"></p>
+</section>
+<footer>
+  <p id="marks"></p>
+  <p class="muted" id="variation" hidden>条件变了。线段 AB 的速度变成每秒 3 个单位，CD 的速度没变。先猜相遇时间，再找出中点距离为 4 的两个时刻。</p>
+  <div class="controls"><button id="switch" hidden>试一道变化题</button><button id="prompt">看看孩子可以怎么问</button></div>
+</footer>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+let speed = 2;
+let time = 0;
+let ruler = false;
+let clock = null;
+let stamps = new Set();
+const x = coordinate => 36 + (coordinate + 4) * 13.7;
+const fmt = value => String(Number(value.toFixed(2)));
+const gap = () => Math.abs(10 - (speed - 1) * time);
+function segment(left, length, y, color, labels) {
+  const right = left + length;
+  const middle = (left + right) / 2;
+  return '<path d="M '+x(left)+' '+y+' H '+x(right)+'" stroke="'+color+'" stroke-width="9" stroke-linecap="round"/>' +
+    [left,middle,right].map((point,index) => '<circle cx="'+x(point)+'" cy="'+y+'" r="'+(index===1?9:4)+'" fill="'+color+'"/><text x="'+x(point)+'" y="'+(y-(index===1 ? 27 : 11))+'" fill="'+color+'" text-anchor="middle" font-size="18">'+labels[index]+'</text>').join('');
+}
+function draw() {
+  const m = -1 + speed * time;
+  const n = 9 + time;
+  $('clock').textContent = fmt(time)+' 秒';
+  $('time').setAttribute('aria-valuetext', fmt(time)+' 秒');
+  $('track').setAttribute('aria-label','M 在 '+fmt(m)+'，N 在 '+fmt(n)+(ruler?'，相距 '+fmt(gap()):''));
+  const ticks = Array.from({length:24},(_,i)=>i*2-4).map(p=>'<path d="M '+x(p)+' 173 v 8" stroke="#8aa7bc"/><text class="axis-tick '+(p%4===0?'':'minor-tick')+'" x="'+x(p)+'" y="205" fill="#b4c9d8" font-size="15" text-anchor="middle">'+p+'</text>').join('');
+  const measures = ruler ? '<path d="M '+x(m)+' 54 V 148 H '+x(n)+' V 113" stroke="#c4ed9e" stroke-width="2" fill="none" stroke-dasharray="4 4"/><text x="'+((x(m)+x(n))/2)+'" y="141" fill="#c4ed9e" text-anchor="middle" font-size="20">距离 '+fmt(gap())+'</text>' : '';
+  $('track').innerHTML = '<path d="M 22 177 H 731 l -8 -5 m 8 5 l -8 5" stroke="#9cb5c9" fill="none"/>'+ticks+measures+
+    segment(-2 + speed * time,2,54,'#ffe2a0',['A','M','B'])+
+    segment(6 + time,6,113,'#a6eaff',['C','N','D']);
+}
+function stop() {
+  clearInterval(clock);
+  clock = null;
+  $('play').textContent = '播放';
+}
+function move(value) {
+  time = value;
+  $('time').value = value;
+  draw();
+}
+$('time').oninput = () => { stop(); move(Number($('time').value)); };
+$('play').onclick = () => {
+  if (clock) { stop(); return; }
+  if (time === Number($('time').max)) move(0);
+  $('play').textContent = '暂停';
+  clock = setInterval(() => {
+    const next = Math.min(Number($('time').max),time + .25);
+    move(next);
+    if (next === Number($('time').max)) stop();
+  },180);
+};
+$('measure').onclick = () => {
+  ruler = !ruler;
+  $('measure').setAttribute('aria-pressed',String(ruler));
+  $('measure').textContent = ruler ? '收起距离尺' : '打开距离尺';
+  draw();
+};
+function reset() {
+  stop();
+  stamps = new Set();
+  ruler = false;
+  $('measure').setAttribute('aria-pressed','false');
+  $('measure').textContent = '打开距离尺';
+  $('time').max = speed === 2 ? 16 : 9;
+  $('intro').textContent = 'AB 长 2，CD 长 6。起点 A 在 −2，B 和 C 相隔 6。AB 每秒向右走 '+speed+' 个单位，CD 每秒向右走 1 个单位。找出 M、N 相距 4 的所有时刻。';
+  $('marks').textContent = '已标记时刻 · 暂无';
+  $('feedback').textContent = speed === 2 ? '先拖时间轴，看哪个中点追得更快。过了相遇的时刻，谁在前面？' : '先用你自己的方法推算，再拖到那个时刻检查。';
+  $('variation').hidden = speed === 2;
+  $('switch').hidden = speed === 2;
+  $('switch').textContent = speed === 2 ? '试一道变化题' : '回到原题';
+  move(0);
+}
+$('mark').onclick = () => {
+  stop();
+  if (gap() !== 4) {
+    $('feedback').textContent = '此刻相距 '+fmt(gap())+'。看看谁在前，再决定时间往哪边拖。';
+    return;
+  }
+  stamps.add(time);
+  $('marks').textContent = '已标记时刻 · '+[...stamps].sort((a,b)=>a-b).map(t=>fmt(t)+' 秒').join('、');
+  $('feedback').textContent = stamps.size === 2
+    ? '两个时刻都找到了。能指着数轴说说，为什么一次是 N 在前，另一次是 M 在前吗？'
+    : '这里相距 4。把时间移到另一点在前的时候，还能找出同样的间距吗？';
+  if (stamps.size === 2) $('switch').hidden = false;
+};
+$('prompt').onclick = () => {
+  $('feedback').textContent = '预写追问示例 · 孩子：“为什么有两个时刻？” 引导：“现在是 '+(time===10/(speed-1)?'两个中点重合':(time<10/(speed-1)?'N 在 M 前面':'M 在 N 前面'))+'。拖过两点重合的位置，看是谁跑到了前面。间隔能不能再变成 4？”';
+};
+$('switch').onclick = () => {speed = speed===2?3:2;reset();$('time').focus();};
+reset();
+</script>
+

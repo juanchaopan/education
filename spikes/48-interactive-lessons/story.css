@@ -1,0 +1,63 @@
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;overflow:hidden;background:#19372d;color:#fff8e6}
+[hidden]{display:none!important}button{font:inherit;color:inherit;cursor:pointer}
+#film{position:relative;isolation:isolate;height:100dvh;width:100vw;overflow:hidden;font:600 16px "Microsoft YaHei","PingFang SC",sans-serif;background:radial-gradient(ellipse at 64% 32%,#e5c990,#47735b 66%,#122a25)}
+#plate,.light,.vignette{position:absolute;inset:0;pointer-events:none}
+#plate{background-image:url('__PLATE__');background-size:cover;background-position:center 56%;transform:scale(1.035);transition:transform 1.15s ease,background-position 1.15s ease;animation:establish 1.7s ease both}
+@keyframes establish{from{scale:1.12;filter:brightness(.67)}to{scale:1;filter:brightness(1)}}
+[data-shot="leaves"] #plate,[data-shot="apples"] #plate{transform:scale(1.1) translate(-1%,1.8%)}
+[data-shot="exchange"] #plate{transform:scale(1.19) translate(3%,3%)}
+[data-shot="trial"] #plate{transform:scale(1.17) translate(-3%,2%)}
+[data-shot="formula"] #plate,[data-shot="end"] #plate{transform:scale(1.11) translate(0,1%)}
+.light{background:radial-gradient(ellipse at 23% 10%,#ffe8a35e,transparent 46%);mix-blend-mode:screen;animation:sun 7s ease-in-out infinite alternate}
+@keyframes sun{to{opacity:.37;transform:translate(2%,1%)}}
+.vignette{background:linear-gradient(0deg,#12211fc4,transparent 25%),linear-gradient(180deg,#162b323b,transparent 19%);z-index:1}
+#world{position:absolute;z-index:2;width:100%;height:100%;left:0;top:0;overflow:visible}
+.film-title{position:absolute;z-index:3;pointer-events:none;left:50%;top:48%;width:min(92vw,820px);transform:translate(-50%,-50%);text-align:center;text-shadow:0 3px 22px #101f12,0 2px 4px #14271a;animation:title-in 1.35s ease both}
+.film-title small{font-size:14px;letter-spacing:.24em;color:#ffe7a8}
+.film-title h1{font-size:clamp(34px,7.8vw,100px);line-height:1.16;margin:7px 0 15px;font-weight:900;letter-spacing:-.07em;color:#fff3cb}
+.film-title span{display:inline-block;border-radius:28px;background:#173e35c9;padding:10px 20px;border:1px solid #e1e6b575;font-size:clamp(13px,2vw,18px)}
+@keyframes title-in{from{opacity:0;top:51%}to{opacity:1}}
+#entry{position:absolute;inset:0;width:100%;height:100%;z-index:5;background:transparent;border:0}
+#entry:focus-visible{outline:4px solid #ffe69b;outline-offset:-6px}
+#film:not([data-shot="opening"]) .film-title{display:none}
+.film-meta{position:absolute;z-index:3;top:16px;left:21px;font-size:13px;color:#fff6d3;text-shadow:0 2px 7px #12221a;display:flex;gap:9px;align-items:center}
+.film-meta i{display:block;width:5px;height:5px;border-radius:100%;background:#efd181}
+[data-shot="opening"] .film-meta{display:none}
+.replay{position:absolute;top:13px;right:19px;z-index:4;width:43px;height:43px;border:1px solid #ffefb6a0;border-radius:50%;background:#263b34be;font-size:24px}
+.replay.playing{background:#917043}
+.caption{position:absolute;z-index:3;bottom:max(5.5%,env(safe-area-inset-bottom));left:50%;width:max-content;max-width:min(91vw,860px);transform:translateX(-50%);background:#173029ec;border:1px solid #f5d7958a;padding:10px 19px;border-radius:18px;box-shadow:0 7px 19px #081b1680;color:#fff7e4;text-align:center;font-size:clamp(15px,2.1vw,25px);line-height:1.45;pointer-events:none}
+.caption:before{content:"小兔";color:#ffda86;font-size:.68em;letter-spacing:.06em;margin-right:9px}
+.scene-art{animation:shot-in .66s cubic-bezier(.19,.7,.28,1) both;transform-origin:50% 64%}
+@keyframes shot-in{from{opacity:0;transform:translateY(17px) scale(.94)}to{opacity:1;transform:translateY(0) scale(1)}}
+.rabbit{animation:rabbit-bob 3.2s ease-in-out infinite;transform-origin:center bottom;transform-box:fill-box;filter:drop-shadow(0 6px 6px #14312266);pointer-events:none}
+@keyframes rabbit-bob{50%{translate:0 -5px;rotate:-1.2deg}}
+#film:has(.playing) .rabbit{animation:rabbit-talk .65s ease-in-out infinite}
+@keyframes rabbit-talk{50%{translate:0 -5px;rotate:1.8deg}}
+.intro-prop{animation:prop-land .65s cubic-bezier(.18,.71,.29,1.19) both;animation-delay:var(--delay,0s)}
+@keyframes prop-land{from{opacity:0;translate:0 -55px}to{opacity:1;translate:0 0}}
+.part{cursor:grab;touch-action:none}
+.part:focus-visible,.place:focus-visible{outline:none;filter:drop-shadow(0 0 7px #fff5b2)}
+.halo{fill:none;stroke:#ffe7a7;stroke-width:4;stroke-dasharray:5 7;opacity:.7;animation:halo 1.8s ease-in-out infinite}
+@keyframes halo{50%{opacity:1;stroke-width:6}}
+.part:hover .halo,.place.over .halo,.part.selected .halo{stroke:#fff7c6;opacity:1;stroke-width:7}
+.ghost{pointer-events:none;opacity:.95;filter:drop-shadow(0 10px 7px #10252391)}
+.part.lifted{opacity:.22}
+svg text{font-family:"Microsoft YaHei","PingFang SC",sans-serif;user-select:none;pointer-events:none}
+.petals{pointer-events:none}.petals circle{animation:float 6s ease-in-out infinite;animation-delay:var(--delay)}
+@keyframes float{0%,100%{translate:0 0;opacity:.48}50%{translate:22px -18px;opacity:.9}}
+.hint-spark{pointer-events:none;animation:trace 2.2s ease-in-out infinite}
+@keyframes trace{0%,18%{opacity:0;offset-distance:0%}34%{opacity:1}75%{opacity:1}88%,100%{opacity:0;offset-distance:100%}}
+@media(max-width:610px){.film-meta{left:9px;top:12px;font-size:11px}.replay{right:9px;top:7px}.caption{bottom:12%;padding:8px 12px}.film-title small{font-size:11px}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}
+
+#world{touch-action:none}
+@media(max-width:610px) and (orientation:portrait){#world{transform:translateY(7dvh)}}
+
+#entry{position:relative;inset:auto;z-index:auto;width:auto;height:auto;pointer-events:auto;min-height:49px;padding:10px 24px;border:2px solid #ffe5a6;border-radius:29px;background:#20483bec;box-shadow:0 7px 16px #152c246e;font-size:clamp(16px,2.1vw,23px);font-weight:850;touch-action:manipulation}
+#entry:hover{background:#34795d}#entry i{font-style:normal;color:#ffe6a7;font-size:.85em;margin-right:8px}
+[data-shot="opening"]{cursor:pointer}
+.no-script{position:absolute;z-index:10;left:50%;bottom:9%;transform:translateX(-50%);background:#13241b;padding:10px;border-radius:10px}
+
+.swap-in{animation:swap-in .46s cubic-bezier(.18,.79,.28,1.18) both;transform-box:fill-box;transform-origin:center}
+@keyframes swap-in{from{scale:.7;translate:0 -13px;opacity:.2}to{scale:1;translate:0 0;opacity:1}}
