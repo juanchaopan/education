@@ -97,11 +97,13 @@ it('keeps a restored database closed until every deleted family is gone, then op
     expect(await serviceOpen(pool)).toBe(false);
 
     const replayed = await restored.replay();
-    expect(replayed.families).toBeGreaterThanOrEqual(1);
+    expect(replayed.ledgerEntries).toBeGreaterThanOrEqual(1);
+    // Sessions from the backup are revoked, so a sign-out after it cannot be undone.
+    expect(replayed.sessionsRevoked).toBeGreaterThanOrEqual(1);
     // The deleted family's drafts go with it; the kept family's expired one is cleared.
     expect(replayed.expiredDrafts).toBeGreaterThanOrEqual(1);
     expect(await held(deleted)).toEqual({ families: 0, sessions: 0, drafts: 0 });
-    expect(await held(kept)).toEqual({ families: 1, sessions: 1, drafts: 1 });
+    expect(await held(kept)).toEqual({ families: 1, sessions: 0, drafts: 1 });
 
     // A deletion recorded after the replay is caught before opening.
     const late = await household();
