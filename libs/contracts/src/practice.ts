@@ -11,7 +11,7 @@ export const PracticeQuery = Type.Object(
 );
 const identity = { id: ProblemSummary.properties.id, version: ProblemSummary.properties.version };
 export const AssignPractice = Type.Object(identity, closed);
-const PracticeItem = Type.Object(
+export const PracticeItem = Type.Object(
   { ...identity, title: Type.Union([ProblemSummary.properties.title, Type.Null()]) },
   closed,
 );
@@ -25,4 +25,5 @@ export const PracticePage = Type.Object(
 export type PracticeChild = Static<typeof PracticeChild>;
 export type PracticeQuery = Static<typeof PracticeQuery>;
 export type AssignPractice = Static<typeof AssignPractice>;
+export type PracticeItem = Static<typeof PracticeItem>;
 export type PracticePage = Static<typeof PracticePage>;
