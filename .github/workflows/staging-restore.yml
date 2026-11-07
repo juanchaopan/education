@@ -28,13 +28,24 @@ jobs:
       - uses: ./.github/actions/backup-tools
         with:
           postgres-major: ${{ vars.STAGING_POSTGRES_MAJOR || '17' }}
+      # Anyone can encrypt to the public backup key, and a pull request can run
+      # its own copy of the backup workflow, so only a scheduled or manually
+      # started run of this repository's backup workflow on main is restored.
       - name: Download the backup
         env:
           GH_TOKEN: ${{ github.token }}
           BACKUP_RUN: ${{ inputs.backup_run }}
         run: |
-          run="${BACKUP_RUN:-$(gh run list --workflow staging-backup.yml --status success --limit 1 --json databaseId --jq '.[0].databaseId')}"
-          [[ "$run" =~ ^[0-9]+$ ]] || { echo "::error::No staging backup run to restore"; exit 1; }
+          trusted='select(.path == ".github/workflows/staging-backup.yml" and .conclusion == "success"
+            and (.event == "schedule" or .event == "workflow_dispatch")
+            and .head_branch == "main" and .head_repository.full_name == env.GITHUB_REPOSITORY)'
+          if [[ -z "$BACKUP_RUN" ]]; then
+            run="$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/staging-backup.yml/runs?branch=main&status=success&per_page=50" \
+              --jq "[.workflow_runs[] | $trusted] | first | .id // empty")"
+          elif [[ "$BACKUP_RUN" =~ ^[0-9]+$ ]]; then
+            run="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$BACKUP_RUN" --jq "$trusted | .id")"
+          fi
+          [[ "${run:-}" =~ ^[0-9]+$ ]] || { echo "::error::No trusted staging backup run to restore"; exit 1; }
           gh run download "$run" --name staging-backup --dir "$RUNNER_TEMP/download"
           echo "Backup run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$run" >> "$GITHUB_STEP_SUMMARY"
       - name: Decrypt the backup

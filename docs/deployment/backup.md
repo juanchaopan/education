@@ -31,6 +31,8 @@
 
 备份和 Neon 在不同的供应商：Neon 项目整个丢失时，备份仍在 GitHub。私钥丢失时现有备份都无法解开，需要生成新密钥，旧备份视为不可用，直到 14 天后自然过期。
 
+公钥公开，谁都能做出一个能解开的备份文件，所以恢复只采用本仓库 `main` 上定时或手动运行、并且成功的 `staging-backup`。拉取请求可以运行它自己改过的同名工作流，这些运行一律不采用。
+
 ## 首次设置
 
 1. 安装 age：Windows 运行 `winget install FiloSottile.age`，macOS 运行 `brew install age`。
@@ -47,7 +49,7 @@
 
 ## 恢复
 
-在 Actions → staging-restore → Run workflow 运行。`backup_run` 留空时恢复最近一次成功的备份；要恢复更早的备份，填那次 `staging-backup` 运行的 ID（运行页面地址里 `/runs/` 后面的数字）。
+在 Actions → staging-restore → Run workflow 运行。`backup_run` 留空时恢复最近一次可采用的备份；要恢复更早的备份，填那次 `staging-backup` 运行的 ID（运行页面地址里 `/runs/` 后面的数字）。填的运行不是本仓库 `main` 上定时或手动运行的成功备份时，工作流退出。
 
 工作流依次：
 
