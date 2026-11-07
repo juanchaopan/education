@@ -18,7 +18,7 @@ export function createLearningSummary(
         parent.familyId,
       ]);
       if (!child.rowCount) throw new RequestError(404, '没有找到这个孩子，请刷新孩子列表。');
-      return readLearningEvidence(client, childId, limit, offset);
+      return readLearningEvidence(client, childId, { limit, offset });
     });
   }, title);
 }

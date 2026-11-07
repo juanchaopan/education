@@ -1,5 +1,6 @@
 import { ChildAccessPanel } from './ChildAccessPanel';
 import { AiConsentPanel } from './AiConsentPanel';
+import { FamilyExportPanel } from './FamilyExportPanel';
 import { LearningSummaryPanel } from './LearningSummaryPanel';
 import { ParentPracticePanel } from './ParentPracticePanel';
 import { RegistrationKeyPanel } from './RegistrationKeyPanel';
@@ -58,6 +59,8 @@ export function FamilyPage() {
                 key={`children-${session.data.csrfToken}`}
                 csrf={session.data.csrfToken}
               />
+              {/* The export renews the session itself and keeps its result across that renewal. */}
+              <FamilyExportPanel csrf={session.data.csrfToken} />
             </>
           )}
           {!session.data.emailVerified && <VerificationPanel csrf={session.data.csrfToken} />}

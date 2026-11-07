@@ -1,5 +1,23 @@
-import { learningSummaryPageSize, type LearningSummary } from '@education/contracts';
+import {
+  learningSummaryPageSize,
+  type LearningSummary,
+  type ProblemLearningSummary,
+} from '@education/contracts';
 import type { LearningEvidence } from '../repositories/postgres-learning-summary.js';
+
+export type Title = (problemId: string, version: number) => string | undefined;
+
+// A problem version that has left the catalog keeps its record with no title.
+export function withTitle<T extends { id: string; version: number }>(problem: T, title: Title) {
+  return { ...problem, title: title(problem.id, problem.version) ?? null };
+}
+
+export function summarizeProblem(row: LearningEvidence, title: Title): ProblemLearningSummary {
+  return {
+    ...withTitle(row, title),
+    reviewSuggested: row.incorrect >= 2 && row.independent === 0,
+  };
+}
 
 export function createLearningSummaryService(
   read: (
@@ -8,7 +26,7 @@ export function createLearningSummaryService(
     limit: number,
     offset: number,
   ) => Promise<LearningEvidence[]>,
-  title: (problemId: string, version: number) => string | undefined,
+  title: Title,
 ) {
   return async (
     token: string | undefined,
@@ -19,11 +37,7 @@ export function createLearningSummaryService(
     return {
       childId,
       hasMore: rows.length > learningSummaryPageSize,
-      problems: rows.slice(0, learningSummaryPageSize).map((row) => ({
-        ...row,
-        title: title(row.id, row.version) ?? null,
-        reviewSuggested: row.incorrect >= 2 && row.independent === 0,
-      })),
+      problems: rows.slice(0, learningSummaryPageSize).map((row) => summarizeProblem(row, title)),
     };
   };
 }

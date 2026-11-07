@@ -2,6 +2,7 @@ export function ParentPasswordForm({
   id = 'key-parent-password',
   label = '确认家长密码',
   purpose = '管理 KEY',
+  submitLabel = '确认密码',
   password,
   pending,
   onChange,
@@ -10,6 +11,7 @@ export function ParentPasswordForm({
   id?: string;
   label?: string;
   purpose?: string;
+  submitLabel?: string;
   password: string;
   pending?: boolean;
   onChange: (value: string) => void;
@@ -35,7 +37,7 @@ export function ParentPasswordForm({
         disabled={pending}
       />
       <button disabled={pending || !password} type="submit">
-        {pending ? '正在确认…' : '确认密码'}
+        {pending ? '正在确认…' : submitLabel}
       </button>
     </form>
   );

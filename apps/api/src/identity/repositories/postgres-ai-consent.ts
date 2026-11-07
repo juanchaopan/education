@@ -3,12 +3,13 @@ import type { AiConsentChange } from '@education/contracts';
 
 type Decision = Pick<AiConsentChange, 'scope' | 'policyVersion' | 'granted'> & {
   revision: string;
+  changedAt: Date;
 };
 
 export async function readAiConsent(client: pg.PoolClient, family: string) {
   const { rows } = await client.query<Decision>(
-    `SELECT scope,policy_version AS "policyVersion",granted,revision
-     FROM ai_consents WHERE family_id=$1`,
+    `SELECT scope,policy_version AS "policyVersion",granted,revision,changed_at AS "changedAt"
+     FROM ai_consents WHERE family_id=$1 ORDER BY scope`,
     [family],
   );
   return rows;

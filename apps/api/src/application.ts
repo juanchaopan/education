@@ -39,6 +39,7 @@ import { createAnswering } from './answer-application.js';
 import { createLearningSummary } from './learning-summary-application.js';
 import { createPracticeAssignments } from './practice-application.js';
 import { createAiConsent } from './ai-consent-application.js';
+import { createFamilyExport } from './family-export-application.js';
 import { createTeachingFeedback } from './teaching-feedback-application.js';
 import { createVoiceTranscription } from './voice-transcription-application.js';
 
@@ -201,6 +202,7 @@ function createFamilyManagement(
     learningSummary: createLearningSummary(pool),
     practice: createPracticeAssignments(pool),
     aiConsent: createAiConsent(pool, monthlyBudget),
+    familyExport: createFamilyExport(pool),
     registrationKeys: createRegistrationKeyService({
       sessions,
       repository: createRegistrationKeyRepository(pool),

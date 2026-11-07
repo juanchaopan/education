@@ -47,6 +47,27 @@ async function currentDraft(client: pg.PoolClient, child: string, problem: Slot)
   return null;
 }
 
+// Every draft of the child that can still be restored. Expired drafts and
+// content that no longer matches the draft format are left out, as a child
+// would never get them back.
+export async function readLiveDrafts(client: pg.PoolClient, child: string) {
+  const { rows } = await client.query<{
+    id: string;
+    version: string;
+    expires_at: Date;
+    content: unknown;
+  }>(
+    `SELECT problem_id AS id,problem_version AS version,expires_at,content FROM drafts
+     WHERE child_id=$1 AND expires_at>clock_timestamp() ORDER BY problem_id,problem_version`,
+    [child],
+  );
+  return rows.flatMap(({ id, version, expires_at, content }) =>
+    Value.Check(DraftContent, content)
+      ? [{ id, version: Number(version), expiresAt: expires_at.toISOString(), content }]
+      : [],
+  );
+}
+
 export async function lockLearningSlot(client: pg.PoolClient, child: string, problem: Slot) {
   // Drafts and attempts share the lock, including when neither has a row yet.
   await client.query('SELECT pg_advisory_xact_lock(hashtextextended($1, 33))', [
