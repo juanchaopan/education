@@ -6,7 +6,7 @@ import {
   transcriptionReservation,
 } from '../domain/transcription.js';
 import {
-  type Authorize,
+  type Admission,
   type Credentials,
   createMeteredCall,
   type Meter,
@@ -102,11 +102,11 @@ function transcriptionExchange(
 // text: an empty string when nothing was heard.
 export function createTranscriptionGateway(
   settings: ProviderSettings,
-  authorize: Authorize,
+  admission: Admission,
   meter: Meter,
   send = fetch,
 ) {
-  const call = createMeteredCall(settings, authorize, meter);
+  const call = createMeteredCall(settings, admission, meter);
   return (credentials: Credentials, input: TranscriptionInput, external?: AbortSignal) =>
     call(() => transcriptionExchange(input, settings.apiKey, send), credentials, external);
 }

@@ -11,6 +11,8 @@ if (!process.env.DATABASE_URL?.endsWith('/education_test'))
 
 const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
 const families: string[] = [];
+// Usage rows whose family was deleted no longer name it, so they are removed by ID.
+const anonymousUsage: string[] = [];
 const env = { OPENAI_API_KEY: 'synthetic-key', OPENAI_TUTORING_ELIGIBLE: 'true' };
 const problem = { id: 'count-dots', version: 1 };
 const registry = createProblemRegistry([
@@ -40,7 +42,10 @@ const modelReply = {
 };
 
 afterEach(async () => {
-  await pool.query('DELETE FROM ai_usage WHERE family_id=ANY($1::uuid[])', [families]);
+  await pool.query('DELETE FROM ai_usage WHERE family_id=ANY($1::uuid[]) OR id=ANY($2::uuid[])', [
+    families,
+    anonymousUsage,
+  ]);
 });
 
 afterAll(async () => {
@@ -150,4 +155,29 @@ it('falls back to guidance without losing the request when the provider reply is
     service(send)(owner.credentials, problem, { stepId: 'count-left', text: '好了' }),
   ).resolves.toEqual({ status: 'fallback', reason: 'unavailable' });
   expect(await usage(owner.family)).toEqual([{ state: 'settled', input_tokens: '300' }]);
+});
+
+it('withholds a reply that arrives after the family is deleted and still settles its cost', async () => {
+  const owner = await child(true);
+  // The family is deleted while the provider is working on the request.
+  const send = vi.fn<typeof fetch>(async () => {
+    const { rows } = await pool.query<{ id: string }>(
+      'SELECT id FROM ai_usage WHERE family_id=$1',
+      [owner.family],
+    );
+    anonymousUsage.push(...rows.map(({ id }) => id));
+    await pool.query('DELETE FROM families WHERE id=$1', [owner.family]);
+    return providerReply(JSON.stringify(modelReply));
+  });
+  await expect(
+    service(send)(owner.credentials, problem, { stepId: 'count-left', text: '我数了四个' }),
+  ).resolves.toEqual({ status: 'fallback', reason: 'unauthorized' });
+  expect(send).toHaveBeenCalledOnce();
+  const { rows } = await pool.query(
+    `SELECT state,input_tokens::text,family_id,child_id FROM ai_usage WHERE id=ANY($1::uuid[])`,
+    [anonymousUsage],
+  );
+  expect(rows).toEqual([
+    { state: 'settled', input_tokens: '300', family_id: null, child_id: null },
+  ]);
 });

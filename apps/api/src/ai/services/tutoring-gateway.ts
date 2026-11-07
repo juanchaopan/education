@@ -7,7 +7,7 @@ import {
   withinTutoringBounds,
 } from '../domain/tutoring-cost.js';
 import {
-  type Authorize,
+  type Admission,
   type Credentials,
   createMeteredCall,
   type Meter,
@@ -93,11 +93,11 @@ function responsesExchange<I, O>(
 
 export function createTutoringGateway(
   settings: ProviderSettings,
-  authorize: Authorize,
+  admission: Admission,
   meter: Meter,
   send = fetch,
 ) {
-  const call = createMeteredCall(settings, authorize, meter);
+  const call = createMeteredCall(settings, admission, meter);
   return <I, O>(
     task: ModelTask<I, O>,
     credentials: Credentials,

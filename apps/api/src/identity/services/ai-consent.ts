@@ -70,6 +70,12 @@ export function createAiConsentService(
       });
       return response;
     },
+    // Rejects unless the child is still signed in and the family still consents.
+    // The child transaction reads an undefined result as a missing session, so
+    // the check returns a value of its own.
+    confirm: async (credentials: Credentials, scope: AiConsentChange['scope']) => {
+      await withChildConsent(credentials, scope, async () => true);
+    },
   };
 }
 

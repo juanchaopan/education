@@ -19,6 +19,9 @@ type Headers = Record<string, string>;
 
 const origin = 'https://education.example';
 const families: string[] = [];
+// A deleted family's usage rows no longer name it, so they are tracked by ID:
+// left behind, they would count against later tests' monthly budgets.
+const usageRows: string[] = [];
 const pools = [0, 1].map(() => new pg.Pool({ connectionString: process.env.DATABASE_URL }));
 const pool = pools[0]!;
 const ledgerPool = new pg.Pool({ connectionString: process.env.DELETION_LEDGER_URL });
@@ -37,6 +40,7 @@ const [first, second] = servers as [Server, Server];
 afterAll(async () => {
   await Promise.all(servers.map((server) => server.close()));
   await pool.query('DELETE FROM families WHERE id=ANY($1::uuid[])', [families]);
+  await pool.query('DELETE FROM ai_usage WHERE id=ANY($1::uuid[])', [usageRows]);
   await ledgerPool.query('DELETE FROM family_deletions WHERE family_id=ANY($1::uuid[])', [
     families,
   ]);
@@ -122,11 +126,12 @@ async function learning(family: string, child: string) {
     `INSERT INTO ai_consents(family_id,scope,policy_version,granted) VALUES($1,'openai-tutoring',1,true)`,
     [family],
   );
-  await pool.query(
+  const usage = await pool.query<{ id: string }>(
     `INSERT INTO ai_usage(family_id,child_id,model,budget_month,admitted_at,state,amount_nanodollars)
-     VALUES($1,$2,'fixture-model',date_trunc('month',now())::date,now(),'settled',1234)`,
+     VALUES($1,$2,'fixture-model',date_trunc('month',now())::date,now(),'settled',1234) RETURNING id`,
     [family, child],
   );
+  usageRows.push(usage.rows[0]!.id);
 }
 
 const deleteFamily = (
@@ -202,7 +207,8 @@ async function ledgerEntry(family: string) {
 
 async function fixtureCost() {
   const { rows } = await pool.query<{ total: string }>(
-    `SELECT sum(amount_nanodollars)::text AS total FROM ai_usage WHERE model='fixture-model'`,
+    'SELECT sum(amount_nanodollars)::text AS total FROM ai_usage WHERE id=ANY($1::uuid[])',
+    [usageRows],
   );
   return rows[0]!.total;
 }

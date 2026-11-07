@@ -2,7 +2,7 @@ import type pg from 'pg';
 import type { AiConsentChange } from '@education/contracts';
 import { createAiConsent } from './ai-consent-application.js';
 import { createTutoringUsage } from './ai/repositories/postgres-tutoring-usage.js';
-import type { Authorize, Meter, ProviderSettings } from './ai/services/metered-call.js';
+import type { Admission, Meter, ProviderSettings } from './ai/services/metered-call.js';
 import { readConfig } from './shared/config.js';
 
 // Settings, consent and metering for one paid AI service. Each service has its
@@ -13,7 +13,7 @@ export function aiProvider(
   env: NodeJS.ProcessEnv,
   scope: AiConsentChange['scope'],
   eligibleFlag: string,
-): [ProviderSettings, Authorize, Meter] {
+): [ProviderSettings, Admission, Meter] {
   const { paidAiEnabled, aiMonthlyBudget } = readConfig(env);
   const consent = createAiConsent(pool, aiMonthlyBudget);
   const usage = createTutoringUsage(pool, aiMonthlyBudget);
@@ -23,7 +23,10 @@ export function aiProvider(
       apiKey: env.OPENAI_API_KEY?.trim() ?? '',
       eligible: env[eligibleFlag] === 'true',
     },
-    (credentials, start) => consent.dispatch(credentials, scope, start),
+    {
+      dispatch: (credentials, start) => consent.dispatch(credentials, scope, start),
+      confirm: (credentials) => consent.confirm(credentials, scope),
+    },
     {
       reserve: (credentials, model, amount) =>
         consent.withChildConsent(credentials, scope, (client, child) =>

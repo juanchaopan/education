@@ -53,7 +53,7 @@ it('requires current consent and validates context before contacting the provide
 });
 
 it('starts one bounded stateless request and decodes a completion across UTF-8 chunks', async () => {
-  const { request, authorize, send, meter } = setup();
+  const { request, authorize, confirm, send, meter } = setup();
   const bytes = encoder.encode(event({ type: 'response.created' }) + done);
   const split = bytes.indexOf(encoder.encode('先')[0]!) + 1;
   send.mockResolvedValue(stream(bytes.slice(0, split), bytes.slice(split)));
@@ -68,6 +68,7 @@ it('starts one bounded stateless request and decodes a completion across UTF-8 c
     usage: { inputTokens: 82, outputTokens: 12 },
   });
   expect(authorize).toHaveBeenCalledTimes(1);
+  expect(confirm).toHaveBeenCalledExactlyOnceWith(credentials);
   expect(send).toHaveBeenCalledExactlyOnceWith(
     'https://api.openai.com/v1/responses',
     expect.objectContaining({ redirect: 'error' }),
@@ -85,6 +86,20 @@ it('starts one bounded stateless request and decodes a completion across UTF-8 c
   });
   expect(init?.body).not.toContain(credentials.token);
   expect(init?.body).not.toContain('private');
+});
+
+it('withholds a reply the child may no longer receive and still records what it cost', async () => {
+  const { request, confirm, send, meter } = setup();
+  send.mockResolvedValue(stream(encoder.encode(done)));
+  confirm.mockRejectedValueOnce(new RequestError(401, 'synthetic private error'));
+  await expect(request(credentials, input)).resolves.toEqual({
+    status: 'fallback',
+    reason: 'unauthorized',
+  });
+  expect(meter.settle).toHaveBeenCalledExactlyOnceWith('id', {
+    status: 'settled',
+    usage: { inputTokens: 82, outputTokens: 12 },
+  });
 });
 
 it('times out despite early headers, deltas and a stream that stays open', async () => {
