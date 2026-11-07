@@ -1,7 +1,7 @@
 import { feedbackTextMaxLength } from '@education/contracts';
 import type { VoiceState } from '../data-access/useVoiceInput';
 import { voiceMessage } from '../interaction/voice-message';
-import action from './LessonAction.module.css';
+import { LessonButton as Button } from './LessonButton';
 import panel from './LessonPanel.module.css';
 import styles from './VoiceInputPanel.module.css';
 
@@ -15,22 +15,6 @@ type Props = {
   onConfirm: () => void;
   onDiscard: () => void;
 };
-
-function Button({
-  label,
-  onClick,
-  disabled,
-}: {
-  label: string;
-  onClick: () => void;
-  disabled?: boolean;
-}) {
-  return (
-    <button type="button" className={action.button} onClick={onClick} disabled={disabled}>
-      {label}
-    </button>
-  );
-}
 
 function Actions({ state, ...on }: Props) {
   switch (state.status) {

@@ -48,7 +48,7 @@
 
 [#29 作答一致性与删除恢复](adr/0005-data-consistency.md) 已通过本机 PostgreSQL 探针。试点采用作答重试去重、草稿冲突提示和删除清单恢复流程。备份保留 14 天、恢复时普通业务数据最多丢失 24 小时、4 小时恢复和在线数据 24 小时内清理是待实测目标。[演练证据](adr/assets/0029-answer-consistency-recovery-evidence.md)
 
-[ADR-0012](adr/0012-browser-voice-touch-spike.md)：#28 接受 GPT-Transcribe 试点语音转写及 Pointer Events 绘图。正式朗读的普通话声音交 #42 试听验收；iPad 和大陆端到端验证交 #51。
+[ADR-0012](adr/0012-browser-voice-touch-spike.md)：#28 接受 GPT-Transcribe 试点语音转写及 Pointer Events 绘图。朗读采用维护者认可的 #48 原型音色，许可待确认；iPad 和大陆端到端验证交 #51。
 
 [ADR-0013](adr/0013-per-problem-interactive-teaching.md) 记录 #48 的逐题教学设计、三道原型的验证证据、跨工具出课流程和后续课堂语音联动的验收边界。
 
@@ -71,3 +71,5 @@
 [#39 AI 用量与费用上限](evidence/39/README.md) 记录预算配置、预留与结算、未知费用和限流。
 
 [#41 中文语音输入与识别确认](evidence/41/README.md) 记录录音与转写流程、授权版本、按时长计费、浏览器状态和未验证范围。
+
+[#42 中文朗读与重复播放指令](evidence/42/README.md) 记录选定的声音及其许可、重听与暂停的播放规则、换步骤和后台时的处理。
