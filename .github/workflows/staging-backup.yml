@@ -1,0 +1,45 @@
+name: staging-backup
+on:
+  schedule:
+    - cron: '41 19 * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+# Backup, restore and maintenance of the staging databases never overlap.
+concurrency:
+  group: staging-database
+  cancel-in-progress: false
+jobs:
+  backup:
+    if: vars.STAGING_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: staging
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          persist-credentials: false
+      - uses: ./.github/actions/backup-tools
+        with:
+          postgres-major: ${{ vars.STAGING_POSTGRES_MAJOR || '17' }}
+      - name: Dump the application database and encrypt it to the backup key
+        env:
+          STAGING_DATABASE: 'true'
+          STAGING_DATABASE_HOST: ${{ vars.STAGING_DATABASE_HOST }}
+          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+          DATABASE_CA_CERT: ${{ secrets.STAGING_DATABASE_CA_CERT }}
+          BACKUP_RECIPIENT: ${{ vars.STAGING_BACKUP_RECIPIENT }}
+        run: |
+          : "${BACKUP_RECIPIENT:?Set the STAGING_BACKUP_RECIPIENT variable to the backup public key}"
+          umask 077
+          node scripts/staging-backup.mjs "$RUNNER_TEMP/backup"
+          tar -C "$RUNNER_TEMP/backup" -cf - . | age -r "$BACKUP_RECIPIENT" -o "$RUNNER_TEMP/staging-backup.tar.age"
+          rm -rf "$RUNNER_TEMP/backup"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: staging-backup
+          path: ${{ runner.temp }}/staging-backup.tar.age
+          retention-days: 14
+          compression-level: 0
+          if-no-files-found: error

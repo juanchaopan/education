@@ -1,0 +1,25 @@
+name: Backup tools
+description: Builds the API and installs the PostgreSQL client tools and age that backups and restores use.
+inputs:
+  postgres-major:
+    description: PostgreSQL major version of the client tools; it must match the database server.
+    required: true
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v7
+      with:
+        node-version: 24
+        cache: npm
+    - shell: bash
+      run: npm ci && npm run build:libs && npm run build -w @education/api
+    - shell: bash
+      env:
+        POSTGRES_MAJOR: ${{ inputs.postgres-major }}
+      run: |
+        [[ "$POSTGRES_MAJOR" =~ ^[0-9]+$ ]]
+        sudo apt-get update -q
+        sudo apt-get install -y -q postgresql-common age
+        sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+        sudo apt-get install -y -q "postgresql-client-$POSTGRES_MAJOR"
+        echo "/usr/lib/postgresql/$POSTGRES_MAJOR/bin" >> "$GITHUB_PATH"
