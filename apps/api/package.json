@@ -12,6 +12,7 @@
     "start": "node dist/index.js",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx src/database/migrate.ts",
+    "db:complete-deletions": "tsx src/complete-deletions.ts",
     "test:db": "vitest run --config vitest.database.config.ts"
   },
   "dependencies": {

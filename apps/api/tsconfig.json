@@ -6,5 +6,5 @@
     "noEmit": true,
     "types": ["node"]
   },
-  "include": ["src", "drizzle.config.ts"]
+  "include": ["src", "drizzle.config.ts", "drizzle-ledger.config.ts"]
 }

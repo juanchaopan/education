@@ -32,7 +32,12 @@ import { hashParentPassword, verifyParentPassword } from './identity/services/pa
 import { createRegistrationStore } from './identity/repositories/postgres-registration.js';
 import { createAuthAdmission } from './identity/repositories/auth-admission.js';
 import { createReadinessCheck } from './database/readiness.js';
-import { databaseOptions } from './shared/database-config.js';
+import {
+  applicationDatabase,
+  databaseOptions,
+  deletionLedgerDatabase,
+  type DatabaseSource,
+} from './shared/database-config.js';
 import { readRevision } from './shared/revision.js';
 import { createDrafts } from './draft-application.js';
 import { createAnswering } from './answer-application.js';
@@ -40,20 +45,16 @@ import { createLearningSummary } from './learning-summary-application.js';
 import { createPracticeAssignments } from './practice-application.js';
 import { createAiConsent } from './ai-consent-application.js';
 import { createFamilyExport } from './family-export-application.js';
+import { createFamilyDeletion } from './family-deletion-application.js';
 import { createTeachingFeedback } from './teaching-feedback-application.js';
 import { createVoiceTranscription } from './voice-transcription-application.js';
+
+type Config = ReturnType<typeof readConfig>;
 
 export async function createApplication(env: NodeJS.ProcessEnv = process.env) {
   const config = readConfig(env);
   const mailConfig = readMailConfig(env);
-  const pool = config.registrationEnabled
-    ? new pg.Pool({
-        ...databaseOptions(env),
-        max: env.VERCEL === '1' ? 4 : 10,
-        connectionTimeoutMillis: config.connectionTimeoutMs,
-        statement_timeout: 3000,
-      })
-    : undefined;
+  const { pool, ledgerPool } = createPools(env, config);
   const admit = pool ? createAuthAdmission(pool, config.rateLimitKey!) : undefined;
   const registration = pool
     ? createRegistrationService({
@@ -75,25 +76,54 @@ export async function createApplication(env: NodeJS.ProcessEnv = process.env) {
     teachingFeedback,
     voiceTranscription,
     childAccess: createChildAccess(pool, sessions, admit, config),
-    ...createFamilyManagement(pool, sessions, admit, config.aiMonthlyBudget),
+    ...createFamilyManagement({
+      pool,
+      ledgerPool,
+      sessions,
+      admit,
+      monthlyBudget: config.aiMonthlyBudget,
+    }),
     verification: createVerification(pool, mailConfig, admit),
     recovery: createRecovery(pool, mailConfig, admit),
     ready: pool ? await createReadinessCheck(pool) : undefined,
     revision: await readRevision(),
   });
-  // Idle connections can fail during a database restart without ending the HTTP process.
-  pool?.on('error', () => app.log.error('Database connection unavailable'));
-  app.addHook('onClose', async () => {
-    await pool?.end();
-  });
+  closePoolsWith(app, [pool, ledgerPool]);
   if (env.VERCEL !== '1') await registerWeb(app);
   return app;
+}
+
+// The application database, and the deletion ledger database when one is
+// configured. Family deletion writes only single rows to the ledger, so its pool
+// is small; without a ledger, deletion stays unavailable.
+function createPools(env: NodeJS.ProcessEnv, config: Config) {
+  if (!config.registrationEnabled) return {};
+  const open = (source: DatabaseSource, max: number) =>
+    new pg.Pool({
+      ...databaseOptions(env, source),
+      max,
+      connectionTimeoutMillis: config.connectionTimeoutMs,
+      statement_timeout: 3000,
+    });
+  return {
+    pool: open(applicationDatabase, env.VERCEL === '1' ? 4 : 10),
+    ledgerPool: env[deletionLedgerDatabase.url] ? open(deletionLedgerDatabase, 2) : undefined,
+  };
+}
+
+// Idle connections can fail during a database restart without ending the HTTP process.
+function closePoolsWith(app: ReturnType<typeof buildApp>, pools: (pg.Pool | undefined)[]) {
+  for (const pool of pools)
+    pool?.on('error', () => app.log.error('Database connection unavailable'));
+  app.addHook('onClose', async () => {
+    await Promise.all(pools.map((pool) => pool?.end()));
+  });
 }
 
 // Parent sessions, child sessions, and the services that need a signed-in child.
 async function createIdentitySessions(
   pool: pg.Pool | undefined,
-  config: ReturnType<typeof readConfig>,
+  config: Config,
   admit: ReturnType<typeof createAuthAdmission> | undefined,
   env: NodeJS.ProcessEnv,
 ) {
@@ -191,18 +221,26 @@ function createRecovery(
   });
 }
 
-function createFamilyManagement(
-  pool: pg.Pool | undefined,
-  sessions: ReturnType<typeof createSessionService> | undefined,
-  admit: ReturnType<typeof createAuthAdmission> | undefined,
-  monthlyBudget: bigint | null,
-) {
+function createFamilyManagement({
+  pool,
+  ledgerPool,
+  sessions,
+  admit,
+  monthlyBudget,
+}: {
+  pool?: pg.Pool;
+  ledgerPool?: pg.Pool;
+  sessions?: ReturnType<typeof createSessionService>;
+  admit?: ReturnType<typeof createAuthAdmission>;
+  monthlyBudget: bigint | null;
+}) {
   if (!pool || !sessions || !admit) return {};
   return {
     learningSummary: createLearningSummary(pool),
     practice: createPracticeAssignments(pool),
     aiConsent: createAiConsent(pool, monthlyBudget),
     familyExport: createFamilyExport(pool),
+    familyDeletion: createFamilyDeletion(pool, ledgerPool),
     registrationKeys: createRegistrationKeyService({
       sessions,
       repository: createRegistrationKeyRepository(pool),
@@ -218,7 +256,7 @@ function createFamilyManagement(
 
 function createChildRegistration(
   pool: pg.Pool | undefined,
-  config: ReturnType<typeof readConfig>,
+  config: Config,
   admit: ReturnType<typeof createAuthAdmission> | undefined,
 ) {
   if (!pool || !config.pinPepper || !admit) return undefined;
@@ -234,7 +272,7 @@ function createChildAccess(
   pool: pg.Pool | undefined,
   sessions: ReturnType<typeof createSessionService> | undefined,
   admit: ReturnType<typeof createAuthAdmission> | undefined,
-  config: ReturnType<typeof readConfig>,
+  config: Config,
 ) {
   if (!pool || !sessions || !admit || !config.pinPepper) return undefined;
   return createChildAccessService({

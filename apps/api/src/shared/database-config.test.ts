@@ -1,11 +1,12 @@
 import { expect, it } from 'vitest';
-import { databaseOptions } from './database-config.js';
+import { databaseOptions, deletionLedgerDatabase } from './database-config.js';
+
+const pooler = 'postgres://postgres.project:fixture@aws-0-ap-southeast-1.pooler.supabase.com';
 
 it('accepts Supabase session pooling with certificate verification and an optional provider CA', () => {
   const options = databaseOptions({
     STAGING_DATABASE: 'true',
-    DATABASE_URL:
-      'postgres://postgres.project:fixture@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres?sslmode=verify-full',
+    DATABASE_URL: `${pooler}:5432/postgres?sslmode=verify-full`,
     DATABASE_CA_CERT: 'public-provider-ca-fixture',
   });
   expect(options.connectionString).not.toContain('sslmode');
@@ -18,11 +19,64 @@ it('rejects transaction pooling and TLS overrides before opening a connection', 
     ':5432/postgres?sslmode=no-verify',
     ':5432/postgres?sslmode=verify-full&uselibpqcompat=true',
   ]) {
-    expect(() =>
-      databaseOptions({
-        VERCEL: '1',
-        DATABASE_URL: `postgres://postgres.project:fixture@aws-0-ap-southeast-1.pooler.supabase.com${suffix}`,
-      }),
-    ).toThrow();
+    expect(() => databaseOptions({ VERCEL: '1', DATABASE_URL: `${pooler}${suffix}` })).toThrow();
   }
+});
+
+it('reads the deletion ledger from its own variables under the same rules', () => {
+  const options = databaseOptions(
+    {
+      VERCEL: '1',
+      DATABASE_URL: 'postgres://app.example/education',
+      DELETION_LEDGER_URL: `${pooler}:5432/postgres?sslmode=verify-full`,
+      DELETION_LEDGER_CA_CERT: 'ledger-provider-ca-fixture',
+    },
+    deletionLedgerDatabase,
+  );
+  expect(options.ssl).toEqual({ rejectUnauthorized: true, ca: 'ledger-provider-ca-fixture' });
+  expect(() => databaseOptions({}, deletionLedgerDatabase)).toThrow(
+    'DELETION_LEDGER_URL is required',
+  );
+  expect(() =>
+    databaseOptions(
+      { VERCEL: '1', DELETION_LEDGER_URL: `${pooler}:6543/postgres` },
+      deletionLedgerDatabase,
+    ),
+  ).toThrow();
+});
+
+it('refuses a deletion ledger that leads to the application database', () => {
+  expect(() =>
+    databaseOptions(
+      {
+        DATABASE_URL: 'postgres://app:one@db.example:5432/education',
+        DELETION_LEDGER_URL: 'postgresql://app:two@db.example/education',
+      },
+      deletionLedgerDatabase,
+    ),
+  ).toThrow('DELETION_LEDGER_URL must name a different database from DATABASE_URL');
+  expect(
+    databaseOptions(
+      {
+        DATABASE_URL: 'postgres://app:one@db.example:5432/education',
+        DELETION_LEDGER_URL: 'postgres://app:one@db.example:5432/education_ledger',
+      },
+      deletionLedgerDatabase,
+    ).connectionString,
+  ).toContain('education_ledger');
+});
+
+it('tells two projects behind one shared pooler apart by their users', () => {
+  const project = (ref: string) =>
+    `postgres://postgres.${ref}:fixture@aws-0-us-east-1.pooler.supabase.com:5432/postgres?sslmode=verify-full`;
+  expect(
+    databaseOptions(
+      {
+        STAGING_DATABASE: 'true',
+        DATABASE_URL: project('application'),
+        DELETION_LEDGER_URL: project('ledger'),
+      },
+      deletionLedgerDatabase,
+    ).connectionString,
+  ).toContain('postgres.ledger');
 });

@@ -7,13 +7,9 @@ import {
   saveAiConsent,
 } from '../repositories/postgres-ai-consent.js';
 import type { AuthorizedParent } from '../repositories/session-transaction.js';
+import type { Credentials, ParentTransaction } from './parent-transaction.js';
 import { RequestError } from '../../shared/request-error.js';
 
-type Credentials = { token?: string; csrf?: string };
-type ParentTransaction = <T>(
-  credentials: Credentials,
-  work: (client: pg.PoolClient, parent: AuthorizedParent) => Promise<T>,
-) => Promise<T>;
 type ChildTransaction = <T>(
   credentials: Credentials,
   work: (client: pg.PoolClient, child: string) => Promise<T>,
