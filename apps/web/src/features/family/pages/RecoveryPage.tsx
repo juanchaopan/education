@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import type { RecoveryRequest } from '@education/contracts';
+import { StandaloneLink } from '../../../shared/ui/StandaloneLink';
 import { RecoveryForm } from '../components/RecoveryForm';
 import { useRecoveryRequest } from '../data-access/useRecovery';
 export function RecoveryPage() {
@@ -39,7 +39,7 @@ export function RecoveryPage() {
         }}
         onSubmit={submit}
       />
-      <Link to="/family">返回家长空间</Link>
+      <StandaloneLink to="/family">返回家长空间</StandaloneLink>
     </>
   );
 }

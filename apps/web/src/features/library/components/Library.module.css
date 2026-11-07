@@ -169,8 +169,10 @@
   border-left: 2px solid var(--line);
   padding-left: var(--space-4);
 }
+/* The step numbers are small text, so they take the darker teal to keep
+   their contrast with the page above 4.5:1. */
 .principles span {
-  color: var(--teal);
+  color: var(--teal-dark);
   font-size: var(--text-sm);
   font-weight: 700;
 }

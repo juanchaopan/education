@@ -23,6 +23,7 @@
     "storybook": "npm run storybook -w @education/web",
     "build-storybook": "npm run build-storybook -w @education/web",
     "test:e2e": "playwright test",
+    "test:visual": "node scripts/visual.mjs",
     "test:accounts": "node scripts/test-accounts-compose.mjs",
     "test:staging": "node --test scripts/staging-handler.test.mjs scripts/staging-release.test.mjs scripts/staging-trigger.test.mjs scripts/staging-trigger-wait.test.mjs scripts/staging-readiness.test.mjs scripts/staging-vercel.test.mjs scripts/staging-mail-env.test.mjs scripts/staging-database-env.test.mjs scripts/staging-backup.test.mjs",
     "db:generate": "npm run db:generate -w @education/api",
@@ -33,6 +34,7 @@
     "test:toolchain": "node --test scripts/toolchain.test.mjs scripts/auto-merge.test.mjs"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
     "@playwright/test": "^1.64.1",
     "@swc/core": "^1.16.21",
     "@testing-library/dom": "^10.4.2",

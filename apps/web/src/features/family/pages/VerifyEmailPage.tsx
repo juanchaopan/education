@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { StandaloneLink } from '../../../shared/ui/StandaloneLink';
 import { useConfirmVerification } from '../data-access/useVerification';
 import styles from '../components/RegistrationForm.module.css';
 
@@ -33,7 +33,7 @@ export function VerifyEmailPage() {
         <p role="status">没有有效的验证链接。请从邮件中重新打开，或登录家长账号重新发送。</p>
       )}
       {confirm.error && <p role="alert">{confirm.error.message}</p>}
-      <Link to="/family">返回家长空间</Link>
+      <StandaloneLink to="/family">返回家长空间</StandaloneLink>
     </section>
   );
 }

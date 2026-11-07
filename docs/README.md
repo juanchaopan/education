@@ -25,6 +25,8 @@
 
 [逐题设计互动教学与验收手册](design/interactive-lesson-authoring.md) 记录逐题分镜、交互与音画验收要求，提供开发者自查卡。
 
+[视觉基准与可访问性检查](design/visual-baselines.md)：固定镜像里的截图基准、覆盖的组件状态和页面、可访问性检查，以及基准的更新和评审。
+
 [框架进度与后续工作](development-status.md)：实际实现范围、前置条件和开发顺序。
 
 [ADR-0007](adr/0007-typescript-7-toolchain.md)：按用户 TS7 目标调整编译、lint 与架构解析工具链。
@@ -86,3 +88,5 @@
 [#111 staging 数据库迁到 Neon](evidence/111/README.md) 记录按主机确认目标库、清单库不同主机的检查、自动化测试，以及 staging 上的发布、家庭删除和每小时维护验收。
 
 [#45 备份恢复](evidence/45/README.md) 记录服务开关、每日加密备份、按删除清单重放的恢复、清单条目的销毁、自动化测试和演练。
+
+[#46 视觉基准与可访问性](evidence/46/README.md) 记录截图覆盖范围、固定的浏览器和中文字体、可访问性检查的结果和修复，以及需要真机补充的检查。

@@ -1,6 +1,6 @@
-import { Link } from 'react-router-dom';
 import type { PracticePage } from '@education/contracts';
 import { problemPath } from '../../../shared/lib/problem-path';
+import { StandaloneLink } from '../../../shared/ui/StandaloneLink';
 import styles from './Practice.module.css';
 
 export function PracticeList({
@@ -21,7 +21,7 @@ export function PracticeList({
               {learner ? '有一道练习的原版本暂时打不开。' : `${id}（版本 ${version}）暂时不可用。`}
             </span>
           ) : learner ? (
-            <Link to={problemPath(id, version)}>{title}</Link>
+            <StandaloneLink to={problemPath(id, version)}>{title}</StandaloneLink>
           ) : (
             <span>
               {title}（版本 {version}）

@@ -1,0 +1,71 @@
+import { expect, type Page } from '@playwright/test';
+import { longCatalog, serveApi, signedOutApi, type Api } from './api';
+import { fixClock, waitForFonts } from './render';
+
+// One page in one state: where to open it, how the API answers, and the
+// heading that shows it has finished rendering that state.
+export type PageState = {
+  name: string;
+  path: string;
+  ready: string;
+  api?: Api;
+};
+
+const failed = { status: 500, json: { message: 'unavailable' } };
+
+export const pageStates: PageState[] = [
+  { name: 'explore-empty', path: '/', ready: '好问题，正在准备中' },
+  {
+    name: 'explore-loading',
+    path: '/',
+    ready: '正在打开探索地图',
+    api: { 'GET /api/v1/problems': 'pending' },
+  },
+  {
+    name: 'explore-failed',
+    path: '/',
+    ready: '刚才没能打开',
+    api: { 'GET /api/v1/problems': failed },
+  },
+  {
+    name: 'explore-long-text',
+    path: '/',
+    ready: '从一个好问题开始',
+    api: { 'GET /api/v1/problems': { status: 200, json: longCatalog } },
+  },
+  {
+    name: 'problem-unavailable',
+    path: '/problems/visual-fixture-missing',
+    ready: '这道题暂时不可用',
+  },
+  { name: 'family-signed-out', path: '/family', ready: '创建家长账号' },
+  {
+    name: 'family-session-failed',
+    path: '/family',
+    ready: '创建家长账号',
+    api: { 'GET /api/v1/session': failed },
+  },
+  {
+    name: 'family-registration-closed',
+    path: '/family',
+    ready: '创建家长账号',
+    api: { 'GET /api/v1/registration-status': { status: 200, json: { enabled: false } } },
+  },
+  { name: 'child-signed-out', path: '/child', ready: '孩子登录' },
+  { name: 'child-registration', path: '/join', ready: '加入我的家庭' },
+  { name: 'parent-recovery', path: '/family/recover', ready: '找回家长密码' },
+  { name: 'password-reset-without-link', path: '/family/reset', ready: '请从恢复邮件打开' },
+  { name: 'email-verification-without-link', path: '/family/verify', ready: '验证家长邮箱' },
+  { name: 'not-found', path: '/visual-fixture-missing-page', ready: '这条小路还没找到' },
+];
+
+// Opens a page state with a fixed clock and API, and waits until it and its
+// fonts have rendered. Returns the API requests the state did not plan for.
+export async function openPageState(page: Page, state: PageState) {
+  await fixClock(page);
+  const unexpected = await serveApi(page, { ...signedOutApi, ...state.api });
+  await page.goto(state.path);
+  await expect(page.getByRole('heading', { name: state.ready })).toBeVisible();
+  await waitForFonts(page);
+  return unexpected;
+}

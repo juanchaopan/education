@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { passwordIssue } from '@education/contracts';
+import { StandaloneLink } from '../../../shared/ui/StandaloneLink';
 import { PasswordResetForm } from '../components/PasswordResetForm';
 import { usePasswordReset } from '../data-access/useRecovery';
 function takeToken() {
@@ -69,10 +69,10 @@ export function ResetPasswordPage() {
       )}
       {!done && (
         <p>
-          <Link to="/family/recover">重新申请恢复邮件</Link>
+          <StandaloneLink to="/family/recover">重新申请恢复邮件</StandaloneLink>
         </p>
       )}
-      <Link to="/family">返回家长空间</Link>
+      <StandaloneLink to="/family">返回家长空间</StandaloneLink>
     </>
   );
 }

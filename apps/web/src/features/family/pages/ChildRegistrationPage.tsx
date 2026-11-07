@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
 import type { ChildRegistrationReceipt } from '@education/contracts';
+import { StandaloneLink } from '../../../shared/ui/StandaloneLink';
 import { ChildRegistrationForm } from '../components/ChildRegistrationForm';
 import { ChildRegistrationSuccess } from '../components/ChildRegistrationSuccess';
 import { useChildRegistration } from '../data-access/useChildRegistration';
@@ -43,12 +43,12 @@ export function ChildRegistrationPage() {
         <>
           <ChildRegistrationSuccess receipt={receipt} />
           <p>
-            <Link
+            <StandaloneLink
               to="/child"
               state={{ familyCode: receipt.familyCode, nickname: receipt.nickname }}
             >
               去孩子登录
-            </Link>
+            </StandaloneLink>
           </p>
         </>
       ) : (
@@ -61,7 +61,7 @@ export function ChildRegistrationPage() {
         />
       )}
       <p>
-        <Link to="/family">请家长帮忙，前往家长空间</Link>
+        <StandaloneLink to="/family">请家长帮忙，前往家长空间</StandaloneLink>
       </p>
     </section>
   );

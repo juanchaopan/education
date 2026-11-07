@@ -1,5 +1,5 @@
-import { Link } from 'react-router-dom';
 import { useState } from 'react';
+import { StandaloneLink } from '../../../shared/ui/StandaloneLink';
 import { LoginForm } from '../components/LoginForm';
 import { useParentLogin } from '../data-access/useParentSession';
 export function LoginPanel() {
@@ -29,7 +29,7 @@ export function LoginPanel() {
         pending={login.isPending}
         error={login.error?.message}
       />
-      <Link to="/family/recover">忘记密码？通过邮箱找回</Link>
+      <StandaloneLink to="/family/recover">忘记密码？通过邮箱找回</StandaloneLink>
     </>
   );
 }

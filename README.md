@@ -87,12 +87,13 @@ npm run db:complete-deletions -w @education/api
 ```sh
 npm run check
 npm run test:e2e
+npm run test:visual
 npm run storybook
 ```
 
-端到端测试前需 `npm run build`，并安装匹配的 Playwright Chromium：`npx playwright install chromium`。本机已有兼容 Chromium 时可临时设置 `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH`；正式视觉基准应在固定版本的官方 Playwright 镜像中建立和评审。
+端到端测试前需 `npm run build`，并安装匹配的 Playwright Chromium：`npx playwright install chromium`。本机已有兼容 Chromium 时可临时设置 `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH`。
 
-Storybook 展示空、加载、错误和长文字状态。尚未建立经评审的像素回归基准；端到端测试和截图产物不能被称为已完成的视觉回归。
+`npm run test:visual` 需要 Docker 正在运行：它在固定版本的官方 Playwright 镜像里构建应用和 Storybook，把每个 story 和关键页面在桌面、平板、手机三个视口下与经维护者评审的基准截图对比，并检查 WCAG 2.2 AA、键盘、减少动画、触摸目标和缩放。外观有意改变时用 `npm run test:visual -- --update` 重新生成基准，随代码提交并由维护者评审。做法见 [视觉基准与可访问性检查](docs/design/visual-baselines.md)。
 
 ## 配置和安全
 
