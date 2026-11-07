@@ -1,4 +1,4 @@
-import { clearFamilyManagement } from './family-cache';
+import { replaceParentSession } from './family-cache';
 import { sessionRequest } from './session-request';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Value } from '@sinclair/typebox/value';
@@ -49,9 +49,7 @@ export function useParentLogin() {
     onSuccess: async (session) => {
       await client.cancelQueries({ queryKey: ['child-session'] });
       client.setQueryData(['child-session'], null);
-      await client.cancelQueries({ queryKey: key });
-      await clearFamilyManagement(client);
-      client.setQueryData(key, session);
+      await replaceParentSession(client, session);
     },
   });
 }
@@ -67,11 +65,7 @@ export function useParentLogout() {
         throw new Error('暂时无法确认退出结果，请重试。');
       }
     },
-    onSuccess: async () => {
-      await client.cancelQueries({ queryKey: key });
-      client.setQueryData(key, null);
-      await clearFamilyManagement(client);
-    },
+    onSuccess: () => replaceParentSession(client, null),
     onError: () => {
       void client.invalidateQueries({ queryKey: key });
     },

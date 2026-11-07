@@ -1,5 +1,6 @@
 import { ChildAccessPanel } from './ChildAccessPanel';
 import { AiConsentPanel } from './AiConsentPanel';
+import { FamilyDeletionPanel } from './FamilyDeletionPanel';
 import { FamilyExportPanel } from './FamilyExportPanel';
 import { LearningSummaryPanel } from './LearningSummaryPanel';
 import { ParentPracticePanel } from './ParentPracticePanel';
@@ -10,10 +11,14 @@ import { useState } from 'react';
 import { RegistrationPanel } from './RegistrationPanel';
 import { LoginPanel } from './LoginPanel';
 import { AccountStatus } from '../components/AccountStatus';
+import { FamilyDeleted } from '../components/FamilyDeleted';
 import { useParentSession, useParentLogout } from '../data-access/useParentSession';
 
 export function FamilyPage() {
   const [mode, setMode] = useState<'register' | 'login'>('register');
+  // A finished deletion signs the page out; this keeps saying so until the
+  // parent moves on to register a new family.
+  const [deleted, setDeleted] = useState(false);
   const session = useParentSession();
   const logout = useParentLogout();
   const leave = () => {
@@ -29,7 +34,14 @@ export function FamilyPage() {
     <section aria-labelledby="family-title">
       <h1 id="family-title">家长空间</h1>
       <p>陪伴每一次尝试，看见一点一滴的进步。</p>
-      {session.isPending ? (
+      {deleted ? (
+        <FamilyDeleted
+          onRegister={() => {
+            setDeleted(false);
+            setMode('register');
+          }}
+        />
+      ) : session.isPending ? (
         <p role="status">正在确认登录状态…</p>
       ) : session.data ? (
         <>
@@ -41,27 +53,7 @@ export function FamilyPage() {
             onLogout={leave}
           />
           {session.data.access === 'verified' && (
-            <>
-              <LearningSummaryPanel
-                key={`summary-${session.data.csrfToken}`}
-                csrf={session.data.csrfToken}
-              />
-              <ParentPracticePanel
-                key={`practice-${session.data.csrfToken}`}
-                csrf={session.data.csrfToken}
-              />
-              <AiConsentPanel
-                key={`ai-consent-${session.data.csrfToken}`}
-                csrf={session.data.csrfToken}
-              />
-              <RegistrationKeyPanel key={session.data.csrfToken} csrf={session.data.csrfToken} />
-              <ChildAccessPanel
-                key={`children-${session.data.csrfToken}`}
-                csrf={session.data.csrfToken}
-              />
-              {/* The export renews the session itself and keeps its result across that renewal. */}
-              <FamilyExportPanel csrf={session.data.csrfToken} />
-            </>
+            <FamilyManagement csrf={session.data.csrfToken} onDeleted={() => setDeleted(true)} />
           )}
           {!session.data.emailVerified && <VerificationPanel csrf={session.data.csrfToken} />}
         </>
@@ -79,5 +71,21 @@ export function FamilyPage() {
         </>
       )}
     </section>
+  );
+}
+
+// The panels of a verified parent. Most start over with each renewed session;
+// export and deletion renew the session themselves and keep their state across it.
+function FamilyManagement({ csrf, onDeleted }: { csrf: string; onDeleted: () => void }) {
+  return (
+    <>
+      <LearningSummaryPanel key={`summary-${csrf}`} csrf={csrf} />
+      <ParentPracticePanel key={`practice-${csrf}`} csrf={csrf} />
+      <AiConsentPanel key={`ai-consent-${csrf}`} csrf={csrf} />
+      <RegistrationKeyPanel key={csrf} csrf={csrf} />
+      <ChildAccessPanel key={`children-${csrf}`} csrf={csrf} />
+      <FamilyExportPanel csrf={csrf} />
+      <FamilyDeletionPanel csrf={csrf} onDeleted={onDeleted} />
+    </>
   );
 }
