@@ -35,8 +35,11 @@ test('parent types the phrase, confirms the password and deletes the family', as
       [family],
     );
     expect(entry.rows).toEqual([{ done: true }]);
-    await page.reload();
-    await expect(page.getByRole('button', { name: /去登录|去注册/ })).toBeVisible();
+    // The browser dropped the session cookie, so a later visit starts signed out.
+    const cookies = await page.context().cookies();
+    expect(cookies.map(({ name }) => name)).not.toContain('__Host-education_session');
+    await deleted.getByRole('button', { name: '注册新的家庭' }).click();
+    await expect(page.getByRole('button', { name: '已有账号？去登录' })).toBeVisible();
   } finally {
     if (family) {
       await pool.query('DELETE FROM families WHERE id=$1', [family]);
