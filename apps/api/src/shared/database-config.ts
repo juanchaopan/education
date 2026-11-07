@@ -35,9 +35,9 @@ export function databaseOptions(
   };
 }
 
-// The user is part of where a connection leads: shared poolers, such as
-// Supabase's, serve every project at one host and database name and tell
-// projects apart by the user.
+// The user is part of where a connection leads: a shared pooler can serve
+// several databases at one host and database name and tell them apart by the
+// user.
 const location = (url: URL) =>
   `${url.username}@${url.hostname}:${url.port || '5432'}${url.pathname}`;
 
