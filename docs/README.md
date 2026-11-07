@@ -81,4 +81,4 @@
 
 [#44 家庭删除与即时访问撤销](evidence/44/README.md) 记录删除与留下的范围、独立删除清单、跨实例撤销、并发与部分失败处理、维护任务和 staging 启用步骤。
 
-[#111 staging 数据库迁到 Neon](evidence/111/README.md) 记录按主机确认目标库、清单库不同主机的检查、自动化测试和待维护者完成的 staging 验收。
+[#111 staging 数据库迁到 Neon](evidence/111/README.md) 记录按主机确认目标库、清单库不同主机的检查、自动化测试，以及 staging 上的发布、家庭删除和每小时维护验收。
