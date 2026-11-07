@@ -9,29 +9,29 @@
 | Vercel 工作区 | juanchaopan1 / `team_6WBQUpNIhHEGrjeEWxoFyN62`，API 返回 Hobby                                        |
 | 独立项目      | education-staging / `prj_UYpAbi3rHNsoEdnOYGWiOo8L2WP0`，Node 24；未连接 Git 自动部署；函数区域 sin1   |
 | 应用库        | Neon Free 项目 `education-staging`，AWS Asia Pacific (Singapore)；主机由 `STAGING_DATABASE_HOST` 指定 |
-| 删除清单库    | Neon Free 项目 `education-staging-ledger`，同一区域，与应用库不同主机                                 |
+| 删除清单库    | 另一个 Neon Free 项目 `education-staging-ledger`，同一区域                                            |
 | 当前测试地址  | <https://education-access-spike.hyp.app/>                                                             |
 
 Vercel 测试项目关闭默认登录保护，让不携带平台登录 cookie 的候选版本冒烟可以执行；这是公开的测试站，不接收儿童学习资料。验证邮件使用独立配置的 Gmail 凭据，配置与验收见 [家长验证邮件](mail.md)；没有 AI 凭据。自管账号的服务端会话与权限不受此设置替代。
 
 ## 一次性配置
 
-1. 在 Neon 新建两个项目，区域都选 AWS Asia Pacific (Singapore)：`education-staging` 放应用库，`education-staging-ledger` 放删除清单库。两个项目只给 staging 用，不放其他业务和真实用户数据：发布流程会修改迁移角色拥有的 `public` 表权限和默认权限。
+1. 在 Neon 新建两个项目，区域都选 AWS Asia Pacific (Singapore)：`education-staging` 放应用库，`education-staging-ledger` 放删除清单库。清单库必须在另一个项目里，不能是应用库项目的分支或另一个计算端点：同一项目的分支和端点主机不同，但共享这个项目的恢复历史。两个项目只给 staging 用，不放其他业务和真实用户数据：发布流程会修改迁移角色拥有的 `public` 表权限和默认权限。不启用 Neon 的 Data API，账号表只通过应用 API 访问。
 2. 在每个项目的 Dashboard → Connect 复制连接串，关闭 Connection pooling，主机里不能有 `-pooler`：本应用的会话级 advisory lock 不兼容事务连接池。把末尾的参数换成只有 `?sslmode=verify-full`，去掉 `sslmode=require` 和 `channel_binding=require`。密码里的特殊字符按 URL 编码。
 3. Neon 的证书由公共 CA 签发，不需要下载证书，两个证书秘密留空。保持证书验证，不能改成 no-verify/disable。
 4. 在 [GitHub Actions secrets](https://github.com/juanchaopan/education/settings/secrets/actions) 配置服务端秘密；不将值发到聊天或写进 Git。
 
-| Repository secret                 | 内容                                                                      |
-| --------------------------------- | ------------------------------------------------------------------------- |
-| `STAGING_VERCEL_TOKEN`            | 能管理上述 staging 项目的 Vercel token，按期更新；不会发往浏览器          |
-| `STAGING_DATABASE_URL`            | 应用库的直连连接串，含密码，只带 `?sslmode=verify-full`                   |
-| `STAGING_DELETION_LEDGER_URL`     | 删除清单库的直连连接串，同样只带 `?sslmode=verify-full`；主机不同于应用库 |
-| `STAGING_AUTH_RATE_LIMIT_KEY`     | 密码管理器生成的至少 32 字符随机值，跨部署保持一致                        |
-| `STAGING_PIN_PEPPER`              | 儿童 PIN 的服务器密钥，见下文 #24                                         |
-| `STAGING_DATABASE_CA_CERT`        | 留空；只有供应商证书不由公共 CA 签发时才填 PEM 根证书全文                 |
-| `STAGING_DELETION_LEDGER_CA_CERT` | 同上，对应删除清单库                                                      |
+| Repository secret                 | 内容                                                             |
+| --------------------------------- | ---------------------------------------------------------------- |
+| `STAGING_VERCEL_TOKEN`            | 能管理上述 staging 项目的 Vercel token，按期更新；不会发往浏览器 |
+| `STAGING_DATABASE_URL`            | 应用库的直连连接串，含密码，只带 `?sslmode=verify-full`          |
+| `STAGING_DELETION_LEDGER_URL`     | 删除清单库的直连连接串，同样只带 `?sslmode=verify-full`          |
+| `STAGING_AUTH_RATE_LIMIT_KEY`     | 密码管理器生成的至少 32 字符随机值，跨部署保持一致               |
+| `STAGING_PIN_PEPPER`              | 儿童 PIN 的服务器密钥，见下文 #24                                |
+| `STAGING_DATABASE_CA_CERT`        | 留空；只有供应商证书不由公共 CA 签发时才填 PEM 根证书全文        |
+| `STAGING_DELETION_LEDGER_CA_CERT` | 同上，对应删除清单库                                             |
 
-5. 在 [Actions variables](https://github.com/juanchaopan/education/settings/variables/actions) 设置 Repository variable **`STAGING_DATABASE_HOST`**：应用库连接串里 `@` 之后、`/` 之前的主机名，形如 `ep-…-xxxxxxxx.ap-southeast-1.aws.neon.tech`。它没有默认值。Vercel project/team ID 与域名已有工作流默认值；更换资源时用同名 Repository variables 覆盖 `STAGING_VERCEL_PROJECT_ID`、`STAGING_VERCEL_TEAM_ID`、`STAGING_ORIGIN`。不能将这些变量指向生产。GitHub App 没有读取/设置 Actions secrets 的权限，必须由维护者配置。
+5. 在 [Actions variables](https://github.com/juanchaopan/education/settings/variables/actions) 设置 Repository variable **`STAGING_DATABASE_HOST`**：应用库连接串里 `@` 之后、`/` 之前的主机名，形如 `ep-…-xxxxxxxx.ap-southeast-1.aws.neon.tech`，不带端口和数据库名。它必须是只服务这个数据库的直连主机，不能是多个数据库共用的连接池主机，否则同一主机上的其他数据库也能通过检查。它没有默认值。Vercel project/team ID 与域名已有工作流默认值；更换资源时用同名 Repository variables 覆盖 `STAGING_VERCEL_PROJECT_ID`、`STAGING_VERCEL_TEAM_ID`、`STAGING_ORIGIN`。不能将这些变量指向生产。GitHub App 没有读取/设置 Actions secrets 的权限，必须由维护者配置。
 6. 资源和上述秘密准备好后，设置 Repository variable **`STAGING_ENABLED=true`**。之后每次 main 的 `ci` 成功会自动触发；首次可在 Actions → staging → Run workflow 运行。首次手动触发时，如当前 main 尚无 CI，会先显式派发完整 CI；staging 准备任务会有界等待 CI 成功，再在同一次运行中继续发布，不依赖递归完成回调。不能部署任意分支或跳过 CI。变量未启用时，工作流只写明“未尝试部署”，不是部署成功。
 
 staging 只有合成账号。换数据库时不迁移旧数据，新库在第一次发布时完成迁移；维护者重新注册测试家长和孩子。
@@ -42,7 +42,7 @@ staging 只有合成账号。换数据库时不迁移旧数据，新库在第一
 
 - 应用库连接串的主机等于 `STAGING_DATABASE_HOST`，不区分大小写；变量缺少或不一致时失败。
 - 两个库都只带 `sslmode=verify-full`，没有其他参数；主机不含 `-pooler.`，端口不是 6543。
-- 配置了删除清单库时，它的主机必须不同于应用库，这样清单不在应用库的 Neon 项目和它的恢复数据里。
+- 配置了删除清单库时，它的主机必须不同于应用库。这个检查只比较主机，拦得住把清单写进应用库的配置，但分不出同一 Neon 项目的另一个分支；清单库在另一个项目里，由第 1 步保证。
 
 检查失败时发布不创建候选；维护任务打印被拒绝的原因后退出，不清理任何数据。
 

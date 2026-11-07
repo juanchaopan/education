@@ -20,9 +20,11 @@ function hostOf(hosted, source) {
 // The application database must be the one the maintainer named for staging
 // in STAGING_DATABASE_HOST. The deletion ledger is optional: without it the API
 // offers no family deletion. When it is configured it must sit on another host,
-// so the application database's provider project and its backups never hold
-// it. Staging steps and the processes they start run with the returned hosted
-// environment, which always applies the hosted rules.
+// which keeps it out of the application database; keeping it in a provider
+// project of its own, outside the application's restore history, is part of
+// the staging setup a host cannot show. Staging steps and the processes they
+// start run with the returned hosted environment, which always applies the
+// hosted rules.
 export function stagingDatabases(env) {
   const hosted = { ...env, STAGING_DATABASE: 'true' };
   const expected = env.STAGING_DATABASE_HOST?.trim().toLowerCase();
