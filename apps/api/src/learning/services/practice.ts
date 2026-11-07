@@ -1,6 +1,7 @@
 import type pg from 'pg';
 import { practicePageSize, type AssignPractice, type PracticePage } from '@education/contracts';
 import { insertAssignment, readAssignments } from '../repositories/postgres-practice.js';
+import { withTitle, type Title } from './learning-summary.js';
 import { RequestError } from '../../shared/request-error.js';
 
 type Credentials = { token?: string; csrf?: string };
@@ -17,21 +18,17 @@ type ParentTransaction = <T>(
 export function createPracticeService(
   parent: ParentTransaction,
   child: ChildTransaction,
-  title: (id: string, version: number) => string | undefined,
+  title: Title,
 ) {
   async function page(
     client: pg.PoolClient,
     childId: string,
     offset: number,
   ): Promise<PracticePage> {
-    const rows = await readAssignments(client, childId, practicePageSize + 1, offset);
+    const rows = await readAssignments(client, childId, { limit: practicePageSize + 1, offset });
     return {
       hasMore: rows.length > practicePageSize,
-      problems: rows.slice(0, practicePageSize).map(({ id, version }) => ({
-        id,
-        version,
-        title: title(id, version) ?? null,
-      })),
+      problems: rows.slice(0, practicePageSize).map((row) => withTitle(row, title)),
     };
   }
   return {

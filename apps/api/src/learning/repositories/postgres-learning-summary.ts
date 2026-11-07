@@ -1,13 +1,14 @@
 import type pg from 'pg';
 import type { ProblemLearningSummary } from '@education/contracts';
+import type { Page } from './page.js';
 
 export type LearningEvidence = Omit<ProblemLearningSummary, 'title' | 'reviewSuggested'>;
 
+// Without a page, every problem the child has evidence for is read.
 export async function readLearningEvidence(
   client: pg.PoolClient,
   childId: string,
-  limit: number,
-  offset: number,
+  page?: Page,
 ): Promise<LearningEvidence[]> {
   const { rows } = await client.query<
     Omit<LearningEvidence, 'version' | 'hints'> & {
@@ -30,7 +31,7 @@ export async function readLearningEvidence(
     LEFT JOIN progress p ON p.child_id=$1
       AND p.problem_id=page.problem_id AND p.problem_version=page.problem_version
     ORDER BY page.problem_id,page.problem_version`,
-    [childId, limit, offset],
+    [childId, page?.limit ?? null, page?.offset ?? 0],
   );
   return rows.map((row) => ({ ...row, version: Number(row.version), hints: Number(row.hints) }));
 }

@@ -2,7 +2,7 @@ import { Type } from '@sinclair/typebox';
 import { AssignPractice, PracticeChild, PracticePage, PracticeQuery } from '@education/contracts';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { RequestError } from '../../shared/request-error.js';
-import { readSessionCookie } from '../../shared/session-cookie.js';
+import { readSessionCredentials } from '../../shared/session-cookie.js';
 import { sessionWriteGuard } from '../../shared/session-guard.js';
 import type { PracticeService } from '../services/practice.js';
 
@@ -10,8 +10,7 @@ const parentPath = '/api/v1/parents/children/:childId/practice';
 const readSchema = { querystring: PracticeQuery, response: { 200: PracticePage } };
 function credentials(request: FastifyRequest, reply: FastifyReply) {
   reply.header('Cache-Control', 'no-store').header('Vary', 'Cookie');
-  const csrf = request.headers['x-csrf-token'];
-  return { token: readSessionCookie(request), csrf: typeof csrf === 'string' ? csrf : undefined };
+  return readSessionCredentials(request);
 }
 
 export function registerPractice(app: FastifyInstance, origin: string, service?: PracticeService) {

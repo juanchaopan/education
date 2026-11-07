@@ -1,7 +1,7 @@
-import type { FastifyInstance, FastifyRequest } from 'fastify';
+import type { FastifyInstance } from 'fastify';
 import { Type } from '@sinclair/typebox';
 import { AiConsentChange, AiConsentView } from '@education/contracts';
-import { readSessionCookie } from '../../shared/session-cookie.js';
+import { readSessionCredentials } from '../../shared/session-cookie.js';
 import { sessionWriteGuard } from '../../shared/session-guard.js';
 import { RequestError } from '../../shared/request-error.js';
 import type { AiConsentService } from '../services/ai-consent.js';
@@ -23,7 +23,7 @@ export function registerAiConsent(
   };
   app.get(path, { schema }, (request, reply) => {
     reply.header('Cache-Control', 'no-store').header('Vary', 'Cookie');
-    return available().read(credentials(request));
+    return available().read(readSessionCredentials(request));
   });
   app.post<{ Body: AiConsentChange }>(
     path,
@@ -34,14 +34,7 @@ export function registerAiConsent(
     },
     (request, reply) => {
       reply.header('Cache-Control', 'no-store').header('Vary', 'Cookie');
-      return available().change(credentials(request), request.body);
+      return available().change(readSessionCredentials(request), request.body);
     },
   );
-}
-
-function credentials(request: FastifyRequest) {
-  return {
-    token: readSessionCookie(request),
-    csrf: request.headers['x-csrf-token'] as string | undefined,
-  };
 }

@@ -1,18 +1,11 @@
 import { parseProblemVersion, type ProblemParams } from '@education/contracts';
 import type { FastifyRequest } from 'fastify';
 import { RequestError } from './request-error.js';
-import { readSessionCookie } from './session-cookie.js';
+import { readSessionCredentials } from './session-cookie.js';
 
 export function problemRequest(request: FastifyRequest<{ Params: ProblemParams }>) {
   const { id, version: raw } = request.params;
   const version = parseProblemVersion(raw);
   if (version === undefined) throw new RequestError(404, '这道题或这个版本暂时不可用。');
-  const csrf = request.headers['x-csrf-token'];
-  return {
-    credentials: {
-      token: readSessionCookie(request),
-      csrf: typeof csrf === 'string' ? csrf : undefined,
-    },
-    problem: { id, version },
-  };
+  return { credentials: readSessionCredentials(request), problem: { id, version } };
 }
