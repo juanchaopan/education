@@ -1,20 +1,15 @@
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { migrate } from 'drizzle-orm/node-postgres/migrator';
-import pg from 'pg';
 import { fileURLToPath } from 'node:url';
 import {
   applicationDatabase,
-  databaseOptions,
   deletionLedgerDatabase,
   type DatabaseSource,
 } from '../shared/database-config.js';
+import { maintenancePool } from '../shared/maintenance-pool.js';
 
 async function migrateDatabase(source: DatabaseSource, folder: string) {
-  const pool = new pg.Pool({
-    ...databaseOptions(process.env, source),
-    connectionTimeoutMillis: 10000,
-    statement_timeout: 30000,
-  });
+  const pool = maintenancePool(process.env, source);
   try {
     await migrate(drizzle(pool), {
       migrationsFolder: fileURLToPath(new URL(`../../${folder}`, import.meta.url)),
