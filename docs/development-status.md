@@ -32,7 +32,7 @@
 4. 供应商与部署 spike：大陆访问、邮件送达、AI 条款与后端调用、token 控制、中文语音兼容性。
 5. 收到真实题目后逐题设计教学方式，验证错误定位、耐心提示与独立理解。
 
-当前：#19 已由 PR #59 合并；#20 已完成隔离 Singapore staging 的 main 自动发布、迁移、账号冒烟、域名推广和真实浏览器同数据库跨部署登录验收，见 [部署说明](deployment/staging.md) 与 [验收记录](evidence/20/README.md)。现有 Supabase us-east-1 项目保持不变。逐 PR 免费独立数据库未启用，按任务约定使用隔离 staging 退路；生产仍手动发布。邮箱验证 #21 已实现，维护者完成真实 Gmail → 126 收信、验证及重新登录，见 [#21 验收记录](evidence/21/README.md)；真实投递、自动化故障测试和未复测范围在该记录中区分。密码恢复 #22 已完成，见下方验收记录。
+当前：#19 已由 PR #59 合并；#20 已完成隔离 Singapore staging 的 main 自动发布、迁移、账号冒烟、域名推广和真实浏览器同数据库跨部署登录验收，见 [部署说明](deployment/staging.md) 与 [验收记录](evidence/20/README.md)。staging 的应用库和删除清单库是 Singapore 的两个 Neon Free 项目（[ADR-0014](adr/0014-neon-databases.md)），发布和维护按 `STAGING_DATABASE_HOST` 确认目标库；切换的实现和验收见 [#111](evidence/111/README.md)。逐 PR 免费独立数据库未启用，按任务约定使用隔离 staging 退路；生产仍手动发布。邮箱验证 #21 已实现，维护者完成真实 Gmail → 126 收信、验证及重新登录，见 [#21 验收记录](evidence/21/README.md)；真实投递、自动化故障测试和未复测范围在该记录中区分。密码恢复 #22 已完成，见下方验收记录。
 
 ## Scaffold 阶段历史验证
 
