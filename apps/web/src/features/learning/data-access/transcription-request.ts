@@ -5,7 +5,8 @@ import {
 } from '@education/contracts';
 import { Value } from '@sinclair/typebox/value';
 import type { Recording } from '../voice/recorder';
-import { postLearning, toBase64, type LearningScope } from './learning-request';
+import { toBase64 } from './base64';
+import { postLearning, type LearningScope } from './learning-request';
 
 // Sends one finished recording for a step. A recording the server would refuse
 // never leaves the browser; the reply is checked against the shared schema and

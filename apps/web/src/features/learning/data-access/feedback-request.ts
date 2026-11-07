@@ -1,6 +1,7 @@
 import { feedbackBodyLimit, FeedbackRequest, TeachingFeedbackResult } from '@education/contracts';
 import { Value } from '@sinclair/typebox/value';
-import { postLearning, toBase64, type LearningScope } from './learning-request';
+import { toBase64 } from './base64';
+import { postLearning, type LearningScope } from './learning-request';
 
 export type FeedbackSubmission = { stepId: string; text?: string; image?: Blob };
 
