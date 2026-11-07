@@ -15,8 +15,10 @@ const sameSite = {
   cookie: `__Host-education_session=${token}`,
 };
 
-function deletion(result: Promise<unknown>) {
-  return { delete: vi.fn(() => result), completePending: vi.fn() } as FamilyDeletionService;
+// The outcome is produced only when the route asks for it, so a refusal is
+// never a rejected promise that nothing is waiting on.
+function deletion(outcome: () => ReturnType<FamilyDeletionService['delete']>) {
+  return { delete: vi.fn(outcome), completePending: vi.fn() } as FamilyDeletionService;
 }
 
 function deleteWith(
@@ -34,7 +36,7 @@ function deleteWith(
 
 describe('family deletion route', () => {
   it('clears the session cookie once the family is deleted', async () => {
-    const service = deletion(Promise.resolve({ status: 'deleted' }));
+    const service = deletion(async () => ({ status: 'deleted' }));
     const response = await deleteWith(service);
     expect(response.statusCode).toBe(200);
     expect(response.json()).toEqual({ status: 'deleted' });
@@ -47,14 +49,14 @@ describe('family deletion route', () => {
   });
 
   it('answers a pending deletion as accepted and keeps the session', async () => {
-    const response = await deleteWith(deletion(Promise.resolve({ status: 'pending' })));
+    const response = await deleteWith(deletion(async () => ({ status: 'pending' })));
     expect(response.statusCode).toBe(202);
     expect(response.json()).toEqual({ status: 'pending' });
     expect(response.headers['set-cookie']).toBeUndefined();
   });
 
   it('refuses another site or an unexpected body before deleting anything', async () => {
-    const service = deletion(Promise.resolve({ status: 'deleted' }));
+    const service = deletion(async () => ({ status: 'deleted' }));
     for (const response of [
       await deleteWith(service, { ...sameSite, origin: 'https://other.example' }),
       await deleteWith(service, sameSite, { confirmation: familyDeletionPhrase, family: 'x' }),
@@ -65,7 +67,9 @@ describe('family deletion route', () => {
   });
 
   it('answers a refusal or an unconfigured service without touching the cookie', async () => {
-    const refused = deletion(Promise.reject(new RequestError(403, '请重新确认家长密码。')));
+    const refused = deletion(async () => {
+      throw new RequestError(403, '请重新确认家长密码。');
+    });
     for (const response of [await deleteWith(refused), await deleteWith()]) {
       expect([403, 503]).toContain(response.statusCode);
       expect(response.headers['set-cookie']).toBeUndefined();
