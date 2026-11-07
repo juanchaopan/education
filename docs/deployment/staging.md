@@ -35,7 +35,7 @@ Vercel 测试项目关闭默认登录保护，让不携带平台登录 cookie �
 
 1. `workflow_run` 监听本仓库 ci、ai-review、commits 的成功运行；PR 事件必须关联到已经合并 main 的同仓库、同 head SHA。准备任务只检出可信 main，用 API 选择当前 main 的精确 SHA；缺少检查时以 workflow_dispatch 显式派发真实 CI，正在运行或失败时不发布，也不把 PR 成功套用到 squash 提交。准备任务仅为派发 CI 获得 actions:write；部署任务仍是 actions:read。main 的 push 或显式派发 CI 成功后，才检出准确 SHA 安装/构建；这些步骤不接收部署秘密。发布步骤读取秘密，并再次确认 main 和工作区没有变化。
 2. 仅上传明确允许的 Git 跟踪源文件；不上传 `.env`、本地文件、证书、测试结果或文档截图。Vercel 运行 `npm run build:staging`，将 SHA 写入构建内的 `release.json`。函数复用容器的 Fastify 组装，无第二套账号实现。SQL 迁移文件及版本文件明确包含在函数产物内；SPA HTML 和散列资源由 Vercel 静态路由提供，不在函数中加载静态服务器插件。
-3. 等待候选构建 READY。先撤销迁移角色对 anon/authenticated 的默认表和序列授权，再单独运行迁移，随后对七张应用表启用 RLS 并撤销两角色的表权限。匿名 Supabase Data API 不能代替应用 API 访问账号表；运行时凭据只交服务端。
+3. 等待候选构建 READY。先撤销迁移角色对 anon/authenticated 的默认表和序列授权，再单独运行迁移，随后对迁移角色拥有的所有 `public` 表启用 RLS 并撤销两角色的表权限，之后迁移新增的表也会自动包括在内；Supabase 或扩展自己拥有的表不在其中。匿名 Supabase Data API 不能代替应用 API 访问账号表；运行时凭据只交服务端。
 4. 对精确候选 URL 检查版本、数据库就绪、注册、登录、读取会话、退出和旧 cookie 拒绝。仅生成随机 `@example.invalid` 合成账号，不发送邮件。finally 定向删除该账号所属且没有其他成员的测试家庭；失败时不清空其他账号或限流表。网络故障后需核对是否有未完成的合成账号清理。
 5. 再确认 main 没有更新，才将自定义测试域名 alias 指向候选，并从 API 读回实际 deployment/project ID。记录准确 SHA、deployment ID 和请求耗时。候选页面在切换前的写请求以已配置 staging Origin 检查；它不作为独立 PR 页面使用。
 
@@ -83,8 +83,6 @@ GitHub 官方说明 GITHUB_TOKEN 引发的普通事件不会递归启动工作�
 
 发布前的只读就绪探测至多五次，每次最多五秒，间隔一秒；只有明确的 503 才重试。HTTP 200 还须匹配 ready 响应；持续失败、其他 HTTP 错误和网络失败均不发布。注册、登录、退出不重试。耗时记录包含 HTTP 状态，失败样本不能计为成功延迟。
 
-自定义域名曾仍归属旧探针项目，GitHub 发布 token 的 alias 请求返回 403。已通过 Vercel 官方 moveProjectDomain 原子接口将该子域名转交 education-staging，并保留原已验证 deployment 指向。运行 41975178909 随后使用 GitHub Actions 的 token 完成 Singapore 候选的迁移、账号冒烟和 alias 发布，API 读回与候选一致；此前的手工恢复不计作这次自动发布证据。Alias 错误可显示公共域名的提供商原因，包含环境变量的 deployment 错误仍只输出 HTTP 摘要。
-
 ## #21 邮件配置
 
 真实发信独立受控，默认关闭；配置、供应商核实和正式验收步骤见 [家长验证邮件](mail.md)。即使后续启用，发布中的合成账号冒烟也不会调用 Gmail；注册本身不发信。新表随迁移启用 RLS 并撤销 anon/authenticated 权限。
@@ -92,3 +90,20 @@ GitHub 官方说明 GITHUB_TOKEN 引发的普通事件不会递归启动工作�
 ## #24 儿童 PIN 密钥
 
 在 Actions Secrets 配置 `STAGING_PIN_PEPPER`：独立生成 32 随机字节并编码为 64 位十六进制。发布流程将其传入 Vercel runtime 的 `PIN_PEPPER`，缺失或格式错误不创建候选；不传入前端或构建环境。密钥跨部署保持一致并安全备存，不能为了发布或排错随意更换。孩子自己设置的六位 PIN 与这个服务器密钥不同。迁移和真实注册验收见 [#24](../evidence/24/README.md)。
+
+## #44 家庭删除清单库
+
+家庭删除先写入独立的删除清单库，再删除应用库里的家庭，见 [#44 验收记录](../evidence/44/README.md)。清单库必须是与应用库不同的数据库，并且不在应用库的备份里。没有配置清单库时，发布和维护照常运行，网站不提供家庭删除。
+
+启用步骤由维护者完成，因为要新建资源并设置秘密：
+
+1. 新建一个只放删除清单的 PostgreSQL 数据库，例如另一个专用的 Supabase 项目，不要放进 `telkaiyxprpetmqthyhn`。是否使用免费项目，以及区域和备份，由维护者决定。
+2. 和应用库一样，取得 Session pooler 连接串（端口 5432，`?sslmode=verify-full`）和该项目的 PEM 根证书。
+3. 在 Actions secrets 设置下面两项。
+
+| Repository secret                 | 内容                                                                    |
+| --------------------------------- | ----------------------------------------------------------------------- |
+| `STAGING_DELETION_LEDGER_URL`     | 删除清单库的连接串，含密码、5432、verify-full；不能在应用库所在的项目里 |
+| `STAGING_DELETION_LEDGER_CA_CERT` | 清单库所在项目的 PEM 根证书全文                                         |
+
+配置后，每次发布会像应用库一样处理清单库：先撤销默认授权，运行清单迁移，再对迁移角色拥有的 `public` 表启用 RLS 并撤销 anon/authenticated 的权限，最后把两个变量传给 Vercel 运行时。清单库连接串指向应用库所在的 Supabase 项目时，无论写成连接池地址还是直连地址，发布都会失败。每小时的 `staging-mail-retention` 任务在清理邮件和过期草稿之后运行 API 的维护命令，完成仍在处理中的删除；有删不掉的家庭时任务失败并打印完成和失败的数量，下次运行重试。
