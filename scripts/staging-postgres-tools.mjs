@@ -24,13 +24,14 @@ export async function libpqConnection(env, source, folder) {
   return { dbname: url.toString(), env: { ...process.env, PGPASSWORD: password } };
 }
 
-// Runs a PostgreSQL client tool. Its message carries only the first line of the
-// tool's error, which names the failure without the connection details.
-export async function postgresTool(tool, connection, args, timeout = 600000) {
+// Runs a PostgreSQL client tool for up to ten minutes. Its message carries only
+// the first line of the tool's error, which names the failure without the
+// connection details.
+export async function postgresTool(tool, connection, args) {
   try {
     await run(tool, [...args, '--dbname', connection.dbname], {
       env: connection.env,
-      timeout,
+      timeout: 600000,
       maxBuffer: 16 * 1024 * 1024,
     });
   } catch (error) {

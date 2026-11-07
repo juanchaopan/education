@@ -2,11 +2,11 @@ import { createHash } from 'node:crypto';
 import { createReadStream } from 'node:fs';
 import { pipeline } from 'node:stream/promises';
 
-// A backup is a database dump and this manifest, packed and encrypted
-// together. The manifest names the environment the dump came from, when its
-// snapshot was taken, the dump's checksum and the row count of every table in
-// that snapshot, so a restore can refuse the wrong backup and prove every row
-// was loaded.
+// A backup is a database dump and a manifest, packed and encrypted together.
+// The manifest names the environment the dump came from, its source host, when
+// its snapshot was taken, the dump's checksum and the row count of every table
+// in that snapshot, so a restore can refuse the wrong backup and prove every
+// row was loaded.
 export const dumpFile = 'application.dump';
 export const manifestFile = 'manifest.json';
 
@@ -14,10 +14,6 @@ export async function fileChecksum(path) {
   const hash = createHash('sha256');
   await pipeline(createReadStream(path), hash);
   return hash.digest('hex');
-}
-
-export function backupManifest({ environment, host, createdAt, sha256, counts }) {
-  return { environment, host, createdAt: createdAt.toISOString(), sha256, counts };
 }
 
 const day = 24 * 60 * 60 * 1000;

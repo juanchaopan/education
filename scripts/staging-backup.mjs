@@ -5,12 +5,7 @@ import { applicationDatabase } from '../apps/api/dist/shared/database-config.js'
 import { maintenancePool } from '../apps/api/dist/shared/maintenance-pool.js';
 import { serviceGateTable, serviceOpen } from '../apps/api/dist/database/service-gate.js';
 import { tableCounts } from '../apps/api/dist/database/table-counts.js';
-import {
-  backupManifest,
-  dumpFile,
-  fileChecksum,
-  manifestFile,
-} from './staging-backup-manifest.mjs';
+import { dumpFile, fileChecksum, manifestFile } from './staging-backup-manifest.mjs';
 import { stagingDatabases } from './staging-database-env.mjs';
 import { libpqConnection, postgresTool } from './staging-postgres-tools.mjs';
 
@@ -41,13 +36,13 @@ async function backup(folder, scratch) {
       `--file=${join(folder, dumpFile)}`,
     ]);
     await client.query('COMMIT');
-    const manifest = backupManifest({
+    const manifest = {
       environment: 'staging',
       host: process.env.STAGING_DATABASE_HOST.trim().toLowerCase(),
-      createdAt: rows[0].createdAt,
+      createdAt: rows[0].createdAt.toISOString(),
       sha256: await fileChecksum(join(folder, dumpFile)),
       counts,
-    });
+    };
     await writeFile(join(folder, manifestFile), `${JSON.stringify(manifest, null, 2)}\n`, {
       mode: 0o600,
     });

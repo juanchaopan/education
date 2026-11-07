@@ -9,24 +9,18 @@ import {
   applicationDatabase,
   deletionLedgerDatabase,
 } from '../apps/api/dist/shared/database-config.js';
-import {
-  backupManifest,
-  checkBackup,
-  checkCounts,
-  fileChecksum,
-} from './staging-backup-manifest.mjs';
+import { checkBackup, checkCounts, fileChecksum } from './staging-backup-manifest.mjs';
 import { libpqConnection } from './staging-postgres-tools.mjs';
 
 const now = new Date('2026-11-07T12:00:00Z');
-const hoursAgo = (hours) => new Date(now.getTime() - hours * 60 * 60 * 1000);
-const manifest = (createdAt, environment = 'staging') =>
-  backupManifest({
-    environment,
-    host: 'ep-application.c-2.ap-southeast-1.aws.neon.tech',
-    createdAt,
-    sha256: 'a'.repeat(64),
-    counts: { 'public.families': 2 },
-  });
+const hoursAgo = (hours) => new Date(now.getTime() - hours * 60 * 60 * 1000).toISOString();
+const manifest = (createdAt, environment = 'staging') => ({
+  environment,
+  host: 'ep-application.c-2.ap-southeast-1.aws.neon.tech',
+  createdAt,
+  sha256: 'a'.repeat(64),
+  counts: { 'public.families': 2 },
+});
 const check = (backup, sha256 = 'a'.repeat(64)) =>
   checkBackup(backup, { environment: 'staging', sha256, now, retentionDays: backupRetentionDays });
 
@@ -51,7 +45,7 @@ test('refuses a backup of another environment, a changed dump, or one past reten
   assert.throws(() => check(manifest(hoursAgo(1)), 'b'.repeat(64)), /checksum/);
   assert.throws(() => check(manifest(hoursAgo(backupRetentionDays * 24 + 1))), /retention/);
   assert.throws(() => check(manifest(hoursAgo(-1))), /future/);
-  assert.throws(() => check({ ...manifest(hoursAgo(1)), createdAt: 'unknown' }), /missing/);
+  assert.throws(() => check(manifest('unknown')), /missing/);
 });
 
 test('names every table whose restored rows differ from the backup', () => {
