@@ -1,13 +1,6 @@
 export { ParentRegistration, RegistrationReceipt, passwordIssue } from './registration.js';
 export * from './catalog.js';
 
-export type TeachingFeedback = {
-  status: 'correct' | 'needs-work' | 'uncertain' | 'recognition-failed';
-  instruction: string;
-  stepId: string;
-  highlight?: { x: number; y: number; width: number; height: number };
-};
-
 export { ParentLogin, ParentSession } from './session.js';
 export * from './verification.js';
 
@@ -24,3 +17,4 @@ export * from './learning-summary.js';
 export * from './practice.js';
 export * from './ai-consent.js';
 export * from './ai-help.js';
+export * from './teaching-feedback.js';

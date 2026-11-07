@@ -1,5 +1,6 @@
 export const TUTORING_MODEL = 'gpt-6-luna';
 export const MAX_TUTORING_OUTPUT_TOKENS = 128;
+export const MAX_FEEDBACK_OUTPUT_TOKENS = 256;
 const MAX_INPUT_TOKENS = 16_384;
 // A byte per token plus room for the provider's message framing.
 export const MAX_TUTORING_BODY_BYTES = MAX_INPUT_TOKENS - 512;
@@ -15,11 +16,18 @@ export function usageCost({ inputTokens, outputTokens }: Usage) {
   return BigInt(inputTokens) * 125n + BigInt(outputTokens) * 500n;
 }
 
-export const reservationCost = usageCost({
-  inputTokens: MAX_INPUT_TOKENS,
-  outputTokens: MAX_TUTORING_OUTPUT_TOKENS,
-});
+// A request is held at the cost of its largest allowed input and output until it settles.
+export function reservationCostFor(maxOutputTokens: number) {
+  return usageCost({ inputTokens: MAX_INPUT_TOKENS, outputTokens: maxOutputTokens });
+}
 
-export function withinTutoringBounds({ inputTokens, outputTokens }: Usage) {
-  return inputTokens <= MAX_INPUT_TOKENS && outputTokens <= MAX_TUTORING_OUTPUT_TOKENS;
+export const reservationCost = reservationCostFor(MAX_TUTORING_OUTPUT_TOKENS);
+// What the budget must still cover for any kind of request to be admitted.
+export const largestReservationCost = reservationCostFor(MAX_FEEDBACK_OUTPUT_TOKENS);
+
+export function withinTutoringBounds(
+  { inputTokens, outputTokens }: Usage,
+  maxOutputTokens: number,
+) {
+  return inputTokens <= MAX_INPUT_TOKENS && outputTokens <= maxOutputTokens;
 }

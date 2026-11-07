@@ -1,9 +1,9 @@
 import type { Usage } from '../domain/tutoring-cost.js';
 
 const MAX_STREAM_BYTES = 65_536;
-const MAX_HINT_LENGTH = 160;
 
 type JsonObject = Record<string, unknown>;
+type Accept<T> = (text: string) => T | undefined;
 
 function object(value: unknown): JsonObject {
   return value && typeof value === 'object' && !Array.isArray(value) ? (value as JsonObject) : {};
@@ -29,11 +29,6 @@ function assistantText(output: unknown) {
   if (!Array.isArray(content) || content.length !== 1) return;
   const { type, text } = object(content[0]);
   if (type === 'output_text' && typeof text === 'string') return text.trim();
-}
-
-function hint(output: unknown) {
-  const sentence = assistantText(output);
-  if (sentence && sentence.length <= MAX_HINT_LENGTH && !/[\r\n]/.test(sentence)) return sentence;
 }
 
 function streamEvent(frame: string) {
@@ -74,16 +69,18 @@ function isEventStream(response: Response) {
   return response.ok && mime === 'text/event-stream';
 }
 
-function terminalResult(eventType: string, response: unknown) {
+function terminalResult<T>(eventType: string, response: unknown, accept: Accept<T>) {
   const { status, output, usage: tokens, service_tier: tier } = object(response);
+  const completed = eventType === 'response.completed' && status === 'completed';
+  const text = completed ? assistantText(output) : undefined;
   return {
-    text: eventType === 'response.completed' && status === 'completed' ? hint(output) : undefined,
+    value: text ? accept(text) : undefined,
     usage: usage(tokens),
     unexpectedTier: tier != null && tier !== 'default',
   };
 }
 
-export async function readOpenAiResponse(response: Response) {
+export async function readOpenAiResponse<T>(response: Response, accept: Accept<T>) {
   if (!response.body || !isEventStream(response)) {
     void response.body?.cancel().catch(() => {});
     return;
@@ -96,7 +93,7 @@ export async function readOpenAiResponse(response: Response) {
       case 'response.completed':
       case 'response.failed':
       case 'response.incomplete':
-        return terminalResult(type, terminal);
+        return terminalResult(type, terminal, accept);
     }
   }
 }

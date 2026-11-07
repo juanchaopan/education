@@ -1,13 +1,18 @@
 import { AI_HELP_TIMEOUT_MS } from '@education/contracts';
-import type { AiHelpResult } from '@education/contracts';
+import type { AiHelpFallback } from '@education/contracts';
 
-type State = AiHelpResult | { status: 'pending' } | { status: 'guidance' };
+type Fallback = { status: 'fallback'; reason: AiHelpFallback };
+type State<Ready> = Ready | Fallback | { status: 'pending' } | { status: 'guidance' };
 type Attempt = { controller: AbortController; timer: ReturnType<typeof setTimeout> };
 
-export function createAiHelpRequest(update: (state: State) => void) {
+// One AI request at a time for a lesson step. A slow, failed or cancelled request
+// ends in a fallback or guidance state, and a late reply never replaces it.
+export function createAiHelpRequest<Ready extends { status: 'ready' }>(
+  update: (state: State<Ready>) => void,
+) {
   let current: Attempt | undefined;
 
-  function finish(state?: State) {
+  function finish(state?: State<Ready>) {
     const attempt = current;
     current = undefined;
     if (attempt) {
@@ -18,7 +23,7 @@ export function createAiHelpRequest(update: (state: State) => void) {
   }
 
   return {
-    async request(load: (signal: AbortSignal) => Promise<AiHelpResult>) {
+    async request(load: (signal: AbortSignal) => Promise<Ready | Fallback>) {
       if (current) return;
       const controller = new AbortController();
       const timer = setTimeout(
@@ -29,7 +34,7 @@ export function createAiHelpRequest(update: (state: State) => void) {
       current = attempt;
       update({ status: 'pending' });
       if (current !== attempt) return;
-      let result: AiHelpResult;
+      let result: Ready | Fallback;
       try {
         result = await load(controller.signal);
       } catch {

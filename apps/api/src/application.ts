@@ -39,6 +39,7 @@ import { createAnswering } from './answer-application.js';
 import { createLearningSummary } from './learning-summary-application.js';
 import { createPracticeAssignments } from './practice-application.js';
 import { createAiConsent } from './ai-consent-application.js';
+import { createTeachingFeedback } from './teaching-feedback-application.js';
 
 export async function createApplication(env: NodeJS.ProcessEnv = process.env) {
   const config = readConfig(env);
@@ -72,6 +73,7 @@ export async function createApplication(env: NodeJS.ProcessEnv = process.env) {
     childSessions,
     drafts,
     answering,
+    teachingFeedback: createChildFeedback(pool, childSessions, env),
     childAccess: createChildAccess(pool, sessions, admit, config),
     ...createFamilyManagement(pool, sessions, admit, config.aiMonthlyBudget),
     verification: createVerification(pool, mailConfig, admit),
@@ -152,6 +154,14 @@ async function registerWeb(app: ReturnType<typeof buildApp>) {
       return reply.sendFile('index.html');
     });
   }
+}
+
+function createChildFeedback(
+  pool: pg.Pool | undefined,
+  childSessions: unknown,
+  env: NodeJS.ProcessEnv,
+) {
+  return pool && childSessions ? createTeachingFeedback(pool, env) : undefined;
 }
 
 function createVerification(

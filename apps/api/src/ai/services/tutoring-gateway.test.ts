@@ -1,55 +1,27 @@
 import { afterEach, expect, it, vi } from 'vitest';
 import { RequestError } from '../../shared/request-error.js';
-import { createTutoringGateway } from './tutoring-gateway.js';
+import {
+  completion,
+  credentials,
+  encoder,
+  event,
+  setupGateway,
+  settings,
+  stream,
+} from './gateway-fixtures.js';
+import { hintTask } from './hint-task.js';
 
 const input = { step: '观察两组物体的数量。', question: '先数哪一组？' };
-const settings = { paidAiEnabled: true, eligible: true, apiKey: 'synthetic-key' };
-const credentials = { token: 'synthetic-session' };
-const encoder = new TextEncoder();
-
-function event(data: object) {
-  return 'data: ' + JSON.stringify(data) + '\r\n\r\n';
-}
-
-const done = event({
-  type: 'response.completed',
-  response: {
-    status: 'completed',
-    output: [
-      {
-        type: 'message',
-        role: 'assistant',
-        content: [{ type: 'output_text', text: '先看看左边有几个。' }],
-      },
-    ],
-    usage: { input_tokens: 82, output_tokens: 12 },
-  },
-});
-
-function stream(...chunks: Uint8Array[]) {
-  return new Response(
-    new ReadableStream({
-      start(controller) {
-        for (const chunk of chunks) controller.enqueue(chunk);
-        controller.close();
-      },
-    }),
-    { headers: { 'content-type': 'text/event-stream' } },
-  );
-}
+const done = completion('先看看左边有几个。');
 
 function setup(config = settings) {
-  const send = vi.fn<typeof fetch>();
-  const authorize = vi.fn<Parameters<typeof createTutoringGateway>[1]>(async (_, start) =>
-    start(new AbortController().signal),
-  );
-  const meter = {
-    reserve: vi
-      .fn<Parameters<typeof createTutoringGateway>[2]['reserve']>()
-      .mockResolvedValue('id'),
-    settle: vi.fn<Parameters<typeof createTutoringGateway>[2]['settle']>().mockResolvedValue(),
-  };
-  return { send, authorize, meter, request: createTutoringGateway(config, authorize, meter, send) };
+  const { gateway, ...rest } = setupGateway(config);
+  const request = (
+    credentials: Parameters<typeof gateway>[1],
+    context: typeof input,
+    signal?: AbortSignal,
+  ) => gateway(hintTask, credentials, context, signal);
+  return { ...rest, request };
 }
 
 afterEach(() => vi.useRealTimers());
@@ -88,7 +60,7 @@ it('starts one bounded stateless request and decodes a completion across UTF-8 c
   const context = { ...input, history: 'private past answer', answerKey: 'private solution' };
   await expect(request(credentials, context)).resolves.toMatchObject({
     status: 'ready',
-    text: '先看看左边有几个。',
+    value: '先看看左边有几个。',
     usage: { inputTokens: 82, outputTokens: 12 },
   });
   expect(authorize).toHaveBeenCalledTimes(1);

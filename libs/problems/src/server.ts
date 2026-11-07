@@ -1,6 +1,7 @@
 import {
   isProblemId,
   type CatalogCategory,
+  type FeedbackRegion,
   type ProblemSummary,
   type TeachingFeedback,
   type SubmitAnswer,
@@ -12,12 +13,22 @@ export type AnsweringPolicy = {
   checkCompletion: (input: SubmitAnswer['input']) => 'correct' | 'incorrect' | 'uncertain';
 };
 
+// The only problem content a model may see for a step. `area` limits where a
+// highlight may point; without it the whole drawing sheet is allowed.
+export type FeedbackStep = {
+  prompt: string;
+  area?: FeedbackRegion;
+};
+
 export type ProblemPlugin = {
   summary: ProblemSummary;
   answering?: AnsweringPolicy;
+  feedback?: Readonly<Record<string, FeedbackStep>>;
+  // Authored rules run on the child's text before any model; they cannot read a
+  // drawing. An 'uncertain' or 'recognition-failed' result leaves the step to the model.
   checkStep?: (input: {
     stepId: string;
-    answer: unknown;
+    answer: string;
   }) => TeachingFeedback | Promise<TeachingFeedback>;
 };
 

@@ -8,10 +8,10 @@ import {
   HintReceipt,
   ProblemParams,
 } from '@education/contracts';
+import { problemRequest } from '../../shared/problem-request.js';
 import { RequestError } from '../../shared/request-error.js';
 import { sessionWriteGuard } from '../../shared/session-guard.js';
 import type { AnswerService } from '../services/answer.js';
-import { problemRequest } from './problem-request.js';
 
 const path = '/api/v1/problems/:id/:version/answer';
 const schema = {
