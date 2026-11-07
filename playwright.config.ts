@@ -18,20 +18,29 @@ function server(port: number) {
   };
 }
 
+const browsers = {
+  desktop: devices['Desktop Chrome'],
+  mobile: { ...devices['iPhone 13'], defaultBrowserType: 'chromium' as const },
+};
+type Ports = Record<keyof typeof browsers, number>;
+
 // Every request comes from 127.0.0.1, so all tests on one server share that
 // address's sign-in budget, and a sign-in attempt includes any request without
-// a valid session. The parent account specs sign in and out the most, so they
-// get servers of their own.
-const accountSpecs =
-  /(^|[\\/])(registration|session|recovery|verification|registration-key)\.spec\.ts$/;
-const browsers = [
-  { name: 'desktop', device: devices['Desktop Chrome'], ports: [4173, 4175] },
+// a valid session. The parent account specs and the family acceptance, which
+// sign in and out the most, get servers of their own; the rest share one.
+const ownServers: { suffix: string; specs: RegExp; ports: Ports }[] = [
   {
-    name: 'mobile',
-    device: { ...devices['iPhone 13'], defaultBrowserType: 'chromium' as const },
-    ports: [4174, 4176],
+    suffix: 'accounts',
+    specs: /(^|[\\/])(registration|session|recovery|verification|registration-key)\.spec\.ts$/,
+    ports: { desktop: 4175, mobile: 4176 },
+  },
+  {
+    suffix: 'acceptance',
+    specs: /(^|[\\/])empty-framework\.spec\.ts$/,
+    ports: { desktop: 4177, mobile: 4178 },
   },
 ];
+const shared: Ports = { desktop: 4173, mobile: 4174 };
 
 export default defineConfig({
   testDir: './e2e',
@@ -42,13 +51,22 @@ export default defineConfig({
     launchOptions: { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH },
     trace: 'retain-on-failure',
   },
-  projects: browsers.flatMap(({ name, device, ports: [general, accounts] }) => [
-    { name, testIgnore: accountSpecs, use: { ...device, baseURL: origin(general!) } },
-    {
-      name: `${name}-accounts`,
-      testMatch: accountSpecs,
-      use: { ...device, baseURL: origin(accounts!) },
-    },
-  ]),
-  webServer: browsers.flatMap(({ ports }) => ports.map(server)),
+  projects: Object.entries(browsers).flatMap(([name, device]) => {
+    const browser = name as keyof typeof browsers;
+    return [
+      {
+        name,
+        testIgnore: ownServers.map(({ specs }) => specs),
+        use: { ...device, baseURL: origin(shared[browser]) },
+      },
+      ...ownServers.map(({ suffix, specs, ports }) => ({
+        name: `${name}-${suffix}`,
+        testMatch: specs,
+        use: { ...device, baseURL: origin(ports[browser]) },
+      })),
+    ];
+  }),
+  webServer: [shared, ...ownServers.map(({ ports }) => ports)]
+    .flatMap((ports) => Object.values(ports))
+    .map(server),
 });
