@@ -1,6 +1,6 @@
 # ADR-0008 Vercel Hobby 与自定义域名用于 staging
 
-- 状态：已接受（维护者报告测试成功并要求结束 #14）；生产发布仍需后续验收
+- 状态：已接受（维护者报告测试成功并要求结束 #14）；生产发布仍需后续验收；PostgreSQL 托管由 [ADR-0014](0014-neon-databases.md) 决定
 - 日期：2026-11-04
 - 相关需求：REQ-007、REQ-009
 - 任务：[#14](https://github.com/juanchaopan/education/issues/14)
@@ -17,7 +17,7 @@
 
 1. 采用 **Vercel Hobby + 自定义域名** 作为后续 staging 集成方向。已创建的 `education-access-spike` 只是独立网络探针；正式应用按 #20 重新集成，不合并或直接复制探针代码。
 2. 当前测试域名由 **hyp DNS 面板**管理，CNAME 指向 Vercel，关闭 hyp 代理；Vercel 负责托管及证书。域名与托管分别管理，不因更换域名而推定大陆访问、服务器路径或第三方服务资格达标。
-3. 保留 Node.js 24、Fastify、React、TypeScript 7 与 PostgreSQL 架构。Vercel 函数接入及正式 TS7 单仓构建须在 #20 验证；当前探针只验证同源静态文件与 Fastify 函数方向。Neon Free 是已调研的 PostgreSQL 候选，**未连接、未选定为正式数据库**。
+3. 保留 Node.js 24、Fastify、React、TypeScript 7 与 PostgreSQL 架构。Vercel 函数接入及正式 TS7 单仓构建须在 #20 验证；当前探针只验证同源静态文件与 Fastify 函数方向。Neon Free 是本探针调研的 PostgreSQL 候选，本探针没有连接它；各环境的数据库托管见 [ADR-0014](0014-neon-databases.md)。
 4. 保留自有服务器退路。若套餐、持久化、资源或大陆访问不满足需求，使用维护者之后提供的服务器/域名资料验证迁移路径，不自动购买付费托管。
 5. 继续执行 PR CI、隔离测试数据与密钥、显式手动生产发布。#14 的结论只解除 hosting 候选未定的阻塞，不替代 #51 的大陆完整链路与三儿童并发验收，也不替代 #52 的生产发布授权。
 
