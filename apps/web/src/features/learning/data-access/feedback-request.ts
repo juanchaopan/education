@@ -1,18 +1,8 @@
 import { feedbackBodyLimit, FeedbackRequest, TeachingFeedbackResult } from '@education/contracts';
 import { Value } from '@sinclair/typebox/value';
-import { requestLearning, type LearningScope } from './learning-request';
+import { postLearning, toBase64, type LearningScope } from './learning-request';
 
 export type FeedbackSubmission = { stepId: string; text?: string; image?: Blob };
-
-const chunkSize = 0x8000;
-
-async function toBase64(blob: Blob) {
-  const bytes = new Uint8Array(await blob.arrayBuffer());
-  let binary = '';
-  for (let start = 0; start < bytes.length; start += chunkSize)
-    binary += String.fromCharCode(...bytes.subarray(start, start + chunkSize));
-  return btoa(binary);
-}
 
 async function encode({ stepId, text, image }: FeedbackSubmission) {
   const request = {
@@ -39,9 +29,5 @@ export async function requestTeachingFeedback(
 ): Promise<TeachingFeedbackResult> {
   const body = await encode(submission);
   if (!body) return { status: 'fallback', reason: 'invalid-input' };
-  const response = await requestLearning(scope, 'feedback', body, cancel);
-  if (!response.ok) throw new Error('暂时连不上，请重试。');
-  const payload: unknown = await response.json();
-  if (!Value.Check(TeachingFeedbackResult, payload)) throw new Error('暂时无法读懂回复，请重试。');
-  return payload;
+  return postLearning(scope, 'feedback', body, TeachingFeedbackResult, cancel);
 }
