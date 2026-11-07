@@ -3,8 +3,7 @@ import type { AiConsentView } from '@education/contracts';
 import {
   type BillingResult,
   largestReservationCost,
-  TUTORING_MODEL,
-  usageCost,
+  ledgerCharge,
 } from '../domain/tutoring-cost.js';
 
 const FAMILY_REQUESTS_PER_MINUTE = 18;
@@ -14,9 +13,10 @@ const budgetAllowsNext = `
   NOT COALESCE(bool_or(state = 'out-of-bounds'), false)
   AND ($1::bigint IS NULL OR COALESCE(sum(amount_nanodollars), 0) + $2::bigint <= $1)`;
 
+// One ledger and one pair of rate limits cover every paid AI call, whichever model serves it.
 export function createTutoringUsage(pool: pg.Pool, cap: bigint | null) {
   return {
-    async reserve(client: pg.PoolClient, child: string, amount: bigint) {
+    async reserve(client: pg.PoolClient, child: string, model: string, amount: bigint) {
       // The statement after acquiring the transaction lock sees prior committed reservations.
       await client.query('SELECT pg_advisory_xact_lock(351907, 39)');
       const result = await client.query<{ id: string }>(
@@ -34,13 +34,12 @@ export function createTutoringUsage(pool: pg.Pool, cap: bigint | null) {
            AND (SELECT count(*) FROM ai_usage
                 WHERE child_id=c.id AND admitted_at>l.now-interval '1 minute') < $6
          RETURNING id`,
-        [cap, amount, child, TUTORING_MODEL, FAMILY_REQUESTS_PER_MINUTE, CHILD_REQUESTS_PER_MINUTE],
+        [cap, amount, child, model, FAMILY_REQUESTS_PER_MINUTE, CHILD_REQUESTS_PER_MINUTE],
       );
       return result.rows[0]?.id ?? null;
     },
     async settle(id: string, result: BillingResult) {
-      const usage = 'usage' in result ? result.usage : undefined;
-      const amount = usage ? usageCost(usage) : null;
+      const { inputTokens, outputTokens, amount } = ledgerCharge(result);
       await pool.query(
         `UPDATE ai_usage SET state=$2::ai_usage_state, input_tokens=$3, output_tokens=$4,
           amount_nanodollars=CASE $2::ai_usage_state
@@ -49,7 +48,7 @@ export function createTutoringUsage(pool: pg.Pool, cap: bigint | null) {
             WHEN 'out-of-bounds' THEN greatest(amount_nanodollars,$5::bigint)
             ELSE amount_nanodollars END
          WHERE id=$1 AND state='reserved'`,
-        [id, result.status, usage?.inputTokens, usage?.outputTokens, amount],
+        [id, result.status, inputTokens, outputTokens, amount],
       );
     },
     async status(client: pg.PoolClient): Promise<AiConsentView['tutoringBudget']> {
