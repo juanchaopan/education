@@ -49,10 +49,13 @@ describe('framework HTTP contract', () => {
     expect(closed.json()).toEqual({ message: '网站正在维护，请稍后再试。' });
     expect(closed.headers['cache-control']).toBe('no-store');
     expect(closed.headers['retry-after']).toBe('300');
+    // The router decodes the path, so an encoded API path reaches the same gate.
+    expect((await app.inject('/%61pi/v1/problems')).statusCode).toBe(503);
     expect((await app.inject('/version.json')).statusCode).toBe(200);
     expect((await app.inject('/health/live')).statusCode).toBe(200);
     healthy = true;
     expect((await app.inject('/api/v1/problems')).statusCode).toBe(200);
+    expect((await app.inject('/%61pi/v1/problems')).statusCode).toBe(200);
   });
   it('treats a failed readiness check as closed for API requests', async () => {
     const app = buildApp({

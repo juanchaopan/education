@@ -5,9 +5,8 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
-# Backup, restore and maintenance of the staging databases never overlap.
 concurrency:
-  group: staging-database
+  group: staging-mail-retention
   cancel-in-progress: false
 jobs:
   cleanup:

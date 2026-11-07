@@ -116,11 +116,13 @@ async function isReady(app: FastifyInstance, ready: Ready | undefined) {
 
 // With a database configured, the API answers only while the database is ready.
 // A database being restored, or one whose restore was not checked, has a closed
-// service gate, so no family can sign in or read anything from it.
+// service gate, so no family can sign in or read anything from it. The gate
+// goes by the route the request matched, not the raw URL, so an encoded path
+// that the router decodes to an API route is gated too.
 function registerServiceGate(app: FastifyInstance, ready: Ready | undefined) {
   if (!ready) return;
   app.addHook('onRequest', async (request, reply) => {
-    if (!request.url.startsWith('/api/') || (await isReady(app, ready))) return;
+    if (!request.routeOptions.url?.startsWith('/api/') || (await isReady(app, ready))) return;
     return reply
       .code(503)
       .header('Cache-Control', 'no-store')
