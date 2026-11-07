@@ -81,6 +81,8 @@ jobs:
           VERCEL_TOKEN: ${{ secrets.STAGING_VERCEL_TOKEN }}
           DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
           DATABASE_CA_CERT: ${{ secrets.STAGING_DATABASE_CA_CERT }}
+          DELETION_LEDGER_URL: ${{ secrets.STAGING_DELETION_LEDGER_URL }}
+          DELETION_LEDGER_CA_CERT: ${{ secrets.STAGING_DELETION_LEDGER_CA_CERT }}
           AUTH_RATE_LIMIT_KEY: ${{ secrets.STAGING_AUTH_RATE_LIMIT_KEY }}
           PIN_PEPPER: ${{ secrets.STAGING_PIN_PEPPER }}
           MAIL_ENABLED: ${{ vars.STAGING_MAIL_ENABLED || 'false' }}

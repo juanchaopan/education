@@ -1,36 +1,52 @@
-import pg from 'pg';
-import { databaseOptions } from '../apps/api/dist/shared/database-config.js';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+import { maintenancePool } from '../apps/api/dist/shared/maintenance-pool.js';
 import { cleanupAccountMail } from '../apps/api/dist/database/mail-retention.js';
 import { cleanupExpiredDrafts } from '../apps/api/dist/database/draft-retention.js';
 import { validateSupabaseDatabase } from './staging-release.mjs';
 
+const run = promisify(execFile);
+// Retention steps and the processes they start always use the hosted TLS rules.
+const hosted = { ...process.env, STAGING_DATABASE: 'true' };
+
+function report(label, outcome) {
+  if (outcome.status === 'fulfilled') return console.log(`${label}: ${outcome.value}`);
+  console.error(`${label}: cleanup failed`);
+  process.exitCode = 1;
+}
+
+// The API's own maintenance command finishes pending family deletions. It
+// prints its counts, which are kept when it fails because a family could not
+// be removed.
+async function completeDeletions() {
+  try {
+    const { stdout } = await run(process.execPath, ['apps/api/dist/complete-deletions.js'], {
+      timeout: 120000,
+      env: hosted,
+    });
+    console.log(stdout.trim());
+  } catch (error) {
+    const output = `${error.stdout ?? ''}${error.stderr ?? ''}`.trim();
+    console.error(output || 'Pending family deletions could not be finished.');
+    process.exitCode = 1;
+  }
+}
+
 async function cleanup() {
   validateSupabaseDatabase(process.env.DATABASE_URL, process.env.STAGING_SUPABASE_PROJECT_REF);
-  const pool = new pg.Pool({
-    ...databaseOptions({ ...process.env, STAGING_DATABASE: 'true' }),
-    max: 1,
-    connectionTimeoutMillis: 10000,
-    statement_timeout: 10000,
-  });
+  const pool = maintenancePool(hosted, undefined, 10000);
   try {
-    const results = await Promise.allSettled([
+    const [mail, drafts] = await Promise.allSettled([
       cleanupAccountMail(pool),
       cleanupExpiredDrafts(pool),
     ]);
-    for (const [index, label] of [
-      'Account mail records cleared',
-      'Expired drafts cleared',
-    ].entries()) {
-      const result = results[index];
-      if (result.status === 'fulfilled') console.log(`${label}: ${result.value}`);
-      else {
-        console.error(`${label}: cleanup failed`);
-        process.exitCode = 1;
-      }
-    }
+    report('Account mail records cleared', mail);
+    report('Expired drafts cleared', drafts);
   } finally {
     await pool.end();
   }
+  // Deletions run after the other cleanups, which touch the same families' rows.
+  if (process.env.DELETION_LEDGER_URL) await completeDeletions();
 }
 try {
   await cleanup();

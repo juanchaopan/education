@@ -1,13 +1,17 @@
 import { stagingMailEnv } from './staging-mail-env.mjs';
+import { stagingLedgerEnv } from './staging-ledger-env.mjs';
 import { execFileSync } from 'node:child_process';
 import { appendFile } from 'node:fs/promises';
 import { setTimeout } from 'node:timers/promises';
-import pg from 'pg';
-import { databaseOptions } from '../apps/api/dist/shared/database-config.js';
+import { deletionLedgerDatabase } from '../apps/api/dist/shared/database-config.js';
+import { maintenancePool } from '../apps/api/dist/shared/maintenance-pool.js';
 import { hardenStagingTables, revokeStagingDefaults } from '../apps/api/dist/database/staging.js';
 import { releaseStaging, validateSupabaseDatabase } from './staging-release.mjs';
 import { releaseFiles, vercelApi } from './staging-vercel.mjs';
 import { smokeAccount } from './staging-smoke.mjs';
+
+// Release steps and the processes they start always use the hosted TLS rules.
+const hosted = { ...process.env, STAGING_DATABASE: 'true' };
 
 function required(name) {
   if (!process.env[name]) throw new Error(`Missing staging configuration: ${name}`);
@@ -35,6 +39,22 @@ function assertCurrent(revision) {
     throw new Error('Main changed; leave staging unchanged until its next successful CI');
 }
 
+// The migration covers every configured database; each one's tables are then
+// closed to the hosted data API roles.
+async function migrate(pools) {
+  await Promise.all(pools.map(revokeStagingDefaults));
+  try {
+    execFileSync(process.execPath, ['apps/api/dist/database/migrate.js'], {
+      stdio: 'pipe',
+      timeout: 60000,
+      env: hosted,
+    });
+  } catch {
+    throw new Error('Controlled staging migration failed');
+  }
+  await Promise.all(pools.map((pool) => hardenStagingTables(pool)));
+}
+
 async function deploy() {
   validateSupabaseDatabase(required('DATABASE_URL'), required('STAGING_SUPABASE_PROJECT_REF'));
   const revision = required('RELEASE_SHA');
@@ -42,8 +62,10 @@ async function deploy() {
     throw new Error('Checkout does not match release SHA');
   execFileSync('git', ['diff', '--exit-code', 'HEAD'], { stdio: 'pipe' });
   const teamId = required('STAGING_VERCEL_TEAM_ID');
+  const ledgerEnv = stagingLedgerEnv(process.env);
   const runtimeEnv = {
     ...stagingMailEnv(process.env, required('STAGING_ORIGIN')),
+    ...ledgerEnv,
     DATABASE_URL: required('DATABASE_URL'),
     AUTH_RATE_LIMIT_KEY: required('AUTH_RATE_LIMIT_KEY'),
     PIN_PEPPER: required('PIN_PEPPER'),
@@ -53,12 +75,11 @@ async function deploy() {
     throw new Error('Staging rate-limit key must contain at least 32 characters');
   if (!/^[a-fA-F0-9]{64}$/.test(runtimeEnv.PIN_PEPPER))
     throw new Error('Staging PIN pepper must contain 64 hexadecimal characters');
-  const pool = new pg.Pool({
-    ...databaseOptions({ ...process.env, STAGING_DATABASE: 'true' }),
-    max: 1,
-    connectionTimeoutMillis: 10000,
-    statement_timeout: 30000,
-  });
+  const pool = maintenancePool(hosted);
+  const pools = [
+    pool,
+    ...(ledgerEnv.DELETION_LEDGER_URL ? [maintenancePool(hosted, deletionLedgerDatabase)] : []),
+  ];
   try {
     const result = await releaseStaging({
       revision,
@@ -70,18 +91,7 @@ async function deploy() {
       runtimeEnv,
       wait: setTimeout,
       stillCurrent: () => assertCurrent(revision),
-      migrate: async () => {
-        await revokeStagingDefaults(pool);
-        try {
-          execFileSync(process.execPath, ['apps/api/dist/database/migrate.js'], {
-            stdio: 'pipe',
-            timeout: 60000,
-          });
-        } catch {
-          throw new Error('Controlled staging migration failed');
-        }
-        await hardenStagingTables(pool);
-      },
+      migrate: () => migrate(pools),
       smoke: (url, origin, sha) =>
         smokeAccount(url, origin, sha, (email) => cleanupAccount(pool, email)),
     });
@@ -92,7 +102,7 @@ async function deploy() {
         `Staging: ${result.origin}\n\nRevision: ${revision}\n\nDeployment: ${result.deploymentId}\n`,
       );
   } finally {
-    await pool.end();
+    await Promise.all(pools.map((each) => each.end()));
   }
 }
 
