@@ -74,7 +74,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           RELEASE_SHA: ${{ needs.prepare.outputs.sha }}
           STAGING_DATABASE: 'true'
-          STAGING_SUPABASE_PROJECT_REF: ${{ vars.STAGING_SUPABASE_PROJECT_REF || 'telkaiyxprpetmqthyhn' }}
+          STAGING_DATABASE_HOST: ${{ vars.STAGING_DATABASE_HOST }}
           STAGING_ORIGIN: ${{ vars.STAGING_ORIGIN || 'https://education-access-spike.hyp.app' }}
           STAGING_VERCEL_PROJECT_ID: ${{ vars.STAGING_VERCEL_PROJECT_ID || 'prj_UYpAbi3rHNsoEdnOYGWiOo8L2WP0' }}
           STAGING_VERCEL_TEAM_ID: ${{ vars.STAGING_VERCEL_TEAM_ID || 'team_6WBQUpNIhHEGrjeEWxoFyN62' }}

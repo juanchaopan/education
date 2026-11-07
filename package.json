@@ -24,7 +24,7 @@
     "build-storybook": "npm run build-storybook -w @education/web",
     "test:e2e": "playwright test",
     "test:accounts": "node scripts/test-accounts-compose.mjs",
-    "test:staging": "node --test scripts/staging-handler.test.mjs scripts/staging-release.test.mjs scripts/staging-trigger.test.mjs scripts/staging-trigger-wait.test.mjs scripts/staging-readiness.test.mjs scripts/staging-vercel.test.mjs scripts/staging-mail-env.test.mjs scripts/staging-ledger-env.test.mjs",
+    "test:staging": "node --test scripts/staging-handler.test.mjs scripts/staging-release.test.mjs scripts/staging-trigger.test.mjs scripts/staging-trigger-wait.test.mjs scripts/staging-readiness.test.mjs scripts/staging-vercel.test.mjs scripts/staging-mail-env.test.mjs scripts/staging-database-env.test.mjs",
     "db:generate": "npm run db:generate -w @education/api",
     "db:migrate": "npm run db:migrate -w @education/api",
     "check": "npm run build:libs && npm run format:check && npm run lint && npm run arch && npm run typecheck && npm test && npm run build && npm run build-storybook",

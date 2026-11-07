@@ -1,12 +1,12 @@
 import { stagingMailEnv } from './staging-mail-env.mjs';
-import { stagingLedgerEnv } from './staging-ledger-env.mjs';
+import { stagingDatabaseEnv } from './staging-database-env.mjs';
 import { execFileSync } from 'node:child_process';
 import { appendFile } from 'node:fs/promises';
 import { setTimeout } from 'node:timers/promises';
 import { deletionLedgerDatabase } from '../apps/api/dist/shared/database-config.js';
 import { maintenancePool } from '../apps/api/dist/shared/maintenance-pool.js';
 import { hardenStagingTables, revokeStagingDefaults } from '../apps/api/dist/database/staging.js';
-import { releaseStaging, validateSupabaseDatabase } from './staging-release.mjs';
+import { releaseStaging } from './staging-release.mjs';
 import { releaseFiles, vercelApi } from './staging-vercel.mjs';
 import { smokeAccount } from './staging-smoke.mjs';
 
@@ -56,20 +56,17 @@ async function migrate(pools) {
 }
 
 async function deploy() {
-  validateSupabaseDatabase(required('DATABASE_URL'), required('STAGING_SUPABASE_PROJECT_REF'));
+  const databaseEnv = stagingDatabaseEnv(process.env);
   const revision = required('RELEASE_SHA');
   if (execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim() !== revision)
     throw new Error('Checkout does not match release SHA');
   execFileSync('git', ['diff', '--exit-code', 'HEAD'], { stdio: 'pipe' });
   const teamId = required('STAGING_VERCEL_TEAM_ID');
-  const ledgerEnv = stagingLedgerEnv(process.env);
   const runtimeEnv = {
     ...stagingMailEnv(process.env, required('STAGING_ORIGIN')),
-    ...ledgerEnv,
-    DATABASE_URL: required('DATABASE_URL'),
+    ...databaseEnv,
     AUTH_RATE_LIMIT_KEY: required('AUTH_RATE_LIMIT_KEY'),
     PIN_PEPPER: required('PIN_PEPPER'),
-    DATABASE_CA_CERT: process.env.DATABASE_CA_CERT ?? '',
   };
   if (runtimeEnv.AUTH_RATE_LIMIT_KEY.length < 32)
     throw new Error('Staging rate-limit key must contain at least 32 characters');
@@ -78,7 +75,7 @@ async function deploy() {
   const pool = maintenancePool(hosted);
   const pools = [
     pool,
-    ...(ledgerEnv.DELETION_LEDGER_URL ? [maintenancePool(hosted, deletionLedgerDatabase)] : []),
+    ...(databaseEnv.DELETION_LEDGER_URL ? [maintenancePool(hosted, deletionLedgerDatabase)] : []),
   ];
   try {
     const result = await releaseStaging({
