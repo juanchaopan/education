@@ -2,7 +2,7 @@
 
 ## 本阶段范围
 
-已搭建：npm workspaces、Vite/React 中文应用外壳、空题库 API、家长空间空状态、PostgreSQL/Drizzle 初始迁移、类型与依赖边界检查、单元和真实数据库测试、Storybook 与 Playwright 功能检查、容器配置和 CI/审查文件。
+已搭建：npm workspaces、Vite/React 中文应用外壳、题库 API、家长空间、PostgreSQL/Drizzle 迁移、类型与依赖边界检查、单元和真实数据库测试、Storybook 与 Playwright 功能检查、容器配置和 CI/审查文件。
 
 #17 实现：家长注册表单、Argon2id 密码哈希、家庭与待验证家长的原子创建、数据库共享注册限流与隔离邮件适配器；验收记录见 [#17](evidence/17/README.md)，PR 合并状态以 GitHub 为准。
 
@@ -10,9 +10,9 @@
 
 #19 实现：独立迁移、数据库/迁移就绪检查及隔离的双实例 HTTPS Compose 账号测试；验证跨实例登录、轮换、撤销、共享限流和数据库中断恢复。范围和实际检查结果见 [#19](evidence/19/README.md)，未部署至 Vercel 或生产。
 
-账号、儿童关联、学习摘要、练习安排、草稿、家庭导出和删除，以及 AI 解题提示和语音转写的服务端都已实现，并按家庭授权。正式题库为空，孩子还接触不到题目和 AI。尚未实现：每题专属页面和真实题目（#49）、新版本发布后已打开页面先保存草稿再刷新（[#118](https://github.com/juanchaopan/education/issues/118)）、生产发布（#52）。
+账号、儿童关联、学习摘要、练习安排、草稿、家庭导出和删除，以及 AI 解题提示和语音转写的服务端都已实现，并按家庭授权。题库有第一道真实题目「一棵青菜有多重」（一年级 / 数学 / 学而思）：#48 的菜园天平短片原样搬进正式页面，登录的孩子保存做到的场景，最后说出答案并确认，家长看到独立完成、提示后完成和答错，见 [#49 验收记录](evidence/49/README.md)。尚未实现：彩铅配对（[#125](https://github.com/juanchaopan/education/issues/125)）和数轴追及（[#126](https://github.com/juanchaopan/education/issues/126)）两道题、进题后不用按键就能和老师对话（待 `/change` 评估）、新版本发布后已打开页面先保存草稿再刷新（[#118](https://github.com/juanchaopan/education/issues/118)）、生产发布（#52）。
 
-不能把本阶段称为完整产品。空题库不展示演示问题，不伪造学习进度。空框架的家庭流程由 #47 验收，见 [#47 验收记录](evidence/47/README.md)。
+不能把本阶段称为完整产品。题库不展示演示问题，不伪造学习进度。家庭框架的流程由 #47 验收，见 [#47 验收记录](evidence/47/README.md)。
 
 ## 交付前置条件
 
@@ -27,12 +27,12 @@
 ## 建议开发顺序
 
 1. 身份与家庭：邮箱注册/验证/恢复、会话、单次 KEY、儿童 PIN、限流、重置与撤销、越权/并发测试。
-2. 题目扩展契约与进度：保持空正式题库，用隔离测试夹具验证版本、作答幂等、家长选题。
+2. 题目扩展契约与进度：用隔离测试夹具验证版本、作答幂等、家长选题。
 3. 草稿 7 天清理、恢复冲突、导出与家庭删除；明确备份和删除时限。
 4. 供应商与部署 spike：大陆访问、邮件送达、AI 条款与后端调用、token 控制、中文语音兼容性。
 5. 收到真实题目后逐题设计教学方式，验证错误定位、耐心提示与独立理解。
 
-当前：#19 已由 PR #59 合并；#20 已完成隔离 Singapore staging 的 main 自动发布、迁移、账号冒烟、域名推广和真实浏览器同数据库跨部署登录验收，见 [部署说明](deployment/staging.md) 与 [验收记录](evidence/20/README.md)。staging 的应用库和删除清单库是 Singapore 的两个 Neon Free 项目（[ADR-0014](adr/0014-neon-databases.md)），发布和维护按 `STAGING_DATABASE_HOST` 确认目标库；切换的实现和验收见 [#111](evidence/111/README.md)。#45 加了服务开关、每日加密备份和经删除清单重放的恢复，见 [备份与恢复](deployment/backup.md) 和 [#45 验收记录](evidence/45/README.md)。#46 在固定镜像里为每个 story 和关键页面建立了桌面、平板、手机三个视口的截图基准，并自动检查 WCAG 2.2 AA、键盘、减少动画、触摸目标和缩放，见 [视觉基准与可访问性检查](design/visual-baselines.md) 和 [#46 验收记录](evidence/46/README.md)。#47 用两个家庭在浏览器里走通空框架：真实登录、KEY 注册、孩子登录、空题库和空进度、跨家庭请求被拒、PIN 重置、重新登录、导出和删除，见 [#47 验收记录](evidence/47/README.md)。#50 给每个请求加了请求 ID 和不含家庭数据的结构化日志，每小时汇总 AI 用量；staging 的就绪探测，以及发布、备份、维护和恢复运行失败时用 GitHub issue 告警，见 [运行日志与告警](deployment/staging.md#运行日志与告警) 和 [#50 验收记录](evidence/50/README.md)。逐 PR 免费独立数据库未启用，按任务约定使用隔离 staging 退路；生产仍手动发布。邮箱验证 #21 已实现，维护者完成真实 Gmail → 126 收信、验证及重新登录，见 [#21 验收记录](evidence/21/README.md)；真实投递、自动化故障测试和未复测范围在该记录中区分。密码恢复 #22 已完成，见下方验收记录。
+当前：#19 已由 PR #59 合并；#20 已完成隔离 Singapore staging 的 main 自动发布、迁移、账号冒烟、域名推广和真实浏览器同数据库跨部署登录验收，见 [部署说明](deployment/staging.md) 与 [验收记录](evidence/20/README.md)。staging 的应用库和删除清单库是 Singapore 的两个 Neon Free 项目（[ADR-0014](adr/0014-neon-databases.md)），发布和维护按 `STAGING_DATABASE_HOST` 确认目标库；切换的实现和验收见 [#111](evidence/111/README.md)。#45 加了服务开关、每日加密备份和经删除清单重放的恢复，见 [备份与恢复](deployment/backup.md) 和 [#45 验收记录](evidence/45/README.md)。#46 在固定镜像里为每个 story 和关键页面建立了桌面、平板、手机三个视口的截图基准，并自动检查 WCAG 2.2 AA、键盘、减少动画、触摸目标和缩放，见 [视觉基准与可访问性检查](design/visual-baselines.md) 和 [#46 验收记录](evidence/46/README.md)。#47 用两个家庭在浏览器里走通家庭框架：真实登录、KEY 注册、孩子登录、题库和空进度、跨家庭请求被拒、PIN 重置、重新登录、导出和删除，见 [#47 验收记录](evidence/47/README.md)。#50 给每个请求加了请求 ID 和不含家庭数据的结构化日志，每小时汇总 AI 用量；staging 的就绪探测，以及发布、备份、维护和恢复运行失败时用 GitHub issue 告警，见 [运行日志与告警](deployment/staging.md#运行日志与告警) 和 [#50 验收记录](evidence/50/README.md)。#49 接入第一道真实题目，见 [#49 验收记录](evidence/49/README.md)。逐 PR 免费独立数据库未启用，按任务约定使用隔离 staging 退路；生产仍手动发布。邮箱验证 #21 已实现，维护者完成真实 Gmail → 126 收信、验证及重新登录，见 [#21 验收记录](evidence/21/README.md)；真实投递、自动化故障测试和未复测范围在该记录中区分。密码恢复 #22 已完成，见下方验收记录。
 
 ## Scaffold 阶段历史验证
 

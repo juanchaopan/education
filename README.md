@@ -1,6 +1,6 @@
 # 小小探索家
 
-中文儿童交互式解题网站。当前是**空框架**：家长注册、邮箱验证、登录、退出及密码恢复，家长 KEY 管理、儿童兑换注册、PIN 持久登录和家长重置儿童 PIN，家长的学习摘要、练习安排、外部 AI 授权、家庭导出和删除都已实现。正式题库为空，没有演示题或伪造的学习进度；每题专属页面、已打开页面在新版本发布后的自动刷新和生产部署尚未实现。各项真实 staging 验收范围与限制见文档，空框架的整体验收见 [#47](docs/evidence/47/README.md)。
+中文儿童交互式解题网站。家长注册、邮箱验证、登录、退出及密码恢复，家长 KEY 管理、儿童兑换注册、PIN 持久登录和家长重置儿童 PIN，家长的学习摘要、练习安排、外部 AI 授权、家庭导出和删除都已实现。题库有第一道真实题目：一年级 / 数学 / 学而思的「一棵青菜有多重」，孩子在菜园天平的互动短片里操作，最后说出答案（见 [#49](docs/evidence/49/README.md)）；没有演示题或伪造的学习进度。彩铅配对和数轴追及两道题、进题后不用按键就能和老师对话、已打开页面在新版本发布后的自动刷新和生产部署尚未实现。各项真实 staging 验收范围与限制见文档，家庭框架的整体验收见 [#47](docs/evidence/47/README.md)。
 
 ## 本地开发
 
@@ -11,7 +11,7 @@ npm ci
 npm run dev
 ```
 
-开发命令先构建共享库，再启动 Vite 和 Fastify。前端将 `/api` 代理至 API，题目列表来自真实的空题库接口。
+开发命令先构建共享库，再启动 Vite 和 Fastify。前端将 `/api` 代理至 API，题目列表来自真实的题库接口。
 
 ## 数据库与容器
 
@@ -33,7 +33,7 @@ docker compose --env-file infra/.env -f infra/docker-compose.yml up --build -d
 docker compose --env-file infra/.env -f infra/docker-compose.yml ps
 ```
 
-空题库仍可独立于数据库运行。`/health/live` 只证明进程存活；`/health/ready` 在账号服务已配置、数据库可访问且本版本所需迁移哈希已记入 Drizzle 迁移表时返回 200，其余返回 503；两者都不证明邮件或 AI 可用。就绪探针不执行迁移，不返回数据库配置。
+浏览题库和观看题目短片不依赖数据库；保存进度、提问和交答案需要孩子登录。`/health/live` 只证明进程存活；`/health/ready` 在账号服务已配置、数据库可访问且本版本所需迁移哈希已记入 Drizzle 迁移表时返回 200，其余返回 503；两者都不证明邮件或 AI 可用。就绪探针不执行迁移，不返回数据库配置。
 
 ### 隔离的双实例账号验证（#19）
 
@@ -91,7 +91,7 @@ npm run test:visual
 npm run storybook
 ```
 
-端到端测试前需 `npm run build`，并安装匹配的 Playwright Chromium：`npx playwright install chromium`。本机已有兼容 Chromium 时可临时设置 `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH`。`e2e/empty-framework.spec.ts` 用两个家庭走通空框架，需要 `DATABASE_URL` 和 `DELETION_LEDGER_URL`；它和家长账号测试各有自己的 API 服务，登录预算不和其他测试相加。
+端到端测试前需 `npm run build`，并安装匹配的 Playwright Chromium：`npx playwright install chromium`。本机已有兼容 Chromium 时可临时设置 `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH`。`e2e/empty-framework.spec.ts` 用两个家庭走通家庭框架，需要 `DATABASE_URL` 和 `DELETION_LEDGER_URL`；它和家长账号测试各有自己的 API 服务，登录预算不和其他测试相加。`e2e/garden-balance.spec.ts` 让登录的孩子从题库走完菜园天平并交答案，需要 `DATABASE_URL`。
 
 `npm run test:visual` 需要 Docker 正在运行：它在固定版本的官方 Playwright 镜像里构建应用和 Storybook，把每个 story 和关键页面在桌面、平板、手机三个视口下与经维护者评审的基准截图对比，并检查 WCAG 2.2 AA、键盘、减少动画、触摸目标和缩放。外观有意改变时用 `npm run test:visual -- --update` 重新生成基准，随代码提交并由维护者评审。做法见 [视觉基准与可访问性检查](docs/design/visual-baselines.md)。
 
