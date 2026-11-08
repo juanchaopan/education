@@ -5,7 +5,7 @@ import { iconNames } from './icons';
 const meta = {
   title: '公共部件/图标',
   component: Icon,
-  args: { name: 'spark' },
+  args: { name: 'sprout' },
 } satisfies Meta<typeof Icon>;
 export default meta;
 type Story = StoryObj<typeof meta>;

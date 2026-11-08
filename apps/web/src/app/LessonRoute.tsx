@@ -8,7 +8,7 @@ import { useReleaseCheck } from './release/useReleaseUpdate';
 // signed-in child's session token, or nothing for a visitor.
 export type LessonScreen = ComponentType<{ csrf?: string }>;
 
-const opening = <EmptyState icon="waiting" title="正在打开这道题" description="请稍等一下。" />;
+const opening = <EmptyState icon="clock" title="正在打开这道题" description="请稍等一下。" />;
 
 // A lesson that could not go on, most often because its files went with a
 // new release. The deployment is checked at once, and the child can open the
@@ -16,7 +16,7 @@ const opening = <EmptyState icon="waiting" title="正在打开这道题" descrip
 // repeats on its own.
 const unopened = (
   <EmptyState
-    icon="cloud"
+    icon="alert"
     title="这道题暂时打不开"
     description="网站可能刚更新过，点一下重新打开。"
     actionLabel="重新打开"

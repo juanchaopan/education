@@ -144,9 +144,9 @@
   outline-offset: 2px;
 }
 
-.entry i {
+/* The play mark before the start button's words. */
+.entryMark {
   margin-inline-end: var(--space-2);
-  font-style: normal;
   font-size: 0.85em;
   color: var(--stage-accent);
 }

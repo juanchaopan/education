@@ -24,7 +24,7 @@ export function ChildLoginForm(props: ChildLoginFormProps) {
       title="孩子登录"
       introduction={
         <>
-          <Icon name="spark" badge />
+          <Icon name="user" badge />
           <h2>欢迎回来，小小探索家</h2>
           <p>慢慢来，请输入自己的六位 PIN。</p>
           <p>第一次来这台设备？请家长从家长空间复制家庭码，再填上注册时的昵称。</p>

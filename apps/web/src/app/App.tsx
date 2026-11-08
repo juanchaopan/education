@@ -22,7 +22,7 @@ export function App() {
       </a>
       <header className={styles.header}>
         <NavLink to="/" className={styles.brand} aria-label="小小探索家首页">
-          <Icon name="spark" className={styles.mark} /> 小小探索家
+          <Icon name="sprout" className={styles.mark} /> 小小探索家
         </NavLink>
         <nav aria-label="主导航">
           <NavLink to="/" end>
