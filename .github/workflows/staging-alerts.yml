@@ -22,7 +22,8 @@ concurrency:
   group: staging-alerts-${{ github.event.workflow_run.name || 'health' }}
   cancel-in-progress: false
 # The scripts need only Node's built-in fetch, so the runner's own Node runs
-# them from a checkout of the scripts folder.
+# them from a checkout of the scripts folder. New alerts are assigned to
+# STAGING_ALERT_ASSIGNEE, or else to the repository owner.
 jobs:
   configuration:
     if: vars.STAGING_ENABLED != 'true' && github.event_name != 'workflow_run'
@@ -46,6 +47,7 @@ jobs:
         run: node scripts/staging-alerts.mjs health
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          ALERT_ASSIGNEE: ${{ vars.STAGING_ALERT_ASSIGNEE }}
           STAGING_ORIGIN: ${{ vars.STAGING_ORIGIN || 'https://education-access-spike.hyp.app' }}
           ALERT_DRILL: ${{ inputs.drill == true }}
   # A run that was skipped or cancelled as a whole says nothing about staging.
@@ -70,6 +72,7 @@ jobs:
         run: node scripts/staging-alerts.mjs workflow
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          ALERT_ASSIGNEE: ${{ vars.STAGING_ALERT_ASSIGNEE }}
           WORKFLOW_NAME: ${{ github.event.workflow_run.name }}
           WORKFLOW_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
           WORKFLOW_RUN_ID: ${{ github.event.workflow_run.id }}

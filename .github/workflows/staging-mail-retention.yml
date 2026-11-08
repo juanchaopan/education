@@ -45,6 +45,7 @@ jobs:
         run: node scripts/staging-alerts.mjs usage
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          ALERT_ASSIGNEE: ${{ vars.STAGING_ALERT_ASSIGNEE }}
           STAGING_DATABASE: 'true'
           STAGING_DATABASE_HOST: ${{ vars.STAGING_DATABASE_HOST }}
           DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}

@@ -10,7 +10,13 @@ const providerAlerts = {
   'reply-out-of-bounds': '本月有 AI 回复超出约定范围，本月的付费 AI 已暂停',
 };
 const env = process.env;
-const issues = githubIssues({ token: env.GITHUB_TOKEN, repository: env.GITHUB_REPOSITORY });
+// New alerts go to the configured person on call, or else to the account that
+// owns the repository.
+const issues = githubIssues({
+  token: env.GITHUB_TOKEN,
+  repository: env.GITHUB_REPOSITORY,
+  assignee: env.ALERT_ASSIGNEE || env.GITHUB_REPOSITORY_OWNER,
+});
 const runUrl = `${env.GITHUB_SERVER_URL}/${env.GITHUB_REPOSITORY}/actions/runs/${env.GITHUB_RUN_ID}`;
 
 async function summarize(lines) {
