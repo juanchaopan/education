@@ -32,13 +32,13 @@ describe('garden balance', () => {
     }
   });
 
-  it('answers the closing question by rule only when both the groups and the count are named', async () => {
+  it('answers the closing question by rule only when it is said the right way round', async () => {
     const status = async (stepId: string, answer: string) =>
       (await checkStep?.({ stepId, answer }))?.status;
     expect(await status('end', '还是三组，每组变成两根')).toBe('correct');
     expect(await status('end', '组数没变，根数变了')).toBe('correct');
-    expect(await status('end', '每组变了')).toBe('uncertain');
-    expect(await status('end', '黄瓜变少了')).toBe('uncertain');
-    expect(await status('bridge', '三组两根')).toBe('uncertain');
+    for (const unclear of ['每组变了', '组数变了，根数没变', '不是三组，也不是两根', '黄瓜变少了'])
+      expect(await status('end', unclear)).toBe('uncertain');
+    expect(await status('bridge', '还是三组，每组两根')).toBe('uncertain');
   });
 });

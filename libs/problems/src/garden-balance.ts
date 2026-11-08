@@ -40,14 +40,16 @@ function checkCompletion(input: SubmitAnswer['input']) {
   return input === answer ? 'correct' : 'incorrect';
 }
 
-// The number of groups, and the number in each group.
-const groupWords = /三组|组数/;
-const countWords = /两根|二根|2根|根数/;
+// The groups staying three, and each group holding two, said the right way
+// round; a negated or reversed answer matches neither and is left to the model.
+const groupsKept = /(还是|仍然是|都是)三组|组数(没|不)变|三组没变/;
+const countChanged = /(变成|只有|换成|每组)(两|二|2)根|根数变了/;
+const negated = /不是|没有变成/;
 
 // The closing question has a short authored answer: the groups stay three and
 // each group holds fewer. Anything else is left to the model.
 function checkStep({ stepId, answer: text }: { stepId: string; answer: string }): TeachingFeedback {
-  if (stepId === 'end' && groupWords.test(text) && countWords.test(text))
+  if (stepId === 'end' && groupsKept.test(text) && countChanged.test(text) && !negated.test(text))
     return {
       status: 'correct',
       stepId,
