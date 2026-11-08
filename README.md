@@ -91,7 +91,7 @@ npm run test:visual
 npm run storybook
 ```
 
-端到端测试前需 `npm run build`，并安装匹配的 Playwright Chromium：`npx playwright install chromium`。本机已有兼容 Chromium 时可临时设置 `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH`。`e2e/empty-framework.spec.ts` 用两个家庭走通家庭框架，需要 `DATABASE_URL` 和 `DELETION_LEDGER_URL`；它和家长账号测试各有自己的 API 服务，登录预算不和其他测试相加。`e2e/garden-balance.spec.ts` 让登录的孩子从题库走完菜园天平并交答案，需要 `DATABASE_URL`。
+端到端测试前需 `npm run build`，并安装匹配的 Playwright Chromium 和 WebKit：`npx playwright install chromium webkit`。本机已有兼容 Chromium 时可临时设置 `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH`；WebKit 仍需安装。`e2e/empty-framework.spec.ts` 用两个家庭走通家庭框架，需要 `DATABASE_URL` 和 `DELETION_LEDGER_URL`；它和家长账号测试各有自己的 API 服务，登录预算不和其他测试相加。`e2e/garden-balance.spec.ts` 让登录的孩子从题库走完菜园天平并交答案，需要 `DATABASE_URL`。`e2e/garden-narration.spec.ts` 逐句检查菜园短片的每句旁白都完整播放、没有被跳过，也检查录音下载失败和一句放不出来时短片会停下等孩子重试；它也在 WebKit 里运行，有 `DATABASE_URL` 时由登录的孩子听完整部短片，没有时由游客听到作答那一幕。
 
 `npm run test:visual` 需要 Docker 正在运行：它在固定版本的官方 Playwright 镜像里构建应用和 Storybook，把每个 story 和关键页面在桌面、平板、手机三个视口下与经维护者评审的基准截图对比，并检查 WCAG 2.2 AA、键盘、减少动画、触摸目标和缩放。外观有意改变时用 `npm run test:visual -- --update` 重新生成基准，随代码提交并由维护者评审。做法见 [视觉基准与可访问性检查](docs/design/visual-baselines.md)。
 
