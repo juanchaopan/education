@@ -1,4 +1,4 @@
-import type { Handling } from '../../interaction/useStageDrag';
+import type { Handling } from '../../interaction/stage-activation';
 import {
   cucumbersPerApple,
   tilt,

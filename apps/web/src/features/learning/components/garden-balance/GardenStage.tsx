@@ -4,7 +4,7 @@ import {
   type Activation,
   type Handling,
   type StageGhost,
-} from '../../interaction/useStageDrag';
+} from '../../interaction/stage-activation';
 import rabbit from '../../lessons/garden-balance/assets/garden-rabbit.webp';
 import type { GardenState } from '../../lessons/garden-balance/garden-story';
 import { Fireflies, SpriteUse } from './garden-art';
