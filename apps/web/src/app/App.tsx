@@ -7,6 +7,8 @@ import { NavLink, Route, Routes } from 'react-router-dom';
 import { LibraryPage } from '../features/library/pages/LibraryPage';
 import { ProblemPage } from '../features/library/pages/ProblemPage';
 import { FamilyPage } from '../features/family/pages/FamilyPage';
+import { Icon } from '../shared/ui/Icon';
+import { Page } from '../shared/ui/Page';
 import { StandaloneLink } from '../shared/ui/StandaloneLink';
 import { lessonPages } from './lesson-pages';
 import styles from './App.module.css';
@@ -19,7 +21,7 @@ export function App() {
       </a>
       <header className={styles.header}>
         <NavLink to="/" className={styles.brand} aria-label="小小探索家首页">
-          <span aria-hidden="true">✳</span> 小小探索家
+          <Icon name="spark" className={styles.mark} /> 小小探索家
         </NavLink>
         <nav aria-label="主导航">
           <NavLink to="/" end>
@@ -43,10 +45,9 @@ export function App() {
           <Route
             path="*"
             element={
-              <section className={styles.missing}>
-                <h1>这条小路还没找到</h1>
+              <Page titleId="not-found-title" title="这条小路还没找到" className={styles.missing}>
                 <StandaloneLink to="/">回到探索首页</StandaloneLink>
-              </section>
+              </Page>
             }
           />
         </Routes>

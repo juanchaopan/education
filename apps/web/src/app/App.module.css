@@ -21,7 +21,7 @@
   text-decoration: none;
   letter-spacing: 0.04em;
 }
-.brand span {
+.mark {
   color: var(--teal);
   font-size: var(--text-xl);
 }
