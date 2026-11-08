@@ -1,0 +1,49 @@
+/* Drifting touches in the stage's ambience colour, the `--stage-ambience`
+   property the lesson stage sets. */
+.fireflies,
+.petals {
+  pointer-events: none;
+  fill: var(--stage-ambience);
+}
+
+.fireflies circle {
+  animation: float 6s ease-in-out infinite;
+  animation-delay: var(--delay);
+}
+
+@keyframes float {
+  0%,
+  100% {
+    translate: 0 0;
+    opacity: 0.48;
+  }
+  50% {
+    translate: 22px -18px;
+    opacity: 0.9;
+  }
+}
+
+.petals ellipse {
+  opacity: 0.8;
+  animation: fall 7s ease-in-out infinite;
+  animation-delay: var(--delay);
+}
+
+@keyframes fall {
+  0%,
+  100% {
+    translate: 0 0;
+    rotate: 0deg;
+  }
+  50% {
+    translate: 26px 34px;
+    rotate: 40deg;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fireflies circle,
+  .petals ellipse {
+    animation: none;
+  }
+}

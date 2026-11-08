@@ -1,0 +1,7 @@
+/* Board writing in the stage's board ink, the `--stage-board-ink` property the
+   lesson stage sets. It is read, never tapped. */
+.board {
+  fill: var(--stage-board-ink);
+  user-select: none;
+  pointer-events: none;
+}

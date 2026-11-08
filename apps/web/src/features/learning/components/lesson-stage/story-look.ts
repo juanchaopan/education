@@ -71,5 +71,9 @@ export const storyLook: StageLook = {
     haloStrong: 'var(--peach)',
     glow: 'var(--gold)',
     ghostShadow: '#0d182091',
+    cue: 'var(--paper)',
+    cueEdge: '#8a5f3c',
+    ambience: '#ffe9b0',
+    boardInk: 'var(--ink)',
   },
 };

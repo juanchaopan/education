@@ -65,5 +65,9 @@ export const gardenLook: StageLook = {
     haloStrong: '#fff7c6',
     glow: '#fff5b2',
     ghostShadow: '#10252391',
+    cue: '#fff3bc',
+    cueEdge: '#8b662b',
+    ambience: '#ffeeb7',
+    boardInk: '#654024',
   },
 };

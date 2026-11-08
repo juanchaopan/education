@@ -42,6 +42,13 @@ export type StagePalette = Readonly<{
   glow: string;
   // The shadow under a prop the child is dragging.
   ghostShadow: string;
+  // The cues that draw the child's eye, and their outline.
+  cue: string;
+  cueEdge: string;
+  // What drifts over the scenes: fireflies, petals.
+  ambience: string;
+  // Writing on boards and labels.
+  boardInk: string;
 }>;
 
 // How the backdrop is framed in a scene: its zoom, and how far it moves across

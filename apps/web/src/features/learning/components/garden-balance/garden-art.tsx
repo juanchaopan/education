@@ -1,11 +1,12 @@
-import type { ComponentProps, CSSProperties, ReactNode } from 'react';
+import type { ComponentProps, ReactNode } from 'react';
 import { Prop, PropPlace } from '../lesson-stage/Prop';
 import styles from './garden-art.module.css';
 
 export type Sprite = 'garden-apple' | 'garden-cabbage' | 'garden-cucumber';
 export type PartKind = 'leaf' | 'apple' | 'exchange' | 'replace';
 
-const delayed = (seconds: number) => ({ '--delay': `${seconds}s` }) as CSSProperties;
+// The garden's drop shadow, from its paints, which every prop and cue casts.
+export const gardenShadow = 'url(#garden-shadow)';
 
 export function SpriteUse({ sprite, size }: { sprite: Sprite; size: number }) {
   return (
@@ -15,7 +16,7 @@ export function SpriteUse({ sprite, size }: { sprite: Sprite; size: number }) {
       y={-size / 2}
       width={size}
       height={size}
-      filter="url(#garden-shadow)"
+      filter={gardenShadow}
     />
   );
 }
@@ -35,41 +36,6 @@ export function Part({ sprite, ...prop }: PartProps) {
   );
 }
 
-// A glowing arrow that travels from the prop to where it should go.
-export function Spark({ from, to }: { from: [number, number]; to: [number, number] }) {
-  const [fromX, fromY] = from;
-  const [toX, toY] = to;
-  const path = `M ${fromX} ${fromY} Q ${(fromX + toX) / 2} ${Math.min(fromY, toY) - 35} ${toX} ${toY}`;
-  return (
-    <g className={styles.hintSpark} style={{ offsetPath: `path('${path}')` }}>
-      <path
-        d="M0-12L9 0L0 12L2 2L-13 3V-3L2-2Z"
-        fill="#fff3bc"
-        stroke="#8b662b"
-        strokeWidth="2"
-        filter="url(#garden-shadow)"
-      />
-    </g>
-  );
-}
-
-const fireflies = Array.from({ length: 18 }, (_, i) => ({
-  x: 80 + ((i * 73) % 1050),
-  y: 105 + ((i * 59) % 390),
-  r: 1.4 + (i % 3),
-  delay: -i * 0.57,
-}));
-
-export function Fireflies() {
-  return (
-    <g className={styles.petals}>
-      {fireflies.map(({ x, y, r, delay }) => (
-        <circle key={`${x}-${y}`} cx={x} cy={y} r={r} fill="#ffeeb7" style={delayed(delay)} />
-      ))}
-    </g>
-  );
-}
-
 const beam = { pivot: 650, left: 483, right: 817, y: 321 };
 
 function Pan({ x, y, children }: { x: number; y: number; children: ReactNode }) {
@@ -80,7 +46,7 @@ function Pan({ x, y, children }: { x: number; y: number; children: ReactNode }) 
         fill="url(#garden-turq)"
         stroke="#244b3e"
         strokeWidth="3"
-        filter="url(#garden-shadow)"
+        filter={gardenShadow}
       />
       <ellipse cy="6" rx="94" ry="17" fill="#417f72" stroke="#dbad64" strokeWidth="7" />
       <ellipse cy="3" rx="83" ry="10" fill="#5b9785" opacity=".67" />
@@ -98,7 +64,7 @@ function Stand() {
         fill="url(#garden-wood)"
         stroke="#704221"
         strokeWidth="2"
-        filter="url(#garden-shadow)"
+        filter={gardenShadow}
       />
       <path
         d="M601 448Q630 425 632 354L638 314H662L669 354Q670 426 698 448Z"
@@ -169,24 +135,7 @@ export function Basket({ highlight, over }: { highlight: boolean; over: boolean 
       halo={{ rx: 69, ry: 42, cy: -10 }}
       ground={basketGround}
     >
-      <use
-        href="#garden-basket"
-        x="-78"
-        y="-63"
-        width="156"
-        height="126"
-        filter="url(#garden-shadow)"
-      />
+      <use href="#garden-basket" x="-78" y="-63" width="156" height="126" filter={gardenShadow} />
     </PropPlace>
-  );
-}
-
-type BoardTextProps = { x: number; y: number; size?: number; children: string };
-
-export function BoardText({ x, y, size = 21, children }: BoardTextProps) {
-  return (
-    <text x={x} y={y} textAnchor="middle" fill="#654024" fontWeight="850" fontSize={size}>
-      {children}
-    </text>
   );
 }

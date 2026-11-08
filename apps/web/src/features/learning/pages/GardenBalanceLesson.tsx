@@ -1,8 +1,9 @@
 import type { ReactNode } from 'react';
 import { useMediaQuery } from '../../../shared/lib/useMediaQuery';
-import { Fireflies, SpriteUse } from '../components/garden-balance/garden-art';
+import { SpriteUse } from '../components/garden-balance/garden-art';
 import { GardenDefs } from '../components/garden-balance/garden-defs';
 import { GardenScene } from '../components/garden-balance/garden-scenes';
+import { Ambience } from '../components/lesson-stage/Ambience';
 import { LessonStage } from '../components/lesson-stage/LessonStage';
 import { DragGhost } from '../components/lesson-stage/Prop';
 import type { LearningScope } from '../data-access/learning-request';
@@ -40,7 +41,7 @@ function entry(film: GardenFilm, recordings: Recordings, { resume, finding }: St
 
 // The garden's paints and fireflies never change while the film plays.
 const defs = <GardenDefs />;
-const fireflies = <Fireflies />;
+const fireflies = <Ambience kind="fireflies" />;
 
 type ScreenProps = { film: GardenFilm; recordings: Recordings; start: Start };
 

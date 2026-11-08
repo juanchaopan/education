@@ -1,52 +1,7 @@
-/* The garden's own motion: the pans settling, the fireflies, the arrow towards
-   the basket and the cucumbers taking an apple's place. */
+/* The garden's own motion: the pans settling and the cucumbers taking an
+   apple's place. */
 .pan {
   transition: transform 0.24s ease;
-}
-
-.petals {
-  pointer-events: none;
-}
-
-.petals circle {
-  animation: float 6s ease-in-out infinite;
-  animation-delay: var(--delay);
-}
-
-@keyframes float {
-  0%,
-  100% {
-    translate: 0 0;
-    opacity: 0.48;
-  }
-  50% {
-    translate: 22px -18px;
-    opacity: 0.9;
-  }
-}
-
-.hintSpark {
-  pointer-events: none;
-  animation: trace 2.2s ease-in-out infinite;
-}
-
-@keyframes trace {
-  0%,
-  18% {
-    opacity: 0;
-    offset-distance: 0%;
-  }
-  34% {
-    opacity: 1;
-  }
-  75% {
-    opacity: 1;
-  }
-  88%,
-  100% {
-    opacity: 0;
-    offset-distance: 100%;
-  }
 }
 
 .swapIn {

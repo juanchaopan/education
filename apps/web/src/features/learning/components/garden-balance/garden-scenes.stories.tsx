@@ -4,8 +4,8 @@ import type { Handling } from '../../interaction/stage-activation';
 import { gardenLook } from '../../lessons/garden-balance/garden-look';
 import { arrive, type GardenState } from '../../lessons/garden-balance/garden-story';
 import { lines } from '../../lessons/garden-balance/script';
+import { Ambience } from '../lesson-stage/Ambience';
 import { LessonStage } from '../lesson-stage/LessonStage';
-import { Fireflies } from './garden-art';
 import { GardenDefs } from './garden-defs';
 import { GardenScene } from './garden-scenes';
 
@@ -15,7 +15,7 @@ type FilmArgs = Omit<ComponentProps<typeof LessonStage>, 'look' | 'shot' | 'chil
 };
 
 const defs = <GardenDefs />;
-const fireflies = <Fireflies />;
+const fireflies = <Ambience kind="fireflies" />;
 
 // The garden scenes on the lesson stage, as the lesson page shows them.
 function GardenFilm({ state, handling, ...stage }: FilmArgs) {
