@@ -1,4 +1,4 @@
-import type { SubmitAnswer, TeachingFeedback } from '@education/contracts';
+import { uncertainFeedback, type SubmitAnswer, type TeachingFeedback } from '@education/contracts';
 import type { FeedbackStep, ProblemPlugin } from './plugin.js';
 
 // 一年级试卷第 7 题：两棵青菜和六个苹果一样重，一个苹果和三根黄瓜一样重，
@@ -40,28 +40,20 @@ function checkCompletion(input: SubmitAnswer['input']) {
   return input === answer ? 'correct' : 'incorrect';
 }
 
-const groupWords = /三组|组数|几组|组/;
-const countWords = /两根|二根|2根|根数|每组/;
+// The number of groups, and the number in each group.
+const groupWords = /三组|组数/;
+const countWords = /两根|二根|2根|根数/;
 
 // The closing question has a short authored answer: the groups stay three and
 // each group holds fewer. Anything else is left to the model.
-function checkStep({ stepId, answer: text }: { stepId: string; answer: string }) {
-  if (stepId !== 'end') return uncertain(stepId);
-  if (groupWords.test(text) && countWords.test(text))
-    return feedback(stepId, 'correct', '说得对！还是三组，只是每组从三根变成了两根。');
-  return uncertain(stepId);
-}
-
-function feedback(
-  stepId: string,
-  status: TeachingFeedback['status'],
-  instruction: string,
-): TeachingFeedback {
-  return { status, stepId, instruction };
-}
-
-function uncertain(stepId: string) {
-  return feedback(stepId, 'uncertain', '我再想想你的意思。');
+function checkStep({ stepId, answer: text }: { stepId: string; answer: string }): TeachingFeedback {
+  if (stepId === 'end' && groupWords.test(text) && countWords.test(text))
+    return {
+      status: 'correct',
+      stepId,
+      instruction: '说得对！还是三组，只是每组从三根变成了两根。',
+    };
+  return uncertainFeedback(stepId);
 }
 
 export const gardenBalance: ProblemPlugin = {
