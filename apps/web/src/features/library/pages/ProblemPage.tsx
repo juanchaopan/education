@@ -1,4 +1,4 @@
-import { Fragment } from 'react';
+import { Fragment, type ReactNode } from 'react';
 import { useParams } from 'react-router-dom';
 import type { ProblemSummary } from '@education/contracts';
 import { EmptyState } from '../../../shared/ui/EmptyState';
@@ -6,9 +6,12 @@ import { StandaloneLink } from '../../../shared/ui/StandaloneLink';
 import { useProblem } from '../data-access/useProblem';
 import { catalogPath } from '../model';
 import { problemPath } from '../../../shared/lib/problem-path';
-import { problemPages, type ProblemPages } from './problem-pages';
 
-export function ProblemPage({ pages = problemPages }: { pages?: ProblemPages }) {
+// Each problem version's own page, keyed by problemPath. The app shell supplies
+// them, so a page can come from whichever feature teaches it.
+export type ProblemPages = ReadonlyMap<string, (problem: ProblemSummary) => ReactNode>;
+
+export function ProblemPage({ pages }: { pages: ProblemPages }) {
   const { id = '', version = '' } = useParams();
   const query = useProblem(id, version);
   const problem = query.data;
