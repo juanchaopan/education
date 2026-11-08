@@ -14,6 +14,15 @@ function setup(fetch: ReturnType<typeof vi.fn>) {
   });
 }
 
+// Opens the round and sends a count of nine whose submission fails.
+async function failedNine(fetch: ReturnType<typeof vi.fn>) {
+  const view = setup(fetch);
+  await waitFor(() => expect(view.result.current.canHint).toBe(true));
+  act(() => view.result.current.submit(9));
+  await waitFor(() => expect(view.result.current.judgement.status).toBe('failed'));
+  return view.result;
+}
+
 const body = (call: unknown[]) => JSON.parse((call[1] as RequestInit).body as string);
 const receipt = (outcome: string) => async (_url: string, init: RequestInit) =>
   Response.json({ attemptId: JSON.parse(init.body as string).attemptId, outcome });
@@ -46,10 +55,7 @@ it('retries a lost reply with the same attempt, so it is never counted twice', a
     .mockResolvedValueOnce(Response.json({ round }))
     .mockRejectedValueOnce(new TypeError('offline'))
     .mockImplementationOnce(receipt('independent'));
-  const { result } = setup(fetch);
-  await waitFor(() => expect(result.current.canHint).toBe(true));
-  act(() => result.current.submit(9));
-  await waitFor(() => expect(result.current.judgement.status).toBe('failed'));
+  const result = await failedNine(fetch);
   act(() => result.current.retry());
   await waitFor(() =>
     expect(result.current.judgement).toEqual({
@@ -88,10 +94,7 @@ it('starts over with a fresh round when the round changed elsewhere', async () =
     .mockResolvedValueOnce(new Response(null, { status: 409 }))
     .mockResolvedValueOnce(Response.json({ round: nextRound }))
     .mockImplementationOnce(receipt('independent'));
-  const { result } = setup(fetch);
-  await waitFor(() => expect(result.current.canHint).toBe(true));
-  act(() => result.current.submit(9));
-  await waitFor(() => expect(result.current.judgement.status).toBe('failed'));
+  const result = await failedNine(fetch);
   act(() => result.current.retry());
   await waitFor(() => expect(result.current.judgement).toEqual({ status: 'open' }));
   await waitFor(() => expect(fetch).toHaveBeenCalledTimes(3));
