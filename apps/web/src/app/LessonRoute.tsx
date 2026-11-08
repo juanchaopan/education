@@ -10,15 +10,16 @@ export type LessonPage = ComponentType<{ csrf?: string }>;
 
 const opening = <EmptyState icon="waiting" title="正在打开这道题" description="请稍等一下。" />;
 
-// A lesson that did not open. Its files may have gone with a new release, so
-// the deployment is checked at once, and the child can open it again: a full
-// reload, which only the child starts, so it never repeats on its own.
+// A lesson that could not go on, most often because its files went with a
+// new release. The deployment is checked at once, and the child can open the
+// lesson again: a full reload, which only the child starts, so it never
+// repeats on its own.
 const unopened = (
   <EmptyState
     icon="cloud"
-    title="这道题没有打开"
-    description="网站可能刚更新过。登录还在，点一下再试。"
-    actionLabel="再试一次"
+    title="这道题暂时打不开"
+    description="网站可能刚更新过，点一下重新打开。"
+    actionLabel="重新打开"
     onAction={() => window.location.reload()}
   />
 );

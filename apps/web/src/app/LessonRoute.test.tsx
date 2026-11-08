@@ -21,20 +21,20 @@ it('shows a way to open a lesson again when its files did not load', async () =>
       <LessonRoute lesson={missing} />
     </QueryClientProvider>,
   );
-  expect(await screen.findByRole('heading', { name: '这道题没有打开' })).toBeInTheDocument();
-  expect(screen.getByRole('button', { name: '再试一次' })).toBeInTheDocument();
+  expect(await screen.findByRole('heading', { name: '这道题暂时打不开' })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: '重新打开' })).toBeInTheDocument();
 });
 
-it('tells the page once that the lesson did not open, and shows the fallback in its place', () => {
+it('tells the page once that the lesson could not go on, and shows the fallback in its place', () => {
   const onFailure = vi.fn();
   function Broken(): never {
     throw new Error('broken');
   }
   render(
-    <LessonBoundary fallback={<p>没有打开</p>} onFailure={onFailure}>
+    <LessonBoundary fallback={<p>打不开</p>} onFailure={onFailure}>
       <Broken />
     </LessonBoundary>,
   );
-  expect(screen.getByText('没有打开')).toBeInTheDocument();
+  expect(screen.getByText('打不开')).toBeInTheDocument();
   expect(onFailure).toHaveBeenCalledOnce();
 });
