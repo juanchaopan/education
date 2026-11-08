@@ -1,5 +1,5 @@
-import type { CSSProperties, ReactNode } from 'react';
-import type { StageGhost } from '../../interaction/stage-activation';
+import type { ComponentProps, CSSProperties, ReactNode } from 'react';
+import { Prop, PropPlace } from '../lesson-stage/Prop';
 import styles from './garden-art.module.css';
 
 export type Sprite = 'garden-apple' | 'garden-cabbage' | 'garden-cucumber';
@@ -20,56 +20,18 @@ export function SpriteUse({ sprite, size }: { sprite: Sprite; size: number }) {
   );
 }
 
-// A prop that may be the current one: then it is a button the child can tap,
-// drag or reach with the keyboard, outlined when it is the next to move.
-export type PartProps = {
+// A cabbage, an apple or a cucumber on the stage, drawn from the garden's
+// symbols; with a kind, the child can move it.
+export type PartProps = Omit<ComponentProps<typeof Prop>, 'part' | 'children'> & {
   sprite: Sprite;
-  x: number;
-  y: number;
-  size: number;
   part?: PartKind;
-  id?: string;
-  label?: string;
-  highlight?: boolean;
-  entrance?: boolean;
-  selected?: boolean;
-  lifted?: boolean;
-  delay?: number;
 };
 
-export function Part({ sprite, x, y, size, part, id, label, highlight, ...look }: PartProps) {
-  const classes = [
-    part && styles.part,
-    look.entrance && styles.introProp,
-    look.selected && styles.selected,
-    look.lifted && styles.lifted,
-  ].filter(Boolean);
+export function Part({ sprite, ...prop }: PartProps) {
   return (
-    <g
-      transform={`translate(${x} ${y})`}
-      className={classes.join(' ') || undefined}
-      style={look.delay ? delayed(look.delay) : undefined}
-      {...(part && {
-        'data-part': part,
-        'data-key': id,
-        role: 'button',
-        tabIndex: 0,
-        'aria-label': label,
-      })}
-    >
-      {part && <circle r={Math.max(size / 2, 30)} fill="transparent" />}
-      {highlight && <circle className={styles.halo} r={size * 0.52} />}
-      <SpriteUse sprite={sprite} size={size} />
-    </g>
-  );
-}
-
-// A prop being dragged, drawn as it looks on the scale under the child's finger.
-export function CarriedPart({ ghost }: { ghost: StageGhost<{ sprite: Sprite; size: number }> }) {
-  return (
-    <g className={styles.ghost} transform={`translate(${ghost.x} ${ghost.y})`}>
-      <SpriteUse sprite={ghost.sprite} size={ghost.size} />
-    </g>
+    <Prop {...prop}>
+      <SpriteUse sprite={sprite} size={prop.size} />
+    </Prop>
   );
 }
 
@@ -187,20 +149,26 @@ export function Scale({ left, right, tilt }: { left: ReactNode; right: ReactNode
   );
 }
 
+const basketGround = (
+  <>
+    <ellipse rx="72" ry="20" cy="37" fill="#53341d" opacity=".23" />
+    <rect x="-81" y="-67" width="162" height="133" rx="40" fill="transparent" />
+  </>
+);
+
 // The basket beside the scale, where the child puts what leaves it.
 export function Basket({ highlight, over }: { highlight: boolean; over: boolean }) {
   return (
-    <g
-      className={[styles.place, over && styles.over].filter(Boolean).join(' ')}
-      data-place="basket"
-      role="button"
-      tabIndex={0}
-      aria-label="旁边的篮子"
-      transform="translate(984 416)"
+    <PropPlace
+      place="basket"
+      label="旁边的篮子"
+      x={984}
+      y={416}
+      highlight={highlight}
+      over={over}
+      halo={{ rx: 69, ry: 42, cy: -10 }}
+      ground={basketGround}
     >
-      <ellipse rx="72" ry="20" cy="37" fill="#53341d" opacity=".23" />
-      <rect x="-81" y="-67" width="162" height="133" rx="40" fill="transparent" />
-      {highlight && <ellipse className={styles.halo} rx="69" ry="42" cy="-10" />}
       <use
         href="#garden-basket"
         x="-78"
@@ -209,7 +177,7 @@ export function Basket({ highlight, over }: { highlight: boolean; over: boolean 
         height="126"
         filter="url(#garden-shadow)"
       />
-    </g>
+    </PropPlace>
   );
 }
 
