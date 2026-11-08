@@ -1,5 +1,8 @@
 import { act, renderHook } from '@testing-library/react';
+import type { PropsWithChildren } from 'react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
+import { usePageReadiness } from '../../../shared/lib/reload-readiness';
+import { ReloadReadinessProvider } from '../../../shared/lib/ReloadReadinessProvider';
 import { fakeAudio } from '../../../test/fake-audio';
 import { silenceWarnings } from '../../../test/silence-warnings';
 import type { FilmStory, Reaction } from './lesson-film';
@@ -33,10 +36,21 @@ const story: FilmStory<State, Shot, Line, Move> = {
   },
 };
 
+// The film on a page that is told what a reload would cut off.
+function onPage({ children }: PropsWithChildren) {
+  return <ReloadReadinessProvider>{children}</ReloadReadinessProvider>;
+}
+
 function setup() {
   const { audios, createAudio } = fakeAudio();
   const onArrive = vi.fn();
-  const view = renderHook(() => useLessonFilm(story, { onArrive, createAudio }));
+  const view = renderHook(
+    () => ({
+      ...useLessonFilm(story, { onArrive, createAudio }),
+      page: usePageReadiness().readiness,
+    }),
+    { wrapper: onPage },
+  );
   const player = () => audios[0]!;
   const sound = async (event: 'playing' | 'ended') => {
     await act(async () => {
@@ -144,4 +158,41 @@ it('stops the voice and says nothing more once the lesson is left', async () => 
   player().dispatchEvent(new Event('ended'));
   await vi.advanceTimersByTimeAsync(20_000);
   expect(player().play).toHaveBeenCalledTimes(2);
+});
+
+it('tells the page it is playing from the first line until the lines that lead on are heard', async () => {
+  const { result, sound } = setup();
+  expect(result.current.playing).toBe(false);
+  expect(result.current.page).toBe('ready');
+  await act(async () => result.current.enter());
+  expect(result.current.playing).toBe(true);
+  expect(result.current.page).toBe('playing');
+  await sound('ended');
+  expect(result.current.page).toBe('ready');
+  await act(async () => result.current.act('next'));
+  await sound('playing');
+  await sound('ended');
+  expect(result.current.state.shot).toBe('done');
+  expect(result.current.page).toBe('playing');
+  await sound('playing');
+  await sound('ended');
+  expect(result.current.playing).toBe(false);
+  expect(result.current.page).toBe('ready');
+});
+
+it('is not playing while the child has paused it or a line waits to be heard again', async () => {
+  const { result, player, sound } = setup();
+  await act(async () => result.current.enter());
+  await sound('playing');
+  await act(async () => result.current.pause());
+  expect(result.current.page).toBe('ready');
+  await act(async () => result.current.resume());
+  await sound('playing');
+  expect(result.current.page).toBe('playing');
+  await sound('ended');
+  vi.mocked(player().play).mockRejectedValueOnce(new DOMException('', 'NotAllowedError'));
+  await act(async () => result.current.act('next'));
+  await act(async () => vi.advanceTimersByTimeAsync(1_000));
+  expect(result.current.failure).toBe('refused');
+  expect(result.current.page).toBe('ready');
 });

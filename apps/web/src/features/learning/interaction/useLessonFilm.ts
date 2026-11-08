@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useReloadReadiness } from '../../../shared/lib/reload-readiness';
 import { createChime } from './chime';
 import { tell, type FilmScene, type FilmStory, type Reaction } from './lesson-film';
 import type { NarrationFailure } from './narration';
@@ -27,6 +28,9 @@ export type LessonFilm<State, Shot extends string, Move> = Voice &
   Readonly<{
     state: State;
     caption?: string;
+    // Whether the teacher is telling lines the child is hearing, the short
+    // pauses between them included.
+    playing: boolean;
     // Starts the film at its first scene, or at a saved one.
     enter: (shot?: Shot) => void;
     act: (move: Move) => void;
@@ -54,11 +58,32 @@ function useLatest<Callback>(callback: Callback) {
   return latest;
 }
 
+// The film's tones, and its runs of lines: each new run tells whether it is
+// still the one on screen. Leaving the lesson ends the run on screen and
+// closes the tones.
+function useFilmRuns() {
+  const [chime] = useState(() => createChime());
+  const runs = useRef(0);
+  useEffect(() => {
+    const film = runs;
+    return () => {
+      film.current++;
+      chime.close();
+    };
+  }, [chime]);
+  const [begin] = useState(() => () => {
+    const run = ++runs.current;
+    return () => runs.current === run;
+  });
+  return { chime, begin };
+}
+
 // A lesson film as it plays: the scene, the teacher's caption and voice, and
 // the tones. A new event cuts in on whatever the teacher was still saying, and
 // a scene that follows its lines starts only once they are heard to the end;
 // a line that did not come out holds the scene until the child hears it again.
-// Leaving the lesson stops whatever was still to be said.
+// While the child hears the teacher, the page knows a reload would cut the
+// film off. Leaving the lesson stops whatever was still to be said.
 export function useLessonFilm<
   State extends Readonly<{ shot: FilmScene<Shot> }>,
   Shot extends string,
@@ -70,18 +95,11 @@ export function useLessonFilm<
 ): LessonFilm<State, Shot, Move> {
   const [state, setState] = useState<State>(story.opening);
   const [caption, setCaption] = useState<string>();
+  const [telling, setTelling] = useState(false);
   const narration = useNarration(state.shot, createAudio);
-  const [chime] = useState(() => createChime());
-  const runs = useRef(0);
+  const { chime, begin } = useFilmRuns();
   const shown = useRef<FilmScene<Shot>>('opening');
   const arrived = useLatest(onArrive);
-  useEffect(() => {
-    const film = runs;
-    return () => {
-      film.current++;
-      chime.close();
-    };
-  }, [chime]);
 
   function apply({ state: next, chime: tones, say, then }: Reaction<State, Shot, Line>) {
     if (next.shot !== shown.current && next.shot !== 'opening') arrived.current(next.shot);
@@ -89,20 +107,27 @@ export function useLessonFilm<
     setState(next);
     chime.play(tones);
     if (!say.length) return;
-    const run = ++runs.current;
-    const current = () => runs.current === run;
+    const current = begin();
     const said = say.map((line) => story.lines[line]);
+    setTelling(true);
     void tell({ voice: narration, step: next.shot, show: setCaption, current }, said).then(
       (finished) => {
-        if (finished && then && current()) apply(story.arrive(then));
+        if (!current()) return;
+        setTelling(false);
+        if (finished && then) apply(story.arrive(then));
       },
     );
   }
 
+  const voice = voiceOf(narration);
+  const playing = telling && !voice.paused && !voice.failure;
+  useReloadReadiness(playing ? 'playing' : 'ready');
+
   return {
-    ...voiceOf(narration),
+    ...voice,
     state,
     caption,
+    playing,
     enter(shot = story.first) {
       chime.play(startTones);
       apply(story.arrive(shot));
