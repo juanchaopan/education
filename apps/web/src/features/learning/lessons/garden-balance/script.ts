@@ -1,3 +1,4 @@
+import type { CountWords } from '../../interaction/spoken-answer';
 import balanced from './assets/balanced.mp3';
 import bridge from './assets/bridge.mp3';
 import bridgeDone from './assets/bridge-done.mp3';
@@ -102,6 +103,8 @@ const mistakes: Readonly<Record<number, string>> = {
   6: '6 是一开始苹果的个数。现在右盘都是黄瓜了，数数有几根。',
 };
 
-export function mistakeMessage(count: number) {
-  return mistakes[count] ?? `${count} 根还不对。一组一组地数数右盘的黄瓜，再告诉我。`;
-}
+// The count is said in cucumbers, 根.
+export const answerWords: CountWords = {
+  unit: '根',
+  explain: (count) => mistakes[count] ?? `${count} 根还不对。一组一组地数数右盘的黄瓜，再告诉我。`,
+};

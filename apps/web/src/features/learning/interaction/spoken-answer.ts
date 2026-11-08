@@ -14,6 +14,10 @@ export type AnswerStep =
   | { kind: 'failed'; message: string }
   | { kind: 'done'; assisted: boolean };
 
+// The lesson's own words for its count: the unit it is counted in, such as 根,
+// and what a wrong count most likely is.
+export type CountWords = { unit?: string; explain: (count: number) => string };
+
 // A failed try is tried again by speaking; the numbers are the way round
 // speech that cannot be used.
 const tapping: Alternative = { instead: '可以点下面的数字回答。' };
@@ -22,15 +26,15 @@ function ask(message: string, choices = false): AnswerStep {
   return { kind: 'ask', message, choices };
 }
 
-function review(text: string): AnswerStep {
-  const count = spokenNumber(text);
+function review(text: string, unit?: string): AnswerStep {
+  const count = spokenNumber(text, unit);
   if (count === undefined)
     return ask(`我听到的是「${text}」，没听出是几。再说一次，只说数字就好。`);
   return { kind: 'confirm', heard: text, count };
 }
 
 // The child speaking, or what the last try came to.
-function speaking(state: VoiceState): AnswerStep | undefined {
+function speaking(state: VoiceState, unit?: string): AnswerStep | undefined {
   const message = voiceMessage(state, tapping);
   switch (state.status) {
     case 'idle':
@@ -41,7 +45,7 @@ function speaking(state: VoiceState): AnswerStep | undefined {
     case 'transcribing':
       return { kind: 'hearing', message };
     case 'review':
-      return review(state.text);
+      return review(state.text, unit);
     case 'unavailable':
     case 'fallback':
       return ask(message, !retryable(state));
@@ -73,11 +77,11 @@ function verdict(judgement: Judgement, explain: (count: number) => string) {
 export function answerStep(
   voice: VoiceState,
   judgement: Judgement,
-  explain: (count: number) => string,
+  { unit, explain }: CountWords,
 ): AnswerStep {
   const done = settled(judgement);
   if (done) return done;
-  const step = speaking(voice);
+  const step = speaking(voice, unit);
   const said = verdict(judgement, explain);
   if (step?.kind === 'ask' && step.choices && said) return { ...step, message: said };
   return step ?? ask(said ?? '');

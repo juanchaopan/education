@@ -16,6 +16,17 @@ it('accepts the same number said twice', () => {
   expect(spokenNumber('九，9根')).toBe(9);
 });
 
+it('does not take the 一 of an ordinary word for a number', () => {
+  expect(spokenNumber('九根黄瓜一样重')).toBe(9);
+  expect(spokenNumber('一共九根')).toBe(9);
+});
+
+it('lets the number said with the answer’s unit decide', () => {
+  expect(spokenNumber('一棵青菜和九根黄瓜一样重', '根')).toBe(9);
+  expect(spokenNumber('三组，每组三根，一共九根', '根')).toBeUndefined();
+  expect(spokenNumber('九', '根')).toBe(9);
+});
+
 it('leaves the answer unknown when no number, two numbers or an unreadable one is heard', () => {
   expect(spokenNumber('黄瓜')).toBeUndefined();
   expect(spokenNumber('三组，每组三根，一共九根')).toBeUndefined();

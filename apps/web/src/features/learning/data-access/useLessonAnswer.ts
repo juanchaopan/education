@@ -1,7 +1,12 @@
 import { useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import type { AttemptReceipt } from '@education/contracts';
-import { prepareAttempt, readAnswerRound, requestHint } from './answer-request';
+import {
+  AnswerConflictError,
+  prepareAttempt,
+  readAnswerRound,
+  requestHint,
+} from './answer-request';
 import type { LearningScope } from './learning-request';
 
 // Where the final answer stands on the server: not sent yet, being judged,
@@ -11,13 +16,17 @@ export type Judgement =
   | { status: 'judged'; outcome: AttemptReceipt['outcome']; count: number }
   | { status: 'failed'; message: string };
 
-type Attempt = ReturnType<typeof prepareAttempt> & { count: number };
+// One count on its way to the server. `sent` tells an attempt that reached the
+// network, which a retry repeats as it is, from one that never had a round.
+type Attempt = { count: number; sent: boolean; submit: () => Promise<AttemptReceipt> };
 type Submission = {
   isPending: boolean;
   error: Error | null;
   data?: AttemptReceipt;
   variables?: Attempt;
 };
+
+const offline = '暂时连不上，请重试。';
 
 function judgementOf({ isPending, error, data, variables }: Submission): Judgement {
   if (isPending) return { status: 'judging' };
@@ -29,6 +38,9 @@ function judgementOf({ isPending, error, data, variables }: Submission): Judgeme
 // The final answer of one problem: a counted number sent once per attempt, so
 // retrying after a lost reply never counts twice, and the authored hints in
 // their order, each recorded so that a later correct answer counts as helped.
+// An answer given before the round is known is not lost: it fails visibly and
+// is sent again once the round arrives. A round that changed elsewhere starts
+// over with a fresh round instead of repeating a refused attempt.
 export function useLessonAnswer(scope: LearningScope, hintIds: readonly string[]) {
   const round = useQuery({
     queryKey: ['lesson-answer-round', scope],
@@ -46,15 +58,32 @@ export function useLessonAnswer(scope: LearningScope, hintIds: readonly string[]
   });
   const next = hintIds[hints.length];
 
+  function attemptFor(count: number): Attempt {
+    if (!round.data)
+      return {
+        count,
+        sent: false,
+        submit: async () => {
+          void round.refetch();
+          throw new Error(offline);
+        },
+      };
+    const answer = { round: round.data.round, input: count, draftRevision: null };
+    return { ...prepareAttempt(scope, answer), count, sent: true };
+  }
+
   return {
     judgement: judgementOf(submit),
     submit(count: number) {
-      if (!round.data || submit.isPending) return;
-      const answer = { round: round.data.round, input: count, draftRevision: null };
-      submit.mutate({ ...prepareAttempt(scope, answer), count });
+      if (!submit.isPending) submit.mutate(attemptFor(count));
     },
     retry() {
-      if (submit.variables && !submit.isPending) submit.mutate(submit.variables);
+      const last = submit.variables;
+      if (!last || submit.isPending) return;
+      if (submit.error instanceof AnswerConflictError) {
+        submit.reset();
+        void round.refetch();
+      } else submit.mutate(last.sent ? last : attemptFor(last.count));
     },
     hint: hints.at(-1),
     hintFailed: hint.isError,
