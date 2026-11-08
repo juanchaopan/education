@@ -25,6 +25,8 @@
 
 [逐题设计互动教学与验收手册](design/interactive-lesson-authoring.md) 记录逐题分镜、交互与音画验收要求，提供开发者自查卡。
 
+[课堂公共部件与绘景库](design/lesson-kit.md)：所有题目共用的短片推进、旁白、画面外壳、道具和题目页，一道题要写的题目定义，全屏和返回，绘景库和角色库的标签与挑选顺序，以及 #130–#136 的迁移步骤。
+
 [视觉基准与可访问性检查](design/visual-baselines.md)：固定镜像里的截图基准、覆盖的组件状态和页面、可访问性检查，以及基准的更新和评审。
 
 [框架进度与后续工作](development-status.md)：实际实现范围、前置条件和开发顺序。
@@ -34,6 +36,8 @@
 [ADR-0008](adr/0008-hosting-spike.md)：#14 托管探针已获维护者验收，接受 Vercel Hobby + 自定义域名用于 staging；证据、归档和后续验证范围见文档。
 
 [ADR-0014](adr/0014-neon-databases.md)：staging 和生产的应用库、删除清单库各用一个 Neon Free 项目，区域为 Singapore；staging 切换由 #111 实施，生产库随 #45/#52 创建。原因和决定见 [变更记录](changes/2026-11-07-neon-databases.md)。
+
+[ADR-0015](adr/0015-lesson-kit-and-media-library.md)：课堂公共部件放在网站的学习功能里，一道题只写它独有的部分；题目页全屏并带返回按钮；背景和讲课角色来自带标签的共用库，由 Codex 的 ImageGen 生成。原因和决定见 [变更记录](changes/2026-11-08-lesson-kit.md)。
 
 [ADR-0009](adr/0009-account-security-spike.md)：#15 账号探针已结束，接受家庭定位/六位 PIN、注册 KEY、安全参数及默认持久登录；部署更新先保存草稿再刷新。仅文档与本地证据，实际账号及目标资源验收未完成。#16 邮件探针结论见下文；#17 可按已接受基线开始本地实现。
 

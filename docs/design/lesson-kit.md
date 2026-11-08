@@ -1,0 +1,256 @@
+# 课堂公共部件与绘景库
+
+- 日期：2026-11-08
+- 状态：已确认
+- 相关需求：REQ-001、REQ-004、REQ-010
+- 相关决策：ADR-0013、[ADR-0015](../adr/0015-lesson-kit-and-media-library.md)
+
+## 为什么要重新设计
+
+#48 的三道原型（菜园天平、彩铅配对、数轴追及）和正式的菜园页各自写了一遍同样的东西：片名卡和开始按钮、背景层和暗角、字幕和重听、可拖可点的道具和发光圈、提示动画、逐句讲述和说完进下一幕。正式代码里，这些都写在菜园题自己的文件里：
+
+- `lessons/garden-balance/useGardenStory.ts` 管逐句讲述、失败处理和进下一幕，`garden-story.ts` 的 `Reaction` 结构其实和题目无关。
+- `components/garden-balance/GardenStage.tsx` 把片名卡、背景、字幕、重听、讲课角色和菜园道具写在一起，背景图和每幕的取景写死在它的 CSS 里。
+- `lessons/garden-balance/useGardenDrag.ts` 是「拖过去或先点再点目标」的通用做法，只认菜园的道具。
+- `pages/GardenBalanceLesson.tsx` 和 `GardenPanels.tsx` 把草稿、作答、提问、没登录提示接起来，下一道题要整段照抄。
+
+照现在的结构接 #125、#126，每道题要复制三四百行页面代码，同一件事出现三种写法；一句旁白放不出来时直接跳过（#129）这种问题，也会在每道题各修一次。新题的背景每题单独生成，也浪费生成次数。
+
+这次把这些做成所有题目共用的部件，题目只写自己的台词、分镜规则、道具画法和判定规则；背景和讲课角色从库里按标签挑。题目页撑满屏幕，用页面自己的返回按钮回到孩子来时的题库。
+
+## 现在的设计
+
+```mermaid
+classDiagram
+  class GardenBalanceLesson {
+    +SignedInGarden
+    +GardenFilm
+  }
+  class GardenPanels
+  class useGardenStory {
+    +state
+    +caption
+    +enter()
+    +act(move)
+    +go(shot)
+  }
+  class gardenStory {
+    +arrive(shot) Reaction
+    +respond(state, move) Reaction
+  }
+  class useGardenDrag
+  class GardenStage {
+    片名卡、背景、字幕、重听、小兔、道具
+  }
+  class createNarration {
+    每句新建 Audio
+  }
+  GardenBalanceLesson --> useGardenStory
+  GardenBalanceLesson --> useGardenDrag
+  GardenBalanceLesson --> GardenStage
+  GardenBalanceLesson --> GardenPanels
+  useGardenStory --> gardenStory
+  useGardenStory --> createNarration
+  GardenPanels --> SpokenFinalAnswer
+  GardenPanels --> SceneQuestions
+```
+
+已经共用的部分：`bindObjectDrag`、`createNarration` / `useNarration`、`createChime`、`voiceMessage`、`spokenNumber`、`SpokenFinalAnswer`、`SceneQuestions`、`LessonSignInNotice`、`useLessonDraft`、`LessonRoute`。
+
+问题：
+
+- 新题要复制 `useGardenStory`、`useGardenDrag`、`GardenStage` 的外壳部分和两个页面文件，改名字再改细节。
+- `lesson-pages.tsx` 和 `lessons.tsx` 每加一道题手写一段登记，没有检查保证台词都有录音、每幕都有进场台词、作答那一幕存在。
+- 应用外壳的顶部导航和页脚始终显示，题目页只能在导航下面占一块。
+
+## 目标设计
+
+### 模块和职责
+
+```mermaid
+classDiagram
+  class LessonDefinition {
+    <<type>>
+    +problem
+    +title
+    +backdrop
+    +teacher
+    +script
+    +story
+    +answer
+    +Scene
+  }
+  class lessonFilm {
+    +tell(lines) 逐句讲述
+    +Reaction
+  }
+  class useLessonFilm {
+    +state
+    +caption
+    +stalled
+    +enter()
+    +act(move)
+    +go(shot)
+    +retry()
+  }
+  class useStageDrag
+  class LessonStage {
+    Backdrop、TitleCard、Caption、ReplayButton、Teacher
+  }
+  class Prop
+  class AttentionCue
+  class Ambience
+  class LessonPage {
+    已登录 / 游客
+  }
+  class LessonPanels
+  class backdrops {
+    +catalog
+  }
+  class teachers {
+    +catalog
+  }
+  class lessonRegistry {
+    +lessons
+  }
+  LessonPage --> LessonDefinition
+  LessonPage --> useLessonFilm
+  LessonPage --> useStageDrag
+  LessonPage --> LessonStage
+  LessonPage --> LessonPanels
+  useLessonFilm --> lessonFilm
+  lessonFilm --> createNarration
+  LessonStage --> backdrops
+  LessonStage --> teachers
+  LessonDefinition --> backdrops
+  LessonDefinition --> teachers
+  lessonRegistry --> LessonDefinition
+```
+
+| 部件                                              | 位置（`apps/web/src/features/learning/` 下） | 职责                                                                                                                                                                            |
+| ------------------------------------------------- | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 逐句讲述 `lessonFilm`                             | `interaction/lesson-film.ts`                 | 不依赖 React。`Reaction<State, Shot, Line>`（下一状态、要说的话、提示音、说完后进入的幕）；按顺序说几句，一句被新的操作打断时停下，一句放不出来时停在这一幕等孩子重听（#129）。 |
+| 旁白播放 `createNarration`                        | `interaction/narration.ts`                   | 一节课一个播放器元素，开始时那一下点按启用它；进题就预先下载本课所有录音；记录失败种类。                                                                                        |
+| 短片状态 `useLessonFilm`                          | `interaction/useLessonFilm.ts`               | 由 `useGardenStory` 推广而来：持有场景状态、字幕和播放状态，`enter`、`act`、`go`、`retry`；每到一幕通知页面（保存进度用）；离开时停掉所有声音。                                 |
+| 拖动与点选 `useStageDrag`                         | `interaction/useStageDrag.ts`                | 由 `useGardenDrag` 推广而来：题目给出哪些道具能拿起、拿起时的影子长什么样、放到哪里算什么操作；拖过去和先点道具再点目标两种做法都支持。                                         |
+| 画面外壳 `LessonStage`                            | `components/lesson-stage/`                   | 展示组件。全屏画框里的背景层（按幕取景）、光晕和暗角、片名卡和开始按钮、顶部片名条、重听按钮、字幕、讲课角色（说话时动，点它提问），中间放题目自己的 SVG 场景。                 |
+| 道具 `Prop`、影子 `DragGhost`                     | `components/lesson-stage/`                   | 可点、可拖、键盘可达的道具，发光圈、选中、拿起、进场动画；道具的样子由题目以 SVG 传入。                                                                                         |
+| 提示 `AttentionCue`、氛围 `Ambience`、`BoardText` | `components/lesson-stage/`                   | 「看这里」的飞行箭头、手指和脉冲三种样式；萤火虫、花瓣等点缀；黑板和标签文字。都遵守「减少动态效果」设置。                                                                      |
+| 题目页 `LessonPage`、`LessonPanels`               | `pages/`                                     | 由 `GardenBalanceLesson`、`GardenPanels` 推广而来：已登录时接草稿、按幕保存、最终作答、每幕提问和草稿提示；游客只看短片和登录提示。                                             |
+| 题目定义 `LessonDefinition`                       | `lessons/lesson-definition.ts`               | 一道题需要提供的全部内容，见下文。                                                                                                                                              |
+| 题目登记 `lessonRegistry`                         | `lessons/registry.ts`                        | 每道题一行：题目版本和按需加载的定义；应用外壳据此生成题目页，不再逐题手写。                                                                                                    |
+| 绘景库 `backdrops`、角色库 `teachers`             | `media/backdrops/`、`media/teachers/`        | 图片和带标签的清单，见「绘景库和角色库」。                                                                                                                                      |
+
+`libs/problems` 增加题目规则的辅助函数：整数答案的判定（整数判对错，其他判为无法判断）、每幕说明和词表的组装。题目插件照旧放在 `libs/problems/src/<题目>.ts`。
+
+### 一道题要写什么
+
+```ts
+type LessonDefinition<State, Shot extends string, Line extends string, Move> = {
+  problem: { id: string; version: number };
+  title: string; // 片名卡和片名条上的题目
+  theater: string; // 例如「菜园小剧场」
+  backdrop: BackdropId; // 从绘景库选
+  teacher: TeacherId; // 从角色库选
+  script: {
+    lines: Record<Line, { text: string; clip: string }>;
+    shots: readonly Shot[];
+    entryLines: Record<Shot, readonly Line[]>;
+    camera?: Partial<Record<Shot, Camera>>; // 每幕背景的取景
+  };
+  story: {
+    opening: State;
+    arrive: (shot: Shot) => Reaction<State, Shot, Line>;
+    respond: (state: State, move: Move) => Reaction<State, Shot, Line> | undefined;
+    savesProgress: (shot: Shot | 'opening') => boolean;
+  };
+  props: StageProps<Move>; // 哪些道具能拿起、影子、放下和点按对应的操作
+  answer: {
+    shot: Shot;
+    question: string;
+    words: CountWords;
+    choices: readonly number[];
+    hints: readonly string[];
+  };
+  Scene: ComponentType<{ state: State; handling: Handling; layout: Layout }>; // 题目自己的 SVG
+};
+```
+
+题目文件夹的结构不变：`lessons/<题目>/` 放台词、分镜规则和定义，`components/<题目>/` 放道具画法和 `Scene`。页面、旁白、拖动、作答、提问、草稿都不再写在题目里。
+
+以后再加一道题，要改的只有：新的题目插件、新的 `lessons/<题目>/` 和 `components/<题目>/`，以及 `registry.ts` 里加一行。公共部件放不下这道题的需要时，先在公共部件里补上（先重构、后加功能），再做这道题。
+
+### 全屏和返回
+
+- 应用外壳分两种布局：普通页面带顶部导航和页脚；题目页 `/problems/:id/:version` 不带，画面撑满屏幕（`100dvh`，留出刘海屏的安全区）。
+- 孩子点「开始短片」或「接着上次的地方」时请求浏览器全屏。浏览器不支持或拒绝时（例如 iPhone Safari），保持撑满屏幕，不提示错误。
+- 画面左上角固定一个返回按钮：在站内从题库点进来的，回到上一页，年级、科目、分类和滚动位置都不变；直接打开链接进来的，回到这道题所在的题库分类。返回时退出全屏。
+- 进度每到一幕就保存，所以返回时不再询问是否保存；正在提交最终答案时，等提交结束再离开。
+- 题库仍由 `features/library` 负责：`ProblemPage` 提供全屏画框和返回目标，题目页面填进画框；两个功能互不引用，画框和全屏请求放在 `shared/`。
+
+### 绘景库和角色库
+
+每张背景都是 16:9 的电影级绘景，中间留一块干净、偏暗的空地放道具，不画角色、文字和操作对象。清单里每张图有：
+
+| 字段         | 内容                                                                   |
+| ------------ | ---------------------------------------------------------------------- |
+| `id`、`file` | 例如 `garden-morning`，`garden-morning.webp`                           |
+| `setting`    | 场景：菜园、画室、火车工作间、厨房、教室、星空……                       |
+| `light`      | 时间和色调：清晨暖光、黄昏蓝调、室内灯光……                             |
+| `ages`       | 适合的年龄段：低年级（1–2）、中年级（3–4）、高年级（5–6），可多选      |
+| `clearing`   | 空地形状：下方中间一张桌面、中间一条横带、整片开阔                     |
+| `clearZone`  | 空地在 1200×675 画面坐标里的矩形                                       |
+| `fits`       | 适合的科目或题型：称重和等量、配对和计数、数轴和行程、几何、语文故事…… |
+| `prompt`     | 生成时用的提示词                                                       |
+
+角色库的清单有：`id`、名字（例如小兔）、图片、适合的年龄段、性格说明和生成提示词。#48 的三张背景和小兔先入库（#134）。第一批新图在 Codex 里用 ImageGen 生成：背景 12 张（低、中、高年级各 4 张），角色 3 个（每个年龄段一个）；统一的风格说明和每张的提示词由 #135 写在 `docs/design/lesson-media.md`。Claude Code 不生成图片。
+
+新题按这个顺序挑：先按年龄段，再按空地形状是否放得下这道题的道具，最后按场景和题型。都不合适时，按同一份风格说明生成一张通用的新背景加进库里，而不是只给这道题画一张。
+
+## 接口对比
+
+| 接口       | 现在                                         | 改成                                    | 兼容方式                     |
+| ---------- | -------------------------------------------- | --------------------------------------- | ---------------------------- |
+| 逐句讲述   | `useGardenStory` 里的 `sayLine`、`tell`      | `interaction/lesson-film.ts` 的 `tell`  | 直接替换，只有菜园一个调用方 |
+| 短片状态   | `useGardenStory(onArrive)`                   | `useLessonFilm(definition, onArrive)`   | 直接替换                     |
+| 拖动与点选 | `useGardenDrag(story)`                       | `useStageDrag(story, definition.props)` | 直接替换                     |
+| 画面外壳   | `GardenStage`                                | `LessonStage` + 题目的 `Scene`          | 直接替换，视觉基准保持不变   |
+| 题目页     | `GardenBalanceLesson`、`GardenPanels`        | `LessonPage` + `LessonDefinition`       | 直接替换                     |
+| 题目登记   | `lesson-pages.tsx`、`lessons.tsx` 逐题手写   | `lessons/registry.ts` 一行一题          | 直接替换                     |
+| 旁白播放   | `createNarration` 每句新建 `Audio`           | 同名，一个播放器、预先下载              | 签名不变，行为由 #129 修改   |
+| 题库页面   | `ProblemPage` 带「返回题库」链接，在导航下面 | 全屏画框带返回按钮                      | 外观改变，新的视觉基准       |
+
+## 数据结构变更
+
+无。草稿仍按幕名保存，题目版本不变，已保存的进度照常恢复。
+
+## 迁移步骤
+
+| 步骤 | 内容                                                                                    | 行为是否改变 | issue                                                       |
+| ---- | --------------------------------------------------------------------------------------- | ------------ | ----------------------------------------------------------- |
+| 1    | 重构：抽出逐句讲述、`useLessonFilm` 和 `useStageDrag`，菜园题改用                       | 否           | [#130](https://github.com/juanchaopan/education/issues/130) |
+| 2    | 修复：旁白一个播放器、预先下载、放不出来时停下等重听，并加公共放音检查                  | 是           | [#129](https://github.com/juanchaopan/education/issues/129) |
+| 3    | 重构：抽出 `LessonStage`、`Prop`、`AttentionCue`、`Ambience`、`BoardText`，菜园画面改用 | 否           | [#131](https://github.com/juanchaopan/education/issues/131) |
+| 4    | 重构：`LessonDefinition`、`LessonPage`、登记表和定义检查，题目规则辅助函数，菜园题改用  | 否           | [#132](https://github.com/juanchaopan/education/issues/132) |
+| 5    | 功能：题目页全屏和返回按钮                                                              | 是           | [#133](https://github.com/juanchaopan/education/issues/133) |
+| 6    | 功能：绘景库和角色库，#48 的三张背景和小兔入库，菜园题从库里取                          | 否           | [#134](https://github.com/juanchaopan/education/issues/134) |
+| 7    | 素材：生成第一批 12 张背景和 3 个角色，入库                                             | 否           | [#135](https://github.com/juanchaopan/education/issues/135) |
+| 8    | 文档和工具：手册的公共部件清单、新题模板、旁白录音脚本、自查卡加项                      | 否           | [#136](https://github.com/juanchaopan/education/issues/136) |
+
+步骤 1、3、4 每一步合并后菜园题的单元测试、e2e 和视觉基准都不变。步骤 7 只依赖步骤 6，可以和步骤 8 同时进行。#125、#126 排在这些步骤之后，直接用公共部件，也用来检验部件够不够用；不够的地方先补公共部件。
+
+## 测试策略
+
+- 重构步骤：菜园题现有的单元测试、e2e（`e2e/garden-balance.spec.ts`）和视觉基准是行为基准，必须原样通过；公共部件各自补单元测试和 Storybook story。
+- 定义检查：一个单元测试遍历登记表，检查每道题的每句台词都有录音、每幕都有进场台词、作答那一幕在幕序里、背景和角色在库里、幕名和题目插件的步骤一致。
+- 放音检查（#129）：e2e 的共用工具按台词逐幕检查每句都播放到结束，在桌面 Chromium、手机模拟和 WebKit 上跑；登记表里的每道题都要接入。
+- 分层检查：`npm run arch` 增加规则，一道题的文件不能引用另一道题的文件。
+- 全屏和返回：e2e 覆盖从题库进入后返回原分类、直接打开链接后返回、开始短片时请求全屏（浏览器拒绝时页面照常）。
+- 绘景库：Storybook 里每张背景显示空地范围，供人工看图；视觉基准覆盖每张背景。
+
+## 考虑过但没采用的方案
+
+- 单独建一个 `libs/lesson-kit` 包：只有网站一个使用方，单独成包要多一层构建和版本，现有的分层检查已经能管住边界。
+- 每道题继续单独生成背景：每题都要生成，风格也不统一。
+- 只隐藏导航、不请求浏览器全屏：地址栏和浏览器按钮仍然占屏幕，孩子容易误点浏览器的后退。
+- 一次把彩铅和数轴的需求也做进公共部件：先只抽菜园已有、三个原型都用到的部分；两道题接入时缺什么再补，避免为猜测的需要做抽象。
