@@ -27,7 +27,8 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
-      - run: npm run build:libs && npm run build -w @education/api
+      - id: build
+        run: npm run build:libs && npm run build -w @education/api
       - run: node scripts/cleanup-staging-mail.mjs
         env:
           STAGING_DATABASE: 'true'
@@ -36,9 +37,11 @@ jobs:
           DATABASE_CA_CERT: ${{ secrets.STAGING_DATABASE_CA_CERT }}
           DELETION_LEDGER_URL: ${{ secrets.STAGING_DELETION_LEDGER_URL }}
           DELETION_LEDGER_CA_CERT: ${{ secrets.STAGING_DELETION_LEDGER_CA_CERT }}
-      # Counts only. A failing AI provider opens its own alert issue.
+      # Counts only, also after a failed cleanup once the build is there. A
+      # failing AI provider opens its own alert issue; a failure of this step
+      # itself fails the run, and the run's alert names this step.
       - name: Summarize the last hour of AI usage
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: node scripts/staging-alerts.mjs usage
         env:
           GITHUB_TOKEN: ${{ github.token }}

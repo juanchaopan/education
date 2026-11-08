@@ -1,13 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import {
-  alertLabel,
-  checkStaging,
-  failedSteps,
-  githubIssues,
-  runOutcome,
-  syncAlert,
-} from './staging-alert.mjs';
+import { alertLabel, checkStaging, githubIssues, runAlerts, syncAlert } from './staging-alert.mjs';
 
 const origin = 'https://staging.example';
 const release = 'a'.repeat(40);
@@ -64,36 +57,48 @@ test('a database that stays unavailable, a missing revision or no answer is unhe
   assert.match(unreachable.problems.join('\n'), /fetch failed/);
 });
 
-test('a run is failing when any job fails and succeeds only when its decisive job ran', () => {
-  const job = (name, conclusion, steps) => ({ name, conclusion, steps });
-  assert.equal(
-    runOutcome('staging', [job('prepare', 'success'), job('deploy', 'success')]),
-    'succeeded',
-  );
-  assert.equal(
-    runOutcome('staging', [job('prepare', 'success'), job('deploy', 'skipped')]),
-    'unknown',
-  );
-  assert.equal(runOutcome('staging-backup', [job('backup', 'skipped')]), 'unknown');
-  const failing = [
+const job = (name, conclusion, steps) => ({ name, conclusion, steps });
+const outcomes = (alerts) => alerts.map(({ source, failing }) => [source, failing]);
+
+test('each job raises its own alert when it fails and clears it when it succeeds', () => {
+  const failing = runAlerts('staging', 'failure', [
     job('prepare', 'success'),
     job('deploy', 'failure', [
       { name: 'npm ci', conclusion: 'success' },
       { name: 'Build candidate, migrate, smoke, then promote staging', conclusion: 'failure' },
     ]),
-  ];
-  assert.equal(runOutcome('staging', failing), 'failing');
-  assert.deepEqual(failedSteps(failing), [
-    'deploy → Build candidate, migrate, smoke, then promote staging',
   ]);
-  assert.equal(runOutcome('staging-mail-retention', [job('cleanup', 'timed_out')]), 'failing');
+  assert.deepEqual(outcomes(failing), [
+    ['staging/prepare', false],
+    ['staging/deploy', true],
+    ['staging', false],
+  ]);
+  assert.deepEqual(failing[1].details, [
+    '失败的步骤：deploy → Build candidate, migrate, smoke, then promote staging',
+  ]);
+  assert.deepEqual(
+    outcomes(runAlerts('staging-mail-retention', 'failure', [job('cleanup', 'timed_out')])),
+    [['staging-mail-retention/cleanup', true]],
+  );
 });
 
-test('a watched workflow without a known deciding job is refused', () => {
-  assert.throws(
-    () => runOutcome('staging-renamed', [{ name: 'deploy', conclusion: 'success' }]),
-    /No deciding job is known for workflow staging-renamed/,
+test('a skipped job says nothing, so a pull request run cannot close a release alert', () => {
+  assert.deepEqual(
+    outcomes(
+      runAlerts('staging', 'success', [job('prepare', 'success'), job('deploy', 'skipped')]),
+    ),
+    [
+      ['staging/prepare', false],
+      ['staging', false],
+    ],
   );
+  assert.deepEqual(runAlerts('staging-backup', 'success', [job('backup', 'skipped')]), []);
+});
+
+test('a run that never started alerts the whole workflow', () => {
+  assert.deepEqual(runAlerts('staging-backup', 'startup_failure', []), [
+    { source: 'staging-backup', failing: true, details: ['运行没有启动：startup_failure'] },
+  ]);
 });
 
 function tracker(existing) {
@@ -151,12 +156,19 @@ test('a failure opens one issue, a repeated failure leaves it, and recovery clos
   });
 });
 
-test('the GitHub client labels alerts, creating the label once, and finds only issues', async () => {
+function github(respond) {
   const requests = [];
   const fetcher = async (url, { method, headers, body }) => {
     const path = new URL(url).pathname + new URL(url).search;
     requests.push([method, path, body && JSON.parse(body)]);
     assert.equal(headers.authorization, 'Bearer token');
+    return respond(method, path);
+  };
+  return { requests, issues: githubIssues({ token: 'token', repository: 'o/r', fetcher }) };
+}
+
+test('the GitHub client labels alerts, creating the label once, and finds only issues', async () => {
+  const { requests, issues } = github((method, path) => {
     if (method === 'GET' && path.startsWith('/repos/o/r/labels/'))
       return new Response('', { status: 404 });
     if (method === 'GET')
@@ -165,8 +177,7 @@ test('the GitHub client labels alerts, creating the label once, and finds only i
         { number: 4, title: 'staging 告警：health' },
       ]);
     return Response.json({ number: 9 }, { status: 201 });
-  };
-  const issues = githubIssues({ token: 'token', repository: 'o/r', fetcher });
+  });
   assert.equal((await issues.findOpen('staging 告警：health')).number, 4);
   assert.equal((await issues.open('staging 告警：health', 'body')).number, 9);
   assert.deepEqual(
@@ -183,4 +194,12 @@ test('the GitHub client labels alerts, creating the label once, and finds only i
     body: 'body',
     labels: [alertLabel],
   });
+});
+
+test('a run whose jobs cannot be read fails with the request that failed', async () => {
+  const { issues } = github(() => new Response('', { status: 404 }));
+  await assert.rejects(
+    issues.jobs(42),
+    /GitHub GET \/actions\/runs\/42\/jobs\?per_page=100 failed \(HTTP 404\)/,
+  );
 });

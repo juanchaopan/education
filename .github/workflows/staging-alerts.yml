@@ -15,8 +15,11 @@ on:
         default: false
 permissions:
   contents: read
+# One queue per alert source. GitHub keeps only the newest waiting run in a
+# group, so events from different workflows never replace each other, and a
+# replaced run of the same workflow is older than the one that replaced it.
 concurrency:
-  group: staging-alerts
+  group: staging-alerts-${{ github.event.workflow_run.name || 'health' }}
   cancel-in-progress: false
 # The scripts need only Node's built-in fetch, so the runner's own Node runs
 # them from a checkout of the scripts folder.
@@ -63,10 +66,11 @@ jobs:
           ref: main
           persist-credentials: false
           sparse-checkout: scripts
-      - name: Open or close the alert for the completed staging run
+      - name: Open or close the alerts for the completed staging run
         run: node scripts/staging-alerts.mjs workflow
         env:
           GITHUB_TOKEN: ${{ github.token }}
           WORKFLOW_NAME: ${{ github.event.workflow_run.name }}
+          WORKFLOW_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
           WORKFLOW_RUN_ID: ${{ github.event.workflow_run.id }}
           WORKFLOW_RUN_URL: ${{ github.event.workflow_run.html_url }}

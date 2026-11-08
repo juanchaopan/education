@@ -2,16 +2,6 @@ import { timedGet, waitForReadiness } from './staging-readiness.mjs';
 import { releaseRevision } from './staging-release.mjs';
 
 export const alertLabel = 'staging-alert';
-
-// The job whose result says a staging workflow did its work. A run where that
-// job was skipped, such as a release run for a pull request, proves nothing
-// either way; any failed job in a run is an alert.
-const decisiveJobs = {
-  staging: 'deploy',
-  'staging-backup': 'backup',
-  'staging-mail-retention': 'cleanup',
-  'staging-restore': 'restore',
-};
 const failed = new Set(['failure', 'timed_out', 'startup_failure']);
 
 // Readiness with the release's own probe, then the release revision. Each
@@ -35,29 +25,35 @@ export async function checkStaging(origin, { fetcher = fetch, wait } = {}) {
   return { healthy: problems.length === 0, measurements, problems };
 }
 
-// How a completed staging workflow run ended: failing, succeeded, or nothing
-// to say. A workflow without a deciding job could never close its alert, so it
-// is refused rather than watched halfway.
-export function runOutcome(workflow, jobs) {
-  const decisiveJob = decisiveJobs[workflow];
-  if (!decisiveJob) throw new Error(`No deciding job is known for workflow ${workflow}`);
-  if (jobs.some(({ conclusion }) => failed.has(conclusion))) return 'failing';
-  const decisive = jobs.find(({ name }) => name === decisiveJob);
-  return decisive?.conclusion === 'success' ? 'succeeded' : 'unknown';
+function failedStep({ name, steps = [] }) {
+  const step = steps.find((candidate) => failed.has(candidate.conclusion));
+  return step ? `${name} → ${step.name}` : name;
 }
 
-export function failedSteps(jobs) {
-  return jobs.flatMap(({ name, conclusion, steps = [] }) => {
-    if (!failed.has(conclusion)) return [];
-    const step = steps.find((candidate) => failed.has(candidate.conclusion));
-    return [step ? `${name} → ${step.name}` : name];
+// What a completed staging workflow run says, one alert source per job: a job
+// that failed raises its alert and a job that succeeded clears its own, so a
+// failure in one job is closed only by that job working again. A job that was
+// skipped, such as the release job of a run started by a pull request, says
+// nothing. A run that failed before any job started is an alert of the whole
+// workflow, cleared by the next run in which a job succeeds.
+export function runAlerts(workflow, conclusion, jobs) {
+  const alerts = jobs.flatMap((job) => {
+    const source = `${workflow}/${job.name}`;
+    if (failed.has(job.conclusion))
+      return [{ source, failing: true, details: [`失败的步骤：${failedStep(job)}`] }];
+    return job.conclusion === 'success' ? [{ source, failing: false, details: [] }] : [];
   });
+  if (jobs.length === 0 && failed.has(conclusion))
+    alerts.push({ source: workflow, failing: true, details: [`运行没有启动：${conclusion}`] });
+  else if (jobs.some((job) => job.conclusion === 'success'))
+    alerts.push({ source: workflow, failing: false, details: [] });
+  return alerts;
 }
 
 // The staging alerts as GitHub issues with one label: GitHub notifies the
 // repository's watchers when one opens.
 export function githubIssues({ token, repository, fetcher = fetch }) {
-  const api = async (method, path, body) => {
+  const api = async (method, path, body, { missing = false } = {}) => {
     const response = await fetcher(`https://api.github.com/repos/${repository}${path}`, {
       method,
       headers: {
@@ -69,17 +65,17 @@ export function githubIssues({ token, repository, fetcher = fetch }) {
       ...(body && { body: JSON.stringify(body) }),
       signal: AbortSignal.timeout(10000),
     });
-    if (response.status === 404 && method === 'GET') return undefined;
+    if (missing && response.status === 404) return undefined;
     if (!response.ok) throw new Error(`GitHub ${method} ${path} failed (HTTP ${response.status})`);
     return response.json();
   };
   return {
     async findOpen(title) {
       const open = await api('GET', `/issues?state=open&labels=${alertLabel}&per_page=100`);
-      return open?.find((issue) => issue.title === title && !issue.pull_request);
+      return open.find((issue) => issue.title === title && !issue.pull_request);
     },
     async open(title, body) {
-      if (!(await api('GET', `/labels/${alertLabel}`)))
+      if (!(await api('GET', `/labels/${alertLabel}`, undefined, { missing: true })))
         await api('POST', '/labels', {
           name: alertLabel,
           color: 'b60205',
@@ -89,7 +85,7 @@ export function githubIssues({ token, repository, fetcher = fetch }) {
     },
     comment: (number, body) => api('POST', `/issues/${number}/comments`, { body }),
     close: (number) => api('PATCH', `/issues/${number}`, { state: 'closed' }),
-    jobs: (run) => api('GET', `/actions/runs/${run}/jobs?per_page=100`),
+    jobs: async (run) => (await api('GET', `/actions/runs/${run}/jobs?per_page=100`)).jobs,
   };
 }
 
