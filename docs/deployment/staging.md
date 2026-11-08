@@ -36,7 +36,7 @@ Vercel 测试项目关闭默认登录保护，让不携带平台登录 cookie �
 5. 在 [Actions variables](https://github.com/juanchaopan/education/settings/variables/actions) 设置 Repository variable **`STAGING_DATABASE_HOST`**：应用库连接串里 `@` 之后、`/` 之前的主机名，形如 `ep-…-xxxxxxxx.ap-southeast-1.aws.neon.tech`，不带端口和数据库名。它必须是只服务这个数据库的直连主机，不能是多个数据库共用的连接池主机，否则同一主机上的其他数据库也能通过检查。它没有默认值。Vercel project/team ID 与域名已有工作流默认值；更换资源时用同名 Repository variables 覆盖 `STAGING_VERCEL_PROJECT_ID`、`STAGING_VERCEL_TEAM_ID`、`STAGING_ORIGIN`。不能将这些变量指向生产。GitHub App 没有读取/设置 Actions secrets 的权限，必须由维护者配置。
 6. 资源和上述秘密准备好后，设置 Repository variable **`STAGING_ENABLED=true`**。之后每次 main 的 `ci` 成功会自动触发；首次可在 Actions → staging → Run workflow 运行。首次手动触发时，如当前 main 尚无 CI，会先显式派发完整 CI；staging 准备任务会有界等待 CI 成功，再在同一次运行中继续发布，不依赖递归完成回调。不能部署任意分支或跳过 CI。变量未启用时，工作流只写明“未尝试部署”，不是部署成功。
 7. 备份的密钥和变量按 [备份与恢复](backup.md) 的“首次设置”配置。
-8. 告警不需要另外的秘密，工作流用自带的 `GITHUB_TOKEN` 开关 issue。维护者在仓库的 Watch 设置里保留 Issues 通知，并在 GitHub 通知设置里开启邮件。
+8. 告警不需要另外的秘密，工作流用自带的 `GITHUB_TOKEN` 开关 issue。新告警指派给 Repository variable `STAGING_ALERT_ASSIGNEE` 写的 GitHub 用户名；没有设置时指派给仓库所有者，仓库属于组织时必须设置。GitHub Actions 机器人开的 issue 只通知 Watch 设为 All Activity 的人，被指派则在默认设置下就会通知。维护者在 GitHub 通知设置里开启邮件或 GitHub 应用通知。
 
 staging 只有合成账号。换数据库时不迁移旧数据，新库在第一次发布时完成迁移；维护者重新注册测试家长和孩子。
 
@@ -85,7 +85,7 @@ API 对每个请求写一行结构化日志（JSON，Vercel 的运行日志里�
 
 - 每小时两次，在 :19 和 :49 运行，前一次紧跟每小时维护，那时数据库已经醒着。它用发布时同一个就绪探测检查 `/health/ready`，再读 `/version.json` 的发布版本号，记录每个请求的状态和耗时。
 - 每次 staging 发布、备份、维护或恢复运行结束后读取任务结果，每个任务是一个告警来源，例如 `staging/deploy`、`staging-backup/backup`、`staging-mail-retention/cleanup`。任务失败就打开它的告警，并写出失败的步骤；同一个任务下一次成功时关闭。被跳过的任务（例如 PR 触发的发布运行里的 deploy）不改变告警，所以 PR 运行关不掉发布失败的告警。整个运行被跳过或取消时什么都不改；运行没能启动、没有任何任务时，打开整个工作流的告警，下一次有任务成功时关闭。
-- 加上就绪探测的 `health` 和 AI 用量的 `ai-provider`，每个来源最多有一个打开的 `staging-alert` issue。第一次失败时打开它，GitHub 按维护者的通知设置发邮件。持续失败不重复通知，恢复时评论“已恢复”并关闭。
+- 加上就绪探测的 `health` 和 AI 用量的 `ai-provider`，每个来源最多有一个打开的 `staging-alert` issue。第一次失败时打开它并指派给值班的人，GitHub 按这个人的通知设置发邮件或应用通知。持续失败不重复通知，恢复时评论“已恢复”并关闭。
 - 每个来源的告警运行各自排队，不同工作流的事件不会互相取代。
 - `STAGING_ENABLED` 不是 `true` 时，定时和手动运行只写明没有探测、没有告警渠道在工作，不能当作告警已经接入。
 - 告警工作流本身失败时（例如 GitHub API 不可用），由 GitHub Actions 的失败通知提醒。
@@ -94,7 +94,7 @@ GitHub 的定时任务可能推迟几分钟到几十分钟。探测从 GitHub �
 
 ### 告警演练
 
-在 Actions → staging-alerts → Run workflow 勾选 drill。探测目标换成 `https://alert-drill.invalid`，这个保留域名必然无法解析，真实的探测代码因此失败，打开 `staging 告警：health`。之后不勾选再运行一次，探测通过并关闭它。演练不访问 staging 本身。
+在 Actions → staging-alerts → Run workflow 勾选 drill。探测目标换成 `https://alert-drill.invalid`，这个保留域名必然无法解析，真实的探测代码因此失败，打开 `staging 告警：health` 并指派给值班的人。确认收到通知后，不勾选再运行一次，探测通过并关闭它。演练不访问 staging 本身。
 
 ## 发布流程与失败处理
 
