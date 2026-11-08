@@ -1,11 +1,15 @@
 import type { ReactNode } from 'react';
 import { useMediaQuery } from '../../../shared/lib/useMediaQuery';
-import { GardenStage } from '../components/garden-balance/GardenStage';
+import { CarriedPart, Fireflies } from '../components/garden-balance/garden-art';
+import { GardenDefs } from '../components/garden-balance/garden-defs';
+import { GardenScene } from '../components/garden-balance/garden-scenes';
+import { LessonStage } from '../components/lesson-stage/LessonStage';
 import type { LearningScope } from '../data-access/learning-request';
 import { useLessonDraft } from '../data-access/useLessonDraft';
 import { useLessonRecordings } from '../data-access/useLessonRecordings';
 import { useLessonFilm } from '../interaction/useLessonFilm';
 import { useStageDrag } from '../interaction/useStageDrag';
+import { gardenLook } from '../lessons/garden-balance/garden-look';
 import { gardenProps } from '../lessons/garden-balance/garden-props';
 import { gardenStory, savesProgress } from '../lessons/garden-balance/garden-story';
 import { gardenBalance, isShot, teacher, type Shot } from '../lessons/garden-balance/script';
@@ -33,6 +37,10 @@ function entry(film: GardenFilm, recordings: Recordings, { resume, finding }: St
   };
 }
 
+// The garden's paints and fireflies never change while the film plays.
+const defs = <GardenDefs />;
+const fireflies = <Fireflies />;
+
 type ScreenProps = { film: GardenFilm; recordings: Recordings; start: Start };
 
 // The film and the props the child moves. A drag changes only this part of the
@@ -41,21 +49,26 @@ function GardenScreen({ film, recordings, start }: ScreenProps) {
   const drag = useStageDrag(film, gardenProps);
   const narrow = useMediaQuery('(max-width: 610px)');
   const { label, onEnter } = entry(film, recordings, start);
+  const { state } = film;
   return (
-    <GardenStage
-      state={film.state}
-      handling={drag.handling}
-      ghost={drag.ghost}
-      caption={film.state.shot === 'opening' ? undefined : film.caption}
+    <LessonStage
+      look={gardenLook}
+      shot={state.shot}
+      caption={state.shot === 'opening' ? undefined : film.caption}
       speaking={film.speaking}
       failure={film.failure}
       narrow={narrow}
       entryLabel={label}
       worldRef={drag.world}
+      defs={defs}
+      ambience={fireflies}
+      ghost={drag.ghost && <CarriedPart ghost={drag.ghost} />}
       onEnter={onEnter}
       onReplay={film.replay}
       onActivate={drag.activate}
-    />
+    >
+      <GardenScene state={state} handling={drag.handling} />
+    </LessonStage>
   );
 }
 

@@ -1,5 +1,6 @@
 import type { CSSProperties, ReactNode } from 'react';
-import styles from './GardenStage.module.css';
+import type { StageGhost } from '../../interaction/stage-activation';
+import styles from './garden-art.module.css';
 
 export type Sprite = 'garden-apple' | 'garden-cabbage' | 'garden-cucumber';
 export type PartKind = 'leaf' | 'apple' | 'exchange' | 'replace';
@@ -59,6 +60,15 @@ export function Part({ sprite, x, y, size, part, id, label, highlight, ...look }
       {part && <circle r={Math.max(size / 2, 30)} fill="transparent" />}
       {highlight && <circle className={styles.halo} r={size * 0.52} />}
       <SpriteUse sprite={sprite} size={size} />
+    </g>
+  );
+}
+
+// A prop being dragged, drawn as it looks on the scale under the child's finger.
+export function CarriedPart({ ghost }: { ghost: StageGhost<{ sprite: Sprite; size: number }> }) {
+  return (
+    <g className={styles.ghost} transform={`translate(${ghost.x} ${ghost.y})`}>
+      <SpriteUse sprite={ghost.sprite} size={ghost.size} />
     </g>
   );
 }

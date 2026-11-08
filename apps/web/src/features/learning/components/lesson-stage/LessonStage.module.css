@@ -1,24 +1,6 @@
-/* The garden film's own palette, taken from its painted plate. */
-.film {
-  --garden-cream: #fff8e6;
-  --garden-honey: #ffe7a8;
-  --garden-title: #fff3cb;
-  --garden-caption: #173029ec;
-  --garden-caption-edge: #f5d7958a;
-  --garden-caption-shadow: #081b1680;
-  --garden-speaker: #ffda86;
-  --garden-button: #20483bec;
-  --garden-button-hover: #34795d;
-  --garden-button-edge: #ffe5a6;
-  --garden-button-border: 2px solid var(--garden-button-edge);
-  --garden-replay: #263b34be;
-  --garden-replay-playing: #917043;
-  --garden-replay-call: #ffe7a859;
-  --garden-halo: #ffe7a7;
-  --garden-halo-strong: #fff7c6;
-  --garden-glow: #fff5b2;
-  --garden-ink-shadow: #101f12;
-
+/* The colours come from the lesson's palette as `--stage-*` properties set on
+   the stage itself; spacing, type and radii come from the site's tokens. */
+.stage {
   position: relative;
   isolation: isolate;
   container-type: inline-size;
@@ -29,12 +11,12 @@
   max-block-size: 82dvh;
   overflow: hidden;
   border-radius: var(--radius-lg);
-  background: radial-gradient(ellipse at 64% 32%, #e5c990, #47735b 66%, #122a25);
-  color: var(--garden-cream);
+  background: var(--stage-sky);
+  color: var(--stage-text);
   font-weight: 600;
 }
 
-.plate,
+.backdrop,
 .light,
 .vignette {
   position: absolute;
@@ -42,11 +24,10 @@
   pointer-events: none;
 }
 
-.plate {
-  background-image: url('../../lessons/garden-balance/assets/garden-plate.webp');
+/* The scene's framing is set on the element; moving to the next scene glides
+   the backdrop there. */
+.backdrop {
   background-size: cover;
-  background-position: center 56%;
-  transform: scale(1.035);
   transition:
     transform 1.15s ease,
     background-position 1.15s ease;
@@ -64,24 +45,8 @@
   }
 }
 
-.film[data-shot='leaves'] .plate,
-.film[data-shot='apples'] .plate {
-  transform: scale(1.1) translate(-1%, 1.8%);
-}
-
-.film[data-shot='exchange'] .plate {
-  transform: scale(1.19) translate(3%, 3%);
-}
-
-.film[data-shot='bridge'] .plate,
-.film[data-shot='answer'] .plate,
-.film[data-shot='variation'] .plate,
-.film[data-shot='end'] .plate {
-  transform: scale(1.11) translate(0, 1%);
-}
-
 .light {
-  background: radial-gradient(ellipse at 23% 10%, #ffe8a35e, transparent 46%);
+  background: radial-gradient(ellipse at 23% 10%, var(--stage-sunlight), transparent 46%);
   mix-blend-mode: screen;
   animation: sun 7s ease-in-out infinite alternate;
 }
@@ -96,8 +61,8 @@
 .vignette {
   z-index: 1;
   background:
-    linear-gradient(0deg, #12211fc4, transparent 25%),
-    linear-gradient(180deg, #162b323b, transparent 19%);
+    linear-gradient(0deg, var(--stage-shade-low), transparent 25%),
+    linear-gradient(180deg, var(--stage-shade-high), transparent 19%);
 }
 
 .world {
@@ -115,7 +80,7 @@
   pointer-events: none;
 }
 
-.filmTitle {
+.titleCard {
   position: absolute;
   z-index: 3;
   inset-inline-start: 50%;
@@ -124,24 +89,24 @@
   transform: translate(-50%, -50%);
   text-align: center;
   text-shadow:
-    0 3px 22px var(--garden-ink-shadow),
-    0 2px 4px #14271a;
+    0 3px 22px var(--stage-title-shade),
+    0 2px 4px var(--stage-title-edge);
   animation: title-in 1.35s ease both;
 }
 
-.filmTitle small {
+.titleCard small {
   font-size: var(--text-sm);
   letter-spacing: 0.24em;
-  color: var(--garden-honey);
+  color: var(--stage-accent);
 }
 
-.filmTitle h2 {
+.titleCard h2 {
   margin: var(--space-2) 0 var(--space-4);
   font-size: clamp(var(--text-xl), 7.8cqi, 6.25rem);
   line-height: 1.16;
   font-weight: 900;
   letter-spacing: -0.07em;
-  color: var(--garden-title);
+  color: var(--stage-title);
 }
 
 @keyframes title-in {
@@ -157,10 +122,10 @@
 .entry {
   min-block-size: var(--space-8);
   padding: var(--space-2) var(--space-5);
-  border: var(--garden-button-border);
+  border: 2px solid var(--stage-button-edge);
   border-radius: var(--radius-pill);
-  background: var(--garden-button);
-  box-shadow: 0 7px 16px #152c246e;
+  background: var(--stage-button);
+  box-shadow: 0 7px 16px var(--stage-button-shadow);
   color: inherit;
   font: inherit;
   font-size: clamp(var(--text-base), 2.1cqi, var(--text-xl));
@@ -170,12 +135,12 @@
 }
 
 .entry:hover {
-  background: var(--garden-button-hover);
+  background: var(--stage-button-hover);
 }
 
 .entry:focus-visible,
 .replay:focus-visible {
-  outline: 4px solid var(--garden-honey);
+  outline: 4px solid var(--stage-accent);
   outline-offset: 2px;
 }
 
@@ -183,10 +148,10 @@
   margin-inline-end: var(--space-2);
   font-style: normal;
   font-size: 0.85em;
-  color: var(--garden-honey);
+  color: var(--stage-accent);
 }
 
-.filmMeta {
+.titleBar {
   position: absolute;
   z-index: 3;
   inset-block-start: var(--space-4);
@@ -195,16 +160,16 @@
   gap: var(--space-2);
   align-items: center;
   font-size: var(--text-sm);
-  color: #fff6d3;
-  text-shadow: 0 2px 7px #12221a;
+  color: var(--stage-title-bar);
+  text-shadow: 0 2px 7px var(--stage-title-bar-shade);
 }
 
-.filmMeta i {
+.titleBar i {
   display: block;
   inline-size: 5px;
   block-size: 5px;
   border-radius: 100%;
-  background: #efd181;
+  background: var(--stage-title-bar-dot);
 }
 
 .replay {
@@ -214,16 +179,16 @@
   inset-inline-end: var(--space-4);
   inline-size: var(--touch-target);
   block-size: var(--touch-target);
-  border: 1px solid #ffefb6a0;
+  border: 1px solid var(--stage-replay-edge);
   border-radius: 50%;
-  background: var(--garden-replay);
+  background: var(--stage-replay);
   color: inherit;
   font-size: var(--text-lg);
   cursor: pointer;
 }
 
 .replay.playing {
-  background: var(--garden-replay-playing);
+  background: var(--stage-replay-playing);
 }
 
 /* A line that did not come out waits for the child: the button says so in
@@ -231,9 +196,9 @@
 .replay.again {
   inline-size: auto;
   padding-inline: var(--space-4);
-  border: var(--garden-button-border);
+  border: 2px solid var(--stage-button-edge);
   border-radius: var(--radius-pill);
-  background: var(--garden-button);
+  background: var(--stage-button);
   font: inherit;
   font-size: var(--text-base);
   font-weight: 850;
@@ -242,7 +207,7 @@
 
 @keyframes call {
   50% {
-    box-shadow: 0 0 0 var(--space-2) var(--garden-replay-call);
+    box-shadow: 0 0 0 var(--space-2) var(--stage-replay-call);
   }
 }
 
@@ -256,26 +221,27 @@
   margin: 0;
   padding: var(--space-2) var(--space-4);
   transform: translateX(-50%);
-  border: 1px solid var(--garden-caption-edge);
+  border: 1px solid var(--stage-caption-edge);
   border-radius: var(--radius-lg);
-  background: var(--garden-caption);
-  box-shadow: 0 7px 19px var(--garden-caption-shadow);
-  color: #fff7e4;
+  background: var(--stage-caption);
+  box-shadow: 0 7px 19px var(--stage-caption-shadow);
+  color: var(--stage-caption-text);
   text-align: center;
   font-size: clamp(var(--text-base), 2.1cqi, 1.5625rem);
   line-height: 1.45;
   pointer-events: none;
 }
 
+/* The teacher's name, from the caption's `data-speaker`, leads the line. */
 .caption::before {
-  content: '小兔';
+  content: attr(data-speaker);
   margin-inline-end: var(--space-2);
   font-size: 0.68em;
   letter-spacing: 0.06em;
-  color: var(--garden-speaker);
+  color: var(--stage-speaker);
 }
 
-.sceneArt {
+.scene {
   animation: shot-in 0.66s cubic-bezier(0.19, 0.7, 0.28, 1) both;
   transform-origin: 50% 64%;
 }
@@ -291,169 +257,45 @@
   }
 }
 
-.rabbit {
-  animation: rabbit-bob 3.2s ease-in-out infinite;
+.ground {
+  fill: var(--stage-teacher-ground);
+  opacity: 0.22;
+}
+
+.teacher {
+  animation: teacher-bob 3.2s ease-in-out infinite;
   transform-origin: center bottom;
   transform-box: fill-box;
-  filter: drop-shadow(0 6px 6px #14312266);
+  filter: drop-shadow(0 6px 6px var(--stage-teacher-shadow));
   pointer-events: none;
 }
 
-@keyframes rabbit-bob {
+@keyframes teacher-bob {
   50% {
     translate: 0 -5px;
     rotate: -1.2deg;
   }
 }
 
-.speaking .rabbit {
-  animation: rabbit-talk 0.65s ease-in-out infinite;
+.speaking .teacher {
+  animation: teacher-talk 0.65s ease-in-out infinite;
 }
 
-@keyframes rabbit-talk {
+@keyframes teacher-talk {
   50% {
     translate: 0 -5px;
     rotate: 1.8deg;
   }
 }
 
-.introProp {
-  animation: prop-land 0.65s cubic-bezier(0.18, 0.71, 0.29, 1.19) both;
-  animation-delay: var(--delay, 0s);
-}
-
-@keyframes prop-land {
-  from {
-    opacity: 0;
-    translate: 0 -55px;
-  }
-  to {
-    opacity: 1;
-    translate: 0 0;
-  }
-}
-
-.pan {
-  transition: transform 0.24s ease;
-}
-
-.part {
-  cursor: grab;
-  touch-action: none;
-}
-
-.part:focus-visible,
-.place:focus-visible {
-  outline: none;
-  filter: drop-shadow(0 0 7px var(--garden-glow));
-}
-
-.halo {
-  fill: none;
-  stroke: var(--garden-halo);
-  stroke-width: 4;
-  stroke-dasharray: 5 7;
-  opacity: 0.7;
-  animation: halo 1.8s ease-in-out infinite;
-}
-
-@keyframes halo {
-  50% {
-    opacity: 1;
-    stroke-width: 6;
-  }
-}
-
-.part:hover .halo,
-.place.over .halo,
-.part.selected .halo {
-  stroke: var(--garden-halo-strong);
-  opacity: 1;
-  stroke-width: 7;
-}
-
-.ghost {
-  pointer-events: none;
-  opacity: 0.95;
-  filter: drop-shadow(0 10px 7px #10252391);
-}
-
-.part.lifted {
-  opacity: 0.22;
-}
-
-.petals {
-  pointer-events: none;
-}
-
-.petals circle {
-  animation: float 6s ease-in-out infinite;
-  animation-delay: var(--delay);
-}
-
-@keyframes float {
-  0%,
-  100% {
-    translate: 0 0;
-    opacity: 0.48;
-  }
-  50% {
-    translate: 22px -18px;
-    opacity: 0.9;
-  }
-}
-
-.hintSpark {
-  pointer-events: none;
-  animation: trace 2.2s ease-in-out infinite;
-}
-
-@keyframes trace {
-  0%,
-  18% {
-    opacity: 0;
-    offset-distance: 0%;
-  }
-  34% {
-    opacity: 1;
-  }
-  75% {
-    opacity: 1;
-  }
-  88%,
-  100% {
-    opacity: 0;
-    offset-distance: 100%;
-  }
-}
-
-.swapIn {
-  animation: swap-in 0.46s cubic-bezier(0.18, 0.79, 0.28, 1.18) both;
-  transform-box: fill-box;
-  transform-origin: center;
-}
-
-@keyframes swap-in {
-  from {
-    scale: 0.7;
-    translate: 0 -13px;
-    opacity: 0.2;
-  }
-  to {
-    scale: 1;
-    translate: 0 0;
-    opacity: 1;
-  }
-}
-
 /* A phone in portrait gets a taller frame: the props sit in its middle, cropped
    from the sides, with room above for the title line and below for the caption. */
 @media (max-width: 610px) {
-  .film {
+  .stage {
     aspect-ratio: 3 / 4;
   }
 
-  .filmMeta {
+  .titleBar {
     inset-block-start: var(--space-3);
     inset-inline-start: var(--space-3);
     font-size: 0.6875rem;
@@ -471,10 +313,12 @@
   }
 }
 
+/* Everything drawn on the stage, the lesson's own scene included, holds still
+   for a child who asks for less motion. */
 @media (prefers-reduced-motion: reduce) {
-  .film *,
-  .film *::before,
-  .film *::after {
+  .stage *,
+  .stage *::before,
+  .stage *::after {
     animation: none !important;
     transition: none !important;
   }

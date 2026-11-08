@@ -6,7 +6,9 @@ import {
 } from '../../lessons/garden-balance/garden-story';
 import { Basket, BoardText, Part, Scale, Spark, type PartProps } from './garden-art';
 import { movableProps } from './movable-props';
-import styles from './GardenStage.module.css';
+import styles from './garden-art.module.css';
+
+type SceneProps = { state: GardenState; handling: Handling };
 
 function held(id: string, { selected, lifted }: Handling): Partial<PartProps> {
   return { id, selected: selected === id, lifted: lifted === id };
@@ -23,7 +25,7 @@ const appleSpots = [
 
 // Cabbages against apples: the child lifts one cabbage into the basket, then
 // apples until the beam is level.
-export function WeighScene({ state, handling }: { state: GardenState; handling: Handling }) {
+function WeighScene({ state, handling }: SceneProps) {
   const { shot, leaves, apples } = state;
   const weighing = shot === 'leaves';
   const removing = shot === 'apples' && apples > 3;
@@ -80,7 +82,7 @@ export function WeighScene({ state, handling }: { state: GardenState; handling: 
 const cucumberSpots = [-53, 0, 53];
 
 // One apple on the scale; touching it shows the three cucumbers it weighs.
-export function ExchangeScene({ state }: { state: GardenState }) {
+function ExchangeScene({ state }: { state: GardenState }) {
   const { revealed } = state;
   const left = (
     <Part
@@ -157,7 +159,7 @@ function SpareCucumbers() {
 
 // One cabbage against the three apples it weighs; each apple in turn becomes
 // its group of cucumbers, three each in the problem and two in the variation.
-export function SwapScene({ state }: { state: GardenState }) {
+function SwapScene({ state }: { state: GardenState }) {
   const { shot, replaced } = state;
   const swapping = shot === 'bridge' || shot === 'variation';
   const next = groupSpots[replaced];
@@ -210,4 +212,14 @@ export function SwapScene({ state }: { state: GardenState }) {
       )}
     </>
   );
+}
+
+// The garden scene on the lesson stage: the scale halved and weighed, the
+// single apple and its cucumbers, then the swaps. The title card shows none.
+export function GardenScene({ state, handling }: SceneProps) {
+  if (state.shot === 'leaves' || state.shot === 'apples')
+    return <WeighScene state={state} handling={handling} />;
+  if (state.shot === 'exchange') return <ExchangeScene state={state} />;
+  if (state.shot === 'opening') return null;
+  return <SwapScene state={state} />;
 }
