@@ -21,7 +21,7 @@
 | 通用     | npm run format:check；npm run lint；npm run arch；npm run typecheck                             |
 | 单元     | npm test                                                                                        |
 | 构建     | npm run build；npm run build-storybook                                                          |
-| 浏览器   | npm run test:e2e（先构建并安装匹配 Chromium）                                                   |
+| 浏览器   | npm run test:e2e（先构建并安装匹配的 Chromium 和 WebKit）                                       |
 | 数据库   | npm run db:migrate；npm run test:db（必须使用隔离的 DATABASE_URL 和另一个 DELETION_LEDGER_URL） |
 | 重复代码 | npx --no-install jscpd .                                                                        |
 

@@ -3,6 +3,7 @@ import { useMediaQuery } from '../../../shared/lib/useMediaQuery';
 import { GardenStage } from '../components/garden-balance/GardenStage';
 import type { LearningScope } from '../data-access/learning-request';
 import { useLessonDraft } from '../data-access/useLessonDraft';
+import { useLessonRecordings } from '../data-access/useLessonRecordings';
 import { useLessonFilm } from '../interaction/useLessonFilm';
 import { useStageDrag } from '../interaction/useStageDrag';
 import { gardenProps } from '../lessons/garden-balance/garden-props';
@@ -16,17 +17,30 @@ import styles from './GardenBalanceLesson.module.css';
 // place is still being looked up, nowhere yet, so a quick tap cannot start
 // over and overwrite it.
 type Start = { resume?: Shot; finding?: boolean };
+type Recordings = ReturnType<typeof useLessonRecordings>;
 
-function entryLabel({ resume, finding }: Start) {
-  if (finding) return '正在找上次的地方…';
-  return resume ? '接着上次的地方' : '开始短片';
+// The title card's button: it starts the film once the saved place is known
+// and every recording has arrived, and fetches the recordings again when they
+// did not all arrive.
+function entry(film: GardenFilm, recordings: Recordings, { resume, finding }: Start) {
+  if (finding) return { label: '正在找上次的地方…' };
+  if (recordings.preparation === 'preparing') return { label: '正在准备声音…' };
+  if (recordings.preparation === 'failed')
+    return { label: '声音没下载好，点这里再试', onEnter: recordings.retry };
+  return {
+    label: resume ? '接着上次的地方' : '开始短片',
+    onEnter: () => film.enter(resume),
+  };
 }
+
+type ScreenProps = { film: GardenFilm; recordings: Recordings; start: Start };
 
 // The film and the props the child moves. A drag changes only this part of the
 // page, never the panels beneath it.
-function GardenScreen({ film, start }: { film: GardenFilm; start: Start }) {
+function GardenScreen({ film, recordings, start }: ScreenProps) {
   const drag = useStageDrag(film, gardenProps);
   const narrow = useMediaQuery('(max-width: 610px)');
+  const { label, onEnter } = entry(film, recordings, start);
   return (
     <GardenStage
       state={film.state}
@@ -34,10 +48,11 @@ function GardenScreen({ film, start }: { film: GardenFilm; start: Start }) {
       ghost={drag.ghost}
       caption={film.state.shot === 'opening' ? undefined : film.caption}
       speaking={film.speaking}
+      failure={film.failure}
       narrow={narrow}
-      entryLabel={entryLabel(start)}
+      entryLabel={label}
       worldRef={drag.world}
-      onEnter={start.finding ? undefined : () => film.enter(start.resume)}
+      onEnter={onEnter}
       onReplay={film.replay}
       onActivate={drag.activate}
     />
@@ -50,12 +65,14 @@ type LessonBodyProps = {
   panels: (film: GardenFilm) => ReactNode;
 };
 
-// The playing film with whatever goes beneath it.
+// The playing film with whatever goes beneath it, its recordings fetched as
+// the page opens.
 function GardenLessonBody({ start = {}, onArrive, panels }: LessonBodyProps) {
+  const recordings = useLessonRecordings(gardenStory.lines);
   const film = useLessonFilm(gardenStory, { onArrive });
   return (
     <div className={styles.lesson}>
-      <GardenScreen film={film} start={start} />
+      <GardenScreen film={film} recordings={recordings} start={start} />
       {panels(film)}
     </div>
   );

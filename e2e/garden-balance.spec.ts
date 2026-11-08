@@ -1,5 +1,6 @@
-import { expect, test, type Locator, type Page } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 import pg from 'pg';
+import { movesToTheAnswer, play } from './garden-film.js';
 import { seedSignedInFamily } from './seeded-family.js';
 import { signInWithToken } from './session-cookie.js';
 
@@ -8,38 +9,6 @@ import { signInWithToken } from './session-cookie.js';
 // is saved, and the final count is judged on the server. The browser here has
 // no microphone and the server no AI key, so the answer falls back to tapping
 // a number and a question sends the child back to the scene.
-
-async function drag(page: Page, source: Locator, target: Locator) {
-  const from = (await source.boundingBox())!;
-  const to = (await target.boundingBox())!;
-  await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
-  await page.mouse.down();
-  await page.mouse.move(from.x + from.width / 2 + 20, from.y + from.height / 2 + 10, { steps: 4 });
-  await page.mouse.move(to.x + to.width / 2, to.y + to.height / 2, { steps: 12 });
-  await page.mouse.up();
-}
-
-// From the first cabbage to the question of the count, every scene by hand.
-// The whole film fits on screen, so it is brought into view once and every
-// prop and the basket can be reached by the pointer.
-async function playToTheAnswer(page: Page) {
-  const film = page.getByRole('region', { name: '菜园天平互动短片' });
-  const basket = film.getByRole('button', { name: '旁边的篮子' });
-  const apples = film.getByRole('button', { name: '苹果' });
-  await film.scrollIntoViewIfNeeded();
-  await drag(page, film.getByRole('button', { name: '青菜' }).first(), basket);
-  await expect(apples).toHaveCount(6);
-  for (const left of [5, 4]) {
-    await drag(page, apples.last(), basket);
-    await expect(apples).toHaveCount(left);
-  }
-  await drag(page, apples.last(), basket);
-  await expect(film.getByRole('status')).toHaveText(/碰一碰这个苹果/, { timeout: 20_000 });
-  await apples.click();
-  const replace = film.getByRole('button', { name: '把这个苹果换成黄瓜' });
-  for (let swapped = 0; swapped < 3; swapped++) await replace.click({ timeout: 20_000 });
-  await expect(page.getByRole('region', { name: '说出答案' })).toBeVisible();
-}
 
 test('a child places the garden problem, resumes it and is judged on the counted answer', async ({
   page,
@@ -69,7 +38,9 @@ test('a child places the garden problem, resumes it and is judged on the counted
     await question.getByRole('button', { name: '有问题？按一下问小兔' }).click();
     await expect(question.getByRole('status')).toHaveText(/我们接着做题吧/);
 
-    await playToTheAnswer(page);
+    // From the first cabbage to the question of the count, every scene by hand.
+    await play(movesToTheAnswer(page));
+    await expect(page.getByRole('region', { name: '说出答案' })).toBeVisible();
     await page.screenshot({ path: info.outputPath('answer-scene.png') });
 
     // The scene reached is saved: coming back resumes at the question.

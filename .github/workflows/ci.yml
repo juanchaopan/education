@@ -42,7 +42,8 @@ jobs:
       - run: npm run db:migrate
       - run: npm run test:db
       - run: npm run db:complete-deletions -w @education/api
-      - run: npx playwright install --with-deps chromium
+      # WebKit runs the lesson sound checks, as Safari plays lessons on iPads.
+      - run: npx playwright install --with-deps chromium webkit
       - run: npm run test:e2e
       - uses: actions/upload-artifact@v7
         if: failure()
