@@ -33,3 +33,12 @@ jobs:
           DATABASE_CA_CERT: ${{ secrets.STAGING_DATABASE_CA_CERT }}
           DELETION_LEDGER_URL: ${{ secrets.STAGING_DELETION_LEDGER_URL }}
           DELETION_LEDGER_CA_CERT: ${{ secrets.STAGING_DELETION_LEDGER_CA_CERT }}
+      # Counts only; a failing AI provider fails the run, which raises the alert.
+      - name: Summarize the last hour of AI usage
+        if: ${{ !cancelled() }}
+        run: node scripts/staging-usage-report.mjs
+        env:
+          STAGING_DATABASE: 'true'
+          STAGING_DATABASE_HOST: ${{ vars.STAGING_DATABASE_HOST }}
+          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+          DATABASE_CA_CERT: ${{ secrets.STAGING_DATABASE_CA_CERT }}

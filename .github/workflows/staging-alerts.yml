@@ -1,0 +1,70 @@
+name: staging-alerts
+on:
+  # Twice an hour, one of them right after the hourly maintenance run, which
+  # has already woken the database: each probe wakes the free Neon compute.
+  schedule:
+    - cron: '19,49 * * * *'
+  workflow_run:
+    workflows: [staging, staging-backup, staging-mail-retention, staging-restore]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      drill:
+        description: 告警演练：探测一个必然无法解析的保留域名，确认告警 issue 会打开；之后不带演练再运行一次即关闭
+        type: boolean
+        default: false
+permissions:
+  contents: read
+concurrency:
+  group: staging-alerts
+  cancel-in-progress: false
+jobs:
+  configuration:
+    if: vars.STAGING_ENABLED != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo 'Staging is not enabled, so nothing is probed and no alert channel is active.' >> "$GITHUB_STEP_SUMMARY"
+  health:
+    if: vars.STAGING_ENABLED == 'true' && github.event_name != 'workflow_run'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Probe staging and open or close its alert
+        run: node scripts/staging-alerts.mjs health
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          STAGING_ORIGIN: ${{ vars.STAGING_ORIGIN || 'https://education-access-spike.hyp.app' }}
+          ALERT_DRILL: ${{ inputs.drill == true }}
+  workflow:
+    if: vars.STAGING_ENABLED == 'true' && github.event_name == 'workflow_run'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Open or close the alert for the completed staging run
+        run: node scripts/staging-alerts.mjs workflow
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          WORKFLOW_NAME: ${{ github.event.workflow_run.name }}
+          WORKFLOW_RUN_ID: ${{ github.event.workflow_run.id }}
+          WORKFLOW_RUN_URL: ${{ github.event.workflow_run.html_url }}
