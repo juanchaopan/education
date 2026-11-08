@@ -1,9 +1,8 @@
 import type { SavedDraft } from '@education/contracts';
 import { act, renderHook, waitFor } from '@testing-library/react';
-import type { PropsWithChildren } from 'react';
 import { afterEach, expect, it, vi } from 'vitest';
 import { usePageReadiness } from '../../../shared/lib/reload-readiness';
-import { ReloadReadinessProvider } from '../../../shared/lib/ReloadReadinessProvider';
+import { pageWrapper } from '../../../test/page-wrapper';
 import { queryWrapper } from '../../../test/query-wrapper';
 import { useLessonDraft } from './useLessonDraft';
 
@@ -30,19 +29,12 @@ function setup(fetch: ReturnType<typeof vi.fn>) {
 // own view of it.
 function setupOnPage(fetch: ReturnType<typeof vi.fn>) {
   vi.stubGlobal('fetch', fetch);
-  const Query = queryWrapper();
   return renderHook(
     () => ({
       draft: useLessonDraft({ id: 'fixture', version: 1, csrf: 'one' }, initial),
       page: usePageReadiness(),
     }),
-    {
-      wrapper: ({ children }: PropsWithChildren) => (
-        <Query>
-          <ReloadReadinessProvider>{children}</ReloadReadinessProvider>
-        </Query>
-      ),
-    },
+    { wrapper: pageWrapper() },
   );
 }
 
