@@ -72,7 +72,9 @@ const sessionGuard = createReloadGuard();
 // saved, saving unsaved work again after each check, and then reloads fully,
 // once for each release; signing in survives the reload. The page's own
 // release and the record of earlier reloads are read as the page loads, so
-// the reload this page starts never counts against it.
+// the reload this page starts never counts against it. The record limits
+// only the reloads the page starts on its own: a reload the child asks for
+// goes ahead even where it cannot be recorded.
 export function useReleaseUpdate({
   own: built,
   guard = sessionGuard,
@@ -102,7 +104,7 @@ export function useReleaseUpdate({
   useEffect(() => {
     if (phase !== 'reloading' || !latest || left.current === latest) return;
     left.current = latest;
-    if (guard.mark(latest)) reload();
+    if (guard.mark(latest) || retried === latest) reload();
   });
 
   return {

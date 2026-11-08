@@ -1,10 +1,8 @@
 import { focusManager, onlineManager } from '@tanstack/react-query';
 import { act, renderHook } from '@testing-library/react';
-import type { PropsWithChildren } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useReloadReadiness, type Readiness } from '../../shared/lib/reload-readiness';
-import { ReloadReadinessProvider } from '../../shared/lib/ReloadReadinessProvider';
-import { queryWrapper } from '../../test/query-wrapper';
+import { pageWrapper } from '../../test/page-wrapper';
 import { createReloadGuard } from './reload-guard';
 import { retryDelay, useReleaseUpdate } from './useReleaseUpdate';
 
@@ -32,6 +30,15 @@ function memoryStore() {
   };
 }
 
+// A tab whose session storage cannot be written.
+function unwritableStore() {
+  const store = memoryStore();
+  store.setItem = () => {
+    throw new DOMException('', 'QuotaExceededError');
+  };
+  return store;
+}
+
 // An open page built as `own` while the deployment serves `serves`, with
 // another part of the page standing toward a reload as `part` says.
 function setup({
@@ -45,20 +52,12 @@ function setup({
   vi.stubGlobal('fetch', fetch);
   const reload = vi.fn();
   const guard = createReloadGuard(() => store);
-  const Query = queryWrapper();
   const view = renderHook(
     ({ readiness, save }: Part) => {
       useReloadReadiness(readiness, save);
       return useReleaseUpdate({ own, guard, reload });
     },
-    {
-      initialProps: part,
-      wrapper: ({ children }: PropsWithChildren) => (
-        <Query>
-          <ReloadReadinessProvider>{children}</ReloadReadinessProvider>
-        </Query>
-      ),
-    },
+    { initialProps: part, wrapper: pageWrapper() },
   );
   return { ...view, server, fetch, reload, guard };
 }
@@ -173,15 +172,14 @@ describe('useReleaseUpdate', () => {
     expect(after.reload).toHaveBeenCalledOnce();
   });
 
-  it('never reloads on its own when the tab cannot record the reload', async () => {
-    const store = memoryStore();
-    store.setItem = () => {
-      throw new DOMException('', 'QuotaExceededError');
-    };
-    const { reload, result } = setup({ serves: newer, store });
+  it('never reloads on its own in a tab that cannot record the reload, but does when the child asks', async () => {
+    const { reload, result } = setup({ serves: newer, store: unwritableStore() });
     await wait(0);
     expect(reload).not.toHaveBeenCalled();
     expect(result.current.phase).toBe('stuck');
+    act(() => result.current.retry());
+    await wait(0);
+    expect(reload).toHaveBeenCalledOnce();
   });
 
   it('waits for a playing film, then saves unsaved work, holding until it is saved', async () => {
