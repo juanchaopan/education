@@ -6,7 +6,6 @@ const meta = {
   component: LessonQuestionPanel,
   args: {
     teacher: '小兔',
-    stepId: 'apples',
     voice: { status: 'idle' },
     reply: { status: 'idle' },
     guidance: '拿走几个苹果，看看秤什么时候能回到中间。',

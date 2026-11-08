@@ -17,7 +17,6 @@ function show(extra: Partial<Props>) {
   render(
     <LessonQuestionPanel
       teacher="小兔"
-      stepId="apples"
       voice={{ status: 'idle' }}
       reply={{ status: 'idle' }}
       guidance="拿走几个苹果，看看秤什么时候能回到中间。"
@@ -29,18 +28,16 @@ function show(extra: Partial<Props>) {
   return on;
 }
 
-const answered = (stepId: string): Props['reply'] => ({
-  status: 'ready',
-  source: 'ai',
-  drawing: [],
-  feedback: { status: 'needs-work', stepId, instruction: '看看哪边低一些。' },
-});
-
-it('shows the teacher’s reply only for the scene on screen', () => {
-  show({ reply: answered('apples') });
+it('shows the teacher’s reply to the latest question, whichever scene it was asked in', () => {
+  show({
+    reply: {
+      status: 'ready',
+      source: 'ai',
+      drawing: [],
+      feedback: { status: 'needs-work', stepId: 'apples', instruction: '看看哪边低一些。' },
+    },
+  });
   expect(screen.getByRole('status')).toHaveTextContent('看看哪边低一些。');
-  show({ stepId: 'exchange', reply: answered('apples') });
-  expect(screen.getAllByRole('status')[1]).toHaveTextContent('');
 });
 
 it('falls back to the scene’s own guidance when the teacher cannot answer', () => {

@@ -20,7 +20,6 @@ export function SceneQuestions({ scope, teacher, stepId, guidance, narration }: 
   return (
     <LessonQuestionPanel
       teacher={teacher}
-      stepId={stepId}
       voice={question.voice}
       reply={question.reply}
       guidance={guidance}

@@ -1,7 +1,6 @@
 import type { FeedbackState } from '../data-access/useTeachingFeedback';
 import type { VoiceState } from '../data-access/voice-input';
 import { fallbackMessage } from '../interaction/ai-help-message';
-import { feedbackForStep } from '../interaction/lesson-help';
 import { voiceMessage, type Alternative } from '../interaction/voice-message';
 import { LessonButton as Button } from './LessonButton';
 import panel from './LessonPanel.module.css';
@@ -9,8 +8,9 @@ import panel from './LessonPanel.module.css';
 type Props = {
   // Who teaches the lesson, as its narration calls them.
   teacher: string;
-  stepId: string;
   voice: VoiceState;
+  // The teacher's answer to the child's latest question, about the scene it
+  // was asked in, even when the scene has moved on since.
   reply: FeedbackState;
   // What to do next in this scene, shown when the teacher cannot answer.
   guidance: string;
@@ -27,12 +27,12 @@ type Props = {
 // sends the child back to the scene.
 const carryOn: Alternative = { instead: '我们接着做题吧。' };
 
-function replyMessage({ stepId, reply, guidance, teacher }: Props) {
+function replyMessage({ reply, guidance, teacher }: Props) {
   switch (reply.status) {
     case 'pending':
       return `${teacher}正在想…`;
     case 'ready':
-      return feedbackForStep(stepId, reply.feedback)?.instruction ?? '';
+      return reply.feedback.instruction;
     case 'fallback':
       return `${fallbackMessage(reply.reason)}${guidance}`;
     case 'guidance':
@@ -61,8 +61,8 @@ function Actions({ voice, reply, paused, teacher, ...on }: Props) {
 }
 
 // A question the child asks in the middle of a scene, and the teacher's short
-// reply about that scene. When the teacher cannot answer, the scene's own
-// guidance is shown instead.
+// reply. When the teacher cannot answer, the scene's own guidance is shown
+// instead.
 export function LessonQuestionPanel(props: Props) {
   const { voice, teacher } = props;
   return (

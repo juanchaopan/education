@@ -19,7 +19,8 @@ type Props = {
   narrow: boolean;
   entryLabel: string;
   worldRef?: Ref<SVGSVGElement>;
-  onEnter: () => void;
+  // Starts the film; while it is missing the film is not ready to start yet.
+  onEnter?: () => void;
   onReplay: () => void;
   onActivate: (target: Activation) => void;
 };
@@ -57,7 +58,7 @@ function Overlay({ opening, entryLabel, speaking, onEnter, onReplay }: OverlayPr
       <div className={styles.filmTitle}>
         <small>小小探索家 · 菜园小剧场</small>
         <h2>{title}</h2>
-        <button type="button" className={styles.entry} onClick={onEnter}>
+        <button type="button" className={styles.entry} onClick={onEnter} disabled={!onEnter}>
           <i aria-hidden="true">▶</i> {entryLabel}
         </button>
       </div>

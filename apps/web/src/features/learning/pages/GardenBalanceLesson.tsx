@@ -11,9 +11,19 @@ import { GardenPanels } from './GardenPanels';
 import { LessonSignInNotice } from './LessonSignInNotice';
 import styles from './GardenBalanceLesson.module.css';
 
+// Where the film starts: a saved scene to resume, or, while the child's saved
+// place is still being looked up, nowhere yet, so a quick tap cannot start
+// over and overwrite it.
+type Start = { resume?: Shot; finding?: boolean };
+
+function entryLabel({ resume, finding }: Start) {
+  if (finding) return '正在找上次的地方…';
+  return resume ? '接着上次的地方' : '开始短片';
+}
+
 // The film and the props the child moves. A drag changes only this part of the
 // page, never the panels beneath it.
-function GardenScreen({ story, resume }: { story: GardenStory; resume?: Shot }) {
+function GardenScreen({ story, start }: { story: GardenStory; start: Start }) {
   const drag = useGardenDrag(story);
   const narrow = useMediaQuery('(max-width: 610px)');
   return (
@@ -24,9 +34,9 @@ function GardenScreen({ story, resume }: { story: GardenStory; resume?: Shot }) 
       caption={story.state.shot === 'opening' ? undefined : story.caption}
       speaking={story.speaking}
       narrow={narrow}
-      entryLabel={resume ? '接着上次的地方' : '开始短片'}
+      entryLabel={entryLabel(start)}
       worldRef={drag.world}
-      onEnter={() => story.enter(resume)}
+      onEnter={start.finding ? undefined : () => story.enter(start.resume)}
       onReplay={story.replay}
       onActivate={drag.activate}
     />
@@ -34,33 +44,33 @@ function GardenScreen({ story, resume }: { story: GardenStory; resume?: Shot }) 
 }
 
 type FilmProps = {
-  resume?: Shot;
+  start?: Start;
   onArrive?: (shot: Shot) => void;
   panels: (story: GardenStory) => ReactNode;
 };
 
-function GardenFilm({ resume, onArrive, panels }: FilmProps) {
+function GardenFilm({ start = {}, onArrive, panels }: FilmProps) {
   const story = useGardenStory(onArrive);
   return (
     <div className={styles.lesson}>
-      <GardenScreen story={story} resume={resume} />
+      <GardenScreen story={story} start={start} />
       {panels(story)}
     </div>
   );
 }
 
-const start = { stepId: 'leaves', drawing: [] };
+const first = { stepId: 'leaves', drawing: [] };
 
 // A signed-in child's lesson: each scene reached before the answer is saved,
 // so coming back resumes at its start, and the answer, the questions and the
 // draft all belong to this child.
 function SignedInGarden({ scope }: { scope: LearningScope }) {
-  const draft = useLessonDraft(scope, start);
+  const draft = useLessonDraft(scope, first);
   const saved = draft.status === 'saved' ? draft.content.stepId : undefined;
   const resume = saved && isShot(saved) && saved !== 'leaves' ? saved : undefined;
   return (
     <GardenFilm
-      resume={resume}
+      start={{ resume, finding: draft.status === 'loading' }}
       onArrive={(shot) => {
         if (savesProgress(shot)) void draft.saveAs({ stepId: shot, drawing: [] });
       }}
