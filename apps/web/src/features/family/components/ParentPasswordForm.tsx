@@ -1,4 +1,7 @@
 import type { ReactNode } from 'react';
+import { Button } from '../../../shared/ui/Button';
+import { Form } from '../../../shared/ui/Form';
+import { TextField } from '../../../shared/ui/TextField';
 
 type Wording = {
   id?: string;
@@ -42,17 +45,12 @@ export function ParentPasswordForm({
 }) {
   const { id, label, hint, submitLabel, pendingLabel } = wording(text);
   return (
-    <form
-      onSubmit={(event) => {
-        event.preventDefault();
-        onSubmit();
-      }}
-    >
+    <Form onSubmit={onSubmit}>
       <p>{hint}</p>
       {children}
-      <label htmlFor={id}>{label}</label>
-      <input
+      <TextField
         id={id}
+        label={label}
         type="password"
         autoComplete="current-password"
         maxLength={128}
@@ -61,9 +59,9 @@ export function ParentPasswordForm({
         onChange={(event) => onChange(event.target.value)}
         disabled={pending}
       />
-      <button disabled={pending || !password || !ready} type="submit">
+      <Button disabled={pending || !password || !ready} type="submit">
         {pending ? pendingLabel : submitLabel}
-      </button>
-    </form>
+      </Button>
+    </Form>
   );
 }

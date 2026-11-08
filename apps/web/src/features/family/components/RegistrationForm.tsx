@@ -1,5 +1,10 @@
-import type { FormEvent } from 'react';
-import styles from './RegistrationForm.module.css';
+import { Button } from '../../../shared/ui/Button';
+import { Form } from '../../../shared/ui/Form';
+import { Hint } from '../../../shared/ui/Hint';
+import { Icon } from '../../../shared/ui/Icon';
+import { Notice } from '../../../shared/ui/Notice';
+import { TextField } from '../../../shared/ui/TextField';
+import { AccountLayout } from './AccountLayout';
 
 export type RegistrationFormProps = {
   email: string;
@@ -15,75 +20,66 @@ export type RegistrationFormProps = {
 };
 
 export function RegistrationForm(props: RegistrationFormProps) {
-  const submit = (event: FormEvent) => {
-    event.preventDefault();
-    props.onSubmit();
-  };
   return (
-    <div className={styles.layout}>
-      <aside className={styles.introduction}>
-        <span className={styles.symbol} aria-hidden="true">
-          ⌂
-        </span>
-        <h2>陪伴探索，从这里开始</h2>
-        <p>先为自己创建家长账号。之后，孩子可以用您的注册 KEY 加入家庭。</p>
-        <p>慢慢来，和孩子一起看见每一步进步。</p>
-      </aside>
-      <section className={styles.card} aria-labelledby="registration-title">
-        <h2 id="registration-title">创建家长账号</h2>
-        <p className={styles.hint}>请使用您自己的邮箱，不需要填写孩子的信息。</p>
-        {props.submitted ? (
-          <div role="status" className={styles.notice}>
-            <h3>注册申请已受理</h3>
-            <p>若此邮箱尚未注册，待验证账号已保存。重复提交不会创建另一个家庭。</p>
-            <p>尚未发送验证邮件。请点击“已有账号？去登录”，登录后发送验证邮件并完成验证。</p>
-          </div>
-        ) : (
-          <form onSubmit={submit} aria-busy={props.pending}>
-            <label htmlFor="parent-email">家长邮箱</label>
-            <input
-              id="parent-email"
-              name="email"
-              type="email"
-              autoComplete="username"
-              required
-              maxLength={254}
-              value={props.email}
-              disabled={props.pending}
-              onChange={(event) => props.onEmailChange(event.target.value)}
-            />
-            <label htmlFor="parent-password">设置密码</label>
-            <input
-              id="parent-password"
-              name="password"
-              type="password"
-              autoComplete="new-password"
-              required
-              aria-describedby="password-help"
-              value={props.password}
-              disabled={props.pending}
-              onChange={(event) => props.onPasswordChange(event.target.value)}
-            />
-            <p id="password-help" className={styles.hint}>
-              15–128 个字符。可以用一句好记的话，也可以粘贴密码管理器生成的密码。
-            </p>
-            {props.error && (
-              <p role="alert" className={styles.notice}>
-                {props.error}
-              </p>
-            )}
-            {props.notice && (
-              <p role="status" className={styles.notice}>
-                {props.notice}
-              </p>
-            )}
-            <button type="submit" disabled={props.pending || !props.available}>
-              {props.pending ? '正在保存，请稍等…' : '提交注册'}
-            </button>
-            <p className={styles.hint}>家长验证邮箱并登录后，可以生成 KEY，邀请孩子加入家庭。</p>
-          </form>
-        )}
-      </section>
-    </div>
+    <AccountLayout
+      titleId="registration-title"
+      title="创建家长账号"
+      introduction={
+        <>
+          <Icon name="home" badge />
+          <h2>陪伴探索，从这里开始</h2>
+          <p>先为自己创建家长账号。之后，孩子可以用您的注册 KEY 加入家庭。</p>
+          <p>慢慢来，和孩子一起看见每一步进步。</p>
+        </>
+      }
+    >
+      <Hint>请使用您自己的邮箱，不需要填写孩子的信息。</Hint>
+      {props.submitted ? (
+        <Notice tone="success" as="div">
+          <h3>注册申请已受理</h3>
+          <p>若此邮箱尚未注册，待验证账号已保存。重复提交不会创建另一个家庭。</p>
+          <p>尚未发送验证邮件。请点击“已有账号？去登录”，登录后发送验证邮件并完成验证。</p>
+        </Notice>
+      ) : (
+        <RegistrationFields {...props} />
+      )}
+    </AccountLayout>
+  );
+}
+
+function RegistrationFields(props: RegistrationFormProps) {
+  return (
+    <Form onSubmit={props.onSubmit} aria-busy={props.pending}>
+      <TextField
+        id="parent-email"
+        label="家长邮箱"
+        name="email"
+        type="email"
+        autoComplete="username"
+        required
+        maxLength={254}
+        value={props.email}
+        disabled={props.pending}
+        onChange={(event) => props.onEmailChange(event.target.value)}
+      />
+      <TextField
+        id="parent-password"
+        label="设置密码"
+        hint="15–128 个字符。可以用一句好记的话，也可以粘贴密码管理器生成的密码。"
+        name="password"
+        type="password"
+        autoComplete="new-password"
+        required
+        value={props.password}
+        disabled={props.pending}
+        onChange={(event) => props.onPasswordChange(event.target.value)}
+      />
+      {props.error && <Notice tone="error">{props.error}</Notice>}
+      {props.notice && <Notice>{props.notice}</Notice>}
+      <Button type="submit" disabled={props.pending || !props.available}>
+        {props.pending ? '正在保存，请稍等…' : '提交注册'}
+      </Button>
+      <Hint>家长验证邮箱并登录后，可以生成 KEY，邀请孩子加入家庭。</Hint>
+    </Form>
   );
 }

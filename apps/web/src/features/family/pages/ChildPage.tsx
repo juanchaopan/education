@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useLocation } from 'react-router-dom';
+import { Loading } from '../../../shared/ui/Loading';
+import { Page } from '../../../shared/ui/Page';
 import { StandaloneLink } from '../../../shared/ui/StandaloneLink';
 import { ChildLoginForm, type ChildLoginFields } from '../components/ChildLoginForm';
 import { ChildAccount } from '../components/ChildAccount';
@@ -46,10 +48,9 @@ export function ChildPage() {
     });
   };
   return (
-    <section aria-labelledby="child-space-title">
-      <h1 id="child-space-title">我的探索空间</h1>
+    <Page titleId="child-space-title" title="我的探索空间">
       {session.isPending ? (
-        <p role="status">正在打开你的空间…</p>
+        <Loading label="正在打开你的空间…" />
       ) : session.isError ? (
         <p role="alert">暂时无法确认登录状态，请稍后刷新。你的账号不会丢失。</p>
       ) : session.data ? (
@@ -82,6 +83,6 @@ export function ChildPage() {
       <p>
         <StandaloneLink to="/family">请家长帮忙</StandaloneLink>
       </p>
-    </section>
+    </Page>
   );
 }

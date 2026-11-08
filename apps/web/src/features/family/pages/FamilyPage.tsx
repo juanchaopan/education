@@ -1,18 +1,20 @@
-import { ChildAccessPanel } from './ChildAccessPanel';
-import { AiConsentPanel } from './AiConsentPanel';
-import { FamilyDeletionPanel } from './FamilyDeletionPanel';
-import { FamilyExportPanel } from './FamilyExportPanel';
-import { LearningSummaryPanel } from './LearningSummaryPanel';
-import { ParentPracticePanel } from './ParentPracticePanel';
-import { RegistrationKeyPanel } from './RegistrationKeyPanel';
-import { VerificationPanel } from './VerificationPanel';
-import styles from './FamilyPage.module.css';
 import { useState } from 'react';
-import { RegistrationPanel } from './RegistrationPanel';
-import { LoginPanel } from './LoginPanel';
+import { Button } from '../../../shared/ui/Button';
+import { Loading } from '../../../shared/ui/Loading';
+import { Page } from '../../../shared/ui/Page';
 import { AccountStatus } from '../components/AccountStatus';
 import { FamilyDeleted } from '../components/FamilyDeleted';
 import { useParentSession, useParentLogout } from '../data-access/useParentSession';
+import { AiConsentPanel } from './AiConsentPanel';
+import { ChildAccessPanel } from './ChildAccessPanel';
+import { FamilyDeletionPanel } from './FamilyDeletionPanel';
+import { FamilyExportPanel } from './FamilyExportPanel';
+import { LearningSummaryPanel } from './LearningSummaryPanel';
+import { LoginPanel } from './LoginPanel';
+import { ParentPracticePanel } from './ParentPracticePanel';
+import { RegistrationKeyPanel } from './RegistrationKeyPanel';
+import { RegistrationPanel } from './RegistrationPanel';
+import { VerificationPanel } from './VerificationPanel';
 
 export function FamilyPage() {
   const [mode, setMode] = useState<'register' | 'login'>('register');
@@ -31,8 +33,7 @@ export function FamilyPage() {
     });
   };
   return (
-    <section aria-labelledby="family-title">
-      <h1 id="family-title">家长空间</h1>
+    <Page titleId="family-title" title="家长空间">
       <p>陪伴每一次尝试，看见一点一滴的进步。</p>
       {deleted ? (
         <FamilyDeleted
@@ -42,7 +43,7 @@ export function FamilyPage() {
           }}
         />
       ) : session.isPending ? (
-        <p role="status">正在确认登录状态…</p>
+        <Loading label="正在确认登录状态…" />
       ) : session.data ? (
         <>
           <AccountStatus
@@ -60,17 +61,16 @@ export function FamilyPage() {
       ) : (
         <>
           {session.isError && <p role="status">暂时无法恢复登录状态，请稍后刷新或重新登录。</p>}
-          <button
-            className={styles.switch}
-            type="button"
+          <Button
+            variant="secondary"
             onClick={() => setMode(mode === 'register' ? 'login' : 'register')}
           >
             {mode === 'register' ? '已有账号？去登录' : '还没有账号？去注册'}
-          </button>
+          </Button>
           {mode === 'register' ? <RegistrationPanel /> : <LoginPanel />}
         </>
       )}
-    </section>
+    </Page>
   );
 }
 

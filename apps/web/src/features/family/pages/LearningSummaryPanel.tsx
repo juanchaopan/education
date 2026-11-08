@@ -1,32 +1,32 @@
 import { useState } from 'react';
 import { learningSummaryPageSize } from '@education/contracts';
+import { Actions } from '../../../shared/ui/Actions';
+import { Button } from '../../../shared/ui/Button';
+import { Loading } from '../../../shared/ui/Loading';
+import { SelectField } from '../../../shared/ui/SelectField';
 import { LearningSummaryList } from '../components/LearningSummaryList';
+import { Panel } from '../components/Panel';
 import { useFamilyChildren } from '../data-access/useChildAccess';
 import { useLearningSummary } from '../data-access/useLearningSummary';
-import card from '../components/RegistrationForm.module.css';
-import panel from '../components/RegistrationKeyCard.module.css';
 import styles from '../components/LearningSummary.module.css';
 
 export function LearningSummaryPanel({ csrf }: { csrf: string }) {
   return (
-    <section className={`${card.card} ${panel.panel}`} aria-labelledby="learning-summary-title">
-      <h2 id="learning-summary-title">学习摘要</h2>
+    <Panel titleId="learning-summary-title" title="学习摘要">
       <LearningSummaryBody csrf={csrf} />
-    </section>
+    </Panel>
   );
 }
 
 function LearningSummaryBody({ csrf }: { csrf: string }) {
   const family = useFamilyChildren(csrf);
   const [selection, select] = useState({ childId: '', offset: 0 });
-  if (family.isPending) return <p role="status">正在加载孩子列表…</p>;
+  if (family.isPending) return <Loading label="正在加载孩子列表…" />;
   if (family.isError)
     return (
       <>
         <p role="alert">暂时无法加载孩子列表。</p>
-        <button type="button" onClick={() => void family.refetch()}>
-          刷新孩子列表
-        </button>
+        <Button onClick={() => void family.refetch()}>刷新孩子列表</Button>
       </>
     );
   const { children } = family.data;
@@ -35,9 +35,9 @@ function LearningSummaryBody({ csrf }: { csrf: string }) {
   return (
     <>
       <div className={styles.picker}>
-        <label htmlFor="learning-summary-child">选择孩子</label>
-        <select
+        <SelectField
           id="learning-summary-child"
+          label="选择孩子"
           value={childId}
           onChange={(event) => select({ childId: event.target.value, offset: 0 })}
         >
@@ -47,7 +47,7 @@ function LearningSummaryBody({ csrf }: { csrf: string }) {
               {nickname}
             </option>
           ))}
-        </select>
+        </SelectField>
       </div>
       {childId && (
         <SummaryPage
@@ -75,24 +75,20 @@ function SummaryPage({
   const summary = useLearningSummary(csrf, childId, offset);
   return (
     <>
-      {summary.isPending && <p role="status">正在加载学习记录…</p>}
+      {summary.isPending && <Loading label="正在加载学习记录…" />}
       {summary.isError && <p role="alert">{summary.error.message}</p>}
       {summary.isSuccess && <LearningSummaryList problems={summary.data.problems} />}
-      <div className={panel.actions}>
+      <Actions>
         {offset > 0 && (
-          <button type="button" onClick={() => onPage(offset - learningSummaryPageSize)}>
-            上一页
-          </button>
+          <Button onClick={() => onPage(offset - learningSummaryPageSize)}>上一页</Button>
         )}
         {summary.isSuccess && summary.data.hasMore && (
-          <button type="button" onClick={() => onPage(offset + learningSummaryPageSize)}>
-            下一页
-          </button>
+          <Button onClick={() => onPage(offset + learningSummaryPageSize)}>下一页</Button>
         )}
-        <button type="button" disabled={summary.isFetching} onClick={() => void summary.refetch()}>
+        <Button disabled={summary.isFetching} onClick={() => void summary.refetch()}>
           刷新学习记录
-        </button>
-      </div>
+        </Button>
+      </Actions>
     </>
   );
 }

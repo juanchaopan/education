@@ -1,7 +1,11 @@
 import type { AiConsentChange, AiConsentView } from '@education/contracts';
+import { Actions } from '../../../shared/ui/Actions';
+import { Button } from '../../../shared/ui/Button';
+import { Hint } from '../../../shared/ui/Hint';
+import { Loading } from '../../../shared/ui/Loading';
+import { Notice } from '../../../shared/ui/Notice';
+import { Panel } from './Panel';
 import { ParentPasswordForm } from './ParentPasswordForm';
-import card from './RegistrationForm.module.css';
-import panel from './RegistrationKeyCard.module.css';
 import styles from './AiConsentCard.module.css';
 
 type Policy = AiConsentView['policies'][number];
@@ -41,8 +45,7 @@ const budgets: Record<AiConsentView['tutoringBudget'], string> = {
 export function AiConsentCard(props: Props) {
   const { view, pending, onChange } = props;
   return (
-    <section className={`${card.card} ${panel.panel}`} aria-labelledby="ai-consent-title">
-      <h2 id="ai-consent-title">外部 AI 授权</h2>
+    <Panel titleId="ai-consent-title" title="外部 AI 授权">
       <p>按用途为本家庭的孩子选择授权。服务启用后，才会处理已授权的输入。</p>
       <p>撤回后将停止新的发送。此前已发送的内容仍按供应商的保留政策处理。</p>
       {view && <p role="status">{budgets[view.tutoringBudget]}</p>}
@@ -51,12 +54,8 @@ export function AiConsentCard(props: Props) {
           查看 OpenAI 的数据保留说明
         </a>
       </p>
-      {props.loading && <p role="status">正在确认授权状态…</p>}
-      {props.error && (
-        <p role="alert" className={card.notice}>
-          {props.error}
-        </p>
-      )}
+      {props.loading && <Loading label="正在确认授权状态…" />}
+      {props.error && <Notice tone="error">{props.error}</Notice>}
       {view?.policies.map((policy) => (
         <PolicyCard
           key={policy.scope}
@@ -76,12 +75,12 @@ export function AiConsentCard(props: Props) {
           onSubmit={props.onConfirm}
         />
       )}
-      <div className={panel.actions}>
-        <button type="button" disabled={pending} onClick={props.onRefresh}>
+      <Actions>
+        <Button disabled={pending} onClick={props.onRefresh}>
           刷新授权状态
-        </button>
-      </div>
-    </section>
+        </Button>
+      </Actions>
+    </Panel>
   );
 }
 
@@ -100,9 +99,9 @@ function PolicyCard({
   return (
     <div role="group" aria-labelledby={label} className={styles.policy}>
       <h3 id={label}>{title}</h3>
-      <p className={card.hint}>
+      <Hint>
         {policy.provider} · 政策版本 {policyVersion}
-      </p>
+      </Hint>
       <p className={styles.availability}>{availability[policy.availability]}</p>
       <dl>
         <dt>会发送什么</dt>
@@ -117,18 +116,18 @@ function PolicyCard({
       <p role="status">
         <strong>{states[state]}</strong>
       </p>
-      <div className={panel.actions}>
+      <Actions>
         {state !== 'granted' && (
-          <button type="button" disabled={disabled} onClick={() => update(true)}>
+          <Button disabled={disabled} onClick={() => update(true)}>
             授权 {title}
-          </button>
+          </Button>
         )}
         {(state === 'granted' || state === 'policy-changed') && (
-          <button type="button" disabled={disabled} onClick={() => update(false)}>
+          <Button disabled={disabled} onClick={() => update(false)}>
             撤回 {title}授权
-          </button>
+          </Button>
         )}
-      </div>
+      </Actions>
     </div>
   );
 }
