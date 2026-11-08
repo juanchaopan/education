@@ -1,11 +1,34 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { arrive } from '../../lessons/garden-balance/garden-story';
+import type { ComponentProps } from 'react';
+import type { Handling } from '../../interaction/stage-activation';
+import { gardenLook } from '../../lessons/garden-balance/garden-look';
+import { arrive, type GardenState } from '../../lessons/garden-balance/garden-story';
 import { lines } from '../../lessons/garden-balance/script';
-import { GardenStage } from './GardenStage';
+import { LessonStage } from '../lesson-stage/LessonStage';
+import { Fireflies } from './garden-art';
+import { GardenDefs } from './garden-defs';
+import { GardenScene } from './garden-scenes';
+
+type FilmArgs = Omit<ComponentProps<typeof LessonStage>, 'look' | 'shot' | 'children'> & {
+  state: GardenState;
+  handling: Handling;
+};
+
+const defs = <GardenDefs />;
+const fireflies = <Fireflies />;
+
+// The garden scenes on the lesson stage, as the lesson page shows them.
+function GardenFilm({ state, handling, ...stage }: FilmArgs) {
+  return (
+    <LessonStage {...stage} look={gardenLook} shot={state.shot} defs={defs} ambience={fireflies}>
+      <GardenScene state={state} handling={handling} />
+    </LessonStage>
+  );
+}
 
 const meta = {
   title: 'Learning/Garden balance',
-  component: GardenStage,
+  component: GardenFilm,
   args: {
     state: arrive('leaves').state,
     handling: {},
@@ -16,7 +39,7 @@ const meta = {
     onReplay: () => {},
     onActivate: () => {},
   },
-} satisfies Meta<typeof GardenStage>;
+} satisfies Meta<typeof GardenFilm>;
 export default meta;
 type Story = StoryObj<typeof meta>;
 
