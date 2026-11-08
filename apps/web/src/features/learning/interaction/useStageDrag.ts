@@ -13,12 +13,12 @@ export type Activation = Readonly<{ part?: string; key?: string; place?: string 
 // the stage coordinates of the pointer.
 export type StageGhost<Look> = Look & Readonly<{ x: number; y: number }>;
 
-// A problem's props: the kinds the child can pick up and how each looks while
-// carried, the move that putting one on a place makes, and the move that
+// A problem's props: the kinds the child can pick up, each with how it looks
+// while carried; the move that putting one on a place makes; and the move that
 // tapping a prop makes. A place or a prop without a move does nothing.
-export type StageProps<Move, Piece extends string, Look> = Readonly<{
-  lifts: Readonly<Record<Piece, Look>>;
-  drop: (piece: Piece, place: string) => Move | undefined;
+export type StageProps<Move, Lifts extends Readonly<Record<string, object>>> = Readonly<{
+  lifts: Lifts;
+  drop: (piece: keyof Lifts & string, place: string) => Move | undefined;
   tap: (part: string) => Move | undefined;
 }>;
 
@@ -26,6 +26,17 @@ type Film<Move> = { state: { shot: string }; act: (move: Move) => void };
 type Held<Piece> = { shot: string; key: string; piece: Piece };
 type Drag<Look> = { key: string; ghost: StageGhost<Look>; over?: string };
 
+// Stage props carry `data-part` and `data-key`, and the places they can be put
+// carry `data-place`; a tap on anything inside one counts as a tap on it.
+export function activationAt(target: EventTarget | null): Activation | undefined {
+  if (!(target instanceof Element)) return;
+  const part = target.closest<SVGElement>('[data-part]');
+  if (part) return { part: part.dataset.part, key: part.dataset.key };
+  const place = target.closest<SVGElement>('[data-place]');
+  if (place) return { place: place.dataset.place };
+}
+
+// The place under the pointer, even where a prop lies on it.
 function placeAt({ clientX, clientY }: PointerEvent) {
   return document.elementFromPoint(clientX, clientY)?.closest<SVGElement>('[data-place]')?.dataset
     .place;
@@ -37,18 +48,12 @@ function toWorld(surface: SVGSVGElement, { clientX, clientY }: PointerEvent) {
   return matrix ? point.matrixTransform(matrix) : point;
 }
 
-function pieceAt(target: EventTarget | null) {
-  const node = target instanceof Element ? target.closest<SVGElement>('[data-part]') : null;
-  return { part: node?.dataset.part, key: node?.dataset.key };
-}
-
 // Putting a prop on a place, by dragging it there or by tapping it and then
 // the place; tapping any other prop acts on it directly. The stage is the SVG
-// behind `world`, whose props carry `data-part` and `data-key` and whose places
-// carry `data-place`. A choice made in an earlier scene no longer counts.
+// behind `world`. A choice made in an earlier scene no longer counts.
 export function useStageDrag<Move, Piece extends string, Look extends object>(
   film: Film<Move>,
-  props: StageProps<Move, Piece, Look>,
+  props: StageProps<Move, Readonly<Record<Piece, Look>>>,
 ) {
   const world = useRef<SVGSVGElement>(null);
   const [drag, setDrag] = useState<Drag<Look>>();
@@ -72,7 +77,7 @@ export function useStageDrag<Move, Piece extends string, Look extends object>(
     const surface = world.current;
     if (!surface) return;
     return bindObjectDrag(surface, (event) => {
-      const { part, key } = pieceAt(event.target);
+      const { part, key } = activationAt(event.target) ?? {};
       const lifted = lift(part);
       if (!lifted || !key) return;
       return {

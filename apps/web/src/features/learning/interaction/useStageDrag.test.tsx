@@ -4,14 +4,15 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { useStageDrag, type StageProps } from './useStageDrag';
 
 type Move = { plant: 'seed'; place: 'pot' } | 'ring';
+type Look = { size: number };
 
-const props: StageProps<Move, 'seed', { size: number }> = {
+const props: StageProps<Move, { seed: Look }> = {
   lifts: { seed: { size: 30 } },
   drop: (piece, place) => (place === 'pot' ? { plant: piece, place } : undefined),
   tap: (part) => (part === 'bell' ? 'ring' : undefined),
 };
 
-type Drag = Omit<ReturnType<typeof useStageDrag<Move, 'seed', { size: number }>>, 'world'>;
+type Drag = Omit<ReturnType<typeof useStageDrag<Move, 'seed', Look>>, 'world'>;
 type Film = { state: { shot: string }; act: (move: Move) => void };
 
 function Stage({ film, seen }: { film: Film; seen: (drag: Drag) => void }) {

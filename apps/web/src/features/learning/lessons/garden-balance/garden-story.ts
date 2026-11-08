@@ -1,5 +1,4 @@
 import type { FilmScene, FilmStory, Reaction as FilmReaction } from '../../interaction/lesson-film';
-import type { LessonFilm } from '../../interaction/useLessonFilm';
 import { entryLines, lines, type LineId, type Shot } from './script';
 
 export type Scene = FilmScene<Shot>;
@@ -14,7 +13,7 @@ export type GardenState = Readonly<{
   replaced: number;
 }>;
 
-export type Reaction = FilmReaction<GardenState, Shot, LineId>;
+type Reaction = FilmReaction<GardenState, Shot, LineId>;
 
 type Drop = { kind: 'drop'; part: 'leaf' | 'apple'; place: 'basket' };
 type Tap = { kind: 'tap'; part: 'exchange' | 'replace' };
@@ -114,5 +113,3 @@ export const gardenStory: FilmStory<GardenState, Shot, LineId, Move> = {
   arrive,
   respond,
 };
-
-export type GardenFilm = LessonFilm<GardenState, Shot, Move>;

@@ -6,13 +6,9 @@ import { useLessonDraft } from '../data-access/useLessonDraft';
 import { useLessonFilm } from '../interaction/useLessonFilm';
 import { useStageDrag } from '../interaction/useStageDrag';
 import { gardenProps } from '../lessons/garden-balance/garden-props';
-import {
-  gardenStory,
-  savesProgress,
-  type GardenFilm,
-} from '../lessons/garden-balance/garden-story';
+import { gardenStory, savesProgress } from '../lessons/garden-balance/garden-story';
 import { gardenBalance, isShot, teacher, type Shot } from '../lessons/garden-balance/script';
-import { GardenPanels } from './GardenPanels';
+import { GardenPanels, type GardenFilm } from './GardenPanels';
 import { LessonSignInNotice } from './LessonSignInNotice';
 import styles from './GardenBalanceLesson.module.css';
 
@@ -48,13 +44,14 @@ function GardenScreen({ film, start }: { film: GardenFilm; start: Start }) {
   );
 }
 
-type PlayProps = {
+type LessonBodyProps = {
   start?: Start;
   onArrive?: (shot: Shot) => void;
   panels: (film: GardenFilm) => ReactNode;
 };
 
-function GardenPlay({ start = {}, onArrive, panels }: PlayProps) {
+// The playing film with whatever goes beneath it.
+function GardenLessonBody({ start = {}, onArrive, panels }: LessonBodyProps) {
   const film = useLessonFilm(gardenStory, { onArrive });
   return (
     <div className={styles.lesson}>
@@ -74,7 +71,7 @@ function SignedInGarden({ scope }: { scope: LearningScope }) {
   const saved = draft.status === 'saved' ? draft.content.stepId : undefined;
   const resume = saved && isShot(saved) && saved !== 'leaves' ? saved : undefined;
   return (
-    <GardenPlay
+    <GardenLessonBody
       start={{ resume, finding: draft.status === 'loading' }}
       onArrive={(shot) => {
         if (savesProgress(shot)) void draft.saveAs({ stepId: shot, drawing: [] });
@@ -87,6 +84,6 @@ function SignedInGarden({ scope }: { scope: LearningScope }) {
 // 菜园天平：一棵青菜和几根黄瓜一样重。Anyone can watch and play the scenes;
 // saving, questions and the answer need a signed-in child.
 export function GardenBalanceLesson({ csrf }: { csrf?: string }) {
-  if (!csrf) return <GardenPlay panels={() => <LessonSignInNotice teacher={teacher} />} />;
+  if (!csrf) return <GardenLessonBody panels={() => <LessonSignInNotice teacher={teacher} />} />;
   return <SignedInGarden scope={{ ...gardenBalance, csrf }} />;
 }

@@ -1,7 +1,8 @@
 import { DraftNotice } from '../components/DraftNotice';
 import type { LearningScope } from '../data-access/learning-request';
 import type { useLessonDraft } from '../data-access/useLessonDraft';
-import type { GardenFilm } from '../lessons/garden-balance/garden-story';
+import type { LessonFilm } from '../interaction/useLessonFilm';
+import type { GardenState, Move } from '../lessons/garden-balance/garden-story';
 import {
   answerChoices,
   answerHints,
@@ -9,9 +10,12 @@ import {
   answerWords,
   guidance,
   teacher,
+  type Shot,
 } from '../lessons/garden-balance/script';
 import { SceneQuestions } from './SceneQuestions';
 import { SpokenFinalAnswer } from './SpokenFinalAnswer';
+
+export type GardenFilm = LessonFilm<GardenState, Shot, Move>;
 
 type Props = {
   scope: LearningScope;

@@ -1,16 +1,22 @@
 import type { KeyboardEvent, MouseEvent, Ref } from 'react';
-import type { Activation, Handling, StageGhost } from '../../interaction/useStageDrag';
+import {
+  activationAt,
+  type Activation,
+  type Handling,
+  type StageGhost,
+} from '../../interaction/useStageDrag';
 import rabbit from '../../lessons/garden-balance/assets/garden-rabbit.webp';
 import type { GardenState } from '../../lessons/garden-balance/garden-story';
-import { Fireflies, SpriteUse, type Sprite } from './garden-art';
+import { Fireflies, SpriteUse } from './garden-art';
 import { GardenDefs } from './garden-defs';
 import { ExchangeScene, SwapScene, WeighScene } from './garden-scenes';
+import type { MovableLook } from './movable-props';
 import styles from './GardenStage.module.css';
 
 type Props = {
   state: GardenState;
   handling: Handling;
-  ghost?: StageGhost<Readonly<{ sprite: Sprite; size: number }>>;
+  ghost?: StageGhost<MovableLook>;
   caption?: string;
   speaking: boolean;
   // Phones in portrait see the scale and the basket, cropped from the sides.
@@ -29,14 +35,6 @@ const title = '一棵青菜有多重？';
 // while a prop is dragged across the scene.
 const defs = <GardenDefs />;
 const fireflies = <Fireflies />;
-
-function activation(target: EventTarget): Activation | undefined {
-  if (!(target instanceof Element)) return;
-  const part = target.closest<SVGElement>('[data-part]');
-  if (part) return { part: part.dataset.part, key: part.dataset.key };
-  const place = target.closest<SVGElement>('[data-place]');
-  if (place) return { place: place.dataset.place };
-}
 
 function Scene({ state, handling }: { state: GardenState; handling: Handling }) {
   if (state.shot === 'leaves' || state.shot === 'apples')
@@ -86,7 +84,7 @@ function Overlay({ opening, entryLabel, speaking, onEnter, onReplay }: OverlayPr
 export function GardenStage(props: Props) {
   const { state, handling, ghost, caption, speaking, narrow, worldRef, onActivate } = props;
   const choose = (event: MouseEvent | KeyboardEvent) => {
-    const target = activation(event.target);
+    const target = activationAt(event.target);
     if (target) onActivate(target);
   };
   return (
