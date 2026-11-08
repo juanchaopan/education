@@ -1,0 +1,76 @@
+name: staging-alerts
+on:
+  # Twice an hour, one of them right after the hourly maintenance run, which
+  # has already woken the database: each probe wakes the free Neon compute.
+  schedule:
+    - cron: '19,49 * * * *'
+  workflow_run:
+    workflows: [staging, staging-backup, staging-mail-retention, staging-restore]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      drill:
+        description: 告警演练：探测一个必然无法解析的保留域名，确认告警 issue 会打开；之后不带演练再运行一次即关闭
+        type: boolean
+        default: false
+permissions:
+  contents: read
+# One queue per alert source. GitHub keeps only the newest waiting run in a
+# group, so events from different workflows never replace each other, and a
+# replaced run of the same workflow is older than the one that replaced it.
+concurrency:
+  group: staging-alerts-${{ github.event.workflow_run.name || 'health' }}
+  cancel-in-progress: false
+# The scripts need only Node's built-in fetch, so the runner's own Node runs
+# them from a checkout of the scripts folder.
+jobs:
+  configuration:
+    if: vars.STAGING_ENABLED != 'true' && github.event_name != 'workflow_run'
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo 'Staging is not enabled, so nothing is probed and no alert channel is active.' >> "$GITHUB_STEP_SUMMARY"
+  health:
+    if: vars.STAGING_ENABLED == 'true' && github.event_name != 'workflow_run'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          persist-credentials: false
+          sparse-checkout: scripts
+      - name: Probe staging and open or close its alert
+        run: node scripts/staging-alerts.mjs health
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          STAGING_ORIGIN: ${{ vars.STAGING_ORIGIN || 'https://education-access-spike.hyp.app' }}
+          ALERT_DRILL: ${{ inputs.drill == true }}
+  # A run that was skipped or cancelled as a whole says nothing about staging.
+  workflow:
+    if: >-
+      vars.STAGING_ENABLED == 'true' && github.event_name == 'workflow_run' &&
+      github.event.workflow_run.conclusion != 'skipped' &&
+      github.event.workflow_run.conclusion != 'cancelled'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          persist-credentials: false
+          sparse-checkout: scripts
+      - name: Open or close the alerts for the completed staging run
+        run: node scripts/staging-alerts.mjs workflow
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          WORKFLOW_NAME: ${{ github.event.workflow_run.name }}
+          WORKFLOW_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          WORKFLOW_RUN_ID: ${{ github.event.workflow_run.id }}
+          WORKFLOW_RUN_URL: ${{ github.event.workflow_run.html_url }}

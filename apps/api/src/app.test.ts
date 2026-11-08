@@ -1,5 +1,6 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { buildApp } from './app.js';
+import { loggedApp } from './log-fixtures.js';
 import { readConfig } from './shared/config.js';
 
 const apps: ReturnType<typeof buildApp>[] = [];
@@ -58,15 +59,13 @@ describe('framework HTTP contract', () => {
     expect((await app.inject('/%61pi/v1/problems')).statusCode).toBe(200);
   });
   it('treats a failed readiness check as closed for API requests', async () => {
-    const app = buildApp({
+    const { app, text } = loggedApp(apps, {
       ready: async () => {
         throw new Error('relation "service_gate" does not exist');
       },
     });
-    apps.push(app);
-    const warning = vi.spyOn(app.log, 'warn');
     expect((await app.inject('/api/v1/problems')).statusCode).toBe(503);
-    expect(JSON.stringify(warning.mock.calls)).not.toContain('service_gate');
+    expect(text()).not.toContain('service_gate');
   });
   it('does not reveal database errors or report readiness without a configured check', async () => {
     for (const ready of [
@@ -93,18 +92,16 @@ describe('framework HTTP contract', () => {
       [new Error(privateMessage), 'TIMEOUT'],
       [Object.assign(new Error('private password'), { code: 'private-password' }), 'UNKNOWN'],
     ] as const) {
-      const app = buildApp({
+      const { app, text, completed } = loggedApp(apps, {
         ready: async () => {
           throw error;
         },
       });
-      apps.push(app);
-      const warning = vi.spyOn(app.log, 'warn');
       const response = await app.inject('/health/ready');
       expect(response.statusCode).toBe(503);
       expect(response.json()).toEqual({ status: 'unavailable' });
-      expect(warning).toHaveBeenCalledWith({ code }, 'Database readiness unavailable');
-      expect(JSON.stringify(warning.mock.calls)).not.toContain('password');
+      expect(completed()[0]).toMatchObject({ outcome: 'database', code });
+      expect(text()).not.toContain('password');
     }
   });
   it('enables paid AI by default without making a provider call', () => {

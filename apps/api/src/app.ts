@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { registerChildAccess } from './identity/routes/child-access.js';
 import type { ChildAccessService } from './identity/services/child-access.js';
 import { registerAiConsent } from './identity/routes/ai-consent.js';
@@ -22,13 +23,19 @@ import { registerVerification } from './identity/routes/verification.js';
 import type { VerificationService } from './identity/services/verification.js';
 import { registerParentSessions } from './identity/routes/session.js';
 import type { SessionService } from './identity/services/session.js';
-import Fastify, { LogController, type FastifyInstance, type FastifyError } from 'fastify';
+import Fastify, {
+  LogController,
+  type FastifyInstance,
+  type FastifyError,
+  type FastifyRequest,
+} from 'fastify';
 import { Type } from '@sinclair/typebox';
 import { registerCatalog } from './catalog/routes/catalog.js';
 import { registerParentRegistration } from './identity/routes/registration.js';
 import type { RegistrationService } from './identity/services/registration.js';
 import { RequestError } from './shared/request-error.js';
-import { readinessErrorCode } from './shared/readiness-error.js';
+import { databaseErrorCode } from './shared/database-error.js';
+import { noteError, noteRequest, registerRequestLog } from './shared/request-log.js';
 import { registerDrafts } from './learning/routes/draft.js';
 import type { DraftService } from './learning/services/draft.js';
 import { registerAnswering } from './learning/routes/answer.js';
@@ -66,23 +73,31 @@ type AppOptions = {
   reauthentication?: ReauthenticationService;
   ready?: Ready;
   revision?: string;
+  // Where structured log lines go; standard output when not given.
+  logStream?: { write(line: string): void };
 };
 export function buildApp(options: AppOptions = {}) {
   const app = Fastify({
     bodyLimit: 1_048_576,
-    logController: new LogController({ disableRequestLogging: true }),
+    genReqId: () => randomUUID(),
+    logController: new LogController({
+      disableRequestLogging: true,
+      requestIdLogLabel: 'requestId',
+    }),
     ajv: { customOptions: { removeAdditional: false, coerceTypes: false } },
     logger: {
+      ...(options.logStream && { stream: options.logStream }),
       redact: ['req.headers.authorization', 'req.headers.cookie', 'res.headers.set-cookie'],
     },
   });
+  registerRequestLog(app);
   app.get(
     '/health/live',
     { schema: { response: { 200: Type.Object({ status: Type.Literal('ok') }) } } },
     () => ({ status: 'ok' }),
   );
-  app.get('/health/ready', async (_request, reply) => {
-    const ready = await isReady(app, options.ready);
+  app.get('/health/ready', async (request, reply) => {
+    const ready = await isReady(request, options.ready);
     return reply
       .code(ready ? 200 : 503)
       .header('Cache-Control', 'no-store')
@@ -104,14 +119,20 @@ export function buildApp(options: AppOptions = {}) {
   return app;
 }
 
-// A failed check counts as not ready; only an allowlisted error category is logged.
-async function isReady(app: FastifyInstance, ready: Ready | undefined) {
+// Whether the database is ready, noting why not on the request. A database
+// that answers can still be closed for maintenance: its migration is behind or
+// its service gate is shut. A check that fails is a database failure, and only
+// an allowlisted error code is kept. Without a configured check nothing is
+// ready.
+async function isReady(request: FastifyRequest, ready: Ready | undefined) {
+  if (!ready) return false;
   try {
-    return (await ready?.()) === true;
+    if (await ready()) return true;
+    noteRequest(request, { outcome: 'maintenance' });
   } catch (error) {
-    app.log.warn({ code: readinessErrorCode(error) }, 'Database readiness unavailable');
-    return false;
+    noteRequest(request, { outcome: 'database', code: databaseErrorCode(error) ?? 'UNKNOWN' });
   }
+  return false;
 }
 
 // With a database configured, the API answers only while the database is ready.
@@ -122,7 +143,7 @@ async function isReady(app: FastifyInstance, ready: Ready | undefined) {
 function registerServiceGate(app: FastifyInstance, ready: Ready | undefined) {
   if (!ready) return;
   app.addHook('onRequest', async (request, reply) => {
-    if (!request.routeOptions.url?.startsWith('/api/') || (await isReady(app, ready))) return;
+    if (!request.routeOptions.url?.startsWith('/api/') || (await isReady(request, ready))) return;
     return reply
       .code(503)
       .header('Cache-Control', 'no-store')
@@ -137,11 +158,13 @@ function httpErrorStatus(error: FastifyError) {
   return 503;
 }
 
+// The request log records each error's category; the reply carries only a
+// message meant for families.
 function registerErrors(app: FastifyInstance) {
   app.setErrorHandler<FastifyError>((error, request, reply) => {
     const invalid = error.validation !== undefined;
     const status = error instanceof RequestError ? error.statusCode : httpErrorStatus(error);
-    request.log.error({ requestId: request.id, code: error.code }, 'Request failed');
+    if (!(error instanceof RequestError)) noteError(request, error, status);
     if (status === 429) reply.header('Retry-After', '60');
     void reply
       .code(status)

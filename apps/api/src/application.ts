@@ -38,6 +38,7 @@ import {
   deletionLedgerDatabase,
   type DatabaseSource,
 } from './shared/database-config.js';
+import { databaseErrorCode } from './shared/database-error.js';
 import { readRevision } from './shared/revision.js';
 import { createDrafts } from './draft-application.js';
 import { createAnswering } from './answer-application.js';
@@ -80,7 +81,10 @@ export async function createApplication(env: NodeJS.ProcessEnv = process.env) {
     ready: pool ? await createReadinessCheck(pool) : undefined,
     revision: await readRevision(),
   });
-  closePoolsWith(app, [pool, ledgerPool]);
+  closePoolsWith(app, [
+    { name: 'application', pool },
+    { name: 'deletion-ledger', pool: ledgerPool },
+  ]);
   if (env.VERCEL !== '1') await registerWeb(app);
   return app;
 }
@@ -103,12 +107,21 @@ function createPools(env: NodeJS.ProcessEnv, config: Config) {
   };
 }
 
-// Idle connections can fail during a database restart without ending the HTTP process.
-function closePoolsWith(app: ReturnType<typeof buildApp>, pools: (pg.Pool | undefined)[]) {
-  for (const pool of pools)
-    pool?.on('error', () => app.log.error('Database connection unavailable'));
+// Idle connections can fail during a database restart without ending the HTTP
+// process. The log names the database and an allowlisted error code only.
+function closePoolsWith(
+  app: ReturnType<typeof buildApp>,
+  pools: { name: string; pool: pg.Pool | undefined }[],
+) {
+  for (const { name, pool } of pools)
+    pool?.on('error', (error) =>
+      app.log.error(
+        { database: name, outcome: 'database', code: databaseErrorCode(error) ?? 'UNKNOWN' },
+        'Database connection unavailable',
+      ),
+    );
   app.addHook('onClose', async () => {
-    await Promise.all(pools.map((pool) => pool?.end()));
+    await Promise.all(pools.map(({ pool }) => pool?.end()));
   });
 }
 
