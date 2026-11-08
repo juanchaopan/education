@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import type { SavedDraft } from '@education/contracts';
+import { useReloadReadiness, type Readiness } from '../../../shared/lib/reload-readiness';
 import {
   DraftSizeError,
   requestDraft,
@@ -34,9 +35,16 @@ function statusFor(
   return base ? 'saved' : 'clean';
 }
 
-export function useLessonDraft({ id, version, csrf }: DraftScope, initial: LocalDraft) {
-  const scope = useMemo(() => ({ id, version, csrf }), [id, version, csrf]);
-  const load = useQuery({
+// What a reload would do to the draft: an edit not yet saved, or kept through
+// a conflict until the child chooses, would be lost.
+function readinessOf(status: DraftStatus): Readiness {
+  if (status === 'unsynced' || status === 'conflict') return 'unsaved';
+  return status === 'saving' ? 'saving' : 'ready';
+}
+
+// The draft last saved for this scope, fetched once as the lesson opens.
+function useSavedDraft(scope: DraftScope) {
+  return useQuery({
     queryKey: ['lesson-draft', scope],
     queryFn: ({ signal }) => requestDraft(scope, undefined, signal),
     networkMode: 'always',
@@ -44,6 +52,11 @@ export function useLessonDraft({ id, version, csrf }: DraftScope, initial: Local
     staleTime: Infinity,
     gcTime: 0,
   });
+}
+
+export function useLessonDraft({ id, version, csrf }: DraftScope, initial: LocalDraft) {
+  const scope = useMemo(() => ({ id, version, csrf }), [id, version, csrf]);
+  const load = useSavedDraft(scope);
   const [stored, setStored] = useState<DraftState>({ scope });
   const state = stored.scope === scope ? stored : { scope };
   if (stored.scope !== scope) setStored(state);
@@ -65,6 +78,7 @@ export function useLessonDraft({ id, version, csrf }: DraftScope, initial: Local
       local ?? state.local,
     );
   }
+  useReloadReadiness(readinessOf(status), () => void run('save'));
 
   function edit(local: LocalDraft) {
     if (base !== undefined)

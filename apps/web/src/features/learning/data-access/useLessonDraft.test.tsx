@@ -1,6 +1,9 @@
 import type { SavedDraft } from '@education/contracts';
 import { act, renderHook, waitFor } from '@testing-library/react';
+import type { PropsWithChildren } from 'react';
 import { afterEach, expect, it, vi } from 'vitest';
+import { usePageReadiness } from '../../../shared/lib/reload-readiness';
+import { ReloadReadinessProvider } from '../../../shared/lib/ReloadReadinessProvider';
 import { queryWrapper } from '../../../test/query-wrapper';
 import { useLessonDraft } from './useLessonDraft';
 
@@ -21,6 +24,26 @@ function setup(fetch: ReturnType<typeof vi.fn>) {
     initialProps: { csrf: 'one' },
     wrapper: queryWrapper(),
   });
+}
+
+// The draft on a page that reports what a reload would lose, with the page's
+// own view of it.
+function setupOnPage(fetch: ReturnType<typeof vi.fn>) {
+  vi.stubGlobal('fetch', fetch);
+  const Query = queryWrapper();
+  return renderHook(
+    () => ({
+      draft: useLessonDraft({ id: 'fixture', version: 1, csrf: 'one' }, initial),
+      page: usePageReadiness(),
+    }),
+    {
+      wrapper: ({ children }: PropsWithChildren) => (
+        <Query>
+          <ReloadReadinessProvider>{children}</ReloadReadinessProvider>
+        </Query>
+      ),
+    },
+  );
 }
 
 it('keeps ink on failure, retries it, and restores the acknowledged step on return', async () => {
@@ -144,4 +167,52 @@ it('records and saves a step reached in one call, on top of the saved revision',
   });
   expect(result.current.content).toEqual(reached);
   expect(result.current.status).toBe('saved');
+});
+
+it('tells the page an edit a reload would lose, and saves it when the page asks', async () => {
+  let finish!: (response: Response) => void;
+  const fetch = vi
+    .fn()
+    .mockResolvedValueOnce(reply(null))
+    .mockRejectedValueOnce(new TypeError())
+    .mockImplementationOnce(
+      () =>
+        new Promise<Response>((resolve) => {
+          finish = resolve;
+        }),
+    );
+  const { result } = setupOnPage(fetch);
+  await waitFor(() => expect(result.current.draft.status).toBe('clean'));
+  expect(result.current.page.readiness).toBe('ready');
+  act(() => result.current.draft.edit(edit));
+  await waitFor(() => expect(result.current.page.readiness).toBe('unsaved'));
+  await act(async () => {
+    await result.current.draft.save();
+  });
+  expect(result.current.page.readiness).toBe('unsaved');
+  act(() => result.current.page.saveUnsaved());
+  await waitFor(() => expect(result.current.page.readiness).toBe('saving'));
+  expect(JSON.parse(fetch.mock.calls[2]![1].body).content).toEqual(edit);
+  await act(async () => finish(reply({ ...remote, content: edit })));
+  await waitFor(() => expect(result.current.page.readiness).toBe('ready'));
+  expect(result.current.draft.status).toBe('saved');
+});
+
+it('tells the page an edit kept through a conflict is unsaved until the child chooses', async () => {
+  const fetch = vi
+    .fn()
+    .mockResolvedValueOnce(reply(null))
+    .mockResolvedValueOnce(reply(remote, 409));
+  const { result } = setupOnPage(fetch);
+  await waitFor(() => expect(result.current.draft.status).toBe('clean'));
+  act(() => result.current.draft.edit(edit));
+  await act(async () => {
+    await result.current.draft.save();
+  });
+  expect(result.current.draft.status).toBe('conflict');
+  await waitFor(() => expect(result.current.page.readiness).toBe('unsaved'));
+  act(() => result.current.page.saveUnsaved());
+  expect(fetch).toHaveBeenCalledTimes(2);
+  act(() => result.current.draft.resolve('remote'));
+  await waitFor(() => expect(result.current.page.readiness).toBe('ready'));
 });
