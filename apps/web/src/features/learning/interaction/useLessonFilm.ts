@@ -29,9 +29,6 @@ export type LessonFilm<State, Shot extends string, Move> = Voice &
   Readonly<{
     state: State;
     caption?: string;
-    // Whether the teacher is telling lines the child is hearing, the short
-    // pauses between them included.
-    playing: boolean;
     // Starts the film at its first scene, or at a saved one.
     enter: (shot?: Shot) => void;
     act: (move: Move) => void;
@@ -74,8 +71,9 @@ function useFilmRuns() {
 // the tones. A new event cuts in on whatever the teacher was still saying, and
 // a scene that follows its lines starts only once they are heard to the end;
 // a line that did not come out holds the scene until the child hears it again.
-// While the child hears the teacher, the page knows a reload would cut the
-// film off. Leaving the lesson stops whatever was still to be said.
+// While the teacher tells lines the child hears, the short pauses between
+// them included, the page knows a reload would cut the film off. Leaving the
+// lesson stops whatever was still to be said.
 export function useLessonFilm<
   State extends Readonly<{ shot: FilmScene<Shot> }>,
   Shot extends string,
@@ -112,14 +110,12 @@ export function useLessonFilm<
   }
 
   const voice = voiceOf(narration);
-  const playing = telling && !voice.paused && !voice.failure;
-  useReloadReadiness(playing ? 'playing' : 'ready');
+  useReloadReadiness(telling && !voice.paused && !voice.failure ? 'playing' : 'ready');
 
   return {
     ...voice,
     state,
     caption,
-    playing,
     enter(shot = story.first) {
       chime.play(startTones);
       apply(story.arrive(shot));

@@ -162,10 +162,8 @@ it('stops the voice and says nothing more once the lesson is left', async () => 
 
 it('tells the page it is playing from the first line until the lines that lead on are heard', async () => {
   const { result, sound } = setup();
-  expect(result.current.playing).toBe(false);
   expect(result.current.page).toBe('ready');
   await act(async () => result.current.enter());
-  expect(result.current.playing).toBe(true);
   expect(result.current.page).toBe('playing');
   await sound('ended');
   expect(result.current.page).toBe('ready');
@@ -176,7 +174,6 @@ it('tells the page it is playing from the first line until the lines that lead o
   expect(result.current.page).toBe('playing');
   await sound('playing');
   await sound('ended');
-  expect(result.current.playing).toBe(false);
   expect(result.current.page).toBe('ready');
 });
 
