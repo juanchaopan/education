@@ -30,11 +30,14 @@ function memoryStore() {
   };
 }
 
-// A tab whose session storage cannot be written.
-function unwritableStore() {
+// A tab whose session storage takes `writes` writes and then no more.
+function storeFullAfter(writes: number) {
   const store = memoryStore();
-  store.setItem = () => {
-    throw new DOMException('', 'QuotaExceededError');
+  const write = store.setItem;
+  let left = writes;
+  store.setItem = (key, value) => {
+    if (left-- <= 0) throw new DOMException('', 'QuotaExceededError');
+    write(key, value);
   };
   return store;
 }
@@ -185,13 +188,25 @@ describe('useReleaseUpdate', () => {
   });
 
   it('never reloads on its own in a tab that cannot record the reload, but does when the child asks', async () => {
-    const { reload, result } = setup({ serves: newer, store: unwritableStore() });
+    const { reload, result } = setup({ serves: newer, store: storeFullAfter(0) });
     await wait(0);
     expect(reload).not.toHaveBeenCalled();
     expect(result.current.phase).toBe('stuck');
     act(() => result.current.retry());
     await wait(0);
     expect(reload).toHaveBeenCalledOnce();
+  });
+
+  it('still reloads once when the record cannot be written just then, and the next page stays', async () => {
+    const store = storeFullAfter(1);
+    const before = setup({ serves: newer, store });
+    await wait(0);
+    expect(before.reload).toHaveBeenCalledOnce();
+    before.unmount();
+    const after = setup({ serves: newer, store });
+    await wait(0);
+    expect(after.result.current.phase).toBe('stuck');
+    expect(after.reload).not.toHaveBeenCalled();
   });
 
   it('waits for a write on its way to the server before it reloads', async () => {

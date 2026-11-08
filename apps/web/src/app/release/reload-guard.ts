@@ -19,13 +19,14 @@ export function createReloadGuard(store: () => Store = () => sessionStorage) {
         return { reloadedFor: null, recordable: false };
       }
     },
-    // Records the reload about to happen, and tells whether it was recorded.
+    // Records the reload about to happen. A record that cannot be written
+    // now is found out by `read` once the page has loaded again, so that
+    // page never reloads on its own.
     mark(release: string) {
       try {
         store().setItem(key, release);
-        return true;
       } catch {
-        return false;
+        // `read` on the next page load sees the same failure.
       }
     },
   };
