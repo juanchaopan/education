@@ -38,7 +38,10 @@ export default defineConfig({
     trace: 'retain-on-failure',
   },
   expect: {
-    toHaveScreenshot: { animations: 'disabled', caret: 'hide', maxDiffPixels: 20 },
+    // A lesson scene paints a large picture with many shadowed props, which
+    // the image's software renderer draws slowly; a screenshot may take a few
+    // seconds, and a new baseline needs two identical ones in a row.
+    toHaveScreenshot: { animations: 'disabled', caret: 'hide', maxDiffPixels: 20, timeout: 20_000 },
   },
   projects: viewports.flatMap(({ name, device }) => {
     const use = { ...device, defaultBrowserType: 'chromium' as const, deviceScaleFactor: 1 };

@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { buildApp } from './app.js';
+import { createCatalog } from './catalog/services/catalog.js';
 import { loggedApp } from './log-fixtures.js';
 import { readConfig } from './shared/config.js';
 
@@ -16,12 +17,12 @@ describe('framework HTTP contract', () => {
     expect(response.json()).toEqual({ revision: 'a'.repeat(40) });
     expect(response.headers['cache-control']).toBe('no-store');
   });
-  it('serves an empty catalog, with no invented demo content', async () => {
+  it('serves exactly the maintained problems, with no invented demo content', async () => {
     const app = buildApp();
     apps.push(app);
     const response = await app.inject('/api/v1/problems');
     expect(response.statusCode).toBe(200);
-    expect(response.json()).toEqual({ problems: [] });
+    expect(response.json()).toEqual(createCatalog().list());
   });
   it('reports liveness without claiming database or AI readiness', async () => {
     const app = buildApp();

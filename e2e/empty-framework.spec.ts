@@ -2,6 +2,7 @@ import { expect, test, type Browser, type Page } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import pg from 'pg';
+import type { CatalogResponse } from '@education/contracts';
 import { familyDeletionPhrase } from '../libs/contracts/src/family-deletion.js';
 import {
   seedPasswordParent,
@@ -10,10 +11,11 @@ import {
   type PasswordParent,
 } from './password-parent.js';
 
-// The empty framework as two families use it: real parent sign-in, a real KEY,
-// a child who joins and signs in, the empty catalog, data controls and family
-// isolation, against the production entry point with no AI key configured.
-// Both children use the same nickname, which only the family code tells apart.
+// The family framework as two families use it: real parent sign-in, a real
+// KEY, a child who joins and signs in, the catalog of maintained problems,
+// data controls and family isolation, against the production entry point with
+// no AI key configured. Both children use the same nickname, which only the
+// family code tells apart.
 
 // Every signed-out page load and every sign-in counts against the address's
 // sign-in budget of its server, and one run uses most of the fifteen-minute
@@ -22,6 +24,7 @@ test.describe.configure({ retries: 0 });
 
 const nickname = '小鹿';
 const unavailableAi = '暂未启用：现在不会发送任何内容，孩子用题目提示继续。';
+const published = '一年级 · 数学 · 一棵青菜有多重';
 
 type ChildLogin = { code: string; pin: string };
 type Request = { method: 'GET' | 'POST'; path: string; data?: object };
@@ -47,14 +50,17 @@ async function signInAgain(page: Page, login: ChildLogin) {
 }
 
 // The parent page invents no learning: the child has no records or practice,
-// and there is nothing published to arrange.
+// and only maintained problems can be arranged.
 async function expectNothingRecorded(parent: Page) {
   const summary = parent.getByRole('region', { name: '学习摘要' });
   await summary.getByLabel('选择孩子').selectOption({ label: nickname });
   await expect(summary.getByText('还没有这位孩子的学习记录。')).toBeVisible();
   const practice = parent.getByRole('region', { name: '安排练习' });
   await practice.getByLabel('为哪位孩子安排').selectOption({ label: nickname });
-  await expect(practice.getByText('题库还没有已发布的题目。')).toBeVisible();
+  await expect(practice.getByLabel('选择已发布的题目').getByRole('option')).toHaveText([
+    '请选择题目',
+    published,
+  ]);
   await expect(practice.getByText('还没有给这位孩子安排练习。')).toBeVisible();
 }
 
@@ -114,7 +120,7 @@ async function expectNotFound(ask: Ask, child: string, request: (child: string) 
   expect(foreign).toEqual(await ask(request(randomUUID())));
 }
 
-test('two families use the empty framework and stay apart through reset, sign-in again and deletion', async ({
+test('two families use the framework and stay apart through reset, sign-in again and deletion', async ({
   browser,
 }, info) => {
   test.skip(
@@ -136,13 +142,16 @@ test('two families use the empty framework and stay apart through reset, sign-in
     const a = await joinChild(browser, pool, first, '018274');
     const b = await joinChild(browser, pool, second, '640193');
 
-    // The catalog is empty, with no demonstration problems.
+    // The catalog holds only maintained problems, with no demonstrations.
     const explore = await browser.newPage();
     await explore.goto(new URL('/', a.parent.url()).href);
-    await expect(explore.getByRole('heading', { name: '好问题，正在准备中' })).toBeVisible();
-    await expect(explore.getByRole('button', { name: '开始学习' })).toHaveCount(0);
-    const catalog = await explore.request.get('/api/v1/problems');
-    expect(((await catalog.json()) as { problems: unknown[] }).problems).toEqual([]);
+    await expect(explore.getByRole('list', { name: '题目顺序' }).getByRole('link')).toHaveText([
+      '一棵青菜有多重',
+    ]);
+    const catalog = (await (
+      await explore.request.get('/api/v1/problems')
+    ).json()) as CatalogResponse;
+    expect(catalog.problems.map(({ id }) => id)).toEqual(['garden-balance']);
 
     // Paid AI is switched on by default, but with no key nothing can be sent,
     // and the parent is told so whatever they consent to.
@@ -173,7 +182,7 @@ test('two families use the empty framework and stay apart through reset, sign-in
     await expectNotFound(ask, b.childId, (child) => ({
       method: 'POST',
       path: childPath(child, 'practice'),
-      data: { id: 'fixture-unpublished', version: 1 },
+      data: { id: 'garden-balance', version: 1 },
     }));
     await expectNotFound(ask, b.childId, (child) => ({
       method: 'POST',
