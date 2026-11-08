@@ -21,6 +21,24 @@ function smokeRequest(url, measurements) {
   };
 }
 
+// The deployment reports the release it was built from, and its page names the
+// same release, so open pages compare like with like when they look for an
+// update. The version file is never cached; the page is revalidated.
+async function checkRelease(request, revision) {
+  const version = await request('/version.json', 200);
+  if (
+    (await version.json()).revision !== revision ||
+    version.headers.get('cache-control') !== 'no-store'
+  )
+    throw new Error('Release identity mismatch');
+  const page = await request('/', 200);
+  if (
+    !(await page.text()).includes(`<meta name="education-release" content="${revision}"`) ||
+    page.headers.get('cache-control') !== 'no-cache'
+  )
+    throw new Error('Page release mismatch');
+}
+
 export async function smokeAccount(url, origin, revision, cleanup) {
   const email = `staging-smoke-${randomUUID()}@example.invalid`;
   const password = randomBytes(32).toString('base64url');
@@ -32,12 +50,7 @@ export async function smokeAccount(url, origin, revision, cleanup) {
   };
   const request = smokeRequest(url, measurements);
   try {
-    const version = await request('/version.json', 200);
-    if (
-      (await version.json()).revision !== revision ||
-      version.headers.get('cache-control') !== 'no-store'
-    )
-      throw new Error('Release identity mismatch');
+    await checkRelease(request, revision);
     await waitForReadiness(url, measurements);
     const receipt = await request('/api/v1/parents/register', 202, {
       method: 'POST',
