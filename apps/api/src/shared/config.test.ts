@@ -2,13 +2,41 @@ import { expect, it } from 'vitest';
 import { readConfig } from './config.js';
 
 it('distinguishes an unset AI budget from zero and parses exact USD amounts', () => {
-  expect(readConfig({}).aiMonthlyBudget).toBeNull();
-  expect(readConfig({}).paidAiEnabled).toBe(true);
-  expect(readConfig({ AI_MONTHLY_BUDGET_USD: '0' }).aiMonthlyBudget).toBe(0n);
-  expect(readConfig({ AI_MONTHLY_BUDGET_USD: '1.000000001' }).aiMonthlyBudget).toBe(1_000_000_001n);
+  expect(readConfig({}).ai.monthlyBudget).toBeNull();
+  expect(readConfig({ AI_MONTHLY_BUDGET_USD: '0' }).ai.monthlyBudget).toBe(0n);
+  expect(readConfig({ AI_MONTHLY_BUDGET_USD: '1.000000001' }).ai.monthlyBudget).toBe(
+    1_000_000_001n,
+  );
   for (const value of ['-1', '1e2', '0.0000000001', 'Infinity']) {
     expect(() => readConfig({ AI_MONTHLY_BUDGET_USD: value })).toThrow('AI_MONTHLY_BUDGET_USD');
   }
+});
+
+it('keeps paid AI switched on without a key or eligibility, and reads each service’s flag strictly', () => {
+  expect(readConfig({}).ai).toEqual({
+    paidAiEnabled: true,
+    apiKey: '',
+    eligible: { 'openai-tutoring': false, 'openai-transcription': false },
+    monthlyBudget: null,
+  });
+  const configured = readConfig({
+    PAID_AI_ENABLED: 'false',
+    OPENAI_API_KEY: ' synthetic-key ',
+    OPENAI_TRANSCRIPTION_ELIGIBLE: 'true',
+  }).ai;
+  expect(configured).toMatchObject({
+    paidAiEnabled: false,
+    apiKey: 'synthetic-key',
+    eligible: { 'openai-tutoring': false, 'openai-transcription': true },
+  });
+  // A mistyped flag names itself, so the operator knows which one stopped startup.
+  for (const flag of [
+    'REGISTRATION_ENABLED',
+    'PAID_AI_ENABLED',
+    'OPENAI_TUTORING_ELIGIBLE',
+    'OPENAI_TRANSCRIPTION_ELIGIBLE',
+  ])
+    expect(() => readConfig({ [flag]: 'TRUE' })).toThrow(`${flag} must be true or false`);
 });
 
 const env = {

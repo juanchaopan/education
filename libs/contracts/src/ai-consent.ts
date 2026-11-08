@@ -6,6 +6,9 @@ const revision = Type.Union([
   Type.String({ pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' }),
   Type.Null(),
 ]);
+// Whether this deployment can call a service at all. Consent alone sends
+// nothing while it is unavailable.
+const availability = Type.Union([Type.Literal('ready'), Type.Literal('unavailable')]);
 const policy = Type.Object({
   scope,
   policyVersion: version,
@@ -39,6 +42,7 @@ export const AiConsentView = Type.Object({
           Type.Literal('revoked'),
           Type.Literal('policy-changed'),
         ]),
+        availability,
       }),
     ]),
   ),
@@ -47,3 +51,6 @@ export const AiConsentView = Type.Object({
 export type AiConsentChange = Static<typeof AiConsentChange>;
 export type AiConsentView = Static<typeof AiConsentView>;
 export type AiConsentPolicy = Static<typeof policy>;
+export type AiConsentScope = Static<typeof scope>;
+// Each service's availability in this deployment.
+export type AiAvailability = Record<AiConsentScope, Static<typeof availability>>;

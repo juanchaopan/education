@@ -1,28 +1,23 @@
 import type pg from 'pg';
 import type { AiConsentChange } from '@education/contracts';
 import { createAiConsent } from './ai-consent-application.js';
+import { providerSettings } from './ai-provider-settings.js';
 import { createTutoringUsage } from './ai/repositories/postgres-tutoring-usage.js';
 import type { Admission, Meter, ProviderSettings } from './ai/services/metered-call.js';
 import { readConfig } from './shared/config.js';
 
 // Settings, consent and metering for one paid AI service. Each service has its
-// own family consent scope and its own deployment eligibility flag; all share
-// the paid AI switch, the API key and one usage ledger.
+// own family consent scope; all share one usage ledger.
 export function aiProvider(
   pool: pg.Pool,
   env: NodeJS.ProcessEnv,
   scope: AiConsentChange['scope'],
-  eligibleFlag: string,
 ): [ProviderSettings, Admission, Meter] {
-  const { paidAiEnabled, aiMonthlyBudget } = readConfig(env);
-  const consent = createAiConsent(pool, aiMonthlyBudget);
-  const usage = createTutoringUsage(pool, aiMonthlyBudget);
+  const { ai } = readConfig(env);
+  const consent = createAiConsent(pool, ai);
+  const usage = createTutoringUsage(pool, ai.monthlyBudget);
   return [
-    {
-      paidAiEnabled,
-      apiKey: env.OPENAI_API_KEY?.trim() ?? '',
-      eligible: env[eligibleFlag] === 'true',
-    },
+    providerSettings(ai, scope),
     {
       dispatch: (credentials, start) => consent.dispatch(credentials, scope, start),
       confirm: (credentials) => consent.confirm(credentials, scope),

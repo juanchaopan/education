@@ -10,6 +10,7 @@ import { reservationCost } from './ai/domain/tutoring-cost.js';
 import { createTutoringUsage } from './ai/repositories/postgres-tutoring-usage.js';
 import { hintTask } from './ai/services/hint-task.js';
 import { csrfToken, tokenHash } from './identity/services/session-security.js';
+import { readConfig } from './shared/config.js';
 
 if (!process.env.DATABASE_URL?.endsWith('/education_test'))
   throw new Error('Use isolated education_test');
@@ -17,7 +18,7 @@ if (!process.env.DATABASE_URL?.endsWith('/education_test'))
 const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
 const families: string[] = [];
 const origin = 'https://education.example';
-const consent = createAiConsent(pool);
+const consent = createAiConsent(pool, readConfig({}).ai);
 const app = buildApp({ origin, aiConsent: consent });
 const url = '/api/v1/parents/ai-consent';
 const tutoring = 'openai-tutoring';
@@ -100,8 +101,12 @@ it('defaults to denial, then permits only the authorized purpose and family', as
   expect(saved.headers['cache-control']).toBe('no-store');
   expect(saved.json<AiConsentView>().tutoringBudget).toBe('unset');
   expect(saved.json<AiConsentView>().policies).toEqual([
-    expect.objectContaining({ scope: tutoring, state: 'granted' }),
-    expect.objectContaining({ scope: transcription, state: 'ungranted' }),
+    expect.objectContaining({ scope: tutoring, state: 'granted', availability: 'unavailable' }),
+    expect.objectContaining({
+      scope: transcription,
+      state: 'ungranted',
+      availability: 'unavailable',
+    }),
   ]);
   await expect(dispatch(owner.child, tutoring, start)).resolves.toBe('fixture');
   await expect(dispatch(owner.child, transcription, start)).rejects.toMatchObject({
@@ -127,11 +132,31 @@ it('defaults to denial, then permits only the authorized purpose and family', as
   ).toBe(0);
 });
 
+it('tells the parent which services this deployment can call, whatever the family decided', async () => {
+  const owner = await household();
+  await recent(owner.parent);
+  expect((await change(owner.parent, await decision(owner.parent))).statusCode).toBe(200);
+  const parent = { token: owner.parent, csrf: csrfToken(owner.parent) };
+  const availability = async (env: NodeJS.ProcessEnv) =>
+    (await createAiConsent(pool, readConfig(env).ai).read(parent)).policies.map(
+      (policy) => policy.availability,
+    );
+  expect(await availability({})).toEqual(['unavailable', 'unavailable']);
+  expect(await availability({ ...tutoringEnv, PAID_AI_ENABLED: 'false' })).toEqual([
+    'unavailable',
+    'unavailable',
+  ]);
+  expect(await availability(tutoringEnv)).toEqual(['ready', 'unavailable']);
+});
+
 it('admits only one reservation across pools, releases a rejected send and holds a cancelled one', async () => {
   const first = await tutoringHousehold();
   const second = await tutoringHousehold();
   const env = { ...tutoringEnv, AI_MONTHLY_BUDGET_USD: '0.002112' };
-  const status = createAiConsent(pool, largestReservationCost);
+  const status = createAiConsent(pool, {
+    ...readConfig(tutoringEnv).ai,
+    monthlyBudget: largestReservationCost,
+  });
   const parent = { token: first.parent, csrf: csrfToken(first.parent) };
   expect((await status.read(parent)).tutoringBudget).toBe('available');
   const otherPool = new pg.Pool({ connectionString: process.env.DATABASE_URL });

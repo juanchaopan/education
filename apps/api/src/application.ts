@@ -25,7 +25,7 @@ import { createSessionRepository } from './identity/repositories/postgres-sessio
 import { fileURLToPath } from 'node:url';
 import { existsSync } from 'node:fs';
 import { buildApp } from './app.js';
-import { readConfig } from './shared/config.js';
+import { readConfig, type AiConfig, type Config } from './shared/config.js';
 import pg from 'pg';
 import { createRegistrationService } from './identity/services/registration.js';
 import { hashParentPassword, verifyParentPassword } from './identity/services/password.js';
@@ -48,8 +48,6 @@ import { createFamilyExport } from './family-export-application.js';
 import { createFamilyDeletion } from './family-deletion-application.js';
 import { createTeachingFeedback } from './teaching-feedback-application.js';
 import { createVoiceTranscription } from './voice-transcription-application.js';
-
-type Config = ReturnType<typeof readConfig>;
 
 export async function createApplication(env: NodeJS.ProcessEnv = process.env) {
   const config = readConfig(env);
@@ -76,13 +74,7 @@ export async function createApplication(env: NodeJS.ProcessEnv = process.env) {
     teachingFeedback,
     voiceTranscription,
     childAccess: createChildAccess(pool, sessions, admit, config),
-    ...createFamilyManagement({
-      pool,
-      ledgerPool,
-      sessions,
-      admit,
-      monthlyBudget: config.aiMonthlyBudget,
-    }),
+    ...createFamilyManagement({ pool, ledgerPool, sessions, admit, ai: config.ai }),
     verification: createVerification(pool, mailConfig, admit),
     recovery: createRecovery(pool, mailConfig, admit),
     ready: pool ? await createReadinessCheck(pool) : undefined,
@@ -226,19 +218,19 @@ function createFamilyManagement({
   ledgerPool,
   sessions,
   admit,
-  monthlyBudget,
+  ai,
 }: {
   pool?: pg.Pool;
   ledgerPool?: pg.Pool;
   sessions?: ReturnType<typeof createSessionService>;
   admit?: ReturnType<typeof createAuthAdmission>;
-  monthlyBudget: bigint | null;
+  ai: AiConfig;
 }) {
   if (!pool || !sessions || !admit) return {};
   return {
     learningSummary: createLearningSummary(pool),
     practice: createPracticeAssignments(pool),
-    aiConsent: createAiConsent(pool, monthlyBudget),
+    aiConsent: createAiConsent(pool, ai),
     familyExport: createFamilyExport(pool),
     familyDeletion: createFamilyDeletion(pool, ledgerPool),
     registrationKeys: createRegistrationKeyService({

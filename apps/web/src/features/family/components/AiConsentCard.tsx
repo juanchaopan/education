@@ -24,6 +24,14 @@ const states: Record<Policy['state'], string> = {
   'policy-changed': '政策已更新，需要重新授权',
 };
 
+// Consent and availability are separate: a granted service that this
+// deployment cannot call sends nothing, and the parent is told so. A service
+// that is switched on still waits for consent and remaining budget.
+const availability: Record<Policy['availability'], string> = {
+  ready: '已启用：只在已授权、额度够用时发送孩子提交的内容。',
+  unavailable: '暂未启用：现在不会发送任何内容，孩子用题目提示继续。',
+};
+
 const budgets: Record<AiConsentView['tutoringBudget'], string> = {
   unset: 'AI 解题提示预算未设置。',
   available: 'AI 解题提示已设置费用上限。',
@@ -35,7 +43,7 @@ export function AiConsentCard(props: Props) {
   return (
     <section className={`${card.card} ${panel.panel}`} aria-labelledby="ai-consent-title">
       <h2 id="ai-consent-title">外部 AI 授权</h2>
-      <p>按用途为本家庭的孩子选择授权。服务通过启用检查后，才会处理已授权的输入。</p>
+      <p>按用途为本家庭的孩子选择授权。服务启用后，才会处理已授权的输入。</p>
       <p>撤回后将停止新的发送。此前已发送的内容仍按供应商的保留政策处理。</p>
       {view && <p role="status">{budgets[view.tutoringBudget]}</p>}
       <p>
@@ -95,6 +103,7 @@ function PolicyCard({
       <p className={card.hint}>
         {policy.provider} · 政策版本 {policyVersion}
       </p>
+      <p className={styles.availability}>{availability[policy.availability]}</p>
       <dl>
         <dt>会发送什么</dt>
         <dd>{policy.inputs}</dd>

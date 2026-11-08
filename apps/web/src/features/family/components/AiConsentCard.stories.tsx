@@ -13,10 +13,11 @@ const policy = {
   providerRetention: '供应商默认的安全监测日志可能保留内容最多 30 天。',
   revision: null,
 };
+// A deployment without a backend key: paid AI is switched on, nothing is sent.
 const awaitingPassword = {
   reauthenticationRequired: true,
   tutoringBudget: 'unset',
-  policies: [{ ...policy, state: 'ungranted' }],
+  policies: [{ ...policy, state: 'ungranted', availability: 'unavailable' }],
 } as const;
 const meta = {
   component: AiConsentCard,
@@ -40,10 +41,16 @@ export const PolicyChanged: Story = {
     view: {
       reauthenticationRequired: false,
       tutoringBudget: 'available',
-      policies: [{ ...policy, state: 'policy-changed' }],
+      policies: [{ ...policy, state: 'policy-changed', availability: 'ready' }],
     },
   },
 };
 export const BudgetLimited: Story = {
-  args: { view: { ...meta.args.view, tutoringBudget: 'limited' } },
+  args: {
+    view: {
+      reauthenticationRequired: false,
+      tutoringBudget: 'limited',
+      policies: [{ ...policy, state: 'granted', availability: 'ready' }],
+    },
+  },
 };
