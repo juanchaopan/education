@@ -5,23 +5,23 @@
 ## 实现
 
 - 请求日志（`apps/api/src/shared/request-log.ts`）：每个请求随机生成请求 ID，写进响应头 `X-Request-Id`，请求结束时写一行 JSON，字段是 requestId、method、route（路由模式）、status、durationMs、outcome，以及需要时的 code 和 ai。outcome 分为 ok、client-error、rate-limited、maintenance、unavailable、database、server-error。每个请求只写这一行。
-- 数据库失败的归类（`apps/api/src/shared/database-error.ts`）：PostgreSQL 返回的错误记它的 SQLSTATE，连接和证书失败记允许列表里的错误码，超时记 TIMEOUT。请求处理、就绪检查和连接池用同一个归类。就绪检查本身失败记为 database，数据库能回答但服务开关关闭或迁移未完成记为 maintenance。
+- 数据库失败的归类（`apps/api/src/shared/database-error.ts`）：PostgreSQL 返回的错误记它的 SQLSTATE，连接和证书失败记允许列表里的错误码，驱动和连接池的超时记 TIMEOUT；查询构造器包裹的错误按里面的原始错误归类。请求处理、就绪检查和连接池用同一个归类。就绪检查本身失败记为 database，数据库能回答但服务开关关闭或迁移未完成记为 maintenance。
 - AI 请求（`apps/api/src/ai/routes/child-ai-request.ts`）：每个 AI 路由都经过这里，只记资源、结果、回退原因和来源（规则或 AI）。
-- AI 用量（`apps/api/src/database/ai-usage-report.ts`）：每小时维护的最后一步按结算状态汇总过去一小时的调用数、token 和计入预算的金额。供应商失败（发出的调用里至少三次、且至少一半没有可用回复）或有回复超出范围时，打开 `staging 告警：ai-provider`。
-- 告警（`scripts/staging-alert.mjs`、`scripts/staging-alerts.mjs`、`.github/workflows/staging-alerts.yml`）：每小时两次探测就绪和发布版本号；staging 发布、备份、维护、恢复运行结束后读取任务结果。每个来源一个带 `staging-alert` 标签的 issue，失败时打开，成功时评论并关闭。监听的工作流没有登记决定性任务时，告警运行失败。staging 未启用时写明没有告警渠道在工作。
+- AI 用量（`apps/api/src/database/ai-usage-report.ts`）：每小时维护的最后一步汇总上一个整点小时的调用数、token 和计入预算的金额。结束的调用里至少三次、且至少一半没有可用回复（被拒绝、没有回复或超出范围），或本月有回复超出范围、付费 AI 已暂停时，打开 `staging 告警：ai-provider`；一小时里没有结束的调用、也没有暂停时不改变告警。
+- 告警（`scripts/staging-alert.mjs`、`scripts/staging-alerts.mjs`、`.github/workflows/staging-alerts.yml`）：每小时两次探测就绪和发布版本号；staging 发布、备份、维护、恢复运行结束后，每个任务是一个告警来源，失败的任务打开它的告警，同一任务下一次成功时关闭，被跳过的任务不改变告警。每个来源一个带 `staging-alert` 标签的 issue，各自排队。staging 未启用时写明没有告警渠道在工作。
 
 日志不记录请求头、cookie、请求体、查询参数和异常消息。没有新的秘密、迁移或付费服务。
 
 ## 自动化测试
 
-| 命令                                                      | 覆盖                                                                                                                                                                                                                                                                                                          |
-| --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `npm test -w @education/api`（`request-log.test.ts`）     | 每个请求一行，请求 ID 等于响应头且每次不同；记录路由模式而不是带令牌的 URL；带 PIN、KEY、密码的 PostgreSQL 错误只留 SQLSTATE；连接拒绝和连接超时记为 database，`EPIPE` 这样的五字母代码不算；限流、未配置和意外错误分开；开关关闭记为 maintenance，数据库连不上记为 database；AI 回退和 AI 回复只记结果和原因 |
-| 同上（每个用例）                                          | 日志全文里没有 PIN、注册 KEY、家长密码、会话令牌、孩子的文字、绘图、模型的回复和 `postgres://`                                                                                                                                                                                                                |
-| `npm test -w @education/api`（`app.test.ts`）             | 就绪检查出错时只记允许的错误码或 UNKNOWN，不记连接串和密码                                                                                                                                                                                                                                                    |
-| `npm test -w @education/api`（`ai-usage-report.test.ts`） | 没有调用、未发送、少数失败时不告警；至少三次且一半失败时告警供应商失败；任何超出范围的回复都告警                                                                                                                                                                                                              |
-| `npm run test:db`（`ai-usage-report.integration.ts`）     | 按时间窗口和结算状态汇总调用数、token 和金额，不含窗口外的调用                                                                                                                                                                                                                                                |
-| `npm run test:staging`（`staging-alert.test.mjs`）        | 健康检查要求就绪和 40 位版本号，并为每个请求计时；数据库持续不可用、版本号缺失或无法连接都算异常；任务失败才告警，决定性任务被跳过不改变告警，没有登记的工作流被拒绝；第一次失败开 issue，持续失败不再通知，恢复后评论并关闭；GitHub 客户端缺少标签时先创建标签，查找时排除 PR                                |
+| 命令                                                      | 覆盖                                                                                                                                                                                                                                                                                                                                          |
+| --------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm test -w @education/api`（`request-log.test.ts`）     | 每个请求一行，请求 ID 等于响应头且每次不同；记录路由模式而不是带令牌的 URL；带 PIN、KEY、密码的 PostgreSQL 错误只留 SQLSTATE；连接拒绝、连接超时和查询构造器包裹的连接中断记为 database，`EPIPE` 和普通的请求超时不算；限流、未配置和意外错误分开；开关关闭记为 maintenance，数据库连不上记为 database；AI 回退和 AI 回复只记结果、原因和来源 |
+| 同上（每个用例）                                          | 日志全文里没有 PIN、注册 KEY、家长密码、会话令牌、孩子的文字、绘图、模型的回复和 `postgres://`                                                                                                                                                                                                                                                |
+| `npm test -w @education/api`（`app.test.ts`）             | 就绪检查出错时只记允许的错误码或 UNKNOWN，不记连接串和密码                                                                                                                                                                                                                                                                                    |
+| `npm test -w @education/api`（`ai-usage-report.test.ts`） | 没有调用、调用进行中、少数失败时不告警；至少三次且一半失败时告警供应商失败，整批被供应商拒绝也算；本月暂停时即使这一小时没有调用也告警                                                                                                                                                                                                        |
+| `npm run test:db`（`ai-usage-report.integration.ts`）     | 按时间窗口和结算状态汇总调用数、token 和金额，不含窗口外的调用；本月有超出范围的回复时报告暂停，下个月不再暂停，没有调用的一小时不作判断                                                                                                                                                                                                      |
+| `npm run test:staging`（`staging-alert.test.mjs`）        | 健康检查要求就绪和 40 位版本号，并为每个请求计时；数据库持续不可用、版本号缺失或无法连接都算异常；每个任务失败时打开、成功时关闭自己的告警，被跳过的任务不改变告警，运行没能启动时告警整个工作流；第一次失败开 issue，持续失败不再通知，恢复后评论并关闭；GitHub 客户端缺少标签时先创建标签，查找时排除 PR，读不到运行的任务时报出失败的请求  |
 
 ## 本地故障演练（2026-11-07）
 

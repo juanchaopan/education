@@ -66,7 +66,7 @@ API 对每个请求写一行结构化日志（JSON，Vercel 的运行日志里�
 | method、route      | 请求方法和匹配到的路由模式，例如 `/api/v1/problems/:id/:version/draft`；不记录原始 URL 和查询参数                                                                          |
 | status、durationMs | 状态码和服务端耗时                                                                                                                                                         |
 | outcome            | `ok`、`client-error`、`rate-limited`、`maintenance`（服务开关关闭或迁移未完成）、`unavailable`（服务没有配置）、`database`（数据库失败，包括就绪检查失败）、`server-error` |
-| code               | PostgreSQL 返回的 SQLSTATE、允许列表里的连接错误码、`TIMEOUT` 或框架错误码，其余记为 `UNKNOWN`                                                                             |
+| code               | PostgreSQL 返回的 SQLSTATE、允许列表里的连接错误码、`TIMEOUT` 或框架错误码，其余记为 `UNKNOWN`；查询构造器包裹的驱动错误按里面的原始错误归类                               |
 | ai                 | AI 请求的资源、结果、回退原因和来源（规则或 AI），不含孩子的文字、绘图、录音或模型回复                                                                                     |
 
 日志不记录请求头、cookie、请求体、查询参数和异常消息，所以 PIN、注册 KEY、密码、会话令牌、密钥和孩子的输入都不会进入日志。数据库连接空闲时断开，另记一行 `Database connection unavailable`，只带库名和错误码。
@@ -75,15 +75,18 @@ API 对每个请求写一行结构化日志（JSON，Vercel 的运行日志里�
 
 ### AI 用量
 
-每次付费 AI 调用都记在 `ai_usage` 账本里。每小时维护的最后一步汇总过去一小时：已结算、无回复、超出范围、未发送和进行中的调用数，token 数和计入预算的金额。汇总只有计数，没有家庭和孩子。过去一小时发出的调用里至少三次、且至少一半没有可用回复，或有任何回复超出约定范围（这会暂停本月的付费 AI）时，打开 `staging 告警：ai-provider`；之后某一小时不再满足这些条件时关闭。
+每次付费 AI 调用都记在 `ai_usage` 账本里。每小时维护的最后一步汇总上一个整点小时：已结算、无回复、超出范围、未发出或被供应商拒绝、进行中的调用数，token 数和计入预算的金额。汇总只有计数，没有家庭和孩子。维护运行推迟时仍汇总它之前的那个整点小时，只有整次运行没有发生时才会漏掉一个小时。
+
+`staging 告警：ai-provider` 在两种情况下打开：这一小时结束的调用里至少三次、且至少一半没有可用回复（被拒绝、没有回复或超出范围，密钥失效时的整批拒绝也在内）；或者本月有回复超出约定范围，这会暂停本月剩下时间的付费 AI，告警一直保留到下个月。某一小时有调用结束且不满足这两种情况时关闭。一小时里没有结束的调用、付费 AI 也没有暂停时，这一小时说明不了供应商的情况，告警保持原样。
 
 ### 告警渠道：GitHub issue
 
 `staging-alerts` 工作流：
 
 - 每小时两次，在 :19 和 :49 运行，前一次紧跟每小时维护，那时数据库已经醒着。它用发布时同一个就绪探测检查 `/health/ready`，再读 `/version.json` 的发布版本号，记录每个请求的状态和耗时。
-- 每次 staging 发布、备份、维护或恢复运行结束后读取任务结果：有任务失败就告警；决定性任务（deploy、backup、cleanup、restore）成功就恢复；决定性任务被跳过（例如 PR 触发的发布运行），或整个运行被跳过、取消时，不改变告警。监听的工作流没有登记决定性任务时，告警运行失败，不会悄悄只开不关。
-- 每个来源（health、ai-provider、staging、staging-backup、staging-mail-retention、staging-restore）最多有一个打开的 `staging-alert` issue。第一次失败时打开它，GitHub 按维护者的通知设置发邮件。持续失败不重复通知，下一次成功时评论“已恢复”并关闭。
+- 每次 staging 发布、备份、维护或恢复运行结束后读取任务结果，每个任务是一个告警来源，例如 `staging/deploy`、`staging-backup/backup`、`staging-mail-retention/cleanup`。任务失败就打开它的告警，并写出失败的步骤；同一个任务下一次成功时关闭。被跳过的任务（例如 PR 触发的发布运行里的 deploy）不改变告警，所以 PR 运行关不掉发布失败的告警。整个运行被跳过或取消时什么都不改；运行没能启动、没有任何任务时，打开整个工作流的告警，下一次有任务成功时关闭。
+- 加上就绪探测的 `health` 和 AI 用量的 `ai-provider`，每个来源最多有一个打开的 `staging-alert` issue。第一次失败时打开它，GitHub 按维护者的通知设置发邮件。持续失败不重复通知，恢复时评论“已恢复”并关闭。
+- 每个来源的告警运行各自排队，不同工作流的事件不会互相取代。
 - `STAGING_ENABLED` 不是 `true` 时，定时和手动运行只写明没有探测、没有告警渠道在工作，不能当作告警已经接入。
 - 告警工作流本身失败时（例如 GitHub API 不可用），由 GitHub Actions 的失败通知提醒。
 
