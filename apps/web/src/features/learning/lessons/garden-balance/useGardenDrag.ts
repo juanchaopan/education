@@ -3,8 +3,7 @@ import type { Activation, Ghost } from '../../components/garden-balance/GardenSt
 import type { Handling } from '../../components/garden-balance/garden-scenes';
 import { movableProps } from '../../components/garden-balance/movable-props';
 import { bindObjectDrag } from '../../interaction/object-drag';
-import type { Scene } from './garden-story';
-import type { GardenStory } from './useGardenStory';
+import type { GardenFilm, Scene } from './garden-story';
 
 type Movable = keyof typeof movableProps;
 type Held = { shot: Scene; key: string; part: Movable };
@@ -28,7 +27,7 @@ function toWorld(surface: SVGSVGElement, { clientX, clientY }: PointerEvent) {
 // Moving a cabbage or an apple into the basket, by dragging it there or by
 // tapping it and then the basket. Tapping the other props acts on them
 // directly. A choice made in an earlier scene no longer counts.
-export function useGardenDrag(story: GardenStory) {
+export function useGardenDrag(story: GardenFilm) {
   const world = useRef<SVGSVGElement>(null);
   const [drag, setDrag] = useState<Drag>();
   const [held, setHeld] = useState<Held>();

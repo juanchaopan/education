@@ -1,6 +1,7 @@
 import { DraftNotice } from '../components/DraftNotice';
 import type { LearningScope } from '../data-access/learning-request';
 import type { useLessonDraft } from '../data-access/useLessonDraft';
+import type { GardenFilm } from '../lessons/garden-balance/garden-story';
 import {
   answerChoices,
   answerHints,
@@ -9,13 +10,12 @@ import {
   guidance,
   teacher,
 } from '../lessons/garden-balance/script';
-import type { GardenStory } from '../lessons/garden-balance/useGardenStory';
 import { SceneQuestions } from './SceneQuestions';
 import { SpokenFinalAnswer } from './SpokenFinalAnswer';
 
 type Props = {
   scope: LearningScope;
-  story: GardenStory;
+  film: GardenFilm;
   draft: ReturnType<typeof useLessonDraft>;
 };
 
@@ -23,8 +23,8 @@ type Props = {
 // final count, which has its own hints and keeps the one microphone for the
 // answer; in every other scene a question about it; and the draft's state. A
 // correct answer ends the saved work, so its draft is discarded.
-export function GardenPanels({ scope, story, draft }: Props) {
-  const { shot } = story.state;
+export function GardenPanels({ scope, film, draft }: Props) {
+  const { shot } = film.state;
   if (shot === 'opening') return null;
   return (
     <>
@@ -35,10 +35,10 @@ export function GardenPanels({ scope, story, draft }: Props) {
           words={answerWords}
           choices={answerChoices}
           hintIds={answerHints}
-          narration={story}
+          narration={film}
           onDone={() => {
             void draft.discard();
-            story.go('variation');
+            film.go('variation');
           }}
         />
       ) : (
@@ -47,7 +47,7 @@ export function GardenPanels({ scope, story, draft }: Props) {
           teacher={teacher}
           stepId={shot}
           guidance={guidance(shot)}
-          narration={story}
+          narration={film}
         />
       )}
       <DraftNotice

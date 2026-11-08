@@ -1,16 +1,10 @@
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
+import { fakeAudio } from '../../../test/fake-audio';
 import { useNarration } from './useNarration';
 
 function setup() {
-  const audios: HTMLAudioElement[] = [];
-  const createAudio = () => {
-    const audio = new Audio();
-    vi.spyOn(audio, 'play').mockResolvedValue(undefined);
-    vi.spyOn(audio, 'pause').mockImplementation(() => {});
-    audios.push(audio);
-    return audio;
-  };
+  const { audios, createAudio } = fakeAudio();
   const view = renderHook(({ stepId }) => useNarration(stepId, createAudio), {
     initialProps: { stepId: 'count' },
   });

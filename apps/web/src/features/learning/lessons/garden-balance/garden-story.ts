@@ -1,6 +1,8 @@
-import { entryLines, type LineId, type Shot } from './script';
+import type { FilmScene, FilmStory, Reaction as FilmReaction } from '../../interaction/lesson-film';
+import type { LessonFilm } from '../../interaction/useLessonFilm';
+import { entryLines, lines, type LineId, type Shot } from './script';
 
-export type Scene = Shot | 'opening';
+export type Scene = FilmScene<Shot>;
 export type GardenState = Readonly<{
   shot: Scene;
   // Cabbages on the left pan, apples on the right, while the scale is halved.
@@ -12,14 +14,7 @@ export type GardenState = Readonly<{
   replaced: number;
 }>;
 
-// What one of the child's moves changes: the next state, the lines the rabbit
-// says, the tones that mark it, and the scene that follows once the lines end.
-export type Reaction = Readonly<{
-  state: GardenState;
-  say: readonly LineId[];
-  chime: readonly number[];
-  then?: Shot;
-}>;
+export type Reaction = FilmReaction<GardenState, Shot, LineId>;
 
 type Drop = { kind: 'drop'; part: 'leaf' | 'apple'; place: 'basket' };
 type Tap = { kind: 'tap'; part: 'exchange' | 'replace' };
@@ -110,3 +105,14 @@ export function respond(state: GardenState, move: Move): Reaction | undefined {
 export function savesProgress(shot: Scene): shot is Shot {
   return shot !== 'opening' && shot !== 'variation' && shot !== 'end';
 }
+
+// The garden film: it starts among the two cabbages on the scale.
+export const gardenStory: FilmStory<GardenState, Shot, LineId, Move> = {
+  lines,
+  opening,
+  first: 'leaves',
+  arrive,
+  respond,
+};
+
+export type GardenFilm = LessonFilm<GardenState, Shot, Move>;
