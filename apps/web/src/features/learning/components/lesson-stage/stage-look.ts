@@ -88,3 +88,7 @@ export function paletteStyle(palette: StagePalette) {
     Object.entries(palette).map(([name, value]) => [propertyName(name), value]),
   ) as CSSProperties;
 }
+
+// Starts a stage part's animation `seconds` late, through its `--delay`; a
+// negative delay starts it part of the way through.
+export const delayStyle = (seconds: number) => ({ '--delay': `${seconds}s` }) as CSSProperties;

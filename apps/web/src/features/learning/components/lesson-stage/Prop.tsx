@@ -1,7 +1,6 @@
-import type { CSSProperties, ReactNode } from 'react';
+import type { ReactNode } from 'react';
+import { delayStyle } from './stage-look';
 import styles from './Prop.module.css';
-
-const delayed = (seconds: number) => ({ '--delay': `${seconds}s` }) as CSSProperties;
 
 type PropProps = {
   // Where the prop's middle sits on the stage's world, and how big it is.
@@ -39,7 +38,7 @@ export function Prop({ x, y, size, part, id, label, highlight, children, ...look
     <g
       transform={`translate(${x} ${y})`}
       className={classes.join(' ') || undefined}
-      style={look.delay ? delayed(look.delay) : undefined}
+      style={look.delay ? delayStyle(look.delay) : undefined}
       {...(part && {
         'data-part': part,
         'data-key': id,

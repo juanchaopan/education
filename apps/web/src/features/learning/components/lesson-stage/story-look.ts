@@ -72,8 +72,8 @@ export const storyLook: StageLook = {
     glow: 'var(--gold)',
     ghostShadow: '#0d182091',
     cue: 'var(--paper)',
-    cueEdge: '#8a5f3c',
-    ambience: '#ffe9b0',
+    cueEdge: 'var(--ink)',
+    ambience: 'var(--peach)',
     boardInk: 'var(--ink)',
   },
 };

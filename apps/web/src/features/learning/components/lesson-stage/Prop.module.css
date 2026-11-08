@@ -1,5 +1,6 @@
 /* Props and places in the stage's palette: the `--stage-*` properties the
-   lesson stage sets. */
+   lesson stage sets. The stage also stills their motion for a child who asks
+   for less. */
 .prop {
   cursor: grab;
   touch-action: none;
@@ -59,11 +60,4 @@
   pointer-events: none;
   opacity: 0.95;
   filter: drop-shadow(0 10px 7px var(--stage-ghost-shadow));
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .entrance,
-  .halo {
-    animation: none;
-  }
 }

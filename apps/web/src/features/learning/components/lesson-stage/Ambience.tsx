@@ -1,7 +1,5 @@
-import type { CSSProperties } from 'react';
+import { delayStyle } from './stage-look';
 import styles from './Ambience.module.css';
-
-const delayed = (seconds: number) => ({ '--delay': `${seconds}s` }) as CSSProperties;
 
 // Spread over the stage's world without clumping: each step moves a fixed,
 // unrelated distance across and down, wrapping at the edges.
@@ -23,7 +21,7 @@ function Fireflies() {
   return (
     <g className={styles.fireflies}>
       {fireflies.map(({ x, y, r, delay }) => (
-        <circle key={`${x}-${y}`} cx={x} cy={y} r={r} style={delayed(delay)} />
+        <circle key={`${x}-${y}`} cx={x} cy={y} r={r} style={delayStyle(delay)} />
       ))}
     </g>
   );
@@ -34,7 +32,7 @@ function Petals() {
     <g className={styles.petals}>
       {petals.map(({ x, y, turn, delay }) => (
         <g key={`${x}-${y}`} transform={`translate(${x} ${y}) rotate(${turn})`}>
-          <ellipse rx="7" ry="3.6" style={delayed(delay)} />
+          <ellipse rx="7" ry="3.6" style={delayStyle(delay)} />
         </g>
       ))}
     </g>
@@ -42,8 +40,7 @@ function Petals() {
 }
 
 // What drifts over a lesson's scenes, in the stage's ambience colour: fireflies
-// glowing in a garden evening, or petals falling. It never takes a tap, and
-// holds still for a child who asks for less motion.
+// glowing in a garden evening, or petals falling. It never takes a tap.
 export function Ambience({ kind }: { kind: 'fireflies' | 'petals' }) {
   return kind === 'fireflies' ? <Fireflies /> : <Petals />;
 }

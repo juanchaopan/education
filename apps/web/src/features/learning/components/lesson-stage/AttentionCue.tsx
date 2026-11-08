@@ -1,6 +1,7 @@
 import styles from './AttentionCue.module.css';
 
-type Point = readonly [number, number];
+// A point on the stage's world.
+export type Point = readonly [number, number];
 
 // `shadow` is an SVG filter from the lesson's own paints, such as
 // `url(#garden-shadow)`, so a cue sits in the scene like its props.
@@ -46,7 +47,7 @@ function Pulse({ at: [x, y], radius = 40 }: { at: Point; radius?: number }) {
 }
 
 // 「看这里」: a cue drawing the child's eye, in the stage's cue colours. It
-// never takes a tap, and holds still for a child who asks for less motion.
+// never takes a tap.
 export function AttentionCue(cue: CueProps) {
   if (cue.kind === 'arrow') return <Arrow from={cue.from} to={cue.to} shadow={cue.shadow} />;
   if (cue.kind === 'finger') return <Finger at={cue.at} shadow={cue.shadow} />;

@@ -4,14 +4,13 @@ import {
   tilt,
   type GardenState,
 } from '../../lessons/garden-balance/garden-story';
-import { AttentionCue } from '../lesson-stage/AttentionCue';
+import { AttentionCue, type Point } from '../lesson-stage/AttentionCue';
 import { BoardText } from '../lesson-stage/BoardText';
 import { Basket, gardenShadow, Part, Scale, type PartProps } from './garden-art';
 import { movableProps } from './movable-props';
 import styles from './garden-art.module.css';
 
 type SceneProps = { state: GardenState; handling: Handling };
-type Point = [number, number];
 
 function held(id: string, { selected, lifted }: Handling): Partial<PartProps> {
   return { id, selected: selected === id, lifted: lifted === id };

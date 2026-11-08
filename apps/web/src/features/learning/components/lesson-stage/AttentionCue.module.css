@@ -1,5 +1,6 @@
 /* Cues in the stage's cue colours: the `--stage-cue*` properties the lesson
-   stage sets. None of them takes a tap meant for the props beneath. */
+   stage sets. None of them takes a tap meant for the props beneath, and the
+   stage stills them for a child who asks for less motion. */
 .arrow,
 .finger,
 .pulse {
@@ -75,13 +76,5 @@
   to {
     scale: 1.3;
     opacity: 0;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .arrow,
-  .finger,
-  .pulse circle {
-    animation: none;
   }
 }

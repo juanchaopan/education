@@ -1,5 +1,6 @@
 /* Drifting touches in the stage's ambience colour, the `--stage-ambience`
-   property the lesson stage sets. */
+   property the lesson stage sets. The stage stills them for a child who asks
+   for less motion. */
 .fireflies,
 .petals {
   pointer-events: none;
@@ -38,12 +39,5 @@
   50% {
     translate: 26px 34px;
     rotate: 40deg;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .fireflies circle,
-  .petals ellipse {
-    animation: none;
   }
 }
