@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <title>#138 视觉样稿对比</title>
+    <style>
+      body { margin: 0; padding: 24px; background: #2a2a2a; color: #eee; font-family: 'Microsoft YaHei', sans-serif; }
+      h1 { margin: 0 0 8px; font-size: 22px; }
+      p { margin: 0 0 24px; color: #bbb; }
+      h2 { margin: 36px 0 12px; font-size: 18px; color: #f2c35b; }
+      .row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; align-items: start; }
+      .row.phone { grid-template-columns: repeat(3, minmax(0, 300px)); justify-content: start; }
+      figure { margin: 0; }
+      figcaption { font-size: 14px; margin-bottom: 6px; color: #ddd; }
+      figcaption a { color: #8fd3ff; margin-left: 8px; font-size: 12px; }
+      img { width: 100%; border-radius: 8px; display: block; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4); }
+      .row.phone img { max-height: 640px; object-fit: cover; object-position: top; }
+    </style>
+  </head>
+  <body>
+    <h1>#138 全站视觉风格样稿</h1>
+    <p>A 手作工作台 · B 暮光剧场 · C 晨光绘本。点「打开」可看动效（按钮按下、卡片浮起、麦克风脉冲、加载）。</p>
+    <div id="root"></div>
+    <script>
+      const themes = [['a', 'A 手作工作台'], ['b', 'B 暮光剧场'], ['c', 'C 晨光绘本']];
+      const screens = [['home', '孩子题库首页'], ['login', '孩子登录'], ['parent', '家长空间总览'], ['lesson', '题目页周边'], ['kit', '部件样张']];
+      const figure = (t, name, s, v) =>
+        `<figure><figcaption>${name}<a href="index.html?theme=${t}&screen=${s}" target="_blank">打开</a></figcaption><img src="shots/${t}-${s}-${v}.jpg" alt="${name}" loading="lazy"></figure>`;
+      document.getElementById('root').innerHTML = screens
+        .map(([s, label]) =>
+          `<h2>${label} · 桌面</h2><div class="row">${themes.map(([t, n]) => figure(t, n, s, 'desktop')).join('')}</div>` +
+          (s === 'kit' ? '' : `<h2>${label} · 手机</h2><div class="row phone">${themes.map(([t, n]) => figure(t, n, s, 'phone')).join('')}</div>`))
+        .join('');
+    </script>
+  </body>
+</html>
