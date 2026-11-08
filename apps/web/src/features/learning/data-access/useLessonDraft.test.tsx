@@ -190,6 +190,27 @@ it('tells the page an edit a reload would lose, and saves it when the page asks'
   expect(result.current.draft.status).toBe('saved');
 });
 
+it('sends a discard that failed again as a discard when the page asks, never as a save', async () => {
+  const fetch = vi
+    .fn()
+    .mockResolvedValueOnce(reply(remote))
+    .mockRejectedValueOnce(new TypeError())
+    .mockResolvedValueOnce(reply(null));
+  const { result } = setupOnPage(fetch);
+  await waitFor(() => expect(result.current.draft.status).toBe('saved'));
+  await act(async () => {
+    await result.current.draft.discard();
+  });
+  await waitFor(() => expect(result.current.page.readiness).toBe('unsaved'));
+  act(() => result.current.page.saveUnsaved());
+  await waitFor(() => expect(result.current.page.readiness).toBe('ready'));
+  expect(JSON.parse(fetch.mock.calls[2]![1].body)).toEqual({
+    action: 'discard',
+    revision: remote.revision,
+  });
+  expect(result.current.draft.status).toBe('clean');
+});
+
 it('tells the page an edit kept through a conflict is unsaved until the child chooses', async () => {
   const fetch = vi
     .fn()

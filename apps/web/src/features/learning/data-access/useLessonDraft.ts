@@ -16,7 +16,8 @@ type DraftState = {
   local?: LocalDraft;
   conflict?: { draft: SavedDraft | null };
   busy?: boolean;
-  failed?: boolean;
+  // The command that last failed, so it can be sent again as it was.
+  failed?: DraftWrite['action'];
   message?: string;
 };
 
@@ -35,8 +36,9 @@ function statusFor(
   return base ? 'saved' : 'clean';
 }
 
-// What a reload would do to the draft: an edit not yet saved, or kept through
-// a conflict until the child chooses, would be lost.
+// What a reload would do to the draft: an edit not yet saved, a discard not
+// yet sent, or an edit kept through a conflict until the child chooses, would
+// be lost.
 function readinessOf(status: DraftStatus): Readiness {
   if (status === 'unsynced' || status === 'conflict') return 'unsaved';
   return status === 'saving' ? 'saving' : 'ready';
@@ -78,11 +80,13 @@ export function useLessonDraft({ id, version, csrf }: DraftScope, initial: Local
       local ?? state.local,
     );
   }
-  useReloadReadiness(readinessOf(status), () => void run('save'));
+  // Before a reload the page finishes what the child last asked for: a
+  // discard that failed is sent again as a discard, never as a save.
+  useReloadReadiness(readinessOf(status), () => void run(state.failed ?? 'save'));
 
   function edit(local: LocalDraft) {
     if (base !== undefined)
-      update((current) => ({ ...current, local, failed: false, message: undefined }));
+      update((current) => ({ ...current, local, failed: undefined, message: undefined }));
   }
 
   function resolve(choice: 'keep' | 'remote') {
@@ -125,7 +129,7 @@ function useDraftCommand(
   return async (command: DraftWrite, sent?: LocalDraft) => {
     if (inFlight.current === scope) return;
     inFlight.current = scope;
-    update((current) => ({ ...current, busy: true, failed: false, message: undefined }));
+    update((current) => ({ ...current, busy: true, failed: undefined, message: undefined }));
     try {
       const result = await requestDraft(scope, command);
       update((current) =>
@@ -139,7 +143,7 @@ function useDraftCommand(
       );
     } catch (error) {
       const message = error instanceof DraftSizeError ? error.message : undefined;
-      update((current) => ({ ...current, busy: false, failed: true, message }));
+      update((current) => ({ ...current, busy: false, failed: command.action, message }));
     } finally {
       if (inFlight.current === scope) inFlight.current = null;
     }
