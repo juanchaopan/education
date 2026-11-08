@@ -1,8 +1,9 @@
 import { familyExportScope } from '@education/contracts';
+import { Loading } from '../../../shared/ui/Loading';
+import { Notice } from '../../../shared/ui/Notice';
+import { Panel } from './Panel';
 import { ParentPasswordForm } from './ParentPasswordForm';
 import { ScopeList } from './ScopeList';
-import card from './RegistrationForm.module.css';
-import panel from './RegistrationKeyCard.module.css';
 
 type Props = {
   pending: boolean;
@@ -18,25 +19,20 @@ type Props = {
 // distinct from the other password confirmations on the parent page.
 export function FamilyExportCard(props: Props) {
   return (
-    <section className={`${card.card} ${panel.panel}`} aria-labelledby="family-export-title">
-      <h2 id="family-export-title">导出家庭数据</h2>
+    <Panel titleId="family-export-title" title="导出家庭数据">
       <p>
         把本家庭的数据保存成一个 JSON
         文件，可以用文本编辑器打开。文件在下载时生成，服务器不保留副本。
       </p>
       <ScopeList title="文件包含" items={familyExportScope.includes} />
       <ScopeList title="文件不包含" items={familyExportScope.excludes} />
-      {props.preparing && <p role="status">正在准备导出文件…</p>}
+      {props.preparing && <Loading label="正在准备导出文件…" />}
       {props.saved && (
         <p role="status">
           已下载 {props.saved}。文件里有孩子的学习记录，请妥善保管，不要随意转发。
         </p>
       )}
-      {props.error && (
-        <p role="alert" className={card.notice}>
-          {props.error}
-        </p>
-      )}
+      {props.error && <Notice tone="error">{props.error}</Notice>}
       <ParentPasswordForm
         id="export-parent-password"
         label="导出前输入家长密码"
@@ -47,6 +43,6 @@ export function FamilyExportCard(props: Props) {
         onChange={props.onPassword}
         onSubmit={props.onExport}
       />
-    </section>
+    </Panel>
   );
 }

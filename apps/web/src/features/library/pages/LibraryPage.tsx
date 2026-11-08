@@ -1,5 +1,6 @@
 import { useSearchParams } from 'react-router-dom';
 import { useCatalog } from '../../../shared/lib/useCatalog';
+import { Card } from '../../../shared/ui/Card';
 import { EmptyState } from '../../../shared/ui/EmptyState';
 import { CatalogNavigation } from '../components/CatalogNavigation';
 import { WelcomeHero, LearningPrinciples } from '../components/Welcome';
@@ -13,7 +14,7 @@ export function LibraryPage() {
   return (
     <>
       <WelcomeHero />
-      <section className={styles.library} aria-labelledby="library-title">
+      <Card flat aria-labelledby="library-title">
         <div className={styles.sectionHeading}>
           <div>
             <p className={styles.eyebrow}>你的探索地图</p>
@@ -31,11 +32,11 @@ export function LibraryPage() {
           <span>题目顺序</span>
         </div>
         {catalog.isPending && (
-          <EmptyState icon="◌" title="正在打开探索地图" description="请稍等一下。" />
+          <EmptyState icon="waiting" title="正在打开探索地图" description="请稍等一下。" />
         )}
         {catalog.isError && (
           <EmptyState
-            icon="☁"
+            icon="cloud"
             title="刚才没能打开"
             description="可能是网络休息了一下，我们再试试。"
             actionLabel="再试一次"
@@ -46,7 +47,7 @@ export function LibraryPage() {
         )}
         {catalog.isSuccess && selection?.grade.options.length === 0 && (
           <EmptyState
-            icon="✿"
+            icon="flower"
             title="好问题，正在准备中"
             description="这里将放上可以说、可以画、可以动手探索的题目。准备好后，就能从这里出发。"
           />
@@ -58,7 +59,7 @@ export function LibraryPage() {
             onChange={(level, value) => setQuery(changeCategory(selection, level, value))}
           />
         )}
-      </section>
+      </Card>
       <LearningPrinciples />
     </>
   );

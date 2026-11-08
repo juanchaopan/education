@@ -55,6 +55,8 @@
   color: var(--gold);
   transform: rotate(12deg);
 }
+/* The tilted card in the illustration is decoration, not a section of the
+   page. */
 .card {
   position: relative;
   width: 255px;
@@ -118,12 +120,6 @@
   background: var(--coral);
   top: 15%;
   right: 5%;
-}
-.library {
-  padding: var(--space-6);
-  background: var(--paper);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-lg);
 }
 .sectionHeading {
   display: flex;
@@ -197,9 +193,6 @@
   .sectionHeading {
     align-items: start;
     flex-direction: column;
-  }
-  .library {
-    padding: var(--space-4);
   }
   .principles {
     grid-template-columns: 1fr;

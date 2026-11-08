@@ -1,16 +1,7 @@
+/* The child choice puts its label close above its list. */
 .picker {
   display: grid;
   gap: var(--space-2);
-  justify-items: start;
-}
-.picker select {
-  max-width: 100%;
-  padding: var(--space-3);
-  border: 1px solid var(--muted);
-  border-radius: var(--radius-sm);
-  color: var(--ink);
-  background: var(--paper);
-  font: inherit;
 }
 .problems {
   display: grid;

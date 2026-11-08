@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react';
 import { passwordIssue } from '@education/contracts';
+import { Page } from '../../../shared/ui/Page';
 import { StandaloneLink } from '../../../shared/ui/StandaloneLink';
 import { PasswordResetForm } from '../components/PasswordResetForm';
 import { usePasswordReset } from '../data-access/useRecovery';
+
 function takeToken() {
   const value = new URLSearchParams(window.location.hash.slice(1)).get('token') ?? '';
   return /^[A-Za-z0-9_-]{43}$/.test(value) ? value : '';
 }
+
 export function ResetPasswordPage() {
   const [token, setToken] = useState(takeToken);
   const [password, setPassword] = useState('');
@@ -45,10 +48,9 @@ export function ResetPasswordPage() {
   return (
     <>
       {done ? (
-        <section>
-          <h1>密码已更新</h1>
+        <Page titleId="reset-done-title" title="密码已更新">
           <p role="status">旧登录状态已失效。请返回家长空间，用新密码登录。</p>
-        </section>
+        </Page>
       ) : token ? (
         <PasswordResetForm
           password={password}
@@ -60,12 +62,11 @@ export function ResetPasswordPage() {
           onSubmit={submit}
         />
       ) : (
-        <section>
-          <h1>请从恢复邮件打开</h1>
+        <Page titleId="reset-link-title" title="请从恢复邮件打开">
           <p role="status">
             没有有效的恢复链接。刷新后需要从邮件重新打开，打开页面本身不会修改密码。
           </p>
-        </section>
+        </Page>
       )}
       {!done && (
         <p>

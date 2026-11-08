@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import type { ChildRegistrationReceipt } from '@education/contracts';
+import { Page } from '../../../shared/ui/Page';
 import { StandaloneLink } from '../../../shared/ui/StandaloneLink';
 import { ChildRegistrationForm } from '../components/ChildRegistrationForm';
 import { ChildRegistrationSuccess } from '../components/ChildRegistrationSuccess';
@@ -37,8 +38,7 @@ export function ChildRegistrationPage() {
     );
   };
   return (
-    <section aria-labelledby="child-title">
-      <h1 id="child-title">孩子注册</h1>
+    <Page titleId="child-title" title="孩子注册">
       {receipt ? (
         <>
           <ChildRegistrationSuccess receipt={receipt} />
@@ -63,6 +63,6 @@ export function ChildRegistrationPage() {
       <p>
         <StandaloneLink to="/family">请家长帮忙，前往家长空间</StandaloneLink>
       </p>
-    </section>
+    </Page>
   );
 }

@@ -1,6 +1,9 @@
-import notice from './VerificationNotice.module.css';
 import type { VerificationStatus, VerificationAction } from '@education/contracts';
-import styles from './RegistrationForm.module.css';
+import { Button } from '../../../shared/ui/Button';
+import { Card } from '../../../shared/ui/Card';
+import { Loading } from '../../../shared/ui/Loading';
+import { Notice } from '../../../shared/ui/Notice';
+import styles from './VerificationNotice.module.css';
 
 export type VerificationNoticeProps = {
   status?: VerificationStatus;
@@ -10,6 +13,7 @@ export type VerificationNoticeProps = {
   onSend: (action: VerificationAction['action']) => void;
   onRefresh: () => void;
 };
+
 const notices = {
   'not-sent': '还未发送验证邮件。请点击下面的按钮，邮件只会发往您的家长邮箱。',
   sending: '正在处理邮件。请稍后刷新发送状态，不要连续点击发送。',
@@ -21,23 +25,25 @@ const notices = {
   expired: '验证链接已过期。请重新发送一封验证邮件。',
   verified: '邮箱已验证。请退出后重新登录，以获得已验证账号权限。',
 };
+
 export function VerificationNotice(props: VerificationNoticeProps) {
   return (
-    <section className={`${styles.card} ${notice.panel}`} aria-labelledby="verification-title">
+    <Card className={styles.panel} aria-labelledby="verification-title">
       <h2 id="verification-title">验证家长邮箱</h2>
-      {props.loading && <p role="status">正在查看发送状态…</p>}
+      {props.loading && <Loading label="正在查看发送状态…" />}
       {props.status && <VerificationContent {...props} status={props.status} />}
-      {props.error && (
-        <p role="alert" className={styles.notice}>
-          {props.error}
-        </p>
-      )}
-      <button type="button" disabled={props.pending || props.loading} onClick={props.onRefresh}>
+      {props.error && <Notice tone="error">{props.error}</Notice>}
+      <Button
+        className={styles.action}
+        disabled={props.pending || props.loading}
+        onClick={props.onRefresh}
+      >
         刷新发送状态
-      </button>
-    </section>
+      </Button>
+    </Card>
   );
 }
+
 function VerificationContent({
   status,
   pending,
@@ -55,12 +61,12 @@ function VerificationContent({
             <p>还需等待约 {status.retryAfter} 秒；稍后点击“刷新发送状态”。</p>
           )}
           {status.canRetry && (
-            <button type="button" disabled={disabled} onClick={() => onSend('retry')}>
+            <Button className={styles.action} disabled={disabled} onClick={() => onSend('retry')}>
               安全重试这次发送
-            </button>
+            </Button>
           )}
-          <button
-            type="button"
+          <Button
+            className={styles.action}
             disabled={disabled}
             onClick={() => onSend(status.status === 'not-sent' ? 'send' : 'resend')}
           >
@@ -69,7 +75,7 @@ function VerificationContent({
               : status.status === 'not-sent'
                 ? '发送验证邮件'
                 : '重新发送（旧链接失效）'}
-          </button>
+          </Button>
         </>
       )}
     </>

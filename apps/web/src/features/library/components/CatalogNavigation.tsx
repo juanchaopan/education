@@ -2,6 +2,7 @@ import { useId } from 'react';
 import { Link } from 'react-router-dom';
 import type { ProblemSummary } from '@education/contracts';
 import { EmptyState } from '../../../shared/ui/EmptyState';
+import { SelectField } from '../../../shared/ui/SelectField';
 import type { CategoryLevel } from '../model';
 import { problemPath } from '../../../shared/lib/problem-path';
 import styles from './CatalogNavigation.module.css';
@@ -27,16 +28,17 @@ export function CatalogNavigation({ selection, problems, onChange }: CatalogNavi
       <div className={styles.filters} role="group" aria-label="筛选题目">
         {levels.map(({ key, label }) => (
           <div className={styles.filter} key={key}>
-            <label htmlFor={`${prefix}-${key}`}>{label}</label>
-            <select
+            <SelectField
               id={`${prefix}-${key}`}
+              label={label}
+              emphasis
               value={selection[key].value}
               onChange={(event) => onChange(key, event.currentTarget.value)}
             >
               {selection[key].options.map((option) => (
                 <option key={option}>{option}</option>
               ))}
-            </select>
+            </SelectField>
           </div>
         ))}
       </div>
@@ -49,7 +51,11 @@ export function CatalogNavigation({ selection, problems, onChange }: CatalogNavi
           ))}
         </ol>
       ) : (
-        <EmptyState icon="✿" title="这个分类还没有题目" description="可以换一个分类继续探索。" />
+        <EmptyState
+          icon="flower"
+          title="这个分类还没有题目"
+          description="可以换一个分类继续探索。"
+        />
       )}
     </div>
   );
