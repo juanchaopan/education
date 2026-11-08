@@ -1,12 +1,12 @@
-import { waitForReadiness } from './staging-readiness.mjs';
+import { timedGet, waitForReadiness } from './staging-readiness.mjs';
+import { releaseRevision } from './staging-release.mjs';
 
 export const alertLabel = 'staging-alert';
-const revision = /^[0-9a-f]{40}$/;
 
 // The job whose result says a staging workflow did its work. A run where that
 // job was skipped, such as a release run for a pull request, proves nothing
 // either way; any failed job in a run is an alert.
-export const decisiveJobs = {
+const decisiveJobs = {
   staging: 'deploy',
   'staging-backup': 'backup',
   'staging-mail-retention': 'cleanup',
@@ -26,19 +26,9 @@ export async function checkStaging(origin, { fetcher = fetch, wait } = {}) {
     problems.push(`就绪检查失败：${error.message}`);
   }
   try {
-    const started = performance.now();
-    const response = await fetcher(`${origin}/version.json`, {
-      redirect: 'error',
-      cache: 'no-store',
-      signal: AbortSignal.timeout(5000),
-    });
-    measurements.push({
-      path: '/version.json',
-      status: response.status,
-      ms: Math.round(performance.now() - started),
-    });
+    const response = await timedGet(fetcher, origin, '/version.json', measurements);
     const body = response.status === 200 ? await response.json() : await response.arrayBuffer();
-    if (!revision.test(body?.revision ?? '')) problems.push('版本文件没有有效的发布版本号');
+    if (!releaseRevision.test(body?.revision ?? '')) problems.push('版本文件没有有效的发布版本号');
   } catch (error) {
     problems.push(`版本文件读取失败：${error.message}`);
   }
@@ -46,10 +36,13 @@ export async function checkStaging(origin, { fetcher = fetch, wait } = {}) {
 }
 
 // How a completed staging workflow run ended: failing, succeeded, or nothing
-// to say.
+// to say. A workflow without a deciding job could never close its alert, so it
+// is refused rather than watched halfway.
 export function runOutcome(workflow, jobs) {
+  const decisiveJob = decisiveJobs[workflow];
+  if (!decisiveJob) throw new Error(`No deciding job is known for workflow ${workflow}`);
   if (jobs.some(({ conclusion }) => failed.has(conclusion))) return 'failing';
-  const decisive = jobs.find(({ name }) => name === decisiveJobs[workflow]);
+  const decisive = jobs.find(({ name }) => name === decisiveJob);
   return decisive?.conclusion === 'success' ? 'succeeded' : 'unknown';
 }
 

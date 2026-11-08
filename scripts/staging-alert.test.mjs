@@ -13,22 +13,22 @@ const origin = 'https://staging.example';
 const release = 'a'.repeat(40);
 
 function site(routes) {
-  const requested = [];
   const fetcher = async (url) => {
-    requested.push(new URL(url).pathname);
     const route = routes[new URL(url).pathname];
     if (route instanceof Error) throw route;
     return new Response(JSON.stringify(route.body), { status: route.status });
   };
-  return { fetcher, requested, wait: async () => {} };
+  return { fetcher, wait: async () => {} };
 }
 
 test('healthy staging is ready and serves a release revision, each request timed', async () => {
-  const { fetcher, wait } = site({
-    '/health/ready': { status: 200, body: { status: 'ready' } },
-    '/version.json': { status: 200, body: { revision: release } },
-  });
-  const result = await checkStaging(origin, { fetcher, wait });
+  const result = await checkStaging(
+    origin,
+    site({
+      '/health/ready': { status: 200, body: { status: 'ready' } },
+      '/version.json': { status: 200, body: { revision: release } },
+    }),
+  );
   assert.equal(result.healthy, true);
   assert.deepEqual(result.problems, []);
   assert.deepEqual(
@@ -87,6 +87,13 @@ test('a run is failing when any job fails and succeeds only when its decisive jo
     'deploy → Build candidate, migrate, smoke, then promote staging',
   ]);
   assert.equal(runOutcome('staging-mail-retention', [job('cleanup', 'timed_out')]), 'failing');
+});
+
+test('a watched workflow without a known deciding job is refused', () => {
+  assert.throws(
+    () => runOutcome('staging-renamed', [{ name: 'deploy', conclusion: 'success' }]),
+    /No deciding job is known for workflow staging-renamed/,
+  );
 });
 
 function tracker(existing) {

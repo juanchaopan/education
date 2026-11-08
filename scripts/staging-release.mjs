@@ -1,8 +1,11 @@
+// A release is named by the full SHA of the main commit it was built from.
+export const releaseRevision = /^[a-f0-9]{40}$/;
+
 export function validateRelease(settings) {
   const origin = new URL(settings.origin);
   if (origin.protocol !== 'https:' || origin.origin !== settings.origin)
     throw new Error('An exact HTTPS staging origin is required');
-  if (!/^[a-f0-9]{40}$/.test(settings.revision)) throw new Error('A full release SHA is required');
+  if (!releaseRevision.test(settings.revision)) throw new Error('A full release SHA is required');
   if (!/^prj_[\w]+$/.test(settings.projectId) || !/^team_[\w]+$/.test(settings.teamId))
     throw new Error('Staging project and team IDs are required');
   return origin.hostname;
