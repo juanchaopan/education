@@ -1,7 +1,7 @@
 import react from '@vitejs/plugin-react';
+import { releaseRevision } from '@education/contracts';
 import type { Plugin } from 'vite';
 import { defineConfig } from 'vitest/config';
-import { releasePattern } from './src/app/release/release-pattern.ts';
 
 // The release a deployment builds, the same commit its /version.json reports.
 // The page names it in a meta tag, so an open page can tell that a newer
@@ -10,7 +10,7 @@ function releaseName(revision = process.env.RELEASE_SHA): Plugin {
   return {
     name: 'education-release',
     transformIndexHtml: () =>
-      revision && releasePattern.test(revision)
+      revision && releaseRevision.test(revision)
         ? [{ tag: 'meta', attrs: { name: 'education-release', content: revision } }]
         : [],
   };

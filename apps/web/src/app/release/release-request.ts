@@ -1,4 +1,4 @@
-import { releasePattern } from './release-pattern';
+import { releaseRevision } from '@education/contracts';
 
 // The release the deployment serves now, from its version file. The file is
 // never taken from a cache. A reply that fails or names no release is an
@@ -12,7 +12,7 @@ export async function requestRelease(cancel?: AbortSignal) {
   if (!response.ok) throw new Error('The version file did not arrive');
   const body: unknown = await response.json();
   const revision = (body as { revision?: unknown } | null)?.revision;
-  if (typeof revision !== 'string' || !releasePattern.test(revision))
+  if (typeof revision !== 'string' || !releaseRevision.test(revision))
     throw new Error('The version file names no release');
   return revision;
 }
