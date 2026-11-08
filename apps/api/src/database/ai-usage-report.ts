@@ -1,9 +1,9 @@
 import type pg from 'pg';
+import { aiUsageState } from './schema.js';
 
-const states = ['reserved', 'released', 'unknown', 'settled', 'out-of-bounds'] as const;
-type State = (typeof states)[number];
+type State = (typeof aiUsageState.enumValues)[number];
 type Calls = Record<State, number>;
-export type AiUsageAlert = 'provider-failing' | 'reply-out-of-bounds';
+type AiUsageAlert = 'provider-failing' | 'reply-out-of-bounds';
 
 // Provider calls admitted in a window, by how they were settled, with their
 // tokens and the cost held against the budget. Nothing in it names a family or
@@ -50,7 +50,7 @@ export async function summarizeAiUsage(
       FROM ai_usage WHERE admitted_at>=$1 AND admitted_at<$2 GROUP BY state`,
     [since, until],
   );
-  const calls = Object.fromEntries(states.map((state) => [state, 0])) as Calls;
+  const calls = Object.fromEntries(aiUsageState.enumValues.map((state) => [state, 0])) as Calls;
   let inputTokens = 0;
   let outputTokens = 0;
   let nanodollars = 0n;

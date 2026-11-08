@@ -1,3 +1,4 @@
+import pg from 'pg';
 import { afterEach, describe, expect, it } from 'vitest';
 import { buildApp } from './app.js';
 import { RequestError } from './shared/request-error.js';
@@ -9,7 +10,8 @@ const password = 'synthetic parent password 4471';
 const session = 'synthetic-session-token-8812';
 const childText = '我觉得答案是十七个';
 const drawing = 'U1lOVEhFVElDRFJBV0lORw==';
-const secrets = [pin, key, password, session, childText, drawing, 'postgres://'];
+const instruction = '再数一数左边的点';
+const secrets = [pin, key, password, session, childText, drawing, instruction, 'postgres://'];
 
 type Line = Record<string, unknown> & { msg: string; level: number };
 const apps: ReturnType<typeof buildApp>[] = [];
@@ -26,6 +28,10 @@ function logged(options: Parameters<typeof buildApp>[0] = {}) {
   return { app, text: () => lines.join(''), completed };
 }
 
+function databaseError(message: string, code: string) {
+  return Object.assign(new pg.DatabaseError(message, message.length, 'error'), { code });
+}
+
 const childHeaders = {
   origin,
   'content-type': 'application/json',
@@ -40,6 +46,23 @@ const childLogin = {
   headers: childHeaders,
   payload: { familyCode: 'FAMILY01', nickname: '小鹿', pin },
 } as const;
+const feedback = (payload: object) =>
+  ({
+    method: 'POST',
+    url: '/api/v1/problems/count-dots/1/feedback',
+    headers: childHeaders,
+    payload: { stepId: 'count-left', ...payload },
+  }) as const;
+
+function failingLogin(failure: Error) {
+  return logged({
+    childSessions: {
+      login: async () => {
+        throw failure;
+      },
+    } as never,
+  });
+}
 
 describe('request log', () => {
   it('records one line per request with its request ID, route, status and time', async () => {
@@ -76,10 +99,10 @@ describe('request log', () => {
     for (const secret of secrets) expect(text()).not.toContain(secret);
   });
 
-  it('classifies a database failure by its code and keeps the message out', async () => {
-    const failure = Object.assign(
-      new Error(`duplicate key ${key} ${pin} at postgres://user:${password}@db`),
-      { code: '23505' },
+  it('classifies a PostgreSQL error by its SQLSTATE and keeps the message out', async () => {
+    const failure = databaseError(
+      `duplicate key ${key} ${pin} at postgres://user:${password}@db`,
+      '23505',
     );
     const { app, completed, text } = logged({
       childRegistration: (async () => {
@@ -107,16 +130,18 @@ describe('request log', () => {
     [Object.assign(new Error('connect ECONNREFUSED postgres://db'), { code: 'ECONNREFUSED' })],
     [new Error('timeout exceeded when trying to connect')],
   ])('counts a connection failure during sign-in as a database failure', async (failure) => {
-    const { app, completed, text } = logged({
-      childSessions: {
-        login: async () => {
-          throw failure;
-        },
-      } as never,
-    });
+    const { app, completed, text } = failingLogin(failure);
     expect((await app.inject(childLogin)).statusCode).toBe(503);
     expect(completed()[0]).toMatchObject({ outcome: 'database' });
     for (const secret of secrets) expect(text()).not.toContain(secret);
+  });
+
+  it('does not take any five-letter code for a database failure', async () => {
+    const { app, completed } = failingLogin(
+      Object.assign(new Error('write EPIPE'), { code: 'EPIPE' }),
+    );
+    await app.inject(childLogin);
+    expect(completed()[0]).toMatchObject({ outcome: 'server-error', code: 'UNKNOWN' });
   });
 
   it('separates rate limits, unconfigured services and unexpected errors', async () => {
@@ -131,12 +156,7 @@ describe('request log', () => {
       }) as never,
     });
     await app.inject(childLogin);
-    await app.inject({
-      method: 'POST',
-      url: '/api/v1/problems/count-dots/1/feedback',
-      headers: childHeaders,
-      payload: { stepId: 'count-left', text: childText },
-    });
+    await app.inject(feedback({ text: childText }));
     await app.inject({
       method: 'POST',
       url: '/api/v1/parents/register',
@@ -156,9 +176,9 @@ describe('request log', () => {
     const closed = logged({ ready: async () => false });
     expect((await closed.app.inject('/api/v1/problems')).statusCode).toBe(503);
     expect((await closed.app.inject('/health/ready')).statusCode).toBe(503);
-    expect(closed.completed().map(({ outcome }) => outcome)).toEqual([
-      'maintenance',
-      'unavailable',
+    expect(closed.completed().map(({ outcome, level }) => [outcome, level])).toEqual([
+      ['maintenance', 40],
+      ['maintenance', 40],
     ]);
     const down = logged({
       ready: async () => {
@@ -176,22 +196,43 @@ describe('request log', () => {
     expect(down.text()).not.toContain('postgres://');
   });
 
-  it('records how an AI request ended without the child text or drawing', async () => {
+  it('keeps an unrecognised readiness failure as a database failure with no message', async () => {
     const { app, completed, text } = logged({
-      teachingFeedback: async () => ({ status: 'fallback', reason: 'missing-key' }) as never,
+      ready: async () => {
+        throw new Error(`private postgres://user:${password}@database`);
+      },
     });
-    const response = await app.inject({
-      method: 'POST',
-      url: '/api/v1/problems/count-dots/1/feedback',
-      headers: childHeaders,
-      payload: { stepId: 'count-left', text: childText, image: drawing },
+    await app.inject('/health/ready');
+    expect(completed()[0]).toMatchObject({ outcome: 'database', code: 'UNKNOWN' });
+    expect(text()).not.toContain(password);
+  });
+
+  it('records how an AI request ended without the child text, drawing or reply', async () => {
+    const replies = [
+      { status: 'fallback', reason: 'missing-key' },
+      {
+        status: 'ready',
+        source: 'ai',
+        feedback: { status: 'needs-work', instruction, stepId: 'count-left' },
+      },
+    ];
+    const { app, completed, text } = logged({
+      teachingFeedback: async () => replies.shift() as never,
     });
-    expect(response.statusCode).toBe(200);
-    expect(completed()[0]).toMatchObject({
-      route: '/api/v1/problems/:id/:version/feedback',
-      outcome: 'ok',
-      ai: { resource: 'feedback', status: 'fallback', reason: 'missing-key' },
-    });
+    for (let ask = 0; ask < 2; ask++)
+      expect((await app.inject(feedback({ text: childText, image: drawing }))).statusCode).toBe(
+        200,
+      );
+    expect(completed().map(({ route, ai }) => [route, ai])).toEqual([
+      [
+        '/api/v1/problems/:id/:version/feedback',
+        { resource: 'feedback', status: 'fallback', reason: 'missing-key' },
+      ],
+      [
+        '/api/v1/problems/:id/:version/feedback',
+        { resource: 'feedback', status: 'ready', source: 'ai' },
+      ],
+    ]);
     for (const secret of secrets) expect(text()).not.toContain(secret);
   });
 });

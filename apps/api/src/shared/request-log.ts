@@ -1,7 +1,7 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
-import { readinessErrorCode } from './readiness-error.js';
+import { databaseErrorCode, errorCode } from './database-error.js';
 
-export type RequestOutcome =
+type RequestOutcome =
   | 'ok'
   | 'client-error'
   | 'rate-limited'
@@ -21,26 +21,20 @@ export function noteRequest(request: FastifyRequest, note: Note) {
   notes.set(request, { ...notes.get(request), ...note });
 }
 
-const sqlState = /^[0-9A-Z]{5}$/;
-
-function errorCode(error: unknown) {
-  const code = error && typeof error === 'object' && 'code' in error ? error.code : undefined;
-  return typeof code === 'string' ? code : undefined;
-}
-
 // Records an error the handlers did not answer themselves. A refused request
-// keeps only a framework error code. A failure is a database failure when it
-// carries a known connection code, a timeout or a PostgreSQL SQLSTATE. Only
-// those codes are kept: an error's message can hold a connection string or a
-// child's input.
+// keeps only a framework error code; a failure is a database failure when it
+// carries a database code, and a server error otherwise.
 export function noteError(request: FastifyRequest, error: unknown, status: number) {
   const code = errorCode(error);
   const framework = code?.startsWith('FST_') ? code : 'UNKNOWN';
   if (status < 500) return noteRequest(request, { code: framework });
-  const known = readinessErrorCode(error);
-  if (known !== 'UNKNOWN') return noteRequest(request, { outcome: 'database', code: known });
-  if (code && sqlState.test(code)) return noteRequest(request, { outcome: 'database', code });
-  noteRequest(request, { outcome: 'server-error', code: framework });
+  const database = databaseErrorCode(error);
+  noteRequest(
+    request,
+    database
+      ? { outcome: 'database', code: database }
+      : { outcome: 'server-error', code: framework },
+  );
 }
 
 function outcomeOf(status: number, note: Note | undefined): RequestOutcome {
@@ -79,8 +73,8 @@ export function registerRequestLog(app: FastifyInstance) {
         status: reply.statusCode,
         durationMs: Math.round(reply.elapsedTime),
         outcome,
-        ...(note?.code && { code: note.code }),
-        ...(note?.ai && { ai: note.ai }),
+        code: note?.code,
+        ai: note?.ai,
       },
       'Request completed',
     );

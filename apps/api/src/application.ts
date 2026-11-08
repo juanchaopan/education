@@ -38,7 +38,7 @@ import {
   deletionLedgerDatabase,
   type DatabaseSource,
 } from './shared/database-config.js';
-import { readinessErrorCode } from './shared/readiness-error.js';
+import { databaseErrorCode } from './shared/database-error.js';
 import { readRevision } from './shared/revision.js';
 import { createDrafts } from './draft-application.js';
 import { createAnswering } from './answer-application.js';
@@ -108,7 +108,7 @@ function createPools(env: NodeJS.ProcessEnv, config: Config) {
 }
 
 // Idle connections can fail during a database restart without ending the HTTP
-// process. The log names the database and an allowlisted error category only.
+// process. The log names the database and an allowlisted error code only.
 function closePoolsWith(
   app: ReturnType<typeof buildApp>,
   pools: { name: string; pool: pg.Pool | undefined }[],
@@ -116,7 +116,7 @@ function closePoolsWith(
   for (const { name, pool } of pools)
     pool?.on('error', (error) =>
       app.log.error(
-        { database: name, outcome: 'database', code: readinessErrorCode(error) },
+        { database: name, outcome: 'database', code: databaseErrorCode(error) ?? 'UNKNOWN' },
         'Database connection unavailable',
       ),
     );
@@ -281,9 +281,9 @@ function createChildAccess(
 ) {
   if (!pool || !sessions || !admit || !config.pinPepper) return undefined;
   return createChildAccessService({
-    repository: createChildAccessRepository(pool, config.rateLimitKey!),
     sessions,
     admit,
+    repository: createChildAccessRepository(pool, config.rateLimitKey!),
     replacePin: createReplacementPin(config.pinPepper),
   });
 }

@@ -14,17 +14,12 @@ type Handler<B, R> = (
   body: B,
   signal: AbortSignal,
 ) => Promise<R>;
-type Result = { status: string; reason?: string; source?: string };
-
-// Only how the call ended goes to the request log, never the child's text or
-// the provider's reply.
-function aiOutcome(resource: string, { status, reason, source }: Result): AiOutcome {
-  return { resource, status, ...(reason && { reason }), ...(source && { source }) };
-}
+type Result = Omit<AiOutcome, 'resource'>;
 
 // A child's AI request for one problem step: same-origin JSON with the session
 // and CSRF token, a bounded body, an uncached reply, and cancellation of the
-// provider call when the child stops waiting or leaves.
+// provider call when the child stops waiting or leaves. Only how the call ended
+// goes to the request log, never the child's text or the provider's reply.
 export function registerChildAiRequest<B extends TSchema, R extends TSchema>(
   app: FastifyInstance,
   origin: string,
@@ -52,7 +47,8 @@ export function registerChildAiRequest<B extends TSchema, R extends TSchema>(
       });
       reply.header('Cache-Control', 'no-store').header('Vary', 'Cookie');
       const result = await handle(credentials, problem, request.body, cancel.signal);
-      noteRequest(request, { ai: aiOutcome(route.resource, result) });
+      const { status, reason, source } = result;
+      noteRequest(request, { ai: { resource: route.resource, status, reason, source } });
       return result;
     },
   );

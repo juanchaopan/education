@@ -34,7 +34,7 @@ import { registerCatalog } from './catalog/routes/catalog.js';
 import { registerParentRegistration } from './identity/routes/registration.js';
 import type { RegistrationService } from './identity/services/registration.js';
 import { RequestError } from './shared/request-error.js';
-import { readinessErrorCode } from './shared/readiness-error.js';
+import { databaseErrorCode } from './shared/database-error.js';
 import { noteError, noteRequest, registerRequestLog } from './shared/request-log.js';
 import { registerDrafts } from './learning/routes/draft.js';
 import type { DraftService } from './learning/services/draft.js';
@@ -97,7 +97,7 @@ export function buildApp(options: AppOptions = {}) {
     () => ({ status: 'ok' }),
   );
   app.get('/health/ready', async (request, reply) => {
-    const ready = (await readiness(request, options.ready)) === 'ready';
+    const ready = await isReady(request, options.ready);
     return reply
       .code(ready ? 200 : 503)
       .header('Cache-Control', 'no-store')
@@ -119,18 +119,20 @@ export function buildApp(options: AppOptions = {}) {
   return app;
 }
 
-// A database that answers can still be closed: its migration is behind or its
-// service gate is shut. A check that fails is a database failure, logged with
-// only an allowlisted error category.
-async function readiness(request: FastifyRequest, ready: Ready | undefined) {
+// Whether the database is ready, noting why not on the request. A database
+// that answers can still be closed for maintenance: its migration is behind or
+// its service gate is shut. A check that fails is a database failure, and only
+// an allowlisted error code is kept. Without a configured check nothing is
+// ready.
+async function isReady(request: FastifyRequest, ready: Ready | undefined) {
+  if (!ready) return false;
   try {
-    return (await ready?.()) === true ? 'ready' : 'closed';
+    if (await ready()) return true;
+    noteRequest(request, { outcome: 'maintenance' });
   } catch (error) {
-    const code = readinessErrorCode(error);
-    request.log.warn({ code }, 'Database readiness unavailable');
-    noteRequest(request, { outcome: 'database', code });
-    return 'failed';
+    noteRequest(request, { outcome: 'database', code: databaseErrorCode(error) ?? 'UNKNOWN' });
   }
+  return false;
 }
 
 // With a database configured, the API answers only while the database is ready.
@@ -141,10 +143,7 @@ async function readiness(request: FastifyRequest, ready: Ready | undefined) {
 function registerServiceGate(app: FastifyInstance, ready: Ready | undefined) {
   if (!ready) return;
   app.addHook('onRequest', async (request, reply) => {
-    if (!request.routeOptions.url?.startsWith('/api/')) return;
-    const state = await readiness(request, ready);
-    if (state === 'ready') return;
-    if (state === 'closed') noteRequest(request, { outcome: 'maintenance' });
+    if (!request.routeOptions.url?.startsWith('/api/') || (await isReady(request, ready))) return;
     return reply
       .code(503)
       .header('Cache-Control', 'no-store')
