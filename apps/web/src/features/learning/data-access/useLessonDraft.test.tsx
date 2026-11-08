@@ -1,8 +1,7 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { SavedDraft } from '@education/contracts';
 import { act, renderHook, waitFor } from '@testing-library/react';
-import type { PropsWithChildren } from 'react';
 import { afterEach, expect, it, vi } from 'vitest';
+import { queryWrapper } from '../../../test/query-wrapper';
 import { useLessonDraft } from './useLessonDraft';
 
 const initial = { stepId: 'start', drawing: [] };
@@ -18,13 +17,9 @@ afterEach(() => vi.unstubAllGlobals());
 
 function setup(fetch: ReturnType<typeof vi.fn>) {
   vi.stubGlobal('fetch', fetch);
-  const client = new QueryClient();
-  const wrapper = ({ children }: PropsWithChildren) => (
-    <QueryClientProvider client={client}>{children}</QueryClientProvider>
-  );
   return renderHook(({ csrf }) => useLessonDraft({ id: 'fixture', version: 1, csrf }, initial), {
     initialProps: { csrf: 'one' },
-    wrapper,
+    wrapper: queryWrapper(),
   });
 }
 
@@ -129,4 +124,24 @@ it('retains changes made while a save is in flight and serializes duplicate comm
   expect(fetch).toHaveBeenCalledTimes(2);
   expect(result.current.content).toEqual(later);
   expect(result.current.status).toBe('unsynced');
+});
+
+it('records and saves a step reached in one call, on top of the saved revision', async () => {
+  const reached = { stepId: 'exchange', drawing: [] };
+  const fetch = vi
+    .fn()
+    .mockResolvedValueOnce(reply(remote))
+    .mockResolvedValueOnce(reply({ ...remote, content: reached }));
+  const { result } = setup(fetch);
+  await waitFor(() => expect(result.current.status).toBe('saved'));
+  await act(async () => {
+    await result.current.saveAs(reached);
+  });
+  expect(JSON.parse(fetch.mock.calls[1]![1].body)).toEqual({
+    action: 'save',
+    revision: remote.revision,
+    content: reached,
+  });
+  expect(result.current.content).toEqual(reached);
+  expect(result.current.status).toBe('saved');
 });

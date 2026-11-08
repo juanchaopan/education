@@ -56,13 +56,18 @@ export function useLessonDraft({ id, version, csrf }: DraftScope, initial: Local
   }
 
   const send = useDraftCommand(scope, update);
-  function run(action: DraftWrite['action']) {
+  function run(action: DraftWrite['action'], local = content) {
     if (base === undefined || state.conflict) return;
     const revision = base?.revision ?? null;
     return send(
-      action === 'save' ? { action, revision, content } : { action, revision },
-      state.local,
+      action === 'save' ? { action, revision, content: local } : { action, revision },
+      local === content ? state.local : local,
     );
+  }
+
+  function edit(local: LocalDraft) {
+    if (base !== undefined)
+      update((current) => ({ ...current, local, failed: false, message: undefined }));
   }
 
   function resolve(choice: 'keep' | 'remote') {
@@ -83,11 +88,14 @@ export function useLessonDraft({ id, version, csrf }: DraftScope, initial: Local
     message: state.message,
     hasDraft: Boolean(state.local || base),
     hasRemote: Boolean(state.conflict?.draft),
-    edit: (local: LocalDraft) => {
-      if (base !== undefined)
-        update((current) => ({ ...current, local, failed: false, message: undefined }));
-    },
+    edit,
     save: () => run('save'),
+    // Records a new draft and saves it at once, for a lesson whose progress is
+    // the step it has reached rather than an ongoing edit.
+    saveAs(local: LocalDraft) {
+      edit(local);
+      return run('save', local);
+    },
     discard: () => run('discard'),
     reload: load.refetch,
     resolve,
