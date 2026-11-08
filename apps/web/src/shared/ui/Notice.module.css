@@ -1,0 +1,8 @@
+/* Every tone shares one surface for now; the tone is on data-tone so a theme
+   can colour each one without the callers changing. */
+.notice {
+  padding: var(--space-4);
+  border-radius: var(--radius-sm);
+  background: var(--teal-light);
+  overflow-wrap: anywhere;
+}

@@ -1,0 +1,23 @@
+.label {
+  font-weight: 700;
+}
+/* Text inputs and lists share one surface. They fill the width they are given
+   and may shrink below their content, so a long value or option never pushes
+   past a narrow screen. */
+.input,
+.select {
+  width: 100%;
+  min-width: 0;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--muted);
+  border-radius: var(--radius-sm);
+}
+.input {
+  padding: var(--space-3);
+}
+.select {
+  min-height: var(--space-8);
+  padding: var(--space-2) var(--space-3);
+  font: inherit;
+}

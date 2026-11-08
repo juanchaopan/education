@@ -1,0 +1,12 @@
+.checkbox {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-block-size: var(--touch-target);
+  font-weight: 700;
+}
+.box {
+  flex: 0 0 auto;
+  min-height: var(--space-6);
+  min-width: var(--space-6);
+}

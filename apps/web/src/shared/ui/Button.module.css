@@ -1,0 +1,30 @@
+.button {
+  min-block-size: var(--touch-target);
+  padding: var(--space-3) var(--space-5);
+  border-radius: var(--radius-pill);
+  font-weight: 700;
+  cursor: pointer;
+}
+.button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.primary {
+  border: 0;
+  color: var(--paper);
+  background: var(--teal-dark);
+}
+.secondary {
+  border: 1px solid var(--teal-dark);
+  color: var(--teal-dark);
+  background: var(--paper);
+}
+.text {
+  padding-inline: var(--space-2);
+  border: 0;
+  color: var(--teal-dark);
+  background: none;
+}
+.regular {
+  font-weight: 400;
+}
