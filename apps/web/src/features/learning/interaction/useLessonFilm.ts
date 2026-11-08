@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useLatest } from '../../../shared/lib/useLatest';
 import { useReloadReadiness } from '../../../shared/lib/reload-readiness';
 import { createChime } from './chime';
 import { tell, type FilmScene, type FilmStory, type Reaction } from './lesson-film';
@@ -47,15 +48,6 @@ function voiceOf(narration: ReturnType<typeof useNarration>): Voice {
     pause: narration.pause,
     resume: narration.resume,
   };
-}
-
-// The latest callback, for work that outlives the render that started it.
-function useLatest<Callback>(callback: Callback) {
-  const latest = useRef(callback);
-  useEffect(() => {
-    latest.current = callback;
-  });
-  return latest;
 }
 
 // The film's tones, and its runs of lines: each new run tells whether it is

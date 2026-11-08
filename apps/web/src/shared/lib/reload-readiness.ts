@@ -1,4 +1,5 @@
-import { createContext, useContext, useEffect, useId, useRef, useState } from 'react';
+import { createContext, useContext, useEffect, useId, useState } from 'react';
+import { useLatest } from './useLatest';
 
 // How one part of the page stands toward a full reload: nothing a reload
 // would lose, a lesson film a reload would cut off, work being saved, or work
@@ -26,10 +27,7 @@ const holds: readonly Readiness[] = ['playing', 'unsaved', 'saving'];
 export function useReloadReadiness(readiness: Readiness, save: () => void = () => {}) {
   const registry = useContext(RegistryContext);
   const id = useId();
-  const latest = useRef(save);
-  useEffect(() => {
-    latest.current = save;
-  });
+  const latest = useLatest(save);
   const [saveLatest] = useState(() => () => latest.current());
   useEffect(() => {
     registry?.put(id, { readiness, save: saveLatest });
