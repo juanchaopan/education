@@ -1,14 +1,14 @@
-import { useSyncExternalStore } from 'react';
+import { useCallback, useMemo, useSyncExternalStore } from 'react';
 
 // Whether a CSS media query matches now, following it as the window changes.
 export function useMediaQuery(query: string) {
-  return useSyncExternalStore(
-    (changed) => {
-      const media = window.matchMedia(query);
+  const media = useMemo(() => window.matchMedia(query), [query]);
+  const subscribe = useCallback(
+    (changed: () => void) => {
       media.addEventListener('change', changed);
       return () => media.removeEventListener('change', changed);
     },
-    () => window.matchMedia(query).matches,
-    () => false,
+    [media],
   );
+  return useSyncExternalStore(subscribe, () => media.matches);
 }

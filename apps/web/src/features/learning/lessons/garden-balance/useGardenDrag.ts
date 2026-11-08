@@ -1,18 +1,14 @@
 import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import type { Activation, Ghost } from '../../components/garden-balance/GardenStage';
 import type { Handling } from '../../components/garden-balance/garden-scenes';
+import { movableProps } from '../../components/garden-balance/movable-props';
 import { bindObjectDrag } from '../../interaction/object-drag';
 import type { Scene } from './garden-story';
 import type { GardenStory } from './useGardenStory';
 
-type Movable = 'leaf' | 'apple';
+type Movable = keyof typeof movableProps;
 type Held = { shot: Scene; key: string; part: Movable };
-type Drag = { key: string; ghost?: Ghost; over?: string };
-
-const look: Record<Movable, Pick<Ghost, 'sprite' | 'size'>> = {
-  leaf: { sprite: 'garden-cabbage', size: 76 },
-  apple: { sprite: 'garden-apple', size: 57 },
-};
+type Drag = { key: string; ghost: Ghost; over?: string };
 
 function movable(part: string | undefined): part is Movable {
   return part === 'leaf' || part === 'apple';
@@ -56,7 +52,7 @@ export function useGardenDrag(story: GardenStory) {
       return {
         move(moved) {
           const { x, y } = toWorld(surface, moved);
-          setDrag({ key, ghost: { ...look[part], x, y }, over: placeAt(moved) });
+          setDrag({ key, ghost: { ...movableProps[part], x, y }, over: placeAt(moved) });
         },
         drop(released) {
           setDrag(undefined);
@@ -67,11 +63,7 @@ export function useGardenDrag(story: GardenStory) {
     });
   }, []);
 
-  const handling: Handling = {
-    selected: selected?.key,
-    lifted: drag?.ghost ? drag.key : undefined,
-    over: drag?.over,
-  };
+  const handling: Handling = { selected: selected?.key, lifted: drag?.key, over: drag?.over };
 
   return {
     world,

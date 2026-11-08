@@ -4,12 +4,12 @@ import {
   type GardenState,
 } from '../../lessons/garden-balance/garden-story';
 import { Basket, BoardText, Part, Scale, Spark, type PartProps } from './garden-art';
+import { movableProps } from './movable-props';
 import styles from './GardenStage.module.css';
 
 // What the child is holding: a prop picked up for a drag or chosen by tapping,
 // and the place the drag is over.
 export type Handling = Readonly<{ selected?: string; lifted?: string; over?: string }>;
-type SceneProps = { state: GardenState; handling: Handling };
 
 function held(id: string, { selected, lifted }: Handling): Partial<PartProps> {
   return { id, selected: selected === id, lifted: lifted === id };
@@ -26,27 +26,26 @@ const appleSpots = [
 
 // Cabbages against apples: the child lifts one cabbage into the basket, then
 // apples until the beam is level.
-export function WeighScene({ state, handling }: SceneProps) {
+export function WeighScene({ state, handling }: { state: GardenState; handling: Handling }) {
   const { shot, leaves, apples } = state;
   const weighing = shot === 'leaves';
   const removing = shot === 'apples' && apples > 3;
+  const { leaf, apple } = movableProps;
   const left =
     leaves === 2 ? (
       <>
         <Part
-          sprite="garden-cabbage"
+          {...leaf}
           x={-43}
           y={-29}
-          size={76}
           entrance
           highlight={weighing}
           {...(weighing && { part: 'leaf', label: '青菜', ...held('leaf-0', handling) })}
         />
         <Part
-          sprite="garden-cabbage"
+          {...leaf}
           x={39}
           y={-29}
-          size={76}
           entrance
           {...(weighing && { part: 'leaf', label: '青菜', ...held('leaf-1', handling) })}
         />
@@ -59,10 +58,9 @@ export function WeighScene({ state, handling }: SceneProps) {
     .map(([x, y], i) => (
       <Part
         key={`apple-${x}-${y}`}
-        sprite="garden-apple"
+        {...apple}
         x={x}
         y={y}
-        size={57}
         entrance={weighing}
         highlight={removing && i === apples - 1}
         {...(removing && { part: 'apple', label: '苹果', ...held(`apple-${i}`, handling) })}
@@ -85,7 +83,7 @@ export function WeighScene({ state, handling }: SceneProps) {
 const cucumberSpots = [-53, 0, 53];
 
 // One apple on the scale; touching it shows the three cucumbers it weighs.
-export function ExchangeScene({ state }: SceneProps) {
+export function ExchangeScene({ state }: { state: GardenState }) {
   const { revealed } = state;
   const left = (
     <Part
@@ -162,9 +160,10 @@ function SpareCucumbers() {
 
 // One cabbage against the three apples it weighs; each apple in turn becomes
 // its group of cucumbers, three each in the problem and two in the variation.
-export function SwapScene({ state }: SceneProps) {
+export function SwapScene({ state }: { state: GardenState }) {
   const { shot, replaced } = state;
   const swapping = shot === 'bridge' || shot === 'variation';
+  const next = groupSpots[replaced];
   const right = groupSpots.map((x, i) =>
     i < replaced ? (
       <CucumberGroup
@@ -193,9 +192,7 @@ export function SwapScene({ state }: SceneProps) {
         right={right}
         tilt={0}
       />
-      {swapping && replaced < 3 && (
-        <Spark from={[817 + groupSpots[replaced]!, 232]} to={[817 + groupSpots[replaced]!, 285]} />
-      )}
+      {swapping && next !== undefined && <Spark from={[817 + next, 232]} to={[817 + next, 285]} />}
       {(shot === 'variation' || shot === 'end') && <SpareCucumbers />}
       {shot === 'end' && (
         <>

@@ -1,15 +1,37 @@
 import type { ReactNode } from 'react';
-import { StandaloneLink } from '../../../shared/ui/StandaloneLink';
 import { useMediaQuery } from '../../../shared/lib/useMediaQuery';
 import { GardenStage } from '../components/garden-balance/GardenStage';
 import type { LearningScope } from '../data-access/learning-request';
 import { useLessonDraft } from '../data-access/useLessonDraft';
 import { savesProgress } from '../lessons/garden-balance/garden-story';
-import { gardenBalance, isShot, type Shot } from '../lessons/garden-balance/script';
+import { gardenBalance, isShot, teacher, type Shot } from '../lessons/garden-balance/script';
 import { useGardenDrag } from '../lessons/garden-balance/useGardenDrag';
 import { useGardenStory, type GardenStory } from '../lessons/garden-balance/useGardenStory';
 import { GardenPanels } from './GardenPanels';
+import { LessonSignInNotice } from './LessonSignInNotice';
 import styles from './GardenBalanceLesson.module.css';
+
+// The film and the props the child moves. A drag changes only this part of the
+// page, never the panels beneath it.
+function GardenScreen({ story, resume }: { story: GardenStory; resume?: Shot }) {
+  const drag = useGardenDrag(story);
+  const narrow = useMediaQuery('(max-width: 610px)');
+  return (
+    <GardenStage
+      state={story.state}
+      handling={drag.handling}
+      ghost={drag.ghost}
+      caption={story.state.shot === 'opening' ? undefined : story.caption}
+      speaking={story.speaking}
+      narrow={narrow}
+      entryLabel={resume ? '接着上次的地方' : '开始短片'}
+      worldRef={drag.world}
+      onEnter={() => story.enter(resume)}
+      onReplay={story.replay}
+      onActivate={drag.activate}
+    />
+  );
+}
 
 type FilmProps = {
   resume?: Shot;
@@ -19,24 +41,9 @@ type FilmProps = {
 
 function GardenFilm({ resume, onArrive, panels }: FilmProps) {
   const story = useGardenStory(onArrive);
-  const drag = useGardenDrag(story);
-  const narrow = useMediaQuery('(max-width: 610px)');
-  const opening = story.state.shot === 'opening';
   return (
     <div className={styles.lesson}>
-      <GardenStage
-        state={story.state}
-        handling={drag.handling}
-        ghost={drag.ghost}
-        caption={opening ? undefined : story.caption}
-        speaking={story.speaking}
-        narrow={narrow}
-        entryLabel={resume ? '接着上次的地方' : '开始短片'}
-        worldRef={drag.world}
-        onEnter={() => story.enter(resume)}
-        onReplay={story.replay}
-        onActivate={drag.activate}
-      />
+      <GardenScreen story={story} resume={resume} />
       {panels(story)}
     </div>
   );
@@ -62,18 +69,9 @@ function SignedInGarden({ scope }: { scope: LearningScope }) {
   );
 }
 
-function SignInNotice() {
-  return (
-    <p className={styles.notice}>
-      在孩子空间登录以后，小兔会帮你记住做到哪里，还能回答你的问题、听你说答案。
-      <StandaloneLink to="/child">去孩子空间登录</StandaloneLink>
-    </p>
-  );
-}
-
 // 菜园天平：一棵青菜和几根黄瓜一样重。Anyone can watch and play the scenes;
 // saving, questions and the answer need a signed-in child.
 export function GardenBalanceLesson({ csrf }: { csrf?: string }) {
-  if (!csrf) return <GardenFilm panels={() => <SignInNotice />} />;
+  if (!csrf) return <GardenFilm panels={() => <LessonSignInNotice teacher={teacher} />} />;
   return <SignedInGarden scope={{ ...gardenBalance, csrf }} />;
 }

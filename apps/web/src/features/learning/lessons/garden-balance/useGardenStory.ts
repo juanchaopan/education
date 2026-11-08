@@ -19,28 +19,27 @@ const longestLine = 11_000;
 const betweenLines = 310;
 
 // The garden film as it plays: the scene, the rabbit's caption and voice, and
-// the tones. Each run of lines is its own narration cue, so a new event cuts
-// in on whatever the rabbit was still saying, and a scene that follows its
-// lines starts only if they were heard to the end. `onArrive` hears of every
-// scene the child reaches, as it is reached.
+// the tones. A new event cuts in on whatever the rabbit was still saying, and
+// a scene that follows its lines starts only if they were heard to the end.
+// `onArrive` hears of every scene the child reaches, as it is reached.
 export function useGardenStory(onArrive: (shot: Shot) => void = () => {}) {
   const [state, setState] = useState<GardenState>(opening);
   const [caption, setCaption] = useState<string>();
-  const [cue, setCue] = useState('opening');
-  const narration = useNarration(cue);
+  const narration = useNarration(state.shot);
   const [chime] = useState(() => createChime());
   const runs = useRef(0);
   const shown = useRef<Scene>('opening');
 
-  async function speak(say: readonly LineId[]) {
+  async function speak(shot: Scene, say: readonly LineId[]) {
     const run = ++runs.current;
-    const key = `cue-${run}`;
-    setCue(key);
     for (const [index, id] of say.entries()) {
       if (index > 0) await wait(betweenLines);
       if (runs.current !== run) return false;
       setCaption(lines[id].text);
-      const heard = await Promise.race([narration.play(key, lines[id].clip), wait(longestLine)]);
+      const heard = await Promise.race([
+        narration.interrupt(shot, lines[id].clip),
+        wait(longestLine),
+      ]);
       if (heard === 'cancelled' || runs.current !== run) return false;
     }
     return true;
@@ -52,7 +51,7 @@ export function useGardenStory(onArrive: (shot: Shot) => void = () => {}) {
     setState(next);
     chime(tones);
     if (!say.length) return;
-    void speak(say).then((finished) => {
+    void speak(next.shot, say).then((finished) => {
       if (finished && then) apply(arrive(then));
     });
   }
@@ -69,7 +68,6 @@ export function useGardenStory(onArrive: (shot: Shot) => void = () => {}) {
     act(move: Move) {
       const reaction = respond(state, move);
       if (reaction) apply(reaction);
-      return Boolean(reaction);
     },
     go: (shot: Shot) => apply(arrive(shot)),
     replay: narration.replay,

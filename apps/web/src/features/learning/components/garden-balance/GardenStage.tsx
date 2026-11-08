@@ -26,6 +26,11 @@ type Props = {
 
 const title = '一棵青菜有多重？';
 
+// The paints, symbols and fireflies never change, so React leaves them alone
+// while a prop is dragged across the scene.
+const defs = <GardenDefs />;
+const fireflies = <Fireflies />;
+
 function activation(target: EventTarget): Activation | undefined {
   if (!(target instanceof Element)) return;
   const part = target.closest<SVGElement>('[data-part]');
@@ -37,9 +42,9 @@ function activation(target: EventTarget): Activation | undefined {
 function Scene({ state, handling }: { state: GardenState; handling: Handling }) {
   if (state.shot === 'leaves' || state.shot === 'apples')
     return <WeighScene state={state} handling={handling} />;
-  if (state.shot === 'exchange') return <ExchangeScene state={state} handling={handling} />;
+  if (state.shot === 'exchange') return <ExchangeScene state={state} />;
   if (state.shot === 'opening') return null;
-  return <SwapScene state={state} handling={handling} />;
+  return <SwapScene state={state} />;
 }
 
 type OverlayProps = Pick<Props, 'entryLabel' | 'onEnter' | 'onReplay' | 'speaking'> & {
@@ -107,8 +112,8 @@ export function GardenStage(props: Props) {
           choose(event);
         }}
       >
-        <GardenDefs />
-        <Fireflies />
+        {defs}
+        {fireflies}
         <g key={state.shot} className={styles.sceneArt}>
           {state.shot !== 'opening' && (
             <>

@@ -1,22 +1,17 @@
 import { DraftNotice } from '../components/DraftNotice';
-import { LessonQuestionPanel } from '../components/LessonQuestionPanel';
-import { SpokenAnswerPanel } from '../components/SpokenAnswerPanel';
 import type { LearningScope } from '../data-access/learning-request';
-import { useLessonAnswer } from '../data-access/useLessonAnswer';
 import type { useLessonDraft } from '../data-access/useLessonDraft';
-import { useLessonQuestion } from '../data-access/useLessonQuestion';
-import { useVoiceInput } from '../data-access/useVoiceInput';
-import { answerStep } from '../interaction/spoken-answer';
-import { spokenNumber } from '../interaction/spoken-number';
 import {
   answerChoices,
   answerHints,
   answerQuestion,
   guidance,
   mistakeMessage,
-  type Shot,
+  teacher,
 } from '../lessons/garden-balance/script';
 import type { GardenStory } from '../lessons/garden-balance/useGardenStory';
+import { SceneQuestions } from './SceneQuestions';
+import { SpokenFinalAnswer } from './SpokenFinalAnswer';
 
 type Props = {
   scope: LearningScope;
@@ -24,66 +19,34 @@ type Props = {
   draft: ReturnType<typeof useLessonDraft>;
 };
 
-function FinalAnswer({ scope, story, draft }: Props) {
-  const answer = useLessonAnswer(scope, answerHints);
-  const voice = useVoiceInput(scope, 'answer', (text) => {
-    const count = spokenNumber(text);
-    if (count !== undefined) answer.submit(count);
-  });
-  return (
-    <SpokenAnswerPanel
-      question={answerQuestion}
-      step={answerStep(voice.state, answer.judgement, mistakeMessage)}
-      choices={answerChoices}
-      hint={answer.hint}
-      hintFailed={answer.hintFailed}
-      canHint={answer.canHint}
-      onSpeak={voice.start}
-      onStop={voice.stop}
-      onCancel={voice.cancel}
-      onStopWaiting={voice.guide}
-      onConfirm={voice.confirm}
-      onChoose={answer.submit}
-      onRetry={answer.retry}
-      onHint={answer.askHint}
-      onContinue={() => {
-        void draft.discard();
-        story.go('variation');
-      }}
-    />
-  );
-}
-
-function Questions({ scope, story, shot }: Pick<Props, 'scope' | 'story'> & { shot: Shot }) {
-  const question = useLessonQuestion(scope, shot);
-  return (
-    <LessonQuestionPanel
-      stepId={shot}
-      voice={question.voice}
-      reply={question.reply}
-      guidance={guidance(shot)}
-      paused={story.paused}
-      onAsk={() => {
-        story.pause();
-        question.start();
-      }}
-      onStop={question.stop}
-      onCancel={question.cancel}
-      onStopWaiting={question.guide}
-      onResume={story.resume}
-    />
-  );
-}
-
 // Everything under the film for a signed-in child: the final answer in its
 // scene, a question about whichever scene is on screen, and the draft's state.
+// A correct answer ends the saved work, so its draft is discarded.
 export function GardenPanels({ scope, story, draft }: Props) {
   const { shot } = story.state;
   if (shot === 'opening') return null;
   return (
     <>
-      {shot === 'answer' && <FinalAnswer scope={scope} story={story} draft={draft} />}
-      <Questions scope={scope} story={story} shot={shot} />
+      {shot === 'answer' && (
+        <SpokenFinalAnswer
+          scope={scope}
+          question={answerQuestion}
+          choices={answerChoices}
+          hintIds={answerHints}
+          explain={mistakeMessage}
+          onDone={() => {
+            void draft.discard();
+            story.go('variation');
+          }}
+        />
+      )}
+      <SceneQuestions
+        scope={scope}
+        teacher={teacher}
+        stepId={shot}
+        guidance={guidance(shot)}
+        narration={story}
+      />
       <DraftNotice
         status={draft.status}
         hasDraft={draft.hasDraft}

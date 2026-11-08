@@ -16,6 +16,9 @@ import tip from './assets/tip.mp3';
 // The problem version this lesson teaches, as the catalog lists it.
 export const gardenBalance = { id: 'garden-balance', version: 1 } as const;
 
+// The rabbit gardener who narrates the garden and answers questions in it.
+export const teacher = '小兔';
+
 // The rabbit's lines, each with its recorded narration. The text is shown as
 // the caption while it plays and stays readable when the sound cannot play.
 export const lines = {
