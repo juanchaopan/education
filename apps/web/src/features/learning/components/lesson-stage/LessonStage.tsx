@@ -1,4 +1,5 @@
 import { useMemo, type KeyboardEvent, type MouseEvent, type ReactNode, type Ref } from 'react';
+import { classNames } from '../../../../shared/lib/class-names';
 import { activationAt, type Activation } from '../../interaction/stage-activation';
 import { paletteStyle, type Camera, type StageLook, type Teacher } from './stage-look';
 import styles from './LessonStage.module.css';
@@ -83,11 +84,10 @@ type ReplayProps = Pick<Props, 'onReplay' | 'speaking'> & { again: boolean };
 // Hearing the line again: a small note while all is well, and a button that
 // says so in words while a line that did not come out waits for the child.
 function ReplayButton({ again, speaking, onReplay }: ReplayProps) {
-  const looks = [styles.replay, speaking && styles.playing, again && styles.again];
   return (
     <button
       type="button"
-      className={looks.filter(Boolean).join(' ')}
+      className={classNames(styles.replay, speaking && styles.playing, again && styles.again)}
       aria-label={again ? undefined : '重听这一句'}
       onClick={onReplay}
     >
@@ -122,7 +122,7 @@ export function LessonStage(props: Props) {
   };
   return (
     <section
-      className={[styles.stage, speaking && styles.speaking].filter(Boolean).join(' ')}
+      className={classNames(styles.stage, speaking && styles.speaking)}
       style={palette}
       data-shot={shot}
       data-narration-failure={failure}
