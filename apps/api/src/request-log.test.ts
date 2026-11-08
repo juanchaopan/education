@@ -1,6 +1,7 @@
 import pg from 'pg';
 import { afterEach, describe, expect, it } from 'vitest';
-import { buildApp } from './app.js';
+import type { buildApp } from './app.js';
+import { loggedApp } from './log-fixtures.js';
 import { RequestError } from './shared/request-error.js';
 
 const origin = 'https://education.example';
@@ -13,20 +14,13 @@ const drawing = 'U1lOVEhFVElDRFJBV0lORw==';
 const instruction = '再数一数左边的点';
 const secrets = [pin, key, password, session, childText, drawing, instruction, 'postgres://'];
 
-type Line = Record<string, unknown> & { msg: string; level: number };
 const apps: ReturnType<typeof buildApp>[] = [];
 afterEach(async () => {
   await Promise.all(apps.splice(0).map((app) => app.close()));
 });
 
-function logged(options: Parameters<typeof buildApp>[0] = {}) {
-  const lines: string[] = [];
-  const app = buildApp({ origin, ...options, logStream: { write: (line) => lines.push(line) } });
-  apps.push(app);
-  const completed = () =>
-    lines.map((line) => JSON.parse(line) as Line).filter(({ msg }) => msg === 'Request completed');
-  return { app, text: () => lines.join(''), completed };
-}
+const logged = (options: Parameters<typeof buildApp>[0] = {}) =>
+  loggedApp(apps, { origin, ...options });
 
 function databaseError(message: string, code: string) {
   return Object.assign(new pg.DatabaseError(message, message.length, 'error'), { code });
@@ -129,6 +123,13 @@ describe('request log', () => {
   it.each([
     [Object.assign(new Error('connect ECONNREFUSED postgres://db'), { code: 'ECONNREFUSED' })],
     [new Error('timeout exceeded when trying to connect')],
+    // The query builder wraps the driver's error, with the query's parameters
+    // in its own message.
+    [
+      new Error(`Failed query: select … params: ${pin}`, {
+        cause: databaseError('terminating connection due to administrator command', '57P01'),
+      }),
+    ],
   ])('counts a connection failure during sign-in as a database failure', async (failure) => {
     const { app, completed, text } = failingLogin(failure);
     expect((await app.inject(childLogin)).statusCode).toBe(503);
@@ -136,10 +137,11 @@ describe('request log', () => {
     for (const secret of secrets) expect(text()).not.toContain(secret);
   });
 
-  it('does not take any five-letter code for a database failure', async () => {
-    const { app, completed } = failingLogin(
-      Object.assign(new Error('write EPIPE'), { code: 'EPIPE' }),
-    );
+  it.each([
+    [Object.assign(new Error('write EPIPE'), { code: 'EPIPE' })],
+    [new DOMException('The operation was aborted due to timeout', 'TimeoutError')],
+  ])('does not take any short code or timeout for a database failure', async (failure) => {
+    const { app, completed } = failingLogin(failure as Error);
     await app.inject(childLogin);
     expect(completed()[0]).toMatchObject({ outcome: 'server-error', code: 'UNKNOWN' });
   });

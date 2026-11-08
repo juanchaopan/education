@@ -6,8 +6,10 @@ type Calls = Record<State, number>;
 type AiUsageAlert = 'provider-failing' | 'reply-out-of-bounds';
 
 // Provider calls admitted in a window, by how they were settled, with their
-// tokens and the cost held against the budget. Nothing in it names a family or
-// child or holds what was sent.
+// tokens and the cost held against the budget, and whether paid AI is paused
+// for the window's budget month. Nothing in it names a family or child or holds
+// what was sent. `observed` is false when the window says nothing either way:
+// no call ended and paid AI is not paused.
 export type AiUsageReport = {
   since: string;
   until: string;
@@ -15,21 +17,29 @@ export type AiUsageReport = {
   inputTokens: number;
   outputTokens: number;
   costUsd: number;
+  paused: boolean;
+  observed: boolean;
   alerts: AiUsageAlert[];
 };
 
-// The provider is failing when, of the calls sent to it, at least three and at
-// least half got no reply at all (unknown) or one outside the agreed bounds; a
-// few failures among many successes, or calls never sent, are not an outage. A
-// single reply outside the bounds is worth an alert by itself: it pauses paid AI
-// for the rest of the budget month.
-export function usageAlerts(calls: Calls): AiUsageAlert[] {
-  const failed = calls.unknown + calls['out-of-bounds'];
-  const sent = failed + calls.settled;
+// A call ends without a usable reply when the provider rejected it before any
+// work (released), gave no reply (unknown) or answered outside the agreed
+// bounds; a call cancelled before it was sent is also released, which is rare
+// enough to count the same. The provider is failing when at least three and at
+// least half of the calls that ended did so. A reply outside the bounds pauses
+// paid AI for the rest of the budget month, which is an alert until the month
+// ends.
+export function usageAlerts(calls: Calls, paused: boolean): AiUsageAlert[] {
+  const failed = calls.released + calls.unknown + calls['out-of-bounds'];
+  const ended = failed + calls.settled;
   return [
-    ...(failed >= 3 && failed * 2 >= sent ? (['provider-failing'] as const) : []),
-    ...(calls['out-of-bounds'] > 0 ? (['reply-out-of-bounds'] as const) : []),
+    ...(failed >= 3 && failed * 2 >= ended ? (['provider-failing'] as const) : []),
+    ...(paused ? (['reply-out-of-bounds'] as const) : []),
   ];
+}
+
+function endedCalls(calls: Calls) {
+  return calls.released + calls.unknown + calls['out-of-bounds'] + calls.settled;
 }
 
 export async function summarizeAiUsage(
@@ -50,6 +60,11 @@ export async function summarizeAiUsage(
       FROM ai_usage WHERE admitted_at>=$1 AND admitted_at<$2 GROUP BY state`,
     [since, until],
   );
+  const month = await pool.query<{ paused: boolean }>(
+    `SELECT EXISTS(SELECT 1 FROM ai_usage WHERE state='out-of-bounds'
+        AND budget_month=date_trunc('month', $1::timestamptz AT TIME ZONE 'UTC')::date) AS paused`,
+    [until],
+  );
   const calls = Object.fromEntries(aiUsageState.enumValues.map((state) => [state, 0])) as Calls;
   let inputTokens = 0;
   let outputTokens = 0;
@@ -60,6 +75,7 @@ export async function summarizeAiUsage(
     outputTokens += Number(row.output_tokens);
     nanodollars += BigInt(row.amount);
   }
+  const paused = month.rows[0]?.paused === true;
   return {
     since: since.toISOString(),
     until: until.toISOString(),
@@ -67,6 +83,8 @@ export async function summarizeAiUsage(
     inputTokens,
     outputTokens,
     costUsd: Number(nanodollars) / 1e9,
-    alerts: usageAlerts(calls),
+    paused,
+    observed: paused || endedCalls(calls) > 0,
+    alerts: usageAlerts(calls, paused),
   };
 }
