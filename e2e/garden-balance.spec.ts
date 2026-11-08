@@ -7,7 +7,7 @@ import { signInWithToken } from './session-cookie.js';
 // it, a signed-in child plays every scene by dragging and tapping, the place
 // is saved, and the final count is judged on the server. The browser here has
 // no microphone and the server no AI key, so the answer falls back to tapping
-// a number and a question gets the scene's own guidance.
+// a number and a question sends the child back to the scene.
 
 async function drag(page: Page, source: Locator, target: Locator) {
   const from = (await source.boundingBox())!;
@@ -59,8 +59,13 @@ test('a child places the garden problem, resumes it and is judged on the counted
     await expect(page.getByLabel('分类', { exact: true })).toHaveValue('学而思');
     await page.getByRole('link', { name: '一棵青菜有多重' }).click();
     await expect(page).toHaveURL(/\/problems\/garden-balance\/1$/);
-
     await page.getByRole('button', { name: /开始短片/ }).click();
+
+    // A question with no AI and no microphone sends the child back to the scene.
+    const question = page.getByRole('region', { name: '问问小兔' });
+    await question.getByRole('button', { name: '有问题？按一下问小兔' }).click();
+    await expect(question.getByRole('status')).toHaveText(/我们接着做题吧/);
+
     await playToTheAnswer(page);
     await page.screenshot({ path: info.outputPath('answer-scene.png') });
 
@@ -70,11 +75,6 @@ test('a child places the garden problem, resumes it and is judged on the counted
     await page.getByRole('button', { name: /接着上次的地方/ }).click();
     const answer = page.getByRole('region', { name: '说出答案' });
     await expect(answer).toBeVisible();
-
-    // A question with no AI and no microphone sends the child back to the scene.
-    const question = page.getByRole('region', { name: '问问小兔' });
-    await question.getByRole('button', { name: '有问题？按一下问小兔' }).click();
-    await expect(question.getByRole('status')).toHaveText(/我们接着做题吧/);
 
     // Without a microphone the answer is tapped. A wrong count is explained
     // and the numbers stay; a hint makes the correct count a helped one.
