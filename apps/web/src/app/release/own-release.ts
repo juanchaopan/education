@@ -1,5 +1,4 @@
-// A release is named by the full commit it was built from.
-export const releasePattern = /^[a-f0-9]{40}$/;
+import { releasePattern } from './release-pattern';
 
 // The release this page was built as, from the meta tag a deployment's build
 // writes into the HTML; undefined for a local build, which never updates.

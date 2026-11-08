@@ -70,14 +70,15 @@ const sessionGuard = createReloadGuard();
 // Brings an open page to the release the deployment serves. Once a newer
 // release is out, the page waits for its film to finish and its work to be
 // saved, saving unsaved work again after each check, and then reloads fully,
-// once for each release; signing in survives the reload. The record of
-// earlier reloads is read as the page loads, so the reload this page starts
-// never counts against it.
+// once for each release; signing in survives the reload. The page's own
+// release and the record of earlier reloads are read as the page loads, so
+// the reload this page starts never counts against it.
 export function useReleaseUpdate({
-  own = ownRelease(),
+  own: built,
   guard = sessionGuard,
   reload = () => window.location.reload(),
 }: Options = {}) {
+  const [own] = useState(() => built ?? ownRelease());
   const check = useLatestRelease(own);
   const page = usePageReadiness();
   const latest = check.data;

@@ -1,4 +1,4 @@
-import { releasePattern } from './own-release';
+import { releasePattern } from './release-pattern';
 
 // The release the deployment serves now, from its version file. The file is
 // never taken from a cache. A reply that fails or names no release is an
