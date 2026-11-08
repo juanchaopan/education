@@ -42,6 +42,14 @@ const ownServers: { suffix: string; specs: RegExp; ports: Ports }[] = [
 ];
 const shared: Ports = { desktop: 4173, mobile: 4174 };
 
+// Lesson narration also plays in WebKit, the engine of Safari on iPads and
+// iPhones; the sound checks run there on the desktop server.
+const webkit = {
+  name: 'webkit',
+  testMatch: /(^|[\\/])[\w-]+-narration\.spec\.ts$/,
+  use: { ...devices['Desktop Safari'], launchOptions: {}, baseURL: origin(shared.desktop) },
+};
+
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: true,
@@ -51,21 +59,24 @@ export default defineConfig({
     launchOptions: { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH },
     trace: 'retain-on-failure',
   },
-  projects: Object.entries(browsers).flatMap(([name, device]) => {
-    const browser = name as keyof typeof browsers;
-    return [
-      {
-        name,
-        testIgnore: ownServers.map(({ specs }) => specs),
-        use: { ...device, baseURL: origin(shared[browser]) },
-      },
-      ...ownServers.map(({ suffix, specs, ports }) => ({
-        name: `${name}-${suffix}`,
-        testMatch: specs,
-        use: { ...device, baseURL: origin(ports[browser]) },
-      })),
-    ];
-  }),
+  projects: [
+    ...Object.entries(browsers).flatMap(([name, device]) => {
+      const browser = name as keyof typeof browsers;
+      return [
+        {
+          name,
+          testIgnore: ownServers.map(({ specs }) => specs),
+          use: { ...device, baseURL: origin(shared[browser]) },
+        },
+        ...ownServers.map(({ suffix, specs, ports }) => ({
+          name: `${name}-${suffix}`,
+          testMatch: specs,
+          use: { ...device, baseURL: origin(ports[browser]) },
+        })),
+      ];
+    }),
+    webkit,
+  ],
   webServer: [shared, ...ownServers.map(({ ports }) => ports)]
     .flatMap((ports) => Object.values(ports))
     .map(server),
