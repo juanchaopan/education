@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { classNames } from '../../../../shared/lib/class-names';
 import { delayStyle } from './stage-look';
 import styles from './Prop.module.css';
 
@@ -28,16 +29,16 @@ type PropProps = {
 // its `data-part` and `data-key`; a finger gets a target at least 60 world
 // units across however small the prop is drawn.
 export function Prop({ x, y, size, part, id, label, highlight, children, ...look }: PropProps) {
-  const classes = [
+  const classes = classNames(
     part && styles.prop,
     look.entrance && styles.entrance,
     look.selected && styles.selected,
     look.lifted && styles.lifted,
-  ].filter(Boolean);
+  );
   return (
     <g
       transform={`translate(${x} ${y})`}
-      className={classes.join(' ') || undefined}
+      className={classes || undefined}
       style={look.delay ? delayStyle(look.delay) : undefined}
       {...(part && {
         'data-part': part,
@@ -77,7 +78,7 @@ type PlaceProps = {
 export function PropPlace({ place, label, x, y, highlight, over, halo, ...art }: PlaceProps) {
   return (
     <g
-      className={[styles.place, over && styles.over].filter(Boolean).join(' ')}
+      className={classNames(styles.place, over && styles.over)}
       data-place={place}
       role="button"
       tabIndex={0}
