@@ -60,14 +60,14 @@ staging 只有合成账号。换数据库时不迁移旧数据，新库在第一
 
 API 对每个请求写一行结构化日志（JSON，Vercel 的运行日志里可见），并在响应头返回同一个 `X-Request-Id`：
 
-| 字段               | 内容                                                                                                                                               |
-| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| requestId          | 每个请求随机生成，等于响应头 `X-Request-Id`；家长报告问题时可以凭它找到对应的一行                                                                  |
-| method、route      | 请求方法和匹配到的路由模式，例如 `/api/v1/problems/:id/:version/draft`；不记录原始 URL 和查询参数                                                  |
-| status、durationMs | 状态码和服务端耗时                                                                                                                                 |
-| outcome            | `ok`、`client-error`、`rate-limited`、`maintenance`（服务开关关闭）、`unavailable`（服务未配置或未就绪）、`database`（数据库失败）、`server-error` |
-| code               | 允许列表里的连接错误码、`TIMEOUT`、PostgreSQL SQLSTATE 或框架错误码，其余记为 `UNKNOWN`                                                            |
-| ai                 | AI 请求的资源、结果和回退原因，不含孩子的文字、绘图、录音或模型回复                                                                                |
+| 字段               | 内容                                                                                                                                                                       |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| requestId          | 每个请求随机生成，等于响应头 `X-Request-Id`；家长报告问题时可以凭它找到对应的一行                                                                                          |
+| method、route      | 请求方法和匹配到的路由模式，例如 `/api/v1/problems/:id/:version/draft`；不记录原始 URL 和查询参数                                                                          |
+| status、durationMs | 状态码和服务端耗时                                                                                                                                                         |
+| outcome            | `ok`、`client-error`、`rate-limited`、`maintenance`（服务开关关闭或迁移未完成）、`unavailable`（服务没有配置）、`database`（数据库失败，包括就绪检查失败）、`server-error` |
+| code               | PostgreSQL 返回的 SQLSTATE、允许列表里的连接错误码、`TIMEOUT` 或框架错误码，其余记为 `UNKNOWN`                                                                             |
+| ai                 | AI 请求的资源、结果、回退原因和来源（规则或 AI），不含孩子的文字、绘图、录音或模型回复                                                                                     |
 
 日志不记录请求头、cookie、请求体、查询参数和异常消息，所以 PIN、注册 KEY、密码、会话令牌、密钥和孩子的输入都不会进入日志。数据库连接空闲时断开，另记一行 `Database connection unavailable`，只带库名和错误码。
 
@@ -75,16 +75,16 @@ API 对每个请求写一行结构化日志（JSON，Vercel 的运行日志里�
 
 ### AI 用量
 
-每次付费 AI 调用都记在 `ai_usage` 账本里。每小时维护的最后一步汇总过去一小时：已结算、无回复、超出范围、未发送和进行中的调用数，token 数和计入预算的金额。汇总只有计数，没有家庭和孩子。过去一小时发出的调用里至少三次、且至少一半没有可用回复，或有任何回复超出约定范围（这会暂停本月的付费 AI）时，这一步失败，维护运行随之打开告警。
+每次付费 AI 调用都记在 `ai_usage` 账本里。每小时维护的最后一步汇总过去一小时：已结算、无回复、超出范围、未发送和进行中的调用数，token 数和计入预算的金额。汇总只有计数，没有家庭和孩子。过去一小时发出的调用里至少三次、且至少一半没有可用回复，或有任何回复超出约定范围（这会暂停本月的付费 AI）时，打开 `staging 告警：ai-provider`；之后某一小时不再满足这些条件时关闭。
 
 ### 告警渠道：GitHub issue
 
 `staging-alerts` 工作流：
 
 - 每小时两次，在 :19 和 :49 运行，前一次紧跟每小时维护，那时数据库已经醒着。它用发布时同一个就绪探测检查 `/health/ready`，再读 `/version.json` 的发布版本号，记录每个请求的状态和耗时。
-- 每次 staging 发布、备份、维护或恢复运行结束后读取任务结果：有任务失败就告警；决定性任务（deploy、backup、cleanup、restore）成功就恢复；决定性任务被跳过（例如 PR 触发的发布运行）时不改变告警。
-- 每个来源（health、staging、staging-backup、staging-mail-retention、staging-restore）最多有一个打开的 `staging-alert` issue。第一次失败时打开它，GitHub 按维护者的通知设置发邮件。持续失败不重复通知，下一次成功时评论“已恢复”并关闭。
-- `STAGING_ENABLED` 不是 `true` 时，工作流只写明没有探测、没有告警渠道在工作，不能当作告警已经接入。
+- 每次 staging 发布、备份、维护或恢复运行结束后读取任务结果：有任务失败就告警；决定性任务（deploy、backup、cleanup、restore）成功就恢复；决定性任务被跳过（例如 PR 触发的发布运行），或整个运行被跳过、取消时，不改变告警。监听的工作流没有登记决定性任务时，告警运行失败，不会悄悄只开不关。
+- 每个来源（health、ai-provider、staging、staging-backup、staging-mail-retention、staging-restore）最多有一个打开的 `staging-alert` issue。第一次失败时打开它，GitHub 按维护者的通知设置发邮件。持续失败不重复通知，下一次成功时评论“已恢复”并关闭。
+- `STAGING_ENABLED` 不是 `true` 时，定时和手动运行只写明没有探测、没有告警渠道在工作，不能当作告警已经接入。
 - 告警工作流本身失败时（例如 GitHub API 不可用），由 GitHub Actions 的失败通知提醒。
 
 GitHub 的定时任务可能推迟几分钟到几十分钟。探测从 GitHub 的服务器发出，不代表大陆设备能访问。告警只覆盖 staging，生产的监控随 #52 接入。
@@ -147,7 +147,7 @@ GitHub 官方说明 GITHUB_TOKEN 引发的普通事件不会递归启动工作�
 
 Vercel 函数固定 Singapore/sin1，两个 Neon 项目也在 Singapore。Vercel 项目的函数默认区域须设为 sin1；仅看版本配置文件不能替代实际 deployment 的 regions 读回。
 
-函数连接建立预算为 3 秒，本地/容器为 1 秒；SQL 语句超时 3 秒。不能据此宣称已满足大陆设备两秒目标。数据库错误只记录允许列表中的代码或 TIMEOUT/UNKNOWN，不记录原始异常消息、连接串、密码或证书。
+函数连接建立预算为 3 秒，本地/容器为 1 秒；SQL 语句超时 3 秒。不能据此宣称已满足大陆设备两秒目标。数据库错误只记录 PostgreSQL 的 SQLSTATE、允许列表中的连接错误码或 TIMEOUT/UNKNOWN，不记录原始异常消息、连接串、密码或证书。
 
 发布前的只读就绪探测至多五次，每次最多五秒，间隔一秒；只有明确的 503 才重试。HTTP 200 还须匹配 ready 响应；持续失败、其他 HTTP 错误和网络失败均不发布。注册、登录、退出不重试。耗时记录包含 HTTP 状态，失败样本不能计为成功延迟。
 
