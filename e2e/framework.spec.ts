@@ -1,11 +1,15 @@
 import { expect, test } from '@playwright/test';
+import type { CatalogResponse } from '@education/contracts';
 
-test('empty catalog and family navigation reflect actual framework readiness', async ({
+test('the catalog lists only maintained problems and family navigation works', async ({
   page,
 }, testInfo) => {
+  const catalog = (await (await page.request.get('/api/v1/problems')).json()) as CatalogResponse;
+  expect(catalog.problems.map(({ id }) => id)).toEqual(['garden-balance']);
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: '好问题，正在准备中' })).toBeVisible();
-  await expect(page.getByRole('button', { name: '开始学习' })).toHaveCount(0);
+  await expect(page.getByRole('list', { name: '题目顺序' }).getByRole('link')).toHaveText([
+    '一棵青菜有多重',
+  ]);
   await page.screenshot({ path: testInfo.outputPath('explore.png'), fullPage: true });
   await page.getByRole('link', { name: '家长空间' }).click();
   await expect(page.getByRole('heading', { name: '创建家长账号' })).toBeVisible();

@@ -1,10 +1,11 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 import { randomBytes, randomUUID } from 'node:crypto';
 import pg from 'pg';
 import { createProblemRegistry } from '@education/problems/server';
 import { buildApp } from '../apps/api/src/app.js';
 import { createPracticeAssignments } from '../apps/api/src/practice-application.js';
 import { tokenHash } from '../apps/api/src/identity/services/session-security.js';
+import { signInWithToken } from './session-cookie.js';
 
 const selected = {
   id: 'fixture-pattern',
@@ -44,20 +45,6 @@ async function seedFamily(pool: pg.Pool, family: string) {
   return { children, tokens, parent };
 }
 
-function session(page: Page, baseURL: string, token: string) {
-  return page.context().addCookies([
-    {
-      name: '__Host-education_session',
-      value: token,
-      domain: new URL(baseURL).hostname,
-      path: '/',
-      httpOnly: true,
-      secure: true,
-      sameSite: 'Lax',
-    },
-  ]);
-}
-
 test('parent arranges optional practice and only the selected child can open it', async ({
   page,
   baseURL,
@@ -70,18 +57,18 @@ test('parent arranges optional practice and only the selected child can open it'
     .toBe(200);
   const pool = new pg.Pool({ connectionString: database });
   const family = randomUUID();
-  // Only this test instance has a populated registry. Session calls still use the regular web server.
+  // Only this test instance has a fixture registry. Session calls still use the regular web server.
   const registry = createProblemRegistry([{ summary: selected }, { summary: other }]);
   const app = buildApp({ origin: baseURL, practice: createPracticeAssignments(pool, registry) });
   try {
     const { children, tokens, parent } = await seedFamily(pool, family);
-    await session(page, baseURL!, parent);
+    await signInWithToken(page, baseURL!, parent);
     await page.goto('/family');
     const panel = page.getByRole('region', { name: '安排练习' });
     const child = panel.getByLabel('为哪位孩子安排');
     await child.selectOption({ label: '小鹿' });
-    // Real empty catalog and assignments from the production entry point.
-    await expect(panel.getByText('题库还没有已发布的题目。')).toBeVisible();
+    // The real catalog and assignments from the production entry point.
+    await expect(panel.getByLabel('选择已发布的题目')).toContainText('一棵青菜有多重');
     await expect(panel.getByText('还没有给这位孩子安排练习。')).toBeVisible();
 
     await page.route('**/api/v1/problems', (route) =>
@@ -121,7 +108,7 @@ test('parent arranges optional practice and only the selected child can open it'
       "INSERT INTO assignments(child_id,problem_id,problem_version) VALUES($1,'fixture-pattern',1)",
       [children[0]],
     );
-    await session(page, baseURL!, tokens[0]!);
+    await signInWithToken(page, baseURL!, tokens[0]!);
     await page.goto('/child');
     const practice = page.getByRole('region', { name: '我的练习' });
     await expect(practice.getByText('有一道练习的原版本暂时打不开。')).toBeVisible();
@@ -140,7 +127,7 @@ test('parent arranges optional practice and only the selected child can open it'
     await page.getByRole('link', { name: '认识图形' }).click();
     await expect(page).toHaveURL(/\/problems\/fixture-shapes\/2$/);
 
-    await session(page, baseURL!, tokens[1]!);
+    await signInWithToken(page, baseURL!, tokens[1]!);
     await page.goto('/child');
     await expect(practice.getByText('家长还没有给你安排练习。')).toBeVisible();
     await expect(practice.getByRole('link', { name: '辨认规律' })).toHaveCount(0);
