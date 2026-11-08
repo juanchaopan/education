@@ -1,18 +1,16 @@
 import type { KeyboardEvent, MouseEvent, Ref } from 'react';
+import type { Activation, Handling, StageGhost } from '../../interaction/useStageDrag';
 import rabbit from '../../lessons/garden-balance/assets/garden-rabbit.webp';
 import type { GardenState } from '../../lessons/garden-balance/garden-story';
 import { Fireflies, SpriteUse, type Sprite } from './garden-art';
 import { GardenDefs } from './garden-defs';
-import { ExchangeScene, SwapScene, WeighScene, type Handling } from './garden-scenes';
+import { ExchangeScene, SwapScene, WeighScene } from './garden-scenes';
 import styles from './GardenStage.module.css';
-
-export type Ghost = Readonly<{ sprite: Sprite; size: number; x: number; y: number }>;
-export type Activation = Readonly<{ part?: string; key?: string; place?: string }>;
 
 type Props = {
   state: GardenState;
   handling: Handling;
-  ghost?: Ghost;
+  ghost?: StageGhost<Readonly<{ sprite: Sprite; size: number }>>;
   caption?: string;
   speaking: boolean;
   // Phones in portrait see the scale and the basket, cropped from the sides.

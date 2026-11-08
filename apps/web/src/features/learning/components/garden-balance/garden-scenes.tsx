@@ -1,3 +1,4 @@
+import type { Handling } from '../../interaction/useStageDrag';
 import {
   cucumbersPerApple,
   tilt,
@@ -6,10 +7,6 @@ import {
 import { Basket, BoardText, Part, Scale, Spark, type PartProps } from './garden-art';
 import { movableProps } from './movable-props';
 import styles from './GardenStage.module.css';
-
-// What the child is holding: a prop picked up for a drag or chosen by tapping,
-// and the place the drag is over.
-export type Handling = Readonly<{ selected?: string; lifted?: string; over?: string }>;
 
 function held(id: string, { selected, lifted }: Handling): Partial<PartProps> {
   return { id, selected: selected === id, lifted: lifted === id };

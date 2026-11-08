@@ -4,13 +4,14 @@ import { GardenStage } from '../components/garden-balance/GardenStage';
 import type { LearningScope } from '../data-access/learning-request';
 import { useLessonDraft } from '../data-access/useLessonDraft';
 import { useLessonFilm } from '../interaction/useLessonFilm';
+import { useStageDrag } from '../interaction/useStageDrag';
+import { gardenProps } from '../lessons/garden-balance/garden-props';
 import {
   gardenStory,
   savesProgress,
   type GardenFilm,
 } from '../lessons/garden-balance/garden-story';
 import { gardenBalance, isShot, teacher, type Shot } from '../lessons/garden-balance/script';
-import { useGardenDrag } from '../lessons/garden-balance/useGardenDrag';
 import { GardenPanels } from './GardenPanels';
 import { LessonSignInNotice } from './LessonSignInNotice';
 import styles from './GardenBalanceLesson.module.css';
@@ -28,7 +29,7 @@ function entryLabel({ resume, finding }: Start) {
 // The film and the props the child moves. A drag changes only this part of the
 // page, never the panels beneath it.
 function GardenScreen({ film, start }: { film: GardenFilm; start: Start }) {
-  const drag = useGardenDrag(film);
+  const drag = useStageDrag(film, gardenProps);
   const narrow = useMediaQuery('(max-width: 610px)');
   return (
     <GardenStage
