@@ -4,7 +4,9 @@ import {
   tilt,
   type GardenState,
 } from '../../lessons/garden-balance/garden-story';
-import { Basket, BoardText, Part, Scale, Spark, type PartProps } from './garden-art';
+import { AttentionCue, type Point } from '../lesson-stage/AttentionCue';
+import { BoardText } from '../lesson-stage/BoardText';
+import { Basket, gardenShadow, Part, Scale, type PartProps } from './garden-art';
 import { movableProps } from './movable-props';
 import styles from './garden-art.module.css';
 
@@ -12,6 +14,11 @@ type SceneProps = { state: GardenState; handling: Handling };
 
 function held(id: string, { selected, lifted }: Handling): Partial<PartProps> {
   return { id, selected: selected === id, lifted: lifted === id };
+}
+
+// The arrow from the prop that moves next to where it goes.
+function Arrow({ from, to }: { from: Point; to: Point }) {
+  return <AttentionCue kind="arrow" from={from} to={to} shadow={gardenShadow} />;
 }
 
 const appleSpots = [
@@ -71,9 +78,9 @@ function WeighScene({ state, handling }: SceneProps) {
       <Basket highlight={apples > 3} over={handling.over === 'basket'} />
       {apples > 3 &&
         (weighing ? (
-          <Spark from={[438, 274]} to={[938, 408]} />
+          <Arrow from={[438, 274]} to={[938, 408]} />
         ) : (
-          <Spark from={[823, 271]} to={[938, 397]} />
+          <Arrow from={[823, 271]} to={[938, 397]} />
         ))}
     </>
   );
@@ -111,7 +118,7 @@ function ExchangeScene({ state }: { state: GardenState }) {
   return (
     <>
       <Scale left={left} right={right} tilt={tilt(state)} />
-      {!revealed && <Spark from={[423, 223]} to={[477, 282]} />}
+      {!revealed && <Arrow from={[423, 223]} to={[477, 282]} />}
     </>
   );
 }
@@ -191,7 +198,7 @@ function SwapScene({ state }: { state: GardenState }) {
         right={right}
         tilt={0}
       />
-      {swapping && next !== undefined && <Spark from={[817 + next, 232]} to={[817 + next, 285]} />}
+      {swapping && next !== undefined && <Arrow from={[817 + next, 232]} to={[817 + next, 285]} />}
       {(shot === 'variation' || shot === 'end') && <SpareCucumbers />}
       {shot === 'end' && (
         <>
