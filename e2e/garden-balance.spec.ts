@@ -1,7 +1,6 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { randomBytes, randomUUID } from 'node:crypto';
 import pg from 'pg';
-import { tokenHash } from '../apps/api/src/identity/services/session-security.js';
+import { seedSignedInFamily } from './seeded-family.js';
 import { signInWithToken } from './session-cookie.js';
 
 // The first real problem from the production entry point: the catalog places
@@ -9,34 +8,6 @@ import { signInWithToken } from './session-cookie.js';
 // is saved, and the final count is judged on the server. The browser here has
 // no microphone and the server no AI key, so the answer falls back to tapping
 // a number and a question gets the scene's own guidance.
-
-async function seedFamily(pool: pg.Pool) {
-  const family = randomUUID();
-  const child = randomUUID();
-  const childToken = randomBytes(32).toString('base64url');
-  const parentToken = randomBytes(32).toString('base64url');
-  await pool.query('INSERT INTO families(id) VALUES($1)', [family]);
-  await pool.query(
-    `WITH parent AS (
-       INSERT INTO parents(family_id,email,password_hash,email_verified)
-       VALUES($1,$2,'fixture',true) RETURNING id
-     )
-     INSERT INTO parent_sessions(token_hash,parent_id,credential_version,family_epoch,expires_at,verified)
-     SELECT $3,id,1,1,now()+interval '1 hour',true FROM parent`,
-    [family, `${family}@example.test`, tokenHash(parentToken)],
-  );
-  await pool.query(
-    `INSERT INTO children(id,family_id,nickname,canonical_nickname,pin_hash,pin_pepper_version)
-     VALUES($1,$2,'小鹿','小鹿','fixture',1)`,
-    [child, family],
-  );
-  await pool.query(
-    `INSERT INTO child_sessions(token_hash,child_id,credential_version,family_epoch,expires_at)
-     VALUES($1,$2,1,1,now()+interval '1 hour')`,
-    [tokenHash(childToken), child],
-  );
-  return { family, childToken, parentToken };
-}
 
 async function drag(page: Page, source: Locator, target: Locator) {
   const from = (await source.boundingBox())!;
@@ -79,9 +50,9 @@ test('a child places the garden problem, resumes it and is judged on the counted
     .poll(async () => (await page.request.get('/health/ready')).status(), { timeout: 15_000 })
     .toBe(200);
   const pool = new pg.Pool({ connectionString: database });
-  const { family, childToken, parentToken } = await seedFamily(pool);
+  const { family, parent, children } = await seedSignedInFamily(pool, ['小鹿']);
   try {
-    await signInWithToken(page, baseURL!, childToken);
+    await signInWithToken(page, baseURL!, children[0]!.token);
     await page.goto('/');
     await expect(page.getByLabel('年级', { exact: true })).toHaveValue('一年级');
     await expect(page.getByLabel('学科', { exact: true })).toHaveValue('数学');
@@ -100,10 +71,10 @@ test('a child places the garden problem, resumes it and is judged on the counted
     const answer = page.getByRole('region', { name: '说出答案' });
     await expect(answer).toBeVisible();
 
-    // A question with no AI and no microphone keeps the scene going.
+    // A question with no AI and no microphone sends the child back to the scene.
     const question = page.getByRole('region', { name: '问问小兔' });
     await question.getByRole('button', { name: '有问题？按一下问小兔' }).click();
-    await expect(question.getByRole('status')).toHaveText(/现在问不了|现在录不了音/);
+    await expect(question.getByRole('status')).toHaveText(/我们接着做题吧/);
 
     // Without a microphone the answer is tapped. A wrong count is explained
     // and the numbers stay; a hint makes the correct count a helped one.
@@ -121,7 +92,7 @@ test('a child places the garden problem, resumes it and is judged on the counted
     await expect(caption).toHaveText(/现在换个条件/);
 
     // The parent sees the helped answer and the wrong count, apart.
-    await signInWithToken(page, baseURL!, parentToken);
+    await signInWithToken(page, baseURL!, parent);
     await page.goto('/family');
     const summary = page.locator('section[aria-labelledby=learning-summary-title]');
     await summary.getByLabel('选择孩子').selectOption({ label: '小鹿' });
