@@ -16,7 +16,7 @@ export function useVoiceInput(
   host?: RecorderHost,
 ) {
   const [state, setState] = useState<VoiceState>({ status: 'idle' });
-  const [voice] = useState(() => createVoiceInput(setState, host));
+  const [voice] = useState(() => createVoiceInput(setState, { host }));
   useEffect(() => () => voice.dispose(), [voice]);
   return {
     ...voice,

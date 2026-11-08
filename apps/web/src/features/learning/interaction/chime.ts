@@ -1,11 +1,11 @@
 // Short sine tones that mark a scene's events, such as an object landing or a
 // scale settling. One audio context serves the whole lesson; a browser without
 // Web Audio, or one that refuses to start it, simply stays quiet.
-export function createChime(createContext: () => AudioContext = () => new AudioContext()) {
+export function createChime() {
   let context: AudioContext | undefined;
   return (notes: readonly number[]) => {
     try {
-      const audio = (context ??= createContext());
+      const audio = (context ??= new AudioContext());
       void audio.resume();
       notes.forEach((frequency, index) => {
         const start = audio.currentTime + index * 0.085;

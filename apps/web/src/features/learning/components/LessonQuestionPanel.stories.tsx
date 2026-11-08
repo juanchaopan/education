@@ -5,6 +5,7 @@ const meta = {
   title: 'Learning/Lesson question',
   component: LessonQuestionPanel,
   args: {
+    teacher: '小兔',
     stepId: 'apples',
     voice: { status: 'idle' },
     reply: { status: 'idle' },

@@ -90,6 +90,7 @@ function createCue(
 
 type Clip = { step: string; source: string };
 type Active = Clip & { cue: ReturnType<typeof createCue>; extra: boolean };
+type Playing = { active?: Active; last?: Clip };
 type Options = {
   createAudio?: () => HTMLAudioElement;
   onStatus?: (status: NarrationStatus) => void;
@@ -99,74 +100,87 @@ function idleStatus(last: Clip | undefined): NarrationStatus {
   return last ? 'ready' : 'silent';
 }
 
+// What the child does with the cue on screen: hear it again, pause it,
+// continue it; and what the scene does on leaving: stop it.
+function childControls(
+  playing: Playing,
+  begin: (clip: Clip) => void,
+  onStatus: (status: NarrationStatus) => void,
+) {
+  return {
+    replay() {
+      if (playing.active) {
+        onStatus('playing');
+        playing.active.cue.restart();
+      } else if (playing.last) begin(playing.last);
+    },
+    pause() {
+      if (!playing.active) return;
+      playing.active.cue.pause();
+      onStatus('paused');
+    },
+    resume() {
+      if (!playing.active) return;
+      onStatus('playing');
+      playing.active.cue.resume();
+    },
+    stop() {
+      playing.last = undefined;
+      if (playing.active) playing.active.cue.stop();
+      else onStatus('silent');
+    },
+  };
+}
+
 // Every cue belongs to a step. Within a step the scene owns cue order: while one
-// of its cues plays, another cannot replace or queue behind it. A cue for a
-// different step replaces whatever an earlier step was saying. Hearing a cue
-// again is the child's own request: it restarts the cue in place, or replays
-// the last one once it has ended, and the scene's next cue takes over from such
-// a replay.
+// of its cues plays, another cannot replace or queue behind it, unless the
+// scene interrupts it because the child just changed what is on screen. A cue
+// for a different step replaces whatever an earlier step was saying. Hearing a
+// cue again is the child's own request: it restarts the cue in place, or
+// replays the last one once it has ended, and the scene's next cue takes over
+// from such a replay.
 export function createNarration({
   createAudio = () => new Audio(),
   onStatus = () => {},
 }: Options = {}) {
-  let active: Active | undefined;
-  let last: Clip | undefined;
+  const playing: Playing = {};
 
   function begin(clip: Clip, onCue: (() => void) | undefined, extra: boolean) {
     return new Promise<CueResult>((resolve) => {
       const audio = createAudio();
       const cue = createCue(audio, onCue, (result) => {
-        if (active?.cue === cue) active = undefined;
-        onStatus(result === 'unavailable' ? 'failed' : idleStatus(last));
+        if (playing.active?.cue === cue) playing.active = undefined;
+        onStatus(result === 'unavailable' ? 'failed' : idleStatus(playing.last));
         resolve(result);
       });
-      active = { ...clip, cue, extra };
+      playing.active = { ...clip, cue, extra };
       audio.src = clip.source;
       onStatus('playing');
       cue.start();
     });
   }
 
-  function play(step: string, source?: string, onCue?: () => void): Promise<CueResult> {
-    if (active?.step === step && !active.extra) return Promise.resolve('busy');
-    last = source ? { step, source } : undefined;
-    active?.cue.stop();
-    if (last) return begin(last, onCue, false);
+  function interrupt(step: string, source?: string, onCue?: () => void): Promise<CueResult> {
+    playing.last = source ? { step, source } : undefined;
+    playing.active?.cue.stop();
+    if (playing.last) return begin(playing.last, onCue, false);
     onStatus('silent');
     onCue?.();
     return Promise.resolve('unavailable');
   }
 
-  // Forgets every cue that does not belong to the step on screen.
-  function keep(step: string) {
-    if (last?.step !== step) last = undefined;
-    if (active && active.step !== step) active.cue.stop();
-    else if (!active) onStatus(idleStatus(last));
-  }
-
   return {
-    play,
-    keep,
-    replay() {
-      if (active) {
-        onStatus('playing');
-        active.cue.restart();
-      } else if (last) void begin(last, undefined, true);
+    play(step: string, source?: string, onCue?: () => void): Promise<CueResult> {
+      if (playing.active?.step === step && !playing.active.extra) return Promise.resolve('busy');
+      return interrupt(step, source, onCue);
     },
-    pause() {
-      if (!active) return;
-      active.cue.pause();
-      onStatus('paused');
+    interrupt,
+    // Forgets every cue that does not belong to the step on screen.
+    keep(step: string) {
+      if (playing.last?.step !== step) playing.last = undefined;
+      if (playing.active && playing.active.step !== step) playing.active.cue.stop();
+      else if (!playing.active) onStatus(idleStatus(playing.last));
     },
-    resume() {
-      if (!active) return;
-      onStatus('playing');
-      active.cue.resume();
-    },
-    stop() {
-      last = undefined;
-      if (active) active.cue.stop();
-      else onStatus('silent');
-    },
+    ...childControls(playing, (clip) => void begin(clip, undefined, true), onStatus),
   };
 }

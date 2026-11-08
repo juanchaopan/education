@@ -1,6 +1,7 @@
 import { expect, it } from 'vitest';
+import type { Judgement } from '../data-access/useLessonAnswer';
 import type { VoiceState } from '../data-access/voice-input';
-import { answerStep, type Judgement } from './spoken-answer';
+import { answerStep } from './spoken-answer';
 
 const open: Judgement = { status: 'open' };
 const idle: VoiceState = { status: 'idle' };
@@ -30,15 +31,27 @@ it('offers numbers to tap only when speech cannot be used', () => {
     { status: 'unavailable', reason: 'unsupported' },
     { status: 'fallback', reason: 'unauthorized' },
     { status: 'fallback', reason: 'disabled' },
-    { status: 'fallback', reason: 'timeout' },
+    { status: 'fallback', reason: 'usage-limited' },
     { status: 'guidance' },
   ] satisfies VoiceState[])
     expect(answerStep(voice, open, explain)).toMatchObject({ kind: 'ask', choices: true });
   for (const voice of [
     { status: 'unavailable', reason: 'empty' },
     { status: 'fallback', reason: 'invalid-input' },
+    { status: 'fallback', reason: 'timeout' },
   ] satisfies VoiceState[])
     expect(answerStep(voice, open, explain)).toMatchObject({ kind: 'ask', choices: false });
+});
+
+it('says what to do instead of speaking in the words of tapping', () => {
+  expect(answerStep({ status: 'fallback', reason: 'unauthorized' }, open, explain)).toEqual({
+    kind: 'ask',
+    message: '需要家长先同意语音转写。可以点下面的数字回答。',
+    choices: true,
+  });
+  expect(answerStep({ status: 'unavailable', reason: 'empty' }, open, explain)).toMatchObject({
+    message: '这次没有录到声音。可以再录一次。',
+  });
 });
 
 it('explains a wrong count and lets the child speak again', () => {
@@ -48,6 +61,9 @@ it('explains a wrong count and lets the child speak again', () => {
     choices: false,
   });
   expect(answerStep({ status: 'recording' }, wrong, explain)).toMatchObject({ kind: 'listening' });
+  expect(answerStep({ status: 'unheard' }, wrong, explain)).toMatchObject({
+    message: '没有听清你说的话。可以再说一次。',
+  });
 });
 
 it('keeps the numbers beside the explanation once speech has proved unusable', () => {

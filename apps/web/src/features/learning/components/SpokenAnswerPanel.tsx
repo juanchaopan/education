@@ -3,13 +3,7 @@ import { LessonButton as Button } from './LessonButton';
 import panel from './LessonPanel.module.css';
 import styles from './SpokenAnswerPanel.module.css';
 
-type Props = {
-  question: string;
-  step: AnswerStep;
-  choices: readonly number[];
-  hint?: string;
-  hintFailed?: boolean;
-  canHint: boolean;
+type Handlers = {
   onSpeak: () => void;
   onStop: () => void;
   onCancel: () => void;
@@ -19,6 +13,15 @@ type Props = {
   onRetry: () => void;
   onHint: () => void;
   onContinue: () => void;
+};
+
+type Props = Handlers & {
+  question: string;
+  step: AnswerStep;
+  choices: readonly number[];
+  hint?: string;
+  hintFailed?: boolean;
+  canHint: boolean;
 };
 
 function message(step: AnswerStep) {
@@ -36,7 +39,7 @@ function message(step: AnswerStep) {
   }
 }
 
-function Actions({ step, ...on }: Omit<Props, 'question' | 'choices' | 'hint' | 'canHint'>) {
+function Actions({ step, ...on }: Handlers & { step: AnswerStep }) {
   switch (step.kind) {
     case 'listening':
       return (
@@ -68,7 +71,8 @@ function Actions({ step, ...on }: Omit<Props, 'question' | 'choices' | 'hint' | 
 // The final answer of a lesson, said out loud. The child confirms the number
 // that was heard before it counts; numbers to tap appear only when speech
 // cannot be used.
-export function SpokenAnswerPanel({ question, step, choices, hint, canHint, ...on }: Props) {
+export function SpokenAnswerPanel(props: Props) {
+  const { question, step, choices, hint, hintFailed, canHint, ...on } = props;
   const asking = step.kind === 'ask';
   return (
     <section className={panel.panel} aria-label="说出答案">
@@ -94,7 +98,7 @@ export function SpokenAnswerPanel({ question, step, choices, hint, canHint, ...o
           ))}
         </div>
       )}
-      {(hint || on.hintFailed) && (
+      {(hint || hintFailed) && (
         <p className={styles.hint}>{hint ?? '提示暂时打不开，可以再试一次。'}</p>
       )}
     </section>

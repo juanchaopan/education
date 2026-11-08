@@ -56,12 +56,13 @@ export function useLessonDraft({ id, version, csrf }: DraftScope, initial: Local
   }
 
   const send = useDraftCommand(scope, update);
-  function run(action: DraftWrite['action'], local = content) {
+  // Sends the draft on screen, or `local` when the caller has just recorded it.
+  function run(action: DraftWrite['action'], local?: LocalDraft) {
     if (base === undefined || state.conflict) return;
     const revision = base?.revision ?? null;
     return send(
-      action === 'save' ? { action, revision, content: local } : { action, revision },
-      local === content ? state.local : local,
+      action === 'save' ? { action, revision, content: local ?? content } : { action, revision },
+      local ?? state.local,
     );
   }
 

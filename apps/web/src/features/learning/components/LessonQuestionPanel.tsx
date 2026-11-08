@@ -1,10 +1,14 @@
 import type { FeedbackState } from '../data-access/useTeachingFeedback';
 import type { VoiceState } from '../data-access/voice-input';
 import { fallbackMessage } from '../interaction/ai-help-message';
+import { feedbackForStep } from '../interaction/lesson-help';
+import { voiceMessage, type Alternative } from '../interaction/voice-message';
 import { LessonButton as Button } from './LessonButton';
 import panel from './LessonPanel.module.css';
 
 type Props = {
+  // Who teaches the lesson, as its narration calls them.
+  teacher: string;
   stepId: string;
   voice: VoiceState;
   reply: FeedbackState;
@@ -19,37 +23,16 @@ type Props = {
   onResume: () => void;
 };
 
-const keepGoing = '我们接着做题吧。';
+// A question is never needed to go on, so speech that cannot be used only
+// sends the child back to the scene.
+const carryOn: Alternative = { instead: '我们接着做题吧。' };
 
-function voiceMessage(voice: VoiceState) {
-  switch (voice.status) {
-    case 'starting':
-      return '正在打开麦克风…';
-    case 'recording':
-      return '小兔在听。问完点「问完了」。';
-    case 'transcribing':
-      return '小兔在听你说的话…';
-    case 'unheard':
-      return '没有听清，可以再问一次。';
-    case 'unavailable':
-      return voice.reason === 'denied'
-        ? `没有拿到麦克风权限，现在问不了。${keepGoing}`
-        : `现在录不了音。${keepGoing}`;
-    case 'fallback':
-      return voice.reason === 'unauthorized'
-        ? `需要家长先同意语音转写，现在问不了。${keepGoing}`
-        : `现在听不了问题。${keepGoing}`;
-    default:
-      return undefined;
-  }
-}
-
-function replyMessage(stepId: string, reply: FeedbackState, guidance: string) {
+function replyMessage({ stepId, reply, guidance, teacher }: Props) {
   switch (reply.status) {
     case 'pending':
-      return '小兔正在想…';
+      return `${teacher}正在想…`;
     case 'ready':
-      return reply.feedback.stepId === stepId ? reply.feedback.instruction : '';
+      return feedbackForStep(stepId, reply.feedback)?.instruction ?? '';
     case 'fallback':
       return `${fallbackMessage(reply.reason)}${guidance}`;
     case 'guidance':
@@ -59,11 +42,11 @@ function replyMessage(stepId: string, reply: FeedbackState, guidance: string) {
   }
 }
 
-function Actions({ voice, reply, paused, ...on }: Omit<Props, 'stepId' | 'guidance'>) {
+function Actions({ voice, reply, paused, teacher, ...on }: Props) {
   if (voice.status === 'starting' || voice.status === 'recording')
     return (
       <>
-        <Button label="问完了" onClick={on.onStop} />
+        <Button label="说完了" onClick={on.onStop} />
         <Button label="不问了" onClick={on.onCancel} />
       </>
     );
@@ -71,8 +54,8 @@ function Actions({ voice, reply, paused, ...on }: Omit<Props, 'stepId' | 'guidan
     return <Button label="不等了" onClick={on.onStopWaiting} />;
   return (
     <>
-      <Button label="有问题？按一下问小兔" onClick={on.onAsk} />
-      {paused && <Button label="接着听小兔讲" onClick={on.onResume} />}
+      <Button label={`有问题？按一下问${teacher}`} onClick={on.onAsk} />
+      {paused && <Button label={`接着听${teacher}讲`} onClick={on.onResume} />}
     </>
   );
 }
@@ -80,14 +63,15 @@ function Actions({ voice, reply, paused, ...on }: Omit<Props, 'stepId' | 'guidan
 // A question the child asks in the middle of a scene, and the teacher's short
 // reply about that scene. When the teacher cannot answer, the scene's own
 // guidance is shown instead.
-export function LessonQuestionPanel({ stepId, voice, reply, guidance, ...on }: Props) {
+export function LessonQuestionPanel(props: Props) {
+  const { voice, teacher } = props;
   return (
-    <section className={panel.panel} aria-label="问问小兔">
+    <section className={panel.panel} aria-label={`问问${teacher}`}>
       <p role="status" className={panel.message}>
-        {voiceMessage(voice) ?? replyMessage(stepId, reply, guidance)}
+        {voice.status === 'idle' ? replyMessage(props) : voiceMessage(voice, carryOn)}
       </p>
       <div className={panel.actions}>
-        <Actions voice={voice} reply={reply} {...on} />
+        <Actions {...props} />
       </div>
     </section>
   );

@@ -16,12 +16,7 @@ export function useLessonQuestion(scope: LearningScope, stepId: string, host?: R
     void feedback.ask({ stepId: askedIn.current, text, drawing: [] });
   });
   const [input] = useState(() =>
-    createVoiceInput((state) => {
-      if (state.status !== 'review') return setVoice(state);
-      setVoice({ status: 'idle' });
-      const text = state.text.trim();
-      if (text) ask(text);
-    }, host),
+    createVoiceInput(setVoice, { host, onHeard: (text) => ask(text) }),
   );
   useEffect(() => () => input.dispose(), [input]);
 

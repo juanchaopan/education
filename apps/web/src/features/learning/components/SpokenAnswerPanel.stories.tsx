@@ -1,12 +1,18 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import type { Judgement } from '../data-access/useLessonAnswer';
+import { answerStep } from '../interaction/spoken-answer';
 import { SpokenAnswerPanel } from './SpokenAnswerPanel';
+
+const open: Judgement = { status: 'open' };
+const explain = (count: number) =>
+  count === 3 ? '3 是一个苹果换的根数。右盘有三组黄瓜，再数数一共有几根。' : `${count} 根还不对。`;
 
 const meta = {
   title: 'Learning/Spoken answer',
   component: SpokenAnswerPanel,
   args: {
     question: '一棵青菜和几根黄瓜一样重？',
-    step: { kind: 'ask', message: '', choices: false },
+    step: answerStep({ status: 'idle' }, open, explain),
     choices: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
     canHint: true,
     onSpeak: () => {},
@@ -25,26 +31,31 @@ type Story = StoryObj<typeof meta>;
 
 export const Ready: Story = {};
 export const Listening: Story = {
-  args: { step: { kind: 'listening', message: '正在听。说完点「说完了」。' } },
+  args: { step: answerStep({ status: 'recording' }, open, explain) },
 };
 export const ConfirmHeard: Story = {
-  args: { step: { kind: 'confirm', heard: '九根', count: 9 } },
+  args: { step: answerStep({ status: 'review', text: '九根' }, open, explain) },
 };
 export const WrongCountWithHint: Story = {
   args: {
-    step: {
-      kind: 'ask',
-      message: '3 是一个苹果换的根数。右盘有三组黄瓜，再数数一共有几根。',
-      choices: false,
-    },
+    step: answerStep(
+      { status: 'idle' },
+      { status: 'judged', outcome: 'incorrect', count: 3 },
+      explain,
+    ),
     hint: '先看第一架秤：一棵青菜和几个苹果一样重？',
   },
 };
 export const TapWithoutMicrophone: Story = {
-  args: {
-    step: { kind: 'ask', message: '没有拿到麦克风权限。可以点下面的数字回答。', choices: true },
-  },
+  args: { step: answerStep({ status: 'unavailable', reason: 'denied' }, open, explain) },
 };
 export const Correct: Story = {
-  args: { step: { kind: 'done', assisted: false }, canHint: false },
+  args: {
+    step: answerStep(
+      { status: 'idle' },
+      { status: 'judged', outcome: 'independent', count: 9 },
+      explain,
+    ),
+    canHint: false,
+  },
 };

@@ -13,6 +13,12 @@ export type VoiceState =
 type RequestState = TranscriptionResult | { status: 'pending' | 'guidance' };
 type Target = { scope: LearningScope; stepId: string };
 type Transcriptions = ReturnType<typeof createAiHelpRequest<TranscriptionResult>>;
+type Options = {
+  host?: RecorderHost;
+  // Hands what was heard straight on, without a review: for a question,
+  // which is not an answer and has nothing to confirm.
+  onHeard?: (text: string) => void;
+};
 
 function fromRequest(state: RequestState): VoiceState {
   switch (state.status) {
@@ -54,12 +60,17 @@ function transcribingRecorder(
 // heard while the child corrects it. One request runs at a time, a slow one can
 // be abandoned for typing, a late reply after that is ignored, and only a
 // confirmed, non-empty text is handed on.
-export function createVoiceInput(update: (state: VoiceState) => void, host?: RecorderHost) {
+export function createVoiceInput(
+  update: (state: VoiceState) => void,
+  { host, onHeard }: Options = {},
+) {
   let state: VoiceState = { status: 'idle' };
   let target: Target | undefined;
   const set = (next: VoiceState) => {
-    state = next;
-    update(next);
+    const heard = onHeard && next.status === 'review' ? next.text.trim() : undefined;
+    state = heard === undefined ? next : { status: 'idle' };
+    update(state);
+    if (heard) onHeard?.(heard);
   };
   const requests = createAiHelpRequest<TranscriptionResult>((next) => set(fromRequest(next)));
   const recorder = transcribingRecorder(set, requests, () => target, host);

@@ -116,6 +116,19 @@ describe('lesson narration', () => {
     expect(show).not.toHaveBeenCalled();
     expect(statuses.at(-1)).toBe('silent');
   });
+
+  it('lets the scene cut in on its own cue when the child changes what is on screen', async () => {
+    const { narration, speakers } = player();
+    const previous = narration.play('swap', '/bridge.mp3');
+    const next = narration.interrupt('swap', '/one.mp3');
+    await expect(previous).resolves.toBe('cancelled');
+    expect(speakers[0]!.pause).toHaveBeenCalledOnce();
+    expect(speakers[1]!.audio.src).toContain('/one.mp3');
+    speakers[1]!.audio.dispatchEvent(new Event('ended'));
+    await expect(next).resolves.toBe('ended');
+    narration.replay();
+    expect(speakers[2]!.audio.src).toContain('/one.mp3');
+  });
 });
 
 describe('moving between steps', () => {
