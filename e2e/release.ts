@@ -7,14 +7,28 @@ export const releases = { older: 'a'.repeat(40), newer: 'b'.repeat(40) };
 // a failed request, or a reply that names no release.
 type Served = string | 'fail' | 'unreadable';
 
+// A path the site answers with its page: no file extension and not the API.
+function pagePath(url: URL) {
+  return !/\.\w+$/.test(url.pathname) && !url.pathname.startsWith('/api/');
+}
+
 // Plays a deployment that moves between releases under an open page. Every
 // page load gets the page of release `page`, named in its meta tag as a
 // deployment's build names it, and the version file names release `served`.
 // The two differ when a cache still holds an older page. Loads are counted,
 // so a test can tell a reload from none.
 export async function serveReleases(page: Page, start: string) {
-  const site = { page: start, served: start as Served, loads: 0 };
-  await page.route('**/*', async (route) => {
+  const site = {
+    page: start,
+    served: start as Served,
+    loads: 0,
+    // A deployment that serves this release, its page and its version file.
+    deploy(release: string) {
+      site.page = release;
+      site.served = release;
+    },
+  };
+  await page.route(pagePath, async (route) => {
     if (route.request().resourceType() !== 'document') return route.fallback();
     site.loads++;
     const response = await route.fetch();
@@ -55,36 +69,4 @@ export async function checkNow(page: Page) {
 // The meta tag that names the release of the page on screen.
 export function releaseName(page: Page) {
   return page.locator('meta[name="education-release"]');
-}
-
-// Every recording the pages play starting and ending, as `<file> playing` or
-// `<file> ended` without the hash a build adds, kept across page loads so a
-// test can tell what a reload cut off.
-export async function hearAcrossLoads(page: Page) {
-  const heard: string[] = [];
-  await page.exposeFunction('reportRecording', (line: string) => void heard.push(line));
-  await page.addInitScript(() => {
-    const report = (window as unknown as { reportRecording: (line: string) => void })
-      .reportRecording;
-    const watched = new WeakSet<HTMLMediaElement>();
-    const play = HTMLMediaElement.prototype.play;
-    HTMLMediaElement.prototype.play = function (this: HTMLMediaElement) {
-      if (!watched.has(this)) {
-        watched.add(this);
-        let sounding = '';
-        const name = () => (this.src.split('/').pop() ?? '').replace(/-[\w-]{8}\.mp3$/, '');
-        this.addEventListener('playing', () => {
-          if (sounding === name()) return;
-          sounding = name();
-          report(`${sounding} playing`);
-        });
-        this.addEventListener('ended', () => {
-          report(`${sounding} ended`);
-          sounding = '';
-        });
-      }
-      return play.call(this);
-    };
-  });
-  return heard;
 }

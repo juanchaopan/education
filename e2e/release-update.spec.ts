@@ -1,7 +1,8 @@
 import { expect, test, type Page } from '@playwright/test';
 import pg from 'pg';
 import { gardenFilm, movesToTheAnswer } from './garden-film.js';
-import { checkNow, hearAcrossLoads, releaseName, releases, serveReleases } from './release.js';
+import { listenToNarration } from './narration-check.js';
+import { checkNow, releaseName, releases, serveReleases } from './release.js';
 import { seedSignedInFamily } from './seeded-family.js';
 import { signInWithToken } from './session-cookie.js';
 
@@ -13,6 +14,8 @@ const { older, newer } = releases;
 const lesson = '/problems/garden-balance/1';
 const updateWaits = /更新已准备好，保存后将自动更新/;
 
+type Narration = Awaited<ReturnType<typeof listenToNarration>>;
+
 // Opens a page and waits for its first look at the version file.
 async function open(page: Page, path: string) {
   const checked = page.waitForResponse('**/version.json');
@@ -21,37 +24,28 @@ async function open(page: Page, path: string) {
 }
 
 // Starts the garden film and waits until the teacher is heard speaking.
-async function startFilm(page: Page, heard: readonly string[]) {
+async function startFilm(page: Page, narration: Narration) {
   await page.getByRole('button', { name: /开始短片|接着上次的地方/ }).click({ timeout: 30_000 });
-  await expect.poll(() => heard.length).toBeGreaterThan(0);
-}
-
-// Waits until each of these recordings has played to its end.
-async function untilHeard(heard: readonly string[], recordings: readonly string[]) {
-  await expect
-    .poll(() => recordings.every((name) => heard.includes(`${name} ended`)), { timeout: 60_000 })
-    .toBe(true);
+  await expect.poll(() => narration.told().length).toBeGreaterThan(0);
 }
 
 // Opens the garden lesson as a visitor and starts the film; while the teacher
 // speaks, the deployment moves to the newer release and the page checks it.
 async function newReleaseWhileTheFilmPlays(page: Page) {
-  const heard = await hearAcrossLoads(page);
+  const narration = await listenToNarration(page);
   const site = await serveReleases(page, older);
   await open(page, lesson);
-  await startFilm(page, heard);
-  site.page = newer;
-  site.served = newer;
+  await startFilm(page, narration);
+  site.deploy(newer);
   await checkNow(page);
-  return { heard, site };
+  return { narration, site };
 }
 
 test.describe('a page outside a lesson', () => {
   test('takes a new release at once, and only once', async ({ page }) => {
     const site = await serveReleases(page, older);
     await open(page, '/');
-    site.page = newer;
-    site.served = newer;
+    site.deploy(newer);
     await checkNow(page);
     await expect.poll(() => site.loads).toBe(2);
     await expect(releaseName(page)).toHaveAttribute('content', newer);
@@ -109,14 +103,14 @@ test.describe('a lesson page', () => {
     page,
   }) => {
     test.setTimeout(120_000);
-    const { heard, site } = await newReleaseWhileTheFilmPlays(page);
+    const { narration, site } = await newReleaseWhileTheFilmPlays(page);
     await expect(gardenFilm(page).film).not.toHaveAttribute('data-shot', 'opening');
     expect(site.loads).toBe(1);
 
     // The film's first lines end, and it waits for the child: the page reloads,
     // having cut nothing off.
     await expect.poll(() => site.loads, { timeout: 60_000 }).toBe(2);
-    expect(heard).toEqual([
+    expect(narration.told()).toEqual([
       'hello playing',
       'hello ended',
       'clue playing',
@@ -130,9 +124,9 @@ test.describe('a lesson page', () => {
 
   test('takes the new release at once when the child leaves a playing film', async ({ page }) => {
     test.setTimeout(120_000);
-    const { heard, site } = await newReleaseWhileTheFilmPlays(page);
+    const { narration, site } = await newReleaseWhileTheFilmPlays(page);
     expect(site.loads).toBe(1);
-    expect(heard).not.toContain('question ended');
+    expect(narration.told()).not.toContain('question ended');
     await page
       .getByRole('navigation', { name: '主导航' })
       .getByRole('link', { name: '探索题目' })
@@ -171,21 +165,21 @@ test.describe('a signed-in child', () => {
 
   // Plays the film to its first question, with the place saved.
   async function reachTheFirstQuestion(page: Page) {
-    const heard = await hearAcrossLoads(page);
+    const narration = await listenToNarration(page);
     const site = await serveReleases(page, older);
     await open(page, lesson);
-    await startFilm(page, heard);
-    await untilHeard(heard, ['hello', 'clue', 'question']);
+    await startFilm(page, narration);
+    await narration.heard(['hello', 'clue', 'question']);
     const draft = page.getByRole('complementary', { name: '学习草稿' });
     await expect(draft).toHaveText(/草稿已保存/);
-    return { heard, site, draft };
+    return { narration, site, draft };
   }
 
   test('keeps a draft that did not save, waits for the save, and stays signed in', async ({
     page,
   }) => {
     test.setTimeout(180_000);
-    const { heard, site, draft } = await reachTheFirstQuestion(page);
+    const { narration, site, draft } = await reachTheFirstQuestion(page);
     const saves = '**/api/v1/problems/garden-balance/1/draft';
     await page.route(saves, (route) =>
       route.request().method() === 'POST'
@@ -198,10 +192,9 @@ test.describe('a signed-in child', () => {
     await expect(draft).toHaveText(/还没同步/);
 
     // The new release waits for the film, then for the save that fails.
-    site.page = newer;
-    site.served = newer;
+    site.deploy(newer);
     await checkNow(page);
-    await untilHeard(heard, takeTheCabbage!.says);
+    await narration.heard(takeTheCabbage!.says);
     const notice = page.getByRole('complementary', { name: '网站更新' });
     await expect(notice).toHaveText(updateWaits);
     expect(site.loads).toBe(1);
@@ -227,8 +220,7 @@ test.describe('a signed-in child', () => {
     await takeTheCabbage!.move();
     await takeTheCabbage!.shown!();
     await expect(draft).toHaveText(/还没同步/);
-    site.page = newer;
-    site.served = newer;
+    site.deploy(newer);
     await page.evaluate(() => window.dispatchEvent(new Event('focus')));
     await expect(draft).toHaveText(/还没同步/);
     expect(site.loads).toBe(1);
