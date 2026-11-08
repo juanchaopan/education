@@ -6,3 +6,5 @@ export const movableProps = {
   leaf: { sprite: 'garden-cabbage', size: 76 },
   apple: { sprite: 'garden-apple', size: 57 },
 } as const satisfies Record<string, { sprite: Sprite; size: number }>;
+
+export type MovableLook = (typeof movableProps)[keyof typeof movableProps];
