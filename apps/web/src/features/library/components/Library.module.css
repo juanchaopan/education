@@ -7,7 +7,7 @@
   min-height: 480px;
 }
 .eyebrow {
-  color: var(--teal-dark);
+  color: var(--primary);
   font-size: var(--text-sm);
   font-weight: 700;
   letter-spacing: 0.12em;
@@ -20,10 +20,10 @@
   margin: 0 0 var(--space-5);
 }
 .hero h1 span {
-  color: var(--teal);
+  color: var(--primary-hi);
 }
 .intro {
-  color: var(--muted);
+  color: var(--ink-soft);
   line-height: 1.9;
   font-size: var(--text-base);
 }
@@ -32,7 +32,7 @@
   gap: var(--space-2);
   margin-top: var(--space-5);
   font-size: var(--text-sm);
-  color: var(--teal-dark);
+  color: var(--primary);
 }
 .art {
   position: relative;
@@ -45,14 +45,14 @@
   width: 300px;
   height: 300px;
   border-radius: 50%;
-  background: var(--peach);
+  background: var(--surface-2);
 }
 .sun {
   position: absolute;
   top: 0;
   left: 3%;
   font-size: 84px;
-  color: var(--gold);
+  color: var(--accent);
   transform: rotate(12deg);
 }
 /* The tilted card in the illustration is decoration, not a section of the
@@ -61,7 +61,7 @@
   position: relative;
   width: 255px;
   padding: var(--space-6);
-  background: var(--paper);
+  background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
   transform: rotate(-7deg);
@@ -69,7 +69,7 @@
 }
 .cardLabel {
   font-size: var(--text-sm);
-  color: var(--muted);
+  color: var(--ink-soft);
 }
 .blocks {
   display: flex;
@@ -80,36 +80,36 @@
 .blocks i {
   width: 54px;
   height: 65px;
-  background: var(--teal);
-  border-radius: var(--radius-sm);
+  background: var(--primary-hi);
+  border-radius: var(--radius);
 }
 .blocks i:nth-child(2) {
   height: 95px;
-  background: var(--gold);
-  border-radius: var(--radius-pill) var(--radius-pill) var(--radius-sm) var(--radius-sm);
+  background: var(--accent);
+  border-radius: var(--radius-pill) var(--radius-pill) var(--radius) var(--radius);
 }
 .blocks i:nth-child(3) {
   height: 45px;
-  background: var(--coral);
+  background: var(--accent-2);
   border-radius: 50%;
 }
 .drawnLine {
   display: block;
   font-size: var(--text-xl);
-  color: var(--teal);
+  color: var(--primary-hi);
   letter-spacing: 0.1em;
 }
 .cardCaption {
   display: block;
   font-size: var(--text-sm);
-  color: var(--muted);
+  color: var(--ink-soft);
   margin-top: var(--space-3);
 }
 .spark {
   position: absolute;
   right: 5%;
   bottom: 3%;
-  color: var(--teal);
+  color: var(--primary-hi);
   font-size: 78px;
 }
 .dot {
@@ -117,7 +117,7 @@
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: var(--coral);
+  background: var(--accent-2);
   top: 15%;
   right: 5%;
 }
@@ -135,8 +135,8 @@
   margin: 0 0 var(--space-2);
 }
 .tag {
-  background: var(--teal-light);
-  color: var(--teal-dark);
+  background: var(--accent-soft);
+  color: var(--primary);
   padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-pill);
   font-size: var(--text-sm);
@@ -149,7 +149,7 @@
   margin-top: var(--space-5);
   padding-bottom: var(--space-4);
   border-bottom: 1px dashed var(--line);
-  color: var(--muted);
+  color: var(--ink-soft);
   font-size: var(--text-sm);
 }
 .taxonomy b {
@@ -165,10 +165,10 @@
   border-left: 2px solid var(--line);
   padding-left: var(--space-4);
 }
-/* The step numbers are small text, so they take the darker teal to keep
-   their contrast with the page above 4.5:1. */
+/* The step numbers are small text, so they take --primary rather than the
+   lighter --primary-hi, keeping their contrast with the page above 4.5:1. */
 .principles span {
-  color: var(--teal-dark);
+  color: var(--primary);
   font-size: var(--text-sm);
   font-weight: 700;
 }
@@ -178,7 +178,7 @@
 }
 .principles p {
   font-size: var(--text-sm);
-  color: var(--muted);
+  color: var(--ink-soft);
   margin: 0;
 }
 @media (max-width: 700px) {

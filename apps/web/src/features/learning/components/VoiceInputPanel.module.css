@@ -19,6 +19,6 @@
 }
 
 .text:focus-visible {
-  outline: 2px solid var(--teal-dark);
+  outline: 2px solid var(--primary);
   outline-offset: 2px;
 }

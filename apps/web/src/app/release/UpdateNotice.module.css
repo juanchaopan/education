@@ -2,7 +2,7 @@
    beneath it. */
 .notice {
   max-inline-size: 36rem;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius);
   box-shadow: var(--shadow);
 }
 

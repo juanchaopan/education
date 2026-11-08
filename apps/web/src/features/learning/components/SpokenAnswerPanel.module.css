@@ -13,8 +13,8 @@
 .choice {
   min-block-size: var(--space-10);
   border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  background: var(--peach);
+  border-radius: var(--radius);
+  background: var(--surface-2);
   color: var(--ink);
   font: inherit;
   font-size: var(--text-xl);
@@ -22,14 +22,14 @@
 }
 
 .choice:focus-visible {
-  outline: 2px solid var(--teal-dark);
+  outline: 2px solid var(--primary);
   outline-offset: 2px;
 }
 
 .hint {
   margin: var(--space-4) 0 0;
   padding: var(--space-3);
-  border-radius: var(--radius-sm);
-  background: var(--teal-light);
-  color: var(--teal-dark);
+  border-radius: var(--radius);
+  background: var(--accent-soft);
+  color: var(--primary);
 }

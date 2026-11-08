@@ -2,7 +2,7 @@
    can colour each one without the callers changing. */
 .notice {
   padding: var(--space-4);
-  border-radius: var(--radius-sm);
-  background: var(--teal-light);
+  border-radius: var(--radius);
+  background: var(--accent-soft);
   overflow-wrap: anywhere;
 }

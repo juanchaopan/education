@@ -11,18 +11,18 @@
 }
 .primary {
   border: 0;
-  color: var(--paper);
-  background: var(--teal-dark);
+  color: var(--primary-ink);
+  background: var(--primary);
 }
 .secondary {
-  border: 1px solid var(--teal-dark);
-  color: var(--teal-dark);
-  background: var(--paper);
+  border: 1px solid var(--primary);
+  color: var(--primary);
+  background: var(--surface);
 }
 .text {
   padding-inline: var(--space-2);
   border: 0;
-  color: var(--teal-dark);
+  color: var(--primary);
   background: none;
 }
 .regular {

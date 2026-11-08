@@ -28,6 +28,6 @@
   display: inline-flex;
   align-items: center;
   min-height: var(--space-8);
-  color: var(--teal-dark);
+  color: var(--primary);
   font-weight: 700;
 }

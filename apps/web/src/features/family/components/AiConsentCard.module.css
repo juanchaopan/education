@@ -2,7 +2,7 @@
   margin-block: var(--space-4);
   padding: var(--space-4);
   border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius);
 }
 
 .policy h3 {
