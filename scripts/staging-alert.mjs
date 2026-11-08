@@ -50,9 +50,11 @@ export function runAlerts(workflow, conclusion, jobs) {
   return alerts;
 }
 
-// The staging alerts as GitHub issues with one label: GitHub notifies the
-// repository's watchers when one opens.
-export function githubIssues({ token, repository, fetcher = fetch }) {
+// The staging alerts as GitHub issues with one label. An issue that the
+// Actions bot opens reaches only those who watch every activity of the
+// repository, so each new alert is assigned to the person on call, whom GitHub
+// notifies under its default settings.
+export function githubIssues({ token, repository, assignee, fetcher = fetch }) {
   const api = async (method, path, body, { missing = false } = {}) => {
     const response = await fetcher(`https://api.github.com/repos/${repository}${path}`, {
       method,
@@ -81,7 +83,12 @@ export function githubIssues({ token, repository, fetcher = fetch }) {
           color: 'b60205',
           description: 'staging 自动告警：恢复后自动关闭',
         });
-      return api('POST', '/issues', { title, body, labels: [alertLabel] });
+      return api('POST', '/issues', {
+        title,
+        body,
+        labels: [alertLabel],
+        ...(assignee && { assignees: [assignee] }),
+      });
     },
     comment: (number, body) => api('POST', `/issues/${number}/comments`, { body }),
     close: (number) => api('PATCH', `/issues/${number}`, { state: 'closed' }),

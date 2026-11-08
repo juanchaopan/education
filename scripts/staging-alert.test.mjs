@@ -156,7 +156,7 @@ test('a failure opens one issue, a repeated failure leaves it, and recovery clos
   });
 });
 
-function github(respond) {
+function github(respond, assignee) {
   const requests = [];
   const fetcher = async (url, { method, headers, body }) => {
     const path = new URL(url).pathname + new URL(url).search;
@@ -164,20 +164,23 @@ function github(respond) {
     assert.equal(headers.authorization, 'Bearer token');
     return respond(method, path);
   };
-  return { requests, issues: githubIssues({ token: 'token', repository: 'o/r', fetcher }) };
+  const issues = githubIssues({ token: 'token', repository: 'o/r', assignee, fetcher });
+  return { requests, issues };
 }
 
-test('the GitHub client labels alerts, creating the label once, and finds only issues', async () => {
-  const { requests, issues } = github((method, path) => {
-    if (method === 'GET' && path.startsWith('/repos/o/r/labels/'))
-      return new Response('', { status: 404 });
-    if (method === 'GET')
-      return Response.json([
-        { number: 3, title: 'staging 告警：health', pull_request: {} },
-        { number: 4, title: 'staging 告警：health' },
-      ]);
-    return Response.json({ number: 9 }, { status: 201 });
-  });
+function alertRepository(method, path) {
+  if (method === 'GET' && path.startsWith('/repos/o/r/labels/'))
+    return new Response('', { status: 404 });
+  if (method === 'GET')
+    return Response.json([
+      { number: 3, title: 'staging 告警：health', pull_request: {} },
+      { number: 4, title: 'staging 告警：health' },
+    ]);
+  return Response.json({ number: 9 }, { status: 201 });
+}
+
+test('the GitHub client labels and assigns alerts, creating the label once, and finds only issues', async () => {
+  const { requests, issues } = github(alertRepository, 'on-call');
   assert.equal((await issues.findOpen('staging 告警：health')).number, 4);
   assert.equal((await issues.open('staging 告警：health', 'body')).number, 9);
   assert.deepEqual(
@@ -190,6 +193,17 @@ test('the GitHub client labels alerts, creating the label once, and finds only i
     ],
   );
   assert.deepEqual(requests[3][2], {
+    title: 'staging 告警：health',
+    body: 'body',
+    labels: [alertLabel],
+    assignees: ['on-call'],
+  });
+});
+
+test('an alert with nobody on call is opened unassigned', async () => {
+  const { requests, issues } = github(alertRepository, '');
+  await issues.open('staging 告警：health', 'body');
+  assert.deepEqual(requests.at(-1)[2], {
     title: 'staging 告警：health',
     body: 'body',
     labels: [alertLabel],
