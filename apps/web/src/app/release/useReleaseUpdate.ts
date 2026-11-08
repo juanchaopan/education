@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useIsMutating, useQuery, useQueryClient } from '@tanstack/react-query';
 import { usePageReadiness, type Readiness } from '../../shared/lib/reload-readiness';
 import { ownRelease } from './own-release';
 import { requestRelease } from './release-request';
@@ -56,6 +56,16 @@ function useLatestRelease(own: string | undefined) {
   return check;
 }
 
+// How the page stands toward a reload: what its parts report, and any write
+// still on its way to the server, whose answer a reload would lose, counted
+// as work being saved.
+function useReadiness() {
+  const page = usePageReadiness();
+  const writing = useIsMutating() > 0;
+  const readiness: Readiness = page.readiness === 'ready' && writing ? 'saving' : page.readiness;
+  return { readiness, saveUnsaved: page.saveUnsaved };
+}
+
 // Checks the deployment again now, for a page that met a sign of a new
 // release, such as a lesson file that is no longer there.
 export function useReleaseCheck() {
@@ -68,13 +78,13 @@ type Options = { own?: string; guard?: ReloadGuard; reload?: () => void };
 const sessionGuard = createReloadGuard();
 
 // Brings an open page to the release the deployment serves. Once a newer
-// release is out, the page waits for its film to finish and its work to be
-// saved, saving unsaved work again after each check, and then reloads fully,
-// once for each release; signing in survives the reload. The page's own
-// release and the record of earlier reloads are read as the page loads, so
-// the reload this page starts never counts against it. The record limits
-// only the reloads the page starts on its own: a reload the child asks for
-// goes ahead even where it cannot be recorded.
+// release is out, the page waits for its film to finish, its writes to
+// arrive and its work to be saved, saving unsaved work again after each
+// check, and then reloads fully, once for each release; signing in survives
+// the reload. The page's own release and the record of earlier reloads are
+// read as the page loads, so the reload this page starts never counts
+// against it. The record limits only the reloads the page starts on its own:
+// a reload the child asks for goes ahead even where it cannot be recorded.
 export function useReleaseUpdate({
   own: built,
   guard = sessionGuard,
@@ -82,7 +92,7 @@ export function useReleaseUpdate({
 }: Options = {}) {
   const [own] = useState(() => built ?? ownRelease());
   const check = useLatestRelease(own);
-  const page = usePageReadiness();
+  const page = useReadiness();
   const latest = check.data;
   const [record] = useState(() => guard.read());
   const [retried, setRetried] = useState<string>();

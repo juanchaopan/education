@@ -1,4 +1,4 @@
-import { focusManager, onlineManager } from '@tanstack/react-query';
+import { focusManager, onlineManager, useMutation } from '@tanstack/react-query';
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useReloadReadiness, type Readiness } from '../../shared/lib/reload-readiness';
@@ -39,8 +39,18 @@ function unwritableStore() {
   return store;
 }
 
+// A write to the server that is still on its way until the test finishes it.
+function pendingWrite() {
+  let finish!: () => void;
+  const written = new Promise<void>((resolve) => {
+    finish = resolve;
+  });
+  return { written, finish };
+}
+
 // An open page built as `own` while the deployment serves `serves`, with
-// another part of the page standing toward a reload as `part` says.
+// another part of the page standing toward a reload as `part` says, and a
+// write the page can send.
 function setup({
   own = older,
   serves = own,
@@ -52,14 +62,16 @@ function setup({
   vi.stubGlobal('fetch', fetch);
   const reload = vi.fn();
   const guard = createReloadGuard(() => store);
+  const write = pendingWrite();
   const view = renderHook(
     ({ readiness, save }: Part) => {
       useReloadReadiness(readiness, save);
-      return useReleaseUpdate({ own, guard, reload });
+      const send = useMutation({ mutationFn: () => write.written });
+      return { ...useReleaseUpdate({ own, guard, reload }), send: () => send.mutate() };
     },
     { initialProps: part, wrapper: pageWrapper() },
   );
-  return { ...view, server, fetch, reload, guard };
+  return { ...view, server, fetch, reload, guard, write };
 }
 
 // Lets `ms` of fake time pass. Work a timer queues "at once" while fake time
@@ -178,6 +190,17 @@ describe('useReleaseUpdate', () => {
     expect(reload).not.toHaveBeenCalled();
     expect(result.current.phase).toBe('stuck');
     act(() => result.current.retry());
+    await wait(0);
+    expect(reload).toHaveBeenCalledOnce();
+  });
+
+  it('waits for a write on its way to the server before it reloads', async () => {
+    const { reload, result, write } = setup({ serves: newer });
+    act(() => result.current.send());
+    await wait(0);
+    expect(result.current.phase).toBe('waiting');
+    expect(reload).not.toHaveBeenCalled();
+    await act(async () => write.finish());
     await wait(0);
     expect(reload).toHaveBeenCalledOnce();
   });
