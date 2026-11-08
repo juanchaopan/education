@@ -1,0 +1,9 @@
+.badge {
+  display: inline-grid;
+  place-items: center;
+  padding: var(--space-4) var(--space-5);
+  background: var(--teal-light);
+  border-radius: var(--radius-lg);
+  color: var(--teal-dark);
+  font-size: var(--text-xl);
+}

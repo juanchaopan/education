@@ -1,0 +1,19 @@
+.card {
+  padding: var(--space-6);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+}
+.raised {
+  overflow-wrap: anywhere;
+  box-shadow: var(--shadow);
+}
+/* A section title starts at the card's padding instead of adding a margin. */
+.raised > h2 {
+  margin-top: 0;
+}
+@media (max-width: 700px) {
+  .flat {
+    padding: var(--space-4);
+  }
+}
