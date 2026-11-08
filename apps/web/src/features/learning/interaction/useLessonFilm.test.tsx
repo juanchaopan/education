@@ -1,6 +1,7 @@
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { fakeAudio } from '../../../test/fake-audio';
+import { silenceWarnings } from '../../../test/silence-warnings';
 import type { FilmStory, Reaction } from './lesson-film';
 import { useLessonFilm } from './useLessonFilm';
 
@@ -36,10 +37,10 @@ function setup() {
   const { audios, createAudio } = fakeAudio();
   const onArrive = vi.fn();
   const view = renderHook(() => useLessonFilm(story, { onArrive, createAudio }));
-  const latest = () => audios.at(-1)!;
+  const player = () => audios[0]!;
   const sound = async (event: 'playing' | 'ended') => {
     await act(async () => {
-      latest().dispatchEvent(new Event(event));
+      player().dispatchEvent(new Event(event));
       await vi.advanceTimersByTimeAsync(400);
     });
   };
@@ -47,12 +48,13 @@ function setup() {
     ...view,
     audios,
     onArrive,
-    latest,
+    player,
     sound,
-    playing: () => new URL(latest().src).pathname,
+    playing: () => new URL(player().src).pathname,
   };
 }
 
+silenceWarnings();
 beforeEach(() => vi.useFakeTimers());
 afterEach(() => vi.useRealTimers());
 
@@ -83,26 +85,45 @@ it('moves to the following scene only once the lines of a move are heard', async
   expect(onArrive.mock.calls).toEqual([['count'], ['done']]);
 });
 
+it('holds the scene on a line that did not come out until the child hears it again', async () => {
+  const { result, player, sound } = setup();
+  await act(async () => result.current.enter());
+  await sound('ended');
+  vi.mocked(player().play).mockRejectedValueOnce(new DOMException('', 'NotAllowedError'));
+  await act(async () => result.current.act('next'));
+  await act(async () => vi.advanceTimersByTimeAsync(60_000));
+  expect(result.current.state.shot).toBe('count');
+  expect(result.current.caption).toBe('再来一个');
+  expect(result.current.failure).toBe('refused');
+  await act(async () => result.current.replay());
+  expect(result.current.failure).toBeUndefined();
+  await sound('playing');
+  await sound('ended');
+  expect(result.current.state.shot).toBe('done');
+});
+
 it('lets a new move cut in, so the interrupted lines never lead on', async () => {
-  const { result, latest, playing, sound } = setup();
+  const { result, audios, player, playing, sound } = setup();
   await act(async () => result.current.enter());
   await act(async () => result.current.act('next'));
-  const interrupted = latest();
   await act(async () => result.current.act('poke'));
-  expect(interrupted.pause).toHaveBeenCalled();
+  expect(audios).toHaveLength(1);
+  expect(player().pause).toHaveBeenCalled();
   expect(playing()).toBe('/aside.mp3');
   expect(result.current.caption).toBe('看这边');
   await sound('ended');
+  await act(async () => vi.advanceTimersByTimeAsync(20_000));
   expect(result.current.state).toEqual({ shot: 'count', taps: 2 });
+  expect(playing()).toBe('/aside.mp3');
 });
 
 it('ignores a move the scene does not take', async () => {
-  const { result, audios } = setup();
+  const { result, player } = setup();
   await act(async () => result.current.enter());
   const before = result.current.state;
   await act(async () => result.current.act('nothing'));
   expect(result.current.state).toBe(before);
-  expect(audios).toHaveLength(1);
+  expect(player().play).toHaveBeenCalledOnce();
 });
 
 it('goes straight to a scene, such as a saved one, and starts there', async () => {
@@ -115,13 +136,12 @@ it('goes straight to a scene, such as a saved one, and starts there', async () =
 });
 
 it('stops the voice and says nothing more once the lesson is left', async () => {
-  const { result, audios, latest, unmount } = setup();
+  const { result, player, unmount } = setup();
   await act(async () => result.current.enter());
   await act(async () => result.current.act('next'));
-  const speaking = latest();
   unmount();
-  expect(speaking.pause).toHaveBeenCalled();
-  speaking.dispatchEvent(new Event('ended'));
+  expect(player().pause).toHaveBeenCalled();
+  player().dispatchEvent(new Event('ended'));
   await vi.advanceTimersByTimeAsync(20_000);
-  expect(audios).toHaveLength(2);
+  expect(player().play).toHaveBeenCalledTimes(2);
 });

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { createChime } from './chime';
 import { tell, type FilmScene, type FilmStory, type Reaction } from './lesson-film';
+import type { NarrationFailure } from './narration';
 import { useNarration } from './useNarration';
 
 // The rising tones that open every film.
@@ -12,23 +13,51 @@ type Options<Shot extends string> = {
   createAudio?: () => HTMLAudioElement;
 };
 
-export type LessonFilm<State, Shot extends string, Move> = Readonly<{
-  state: State;
-  caption?: string;
+type Voice = Readonly<{
   speaking: boolean;
   paused: boolean;
-  // Starts the film at its first scene, or at a saved one.
-  enter: (shot?: Shot) => void;
-  act: (move: Move) => void;
-  go: (shot: Shot) => void;
+  // Why the line on screen did not come out, while it waits to be heard again.
+  failure?: NarrationFailure;
   replay: () => void;
   pause: () => void;
   resume: () => void;
 }>;
 
+export type LessonFilm<State, Shot extends string, Move> = Voice &
+  Readonly<{
+    state: State;
+    caption?: string;
+    // Starts the film at its first scene, or at a saved one.
+    enter: (shot?: Shot) => void;
+    act: (move: Move) => void;
+    go: (shot: Shot) => void;
+  }>;
+
+// What the child hears of the teacher, and can do with it.
+function voiceOf(narration: ReturnType<typeof useNarration>): Voice {
+  return {
+    speaking: narration.status === 'playing',
+    paused: narration.status === 'paused',
+    failure: narration.failure,
+    replay: narration.replay,
+    pause: narration.pause,
+    resume: narration.resume,
+  };
+}
+
+// The latest callback, for work that outlives the render that started it.
+function useLatest<Callback>(callback: Callback) {
+  const latest = useRef(callback);
+  useEffect(() => {
+    latest.current = callback;
+  });
+  return latest;
+}
+
 // A lesson film as it plays: the scene, the teacher's caption and voice, and
 // the tones. A new event cuts in on whatever the teacher was still saying, and
-// a scene that follows its lines starts only if they were heard to the end.
+// a scene that follows its lines starts only once they are heard to the end;
+// a line that did not come out holds the scene until the child hears it again.
 // Leaving the lesson stops whatever was still to be said.
 export function useLessonFilm<
   State extends Readonly<{ shot: FilmScene<Shot> }>,
@@ -45,10 +74,7 @@ export function useLessonFilm<
   const [chime] = useState(() => createChime());
   const runs = useRef(0);
   const shown = useRef<FilmScene<Shot>>('opening');
-  const arrived = useRef(onArrive);
-  useEffect(() => {
-    arrived.current = onArrive;
-  });
+  const arrived = useLatest(onArrive);
   useEffect(() => {
     const film = runs;
     return () => {
@@ -74,10 +100,9 @@ export function useLessonFilm<
   }
 
   return {
+    ...voiceOf(narration),
     state,
     caption,
-    speaking: narration.status === 'playing',
-    paused: narration.status === 'paused',
     enter(shot = story.first) {
       chime.play(startTones);
       apply(story.arrive(shot));
@@ -87,8 +112,5 @@ export function useLessonFilm<
       if (reaction) apply(reaction);
     },
     go: (shot) => apply(story.arrive(shot)),
-    replay: narration.replay,
-    pause: narration.pause,
-    resume: narration.resume,
   };
 }

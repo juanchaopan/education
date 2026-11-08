@@ -10,8 +10,10 @@
   --garden-button: #20483bec;
   --garden-button-hover: #34795d;
   --garden-button-edge: #ffe5a6;
+  --garden-button-border: 2px solid var(--garden-button-edge);
   --garden-replay: #263b34be;
   --garden-replay-playing: #917043;
+  --garden-replay-call: #ffe7a859;
   --garden-halo: #ffe7a7;
   --garden-halo-strong: #fff7c6;
   --garden-glow: #fff5b2;
@@ -155,7 +157,7 @@
 .entry {
   min-block-size: var(--space-8);
   padding: var(--space-2) var(--space-5);
-  border: 2px solid var(--garden-button-edge);
+  border: var(--garden-button-border);
   border-radius: var(--radius-pill);
   background: var(--garden-button);
   box-shadow: 0 7px 16px #152c246e;
@@ -222,6 +224,26 @@
 
 .replay.playing {
   background: var(--garden-replay-playing);
+}
+
+/* A line that did not come out waits for the child: the button says so in
+   words, like the film's start button, and calls for a tap until pressed. */
+.replay.again {
+  inline-size: auto;
+  padding-inline: var(--space-4);
+  border: var(--garden-button-border);
+  border-radius: var(--radius-pill);
+  background: var(--garden-button);
+  font: inherit;
+  font-size: var(--text-base);
+  font-weight: 850;
+  animation: call 1.6s ease-in-out infinite;
+}
+
+@keyframes call {
+  50% {
+    box-shadow: 0 0 0 var(--space-2) var(--garden-replay-call);
+  }
 }
 
 .caption {
