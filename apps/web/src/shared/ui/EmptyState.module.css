@@ -23,14 +23,6 @@
   line-height: 1.8;
   margin: 0;
 }
-.empty button {
+.action {
   margin-top: var(--space-4);
-  background: var(--teal-dark);
-  color: var(--paper);
-  border: 0;
-  border-radius: var(--radius-pill);
-  padding: var(--space-3) var(--space-5);
-  min-height: 48px;
-  cursor: pointer;
-  font: inherit;
 }

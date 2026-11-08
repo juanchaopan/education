@@ -6,7 +6,7 @@ import { EmptyState } from '../shared/ui/EmptyState';
 // a visitor.
 export type LessonPage = ComponentType<{ csrf?: string }>;
 
-const opening = <EmptyState icon="◌" title="正在打开这道题" description="请稍等一下。" />;
+const opening = <EmptyState icon="waiting" title="正在打开这道题" description="请稍等一下。" />;
 
 // A lesson needs to know whether a child is signed in before it starts, so a
 // child's saved place and answers are never mixed with a visitor's. Lessons
