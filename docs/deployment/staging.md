@@ -36,7 +36,7 @@ Vercel 测试项目关闭默认登录保护，让不携带平台登录 cookie �
 5. 在 [Actions variables](https://github.com/juanchaopan/education/settings/variables/actions) 设置 Repository variable **`STAGING_DATABASE_HOST`**：应用库连接串里 `@` 之后、`/` 之前的主机名，形如 `ep-…-xxxxxxxx.ap-southeast-1.aws.neon.tech`，不带端口和数据库名。它必须是只服务这个数据库的直连主机，不能是多个数据库共用的连接池主机，否则同一主机上的其他数据库也能通过检查。它没有默认值。Vercel project/team ID 与域名已有工作流默认值；更换资源时用同名 Repository variables 覆盖 `STAGING_VERCEL_PROJECT_ID`、`STAGING_VERCEL_TEAM_ID`、`STAGING_ORIGIN`。不能将这些变量指向生产。GitHub App 没有读取/设置 Actions secrets 的权限，必须由维护者配置。
 6. 资源和上述秘密准备好后，设置 Repository variable **`STAGING_ENABLED=true`**。之后每次 main 的 `ci` 成功会自动触发；首次可在 Actions → staging → Run workflow 运行。首次手动触发时，如当前 main 尚无 CI，会先显式派发完整 CI；staging 准备任务会有界等待 CI 成功，再在同一次运行中继续发布，不依赖递归完成回调。不能部署任意分支或跳过 CI。变量未启用时，工作流只写明“未尝试部署”，不是部署成功。
 7. 备份的密钥和变量按 [备份与恢复](backup.md) 的“首次设置”配置。
-8. 告警不需要另外的秘密，工作流用自带的 `GITHUB_TOKEN` 开关 issue。新告警指派给 Repository variable `STAGING_ALERT_ASSIGNEE` 写的 GitHub 用户名；没有设置时指派给仓库所有者，仓库属于组织时必须设置。GitHub Actions 机器人开的 issue 只通知 Watch 设为 All Activity 的人，被指派则在默认设置下就会通知。维护者在 GitHub 通知设置里开启邮件或 GitHub 应用通知。
+8. 告警不需要另外的秘密，工作流用自带的 `GITHUB_TOKEN` 开关 issue。新告警指派给 Repository variable `STAGING_ALERT_ASSIGNEE` 写的 GitHub 用户名；没有设置时指派给仓库所有者，仓库属于组织时必须设置。GitHub Actions 机器人开的 issue 只通知 Watch 设为 All Activity 的人，被指派则在默认设置下就会通知。维护者在 GitHub 通知设置里开启邮件或 GitHub 应用通知；邮件发往通知设置里选的邮箱，不一定是 Git 提交用的邮箱。
 
 staging 只有合成账号。换数据库时不迁移旧数据，新库在第一次发布时完成迁移；维护者重新注册测试家长和孩子。
 
