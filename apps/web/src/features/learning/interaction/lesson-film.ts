@@ -33,7 +33,7 @@ export type FilmStory<
 }>;
 
 type Voice = {
-  interrupt: (step: string, source?: string, onCue?: () => void) => Promise<CueResult>;
+  interrupt: (step: string, source: string) => Promise<CueResult>;
 };
 
 export type Telling = {
@@ -44,37 +44,21 @@ export type Telling = {
   current: () => boolean;
 };
 
+const betweenLines = 310;
 const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
-// A clip that has not started playing by then, such as a stalled download,
-// stops holding the scene. A clip that is playing, or paused while the child
-// asks a question, is always waited for to its real end.
-const longestStall = 11_000;
-const betweenLines = 310;
-// How long a caption stays when its sound cannot play, so it can still be read.
-const readingTime = (text: string) => Math.max(1_500, text.length * 220);
-
-async function sayLine({ voice, step, show }: Telling, { text, clip }: FilmLine) {
-  show(text);
-  let started = false;
-  const cue = voice.interrupt(step, clip, () => {
-    started = true;
-  });
-  const stalled = wait(longestStall).then(() => (started ? cue : ('stalled' as const)));
-  const heard = await Promise.race([cue, stalled]);
-  if (heard === 'unavailable') await wait(readingTime(text));
-  return heard;
-}
-
 // Says a scene's lines in order, each cutting in on whatever was still being
-// said, and tells whether they were all heard. A newer run of lines, or the
-// child cancelling a cue, ends this one where it is.
-export async function tell(telling: Telling, said: readonly FilmLine[]) {
-  for (const [index, line] of said.entries()) {
+// said, and tells whether they were all heard. Every line is waited for until
+// it is heard to its end, however long a line that did not come out waits for
+// the child to hear it again. A newer run of lines, or a cancelled line, ends
+// this one where it is.
+export async function tell({ voice, step, show, current }: Telling, said: readonly FilmLine[]) {
+  for (const [index, { text, clip }] of said.entries()) {
     if (index > 0) await wait(betweenLines);
-    if (!telling.current()) return false;
-    const heard = await sayLine(telling, line);
-    if (heard === 'cancelled' || !telling.current()) return false;
+    if (!current()) return false;
+    show(text);
+    const heard = await voice.interrupt(step, clip);
+    if (heard === 'cancelled' || !current()) return false;
   }
   return true;
 }

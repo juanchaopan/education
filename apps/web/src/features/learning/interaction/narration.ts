@@ -1,84 +1,132 @@
-type PlaybackResult = 'ended' | 'unavailable';
-export type CueResult = PlaybackResult | 'cancelled' | 'busy';
+// A cue ends only when its recording is heard to its end, or when the scene
+// replaces or stops it.
+export type CueResult = 'ended' | 'cancelled';
+// Why a recording did not come out: the browser refused to play it, it never
+// started playing, the device could not decode it, or the system stopped it
+// partway, as an incoming call does.
+export type NarrationFailure = 'refused' | 'stalled' | 'undecodable' | 'interrupted';
 // What the child can do with the current cue: nothing to hear, hear it again,
-// pause it, continue it, or try again after the sound did not come out.
+// pause it, continue it, or hear it again after the sound did not come out.
 export type NarrationStatus = 'silent' | 'ready' | 'playing' | 'paused' | 'failed';
 
-function once(action: (() => void) | undefined) {
-  let pending = action;
-  return () => {
-    const run = pending;
-    pending = undefined;
-    run?.();
-  };
+// A recording that has not started playing by then, such as a stalled
+// download, counts as not coming out. A paused one is never stalled.
+const longestStall = 11_000;
+const networkError = 2;
+
+function refusal(error: unknown): NarrationFailure {
+  if (!(error instanceof DOMException)) return 'undecodable';
+  if (error.name === 'NotAllowedError') return 'refused';
+  return error.name === 'AbortError' ? 'interrupted' : 'undecodable';
 }
 
-function listen(
-  audio: HTMLAudioElement,
-  signal: AbortSignal,
-  on: { playing: () => void; result: (result: PlaybackResult) => void },
-) {
-  audio.addEventListener('playing', on.playing, { signal });
-  audio.addEventListener('ended', () => on.result('ended'), { signal });
-  audio.addEventListener('error', () => on.result('unavailable'), { signal });
+function mediaFailure(audio: HTMLAudioElement): NarrationFailure {
+  return audio.error?.code === networkError ? 'stalled' : 'undecodable';
 }
 
-function createCue(
-  audio: HTMLAudioElement,
-  onCue: (() => void) | undefined,
-  onFinish: (result: CueResult) => void,
-) {
+type CueEvents = {
+  onFail: (failure: NarrationFailure) => void;
+  onFinish: (result: CueResult) => void;
+};
+
+// One recording playing on the lesson's player, from the first request to its
+// end. Halting it stops the sound and lets go of any request still pending,
+// so a late refusal of that request is not taken for a failure. While it is
+// sounding it needs no stall check, and a pause the cue did not make, other
+// than the one every recording makes as it ends, means the system stopped it.
+// What happens while the child has it paused waits until they continue.
+function createPlayback(audio: HTMLAudioElement, { onFail, onFinish }: CueEvents) {
   const listeners = new AbortController();
-  const reveal = once(onCue);
-  let paused = false;
-  let deferred: PlaybackResult | undefined;
-  let playback = 0;
+  const state = {
+    paused: false,
+    failed: false,
+    sounding: false,
+    deferred: undefined as (() => void) | undefined,
+    request: 0,
+    stall: undefined as ReturnType<typeof setTimeout> | undefined,
+  };
+  const settle = () => clearTimeout(state.stall);
+
+  function halt() {
+    settle();
+    state.sounding = false;
+    state.request++;
+    audio.pause();
+  }
 
   function finish(result: CueResult) {
     if (listeners.signal.aborted) return;
+    settle();
     listeners.abort();
     onFinish(result);
-    if (result !== 'cancelled') reveal();
   }
 
-  function playbackResult(result: PlaybackResult) {
-    if (paused) deferred = result;
-    else finish(result);
+  function fail(failure: NarrationFailure) {
+    if (listeners.signal.aborted || state.failed) return;
+    state.failed = true;
+    halt();
+    onFail(failure);
   }
+
+  const outcome = (apply: () => void) => {
+    if (state.paused) state.deferred = apply;
+    else apply();
+  };
 
   function start() {
-    const request = ++playback;
-    void audio.play().catch(() => {
-      if (request === playback) playbackResult('unavailable');
+    const request = ++state.request;
+    settle();
+    if (!state.sounding) state.stall = setTimeout(() => fail('stalled'), longestStall);
+    void audio.play().catch((error: unknown) => {
+      if (request === state.request) outcome(() => fail(refusal(error)));
     });
   }
 
-  listen(audio, listeners.signal, {
-    playing: () => {
-      if (!paused) reveal();
-    },
-    result: playbackResult,
-  });
+  const { signal } = listeners;
+  const sound = () => {
+    state.sounding = true;
+    settle();
+  };
+  const stopped = () => {
+    if (state.sounding && !audio.ended) fail('interrupted');
+  };
+  audio.addEventListener('playing', sound, { signal });
+  audio.addEventListener('pause', stopped, { signal });
+  audio.addEventListener('ended', () => outcome(() => finish('ended')), { signal });
+  audio.addEventListener('error', () => outcome(() => fail(mediaFailure(audio))), { signal });
+  return { state, halt, start, finish };
+}
 
+// A recording that does not come out keeps its cue open, so hearing it again
+// continues the scene from there. Pausing and continuing tell whether they
+// changed anything: a cue that did not come out waits to be heard again.
+function createCue(audio: HTMLAudioElement, events: CueEvents) {
+  const { state, halt, start, finish } = createPlayback(audio, events);
   return {
     start,
     pause() {
-      if (paused) return;
-      paused = true;
-      playback++;
-      audio.pause();
+      if (state.paused || state.failed) return false;
+      state.paused = true;
+      halt();
+      return true;
     },
-    resume() {
-      if (!paused) return;
-      paused = false;
-      if (deferred) finish(deferred);
+    resume(onResume: () => void) {
+      if (!state.paused) return;
+      state.paused = false;
+      onResume();
+      const apply = state.deferred;
+      state.deferred = undefined;
+      if (apply) apply();
       else start();
     },
-    // The same clip from its beginning, on the same element, so two copies never overlap.
+    // The same recording from its beginning on the same player, so two copies
+    // never overlap. One that did not come out is loaded again first.
     restart() {
-      paused = false;
-      deferred = undefined;
-      audio.currentTime = 0;
+      state.paused = false;
+      state.deferred = undefined;
+      if (state.failed) audio.load();
+      else audio.currentTime = 0;
+      state.failed = false;
       start();
     },
     stop() {
@@ -89,11 +137,11 @@ function createCue(
 }
 
 type Clip = { step: string; source: string };
-type Active = Clip & { cue: ReturnType<typeof createCue>; extra: boolean };
+type Active = Clip & { cue: ReturnType<typeof createCue> };
 type Playing = { active?: Active; last?: Clip };
 type Options = {
   createAudio?: () => HTMLAudioElement;
-  onStatus?: (status: NarrationStatus) => void;
+  onStatus?: (status: NarrationStatus, failure?: NarrationFailure) => void;
 };
 
 function idleStatus(last: Clip | undefined): NarrationStatus {
@@ -101,7 +149,7 @@ function idleStatus(last: Clip | undefined): NarrationStatus {
 }
 
 // What the child does with the cue on screen: hear it again, pause it,
-// continue it; and what the scene does on leaving: stop it.
+// continue it.
 function childControls(
   playing: Playing,
   begin: (clip: Clip) => void,
@@ -115,72 +163,69 @@ function childControls(
       } else if (playing.last) begin(playing.last);
     },
     pause() {
-      if (!playing.active) return;
-      playing.active.cue.pause();
-      onStatus('paused');
+      if (playing.active?.cue.pause()) onStatus('paused');
     },
     resume() {
-      if (!playing.active) return;
-      onStatus('playing');
-      playing.active.cue.resume();
-    },
-    stop() {
-      playing.last = undefined;
-      if (playing.active) playing.active.cue.stop();
-      else onStatus('silent');
+      playing.active?.cue.resume(() => onStatus('playing'));
     },
   };
 }
 
-// Every cue belongs to a step. Within a step the scene owns cue order: while one
-// of its cues plays, another cannot replace or queue behind it, unless the
-// scene interrupts it because the child just changed what is on screen. A cue
-// for a different step replaces whatever an earlier step was saying. Hearing a
-// cue again is the child's own request: it restarts the cue in place, or
-// replays the last one once it has ended, and the scene's next cue takes over
-// from such a replay.
+// A lesson's narration on one player: the child's tap that starts the film
+// lets it make sound, and every line plays on it. Every cue belongs to a step:
+// a new cue cuts in on whatever was still being said, and once another step is
+// on screen an earlier step's cue stops and is forgotten. Hearing a cue again
+// restarts it in place, or replays the last one once it has ended. A recording
+// that does not come out is reported, stays for the child to hear again, and
+// is noted in the console with its kind.
 export function createNarration({
   createAudio = () => new Audio(),
   onStatus = () => {},
 }: Options = {}) {
   const playing: Playing = {};
+  let player: HTMLAudioElement | undefined;
 
-  function begin(clip: Clip, onCue: (() => void) | undefined, extra: boolean) {
+  function begin(clip: Clip) {
     return new Promise<CueResult>((resolve) => {
-      const audio = createAudio();
-      const cue = createCue(audio, onCue, (result) => {
-        if (playing.active?.cue === cue) playing.active = undefined;
-        onStatus(result === 'unavailable' ? 'failed' : idleStatus(playing.last));
-        resolve(result);
+      const audio = (player ??= createAudio());
+      const cue = createCue(audio, {
+        onFail(failure) {
+          console.warn('Narration did not play', { clip: clip.source, failure });
+          onStatus('failed', failure);
+        },
+        onFinish(result) {
+          if (playing.active?.cue === cue) playing.active = undefined;
+          if (result === 'ended') onStatus(idleStatus(playing.last));
+          resolve(result);
+        },
       });
-      playing.active = { ...clip, cue, extra };
+      playing.active = { ...clip, cue };
       audio.src = clip.source;
       onStatus('playing');
       cue.start();
     });
   }
 
-  function interrupt(step: string, source?: string, onCue?: () => void): Promise<CueResult> {
-    playing.last = source ? { step, source } : undefined;
-    playing.active?.cue.stop();
-    if (playing.last) return begin(playing.last, onCue, false);
-    onStatus('silent');
-    onCue?.();
-    return Promise.resolve('unavailable');
-  }
+  const stopActive = () => playing.active?.cue.stop();
 
   return {
-    play(step: string, source?: string, onCue?: () => void): Promise<CueResult> {
-      if (playing.active?.step === step && !playing.active.extra) return Promise.resolve('busy');
-      return interrupt(step, source, onCue);
+    interrupt(step: string, source: string): Promise<CueResult> {
+      playing.last = { step, source };
+      stopActive();
+      return begin(playing.last);
     },
-    interrupt,
     // Forgets every cue that does not belong to the step on screen.
     keep(step: string) {
       if (playing.last?.step !== step) playing.last = undefined;
-      if (playing.active && playing.active.step !== step) playing.active.cue.stop();
-      else if (!playing.active) onStatus(idleStatus(playing.last));
+      if (playing.active && playing.active.step !== step) stopActive();
+      if (!playing.active) onStatus(idleStatus(playing.last));
     },
-    ...childControls(playing, (clip) => void begin(clip, undefined, true), onStatus),
+    // Leaving the lesson: whatever was still being said stops.
+    close() {
+      playing.last = undefined;
+      stopActive();
+      onStatus('silent');
+    },
+    ...childControls(playing, (clip) => void begin(clip), onStatus),
   };
 }

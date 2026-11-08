@@ -34,6 +34,7 @@ function GardenScreen({ film, start }: { film: GardenFilm; start: Start }) {
       ghost={drag.ghost}
       caption={film.state.shot === 'opening' ? undefined : film.caption}
       speaking={film.speaking}
+      failure={film.failure}
       narrow={narrow}
       entryLabel={entryLabel(start)}
       worldRef={drag.world}

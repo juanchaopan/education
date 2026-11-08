@@ -27,6 +27,13 @@ export const TwoCabbages: Story = { args: { caption: lines.question.text } };
 export const AppleSideDown: Story = {
   args: { state: arrive('apples').state, caption: lines.tip.text },
 };
+export const BalancedLineDidNotPlay: Story = {
+  args: {
+    state: { ...arrive('apples').state, apples: 3 },
+    caption: lines.balanced.text,
+    failure: 'refused',
+  },
+};
 export const OneAppleThreeCucumbers: Story = {
   args: { state: { ...arrive('exchange').state, revealed: true }, caption: lines.three.text },
 };

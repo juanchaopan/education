@@ -19,6 +19,8 @@ type Props = {
   ghost?: StageGhost<MovableLook>;
   caption?: string;
   speaking: boolean;
+  // Why the line on screen did not come out, while it waits to be heard again.
+  failure?: string;
   // Phones in portrait see the scale and the basket, cropped from the sides.
   narrow: boolean;
   entryLabel: string;
@@ -44,11 +46,31 @@ function Scene({ state, handling }: { state: GardenState; handling: Handling }) 
   return <SwapScene state={state} />;
 }
 
+type ReplayProps = Pick<Props, 'onReplay' | 'speaking'> & { again: boolean };
+
+// Hearing the line again: a small note while all is well, and a button that
+// says so in words while a line that did not come out waits for the child.
+function Replay({ again, speaking, onReplay }: ReplayProps) {
+  const looks = [styles.replay, speaking && styles.playing, again && styles.again];
+  return (
+    <button
+      type="button"
+      className={looks.filter(Boolean).join(' ')}
+      aria-label={again ? undefined : '重听这一句'}
+      onClick={onReplay}
+    >
+      <span aria-hidden="true">♪</span>
+      {again && ' 再听一次'}
+    </button>
+  );
+}
+
 type OverlayProps = Pick<Props, 'entryLabel' | 'onEnter' | 'onReplay' | 'speaking'> & {
   opening: boolean;
+  again: boolean;
 };
 
-function Overlay({ opening, entryLabel, speaking, onEnter, onReplay }: OverlayProps) {
+function Overlay({ opening, entryLabel, onEnter, ...replay }: OverlayProps) {
   if (opening)
     return (
       <div className={styles.filmTitle}>
@@ -66,14 +88,7 @@ function Overlay({ opening, entryLabel, speaking, onEnter, onReplay }: OverlayPr
         <i />
         <span>{title}</span>
       </div>
-      <button
-        type="button"
-        className={[styles.replay, speaking && styles.playing].filter(Boolean).join(' ')}
-        aria-label="重听这一句"
-        onClick={onReplay}
-      >
-        ♪
-      </button>
+      <Replay {...replay} />
     </>
   );
 }
@@ -91,6 +106,7 @@ export function GardenStage(props: Props) {
     <section
       className={[styles.film, speaking && styles.speaking].filter(Boolean).join(' ')}
       data-shot={state.shot}
+      data-narration-failure={props.failure}
       aria-label="菜园天平互动短片"
     >
       <div className={styles.plate} />
@@ -137,6 +153,7 @@ export function GardenStage(props: Props) {
         opening={state.shot === 'opening'}
         entryLabel={props.entryLabel}
         speaking={speaking}
+        again={props.failure !== undefined}
         onEnter={props.onEnter}
         onReplay={props.onReplay}
       />
