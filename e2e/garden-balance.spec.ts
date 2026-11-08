@@ -20,10 +20,13 @@ async function drag(page: Page, source: Locator, target: Locator) {
 }
 
 // From the first cabbage to the question of the count, every scene by hand.
+// The whole film fits on screen, so it is brought into view once and every
+// prop and the basket can be reached by the pointer.
 async function playToTheAnswer(page: Page) {
   const film = page.getByRole('region', { name: '菜园天平互动短片' });
   const basket = film.getByRole('button', { name: '旁边的篮子' });
   const apples = film.getByRole('button', { name: '苹果' });
+  await film.scrollIntoViewIfNeeded();
   await drag(page, film.getByRole('button', { name: '青菜' }).first(), basket);
   await expect(apples).toHaveCount(6);
   for (const left of [5, 4]) {
