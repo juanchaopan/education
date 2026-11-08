@@ -1,6 +1,6 @@
 # 隔离 staging：Vercel + Neon
 
-对应 #20、#45、#111、REQ-007/009、ADR-0006/0008/0010/0014。只供合成账号测试，不接收真实家庭/儿童数据；生产不由本流程发布。代码合入、CI 通过与 staging 验收是三个不同状态。
+对应 #20、#45、#50、#111、REQ-007/009、ADR-0006/0008/0010/0014。只供合成账号测试，不接收真实家庭/儿童数据；生产不由本流程发布。代码合入、CI 通过与 staging 验收是三个不同状态。
 
 ## 资源
 
@@ -11,6 +11,7 @@
 | 应用库        | Neon Free 项目 `education-staging`，AWS Asia Pacific (Singapore)；主机由 `STAGING_DATABASE_HOST` 指定 |
 | 删除清单库    | 另一个 Neon Free 项目 `education-staging-ledger`，同一区域                                            |
 | 备份          | 每日加密备份，存为 GitHub Actions artifact，保留 14 天，见 [备份与恢复](backup.md)                    |
+| 告警          | 本仓库带 `staging-alert` 标签的 GitHub issue，见 [运行日志与告警](#运行日志与告警)                    |
 | 当前测试地址  | <https://education-access-spike.hyp.app/>                                                             |
 
 Vercel 测试项目关闭默认登录保护，让不携带平台登录 cookie 的候选版本冒烟可以执行；这是公开的测试站，不接收儿童学习资料。验证邮件使用独立配置的 Gmail 凭据，配置与验收见 [家长验证邮件](mail.md)；没有 AI 凭据，家长页的外部 AI 授权逐项显示“暂未启用”。自管账号的服务端会话与权限不受此设置替代。
@@ -35,6 +36,7 @@ Vercel 测试项目关闭默认登录保护，让不携带平台登录 cookie �
 5. 在 [Actions variables](https://github.com/juanchaopan/education/settings/variables/actions) 设置 Repository variable **`STAGING_DATABASE_HOST`**：应用库连接串里 `@` 之后、`/` 之前的主机名，形如 `ep-…-xxxxxxxx.ap-southeast-1.aws.neon.tech`，不带端口和数据库名。它必须是只服务这个数据库的直连主机，不能是多个数据库共用的连接池主机，否则同一主机上的其他数据库也能通过检查。它没有默认值。Vercel project/team ID 与域名已有工作流默认值；更换资源时用同名 Repository variables 覆盖 `STAGING_VERCEL_PROJECT_ID`、`STAGING_VERCEL_TEAM_ID`、`STAGING_ORIGIN`。不能将这些变量指向生产。GitHub App 没有读取/设置 Actions secrets 的权限，必须由维护者配置。
 6. 资源和上述秘密准备好后，设置 Repository variable **`STAGING_ENABLED=true`**。之后每次 main 的 `ci` 成功会自动触发；首次可在 Actions → staging → Run workflow 运行。首次手动触发时，如当前 main 尚无 CI，会先显式派发完整 CI；staging 准备任务会有界等待 CI 成功，再在同一次运行中继续发布，不依赖递归完成回调。不能部署任意分支或跳过 CI。变量未启用时，工作流只写明“未尝试部署”，不是部署成功。
 7. 备份的密钥和变量按 [备份与恢复](backup.md) 的“首次设置”配置。
+8. 告警不需要另外的秘密，工作流用自带的 `GITHUB_TOKEN` 开关 issue。维护者在仓库的 Watch 设置里保留 Issues 通知，并在 GitHub 通知设置里开启邮件。
 
 staging 只有合成账号。换数据库时不迁移旧数据，新库在第一次发布时完成迁移；维护者重新注册测试家长和孩子。
 
@@ -51,6 +53,45 @@ staging 只有合成账号。换数据库时不迁移旧数据，新库在第一
 ## 服务开关
 
 应用库里有一张服务开关表 `service_gate`：有一行时服务开放。建表的迁移写入这一行，之后的迁移不碰它；备份不带这一行，所以恢复出来的库一开始是关闭的。关闭时所有 `/api` 请求返回 503“网站正在维护，请稍后再试。”，`/health/ready` 也返回 503；`/health/live` 和 `/version.json` 照常回答。开关按请求匹配到的路由判断，编码过的路径解码后是 API 路由的同样关闭。只有恢复流程在检查通过后打开它。
+
+## 运行日志与告警
+
+### 请求日志
+
+API 对每个请求写一行结构化日志（JSON，Vercel 的运行日志里可见），并在响应头返回同一个 `X-Request-Id`：
+
+| 字段               | 内容                                                                                                                                               |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| requestId          | 每个请求随机生成，等于响应头 `X-Request-Id`；家长报告问题时可以凭它找到对应的一行                                                                  |
+| method、route      | 请求方法和匹配到的路由模式，例如 `/api/v1/problems/:id/:version/draft`；不记录原始 URL 和查询参数                                                  |
+| status、durationMs | 状态码和服务端耗时                                                                                                                                 |
+| outcome            | `ok`、`client-error`、`rate-limited`、`maintenance`（服务开关关闭）、`unavailable`（服务未配置或未就绪）、`database`（数据库失败）、`server-error` |
+| code               | 允许列表里的连接错误码、`TIMEOUT`、PostgreSQL SQLSTATE 或框架错误码，其余记为 `UNKNOWN`                                                            |
+| ai                 | AI 请求的资源、结果和回退原因，不含孩子的文字、绘图、录音或模型回复                                                                                |
+
+日志不记录请求头、cookie、请求体、查询参数和异常消息，所以 PIN、注册 KEY、密码、会话令牌、密钥和孩子的输入都不会进入日志。数据库连接空闲时断开，另记一行 `Database connection unavailable`，只带库名和错误码。
+
+失败率和响应时间从这些行统计：按 outcome 计数，按 route 看 durationMs。Vercel Hobby 只短时间保留运行日志，不提供日志导出和告警，保留时长以 Vercel 当前文档为准；需要长期统计时要另接日志服务，目前没有配置。
+
+### AI 用量
+
+每次付费 AI 调用都记在 `ai_usage` 账本里。每小时维护的最后一步汇总过去一小时：已结算、无回复、超出范围、未发送和进行中的调用数，token 数和计入预算的金额。汇总只有计数，没有家庭和孩子。过去一小时发出的调用里至少三次、且至少一半没有可用回复，或有任何回复超出约定范围（这会暂停本月的付费 AI）时，这一步失败，维护运行随之打开告警。
+
+### 告警渠道：GitHub issue
+
+`staging-alerts` 工作流：
+
+- 每小时两次，在 :19 和 :49 运行，前一次紧跟每小时维护，那时数据库已经醒着。它用发布时同一个就绪探测检查 `/health/ready`，再读 `/version.json` 的发布版本号，记录每个请求的状态和耗时。
+- 每次 staging 发布、备份、维护或恢复运行结束后读取任务结果：有任务失败就告警；决定性任务（deploy、backup、cleanup、restore）成功就恢复；决定性任务被跳过（例如 PR 触发的发布运行）时不改变告警。
+- 每个来源（health、staging、staging-backup、staging-mail-retention、staging-restore）最多有一个打开的 `staging-alert` issue。第一次失败时打开它，GitHub 按维护者的通知设置发邮件。持续失败不重复通知，下一次成功时评论“已恢复”并关闭。
+- `STAGING_ENABLED` 不是 `true` 时，工作流只写明没有探测、没有告警渠道在工作，不能当作告警已经接入。
+- 告警工作流本身失败时（例如 GitHub API 不可用），由 GitHub Actions 的失败通知提醒。
+
+GitHub 的定时任务可能推迟几分钟到几十分钟。探测从 GitHub 的服务器发出，不代表大陆设备能访问。告警只覆盖 staging，生产的监控随 #52 接入。
+
+### 告警演练
+
+在 Actions → staging-alerts → Run workflow 勾选 drill。探测目标换成 `https://alert-drill.invalid`，这个保留域名必然无法解析，真实的探测代码因此失败，打开 `staging 告警：health`。之后不勾选再运行一次，探测通过并关闭它。演练不访问 staging 本身。
 
 ## 发布流程与失败处理
 
@@ -77,20 +118,20 @@ Vercel 支持 PR 预览，Neon Free 每个项目也能建少量数据库分支�
 额度见 [ADR-0014](../adr/0014-neon-databases.md)。对 staging 的影响：
 
 - 空闲 5 分钟后计算暂停，下一次连接唤醒约几百毫秒。发布时迁移先唤醒数据库；发布前的就绪探测对 503 重试。
-- 计算时间或数据传输用完时项目暂停到下个计费周期，存储超出后不能写入；发布、备份和维护会因连接或写入失败而失败。用量在 Neon 控制台查看，不配置保活流量。
+- 计算时间或数据传输用完时项目暂停到下个计费周期，存储超出后不能写入；发布、备份和维护会因连接或写入失败而失败，就绪检查失败会打开告警。用量在 Neon 控制台查看，不配置保活流量。
 - Neon 自带的恢复窗口（Free 为 6 小时）不是独立备份；staging 的每日备份和恢复见 [备份与恢复](backup.md)。生产备份及大陆完整链路由 #51/#52 验收。
 
 ## 上线前实际验收
 
 - 本地真实双实例场景中 A 为容器入口、B 为部署用函数处理器；仍不能替代真正 Vercel 的打包、冷启动、数据库 TLS/会话锁及重启持久化测试。
-- main 自动发布、Singapore 实际区域、账号冒烟、域名推广和真实浏览器跨部署持久登录的验收见 [#20 证据](../evidence/20/README.md)；Neon 数据库上的发布、家庭删除和每小时维护见 [#111 验收记录](../evidence/111/README.md)；备份和恢复演练见 [#45 验收记录](../evidence/45/README.md)。
+- main 自动发布、Singapore 实际区域、账号冒烟、域名推广和真实浏览器跨部署持久登录的验收见 [#20 证据](../evidence/20/README.md)；Neon 数据库上的发布、家庭删除和每小时维护见 [#111 验收记录](../evidence/111/README.md)；备份和恢复演练见 [#45 验收记录](../evidence/45/README.md)；请求日志、告警和演练见 [#50 验收记录](../evidence/50/README.md)。
 - 本流程不信任客户端转发 IP。Vercel 中默认看到的代理来源可能聚合用户，限流会保守拒绝；平台可信来源和池大小（每函数最多 4 连接）、冷启动、Argon2/RSS 与目标资源容量必须实际测量，未宣称两秒达标。
 - HTML 重新验证、版本接口 no-store、散列资源可缓存。已打开页面保存草稿后自动刷新由 [#118](https://github.com/juanchaopan/education/issues/118) 完成，不能把版本文件当成整个更新策略已经实现。
 - Vercel Hobby 详细资格/配额、Gmail 条款/额度正文无法从本开发环境读取，没有据此填入数字或断言服务不可达；Gmail 保持隔离适配器，回执明确 `mail: not-sent`。无后台真实发信、AI 调用或儿童输入。
 
 ## 撤回
 
-关闭 `STAGING_ENABLED` 可停止后续自动部署、备份和维护。将 staging alias 恢复至已记录的上一可用 deployment，并核对 `/version.json`。不要仅 revert Git 就宣称已回滚线上；不要删除 Neon 项目或执行全库清理来撤回应用。初始旧探针为 `dpl_4HWHQJKv6nUYfwR6zfAP5nvVoL4G`，它不是正式账号应用；staging 有持久数据后，应选择兼容同一数据库的应用版本。
+关闭 `STAGING_ENABLED` 可停止后续自动部署、备份、维护和告警探测。将 staging alias 恢复至已记录的上一可用 deployment，并核对 `/version.json`。不要仅 revert Git 就宣称已回滚线上；不要删除 Neon 项目或执行全库清理来撤回应用。初始旧探针为 `dpl_4HWHQJKv6nUYfwR6zfAP5nvVoL4G`，它不是正式账号应用；staging 有持久数据后，应选择兼容同一数据库的应用版本。
 
 官方来源及日期、实际验证和未完成项见 [#20 证据](../evidence/20/README.md)。
 
