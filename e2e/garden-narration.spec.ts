@@ -99,10 +99,11 @@ test('a signed-in child hears every line of the film to its end', async ({
     await page.goto('/problems/garden-balance/1');
     await hearToTheAnswer(page, narration);
 
+    // The browser has no microphone, so once the question is told the
+    // answer is tapped.
     const answer = page.getByRole('region', { name: '说出答案' });
-    await answer.getByRole('button', { name: '按一下，说出答案' }).click();
     const numbers = answer.getByRole('group', { name: '点一个数字回答' });
-    await numbers.getByRole('button', { name: '9', exact: true }).click();
+    await numbers.getByRole('button', { name: '9', exact: true }).click({ timeout: 30_000 });
     await expect(answer.getByRole('status')).toHaveText(/答对了/);
     await answer.getByRole('button', { name: '接着看' }).click();
     await narration.heard(['change']);
