@@ -13,10 +13,14 @@ const sourceFont =
   require.resolve('@fontsource/lxgw-wenkai/files/lxgw-wenkai-latin-700-normal.woff2');
 const licence = require.resolve('@fontsource/lxgw-wenkai/LICENSE');
 
-// Chinese punctuation, the CJK ideographs with extension A, and the
-// full-width forms written beside them, as code point ranges. Printable
-// ASCII is always kept, for digits and Latin letters.
+// The characters Chinese text is written in, as code point ranges: the
+// middle dot, the quotation marks, dashes and ellipsis it shares with other
+// scripts, Chinese punctuation, the CJK ideographs with extension A, and the
+// full-width forms. Printable ASCII is always kept, for digits and Latin
+// letters.
 const chineseRanges = [
+  [0x00b7, 0x00b7],
+  [0x2010, 0x2027],
   [0x3000, 0x303f],
   [0x3400, 0x4dbf],
   [0x4e00, 0x9fff],

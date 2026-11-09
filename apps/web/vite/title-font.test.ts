@@ -18,6 +18,11 @@ it('keeps each Chinese character once, in a stable order, after printable ASCII'
   expect(titleCharacters(['青菜，多重', '一棵青菜有多重？'])).toBe(characters);
 });
 
+it('keeps the quotation marks, dashes, ellipsis and middle dot Chinese text uses', () => {
+  const characters = titleCharacters(['小小探索家 · “说一说”——正在准备…']);
+  for (const mark of ['·', '“', '”', '—', '…']) expect(characters).toContain(mark);
+});
+
 it('ignores text that is neither Chinese nor ASCII', () => {
   expect(titleCharacters(['café ✳ 😀'])).toBe(titleCharacters([]));
 });
