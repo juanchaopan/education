@@ -1,19 +1,32 @@
 import { expect, type Page } from '@playwright/test';
+import type { ProblemSummary } from '@education/contracts';
 import { longCatalog, serveApi, signedOutApi, type Api } from './api';
 import { fixClock, waitForFonts, type Theme } from './render';
 
 // One page in one state: where to open it, how the API answers, the heading
-// that shows it has finished rendering that state, and the theme it is seen
-// in (the day theme unless named).
+// that shows it has finished rendering that state, a button that must also be
+// ready to press, and the theme it is seen in (the day theme unless named).
 export type PageState = {
   name: string;
   path: string;
   ready: string;
+  pressable?: string;
   api?: Api;
   theme?: Theme;
 };
 
 const failed = { status: 500, json: { message: 'unavailable' } };
+
+// The garden lesson as the catalog lists it, opened by a visitor.
+const garden: ProblemSummary = {
+  id: 'garden-balance',
+  version: 1,
+  title: '一棵青菜有多重',
+  grade: '一年级',
+  subject: '数学',
+  category: '学而思',
+  sequence: 1,
+};
 
 const dayStates: PageState[] = [
   { name: 'explore-empty', path: '/', ready: '好问题，正在准备中' },
@@ -40,6 +53,13 @@ const dayStates: PageState[] = [
     path: '/problems/visual-fixture-missing',
     ready: '这道题暂时不可用',
   },
+  {
+    name: 'lesson-title-card',
+    path: '/problems/garden-balance/1',
+    ready: '一棵青菜有多重？',
+    pressable: '开始短片',
+    api: { 'GET /api/v1/problems/garden-balance/1': { status: 200, json: garden } },
+  },
   { name: 'family-signed-out', path: '/family', ready: '创建家长账号' },
   {
     name: 'family-session-failed',
@@ -62,8 +82,15 @@ const dayStates: PageState[] = [
 ];
 
 // The key pages are also seen in the night theme: the catalogue, the child's
-// and the parent's sign-in, and the page for a path that leads nowhere.
-const nightPages = ['explore-empty', 'child-signed-out', 'family-signed-out', 'not-found'];
+// and the parent's sign-in, a lesson's title card and the page for a path
+// that leads nowhere.
+const nightPages = [
+  'explore-empty',
+  'child-signed-out',
+  'family-signed-out',
+  'lesson-title-card',
+  'not-found',
+];
 const nightStates = dayStates
   .filter((state) => nightPages.includes(state.name))
   .map((state): PageState => ({ ...state, name: `${state.name}-night`, theme: 'night' }));
@@ -77,6 +104,10 @@ export async function openPageState(page: Page, state: PageState) {
   const unexpected = await serveApi(page, { ...signedOutApi, ...state.api });
   await page.goto(state.path);
   await expect(page.getByRole('heading', { name: state.ready })).toBeVisible();
+  if (state.pressable)
+    await expect(page.getByRole('button', { name: state.pressable })).toBeEnabled({
+      timeout: 30_000,
+    });
   await expect(page.locator('html')).toHaveAttribute('data-theme', state.theme ?? 'day');
   await waitForFonts(page);
   return unexpected;
