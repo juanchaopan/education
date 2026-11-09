@@ -36,7 +36,7 @@ test('parent arranges optional practice and only the selected child can open it'
   const cat = children[1]!;
   try {
     await signInWithToken(page, baseURL!, parent);
-    await page.goto('/family');
+    await page.goto('/family/practice');
     const panel = page.getByRole('region', { name: '安排练习' });
     const child = panel.getByLabel('为哪位孩子安排');
     await child.selectOption({ label: '小鹿' });

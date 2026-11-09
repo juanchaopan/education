@@ -57,7 +57,13 @@ test('parent can switch children and see the evidence for a review suggestion', 
         sameSite: 'Lax',
       },
     ]);
+    // The overview adds up each child's record without counting hints as
+    // finishing alone.
     await page.goto('/family');
+    const deer = page.getByRole('region', { name: '小鹿' });
+    await expect(deer.getByText('次提示后完成')).toBeVisible();
+    await expect(page.getByRole('region', { name: '值得再练' })).toContainText('小鹿 · 答错 2 次');
+    await page.goto('/family/learning');
     const panel = page.getByRole('region', { name: '学习摘要' });
     const select = panel.getByLabel('选择孩子');
     await expect(select).toHaveValue('');

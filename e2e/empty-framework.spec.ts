@@ -5,6 +5,7 @@ import pg from 'pg';
 import type { CatalogResponse } from '@education/contracts';
 import { familyDeletionPhrase } from '../libs/contracts/src/family-deletion.js';
 import {
+  openParentPart,
   seedPasswordParent,
   signInWithPassword,
   submitParentLogin,
@@ -49,12 +50,14 @@ async function signInAgain(page: Page, login: ChildLogin) {
   await submitChildLogin(page, login);
 }
 
-// The parent page invents no learning: the child has no records or practice,
+// The parent pages invent no learning: the child has no records or practice,
 // and only maintained problems can be arranged.
 async function expectNothingRecorded(parent: Page) {
+  await openParentPart(parent, '学习记录');
   const summary = parent.getByRole('region', { name: '学习摘要' });
   await summary.getByLabel('选择孩子').selectOption({ label: nickname });
   await expect(summary.getByText('还没有这位孩子的学习记录。')).toBeVisible();
+  await openParentPart(parent, '练习安排');
   const practice = parent.getByRole('region', { name: '安排练习' });
   await practice.getByLabel('为哪位孩子安排').selectOption({ label: nickname });
   await expect(practice.getByLabel('选择已发布的题目').getByRole('option')).toHaveText([
@@ -69,6 +72,7 @@ async function expectNothingRecorded(parent: Page) {
 async function joinChild(browser: Browser, pool: pg.Pool, family: PasswordParent, pin: string) {
   const parent = await browser.newPage();
   await signInWithPassword(parent, family);
+  await openParentPart(parent, '孩子');
   await expect(parent.getByText(/还没有关联的孩子/)).toBeVisible();
   await parent.getByRole('button', { name: '生成注册 KEY', exact: true }).click();
   const key = await parent.getByLabel('本次生成的注册 KEY').textContent();
@@ -155,6 +159,7 @@ test('two families use the framework and stay apart through reset, sign-in again
 
     // Paid AI is switched on by default, but with no key nothing can be sent,
     // and the parent is told so whatever they consent to.
+    await openParentPart(a.parent, '隐私与数据');
     const consent = a.parent.getByRole('region', { name: '外部 AI 授权' });
     for (const service of ['AI 解题提示', '语音转写'])
       await expect(
@@ -195,6 +200,7 @@ test('two families use the framework and stay apart through reset, sign-in again
     // A PIN reset signs the first child out; the old PIN stops working and the
     // new one works. The other family's child is untouched.
     const nextPin = '937261';
+    await openParentPart(a.parent, '孩子');
     await resetPin(a.parent).click();
     await a.parent.getByLabel('新的六位 PIN', { exact: true }).fill(nextPin);
     await a.parent.getByLabel('再输入一次新 PIN').fill(nextPin);
@@ -212,12 +218,14 @@ test('two families use the framework and stay apart through reset, sign-in again
     await b.parent.getByRole('button', { name: '退出账号' }).click();
     await expect(b.parent.getByRole('heading', { name: '家长登录' })).toBeVisible();
     await submitParentLogin(b.parent, second);
+    await openParentPart(b.parent, '孩子');
     await expect(resetPin(b.parent)).toBeVisible();
     await b.child.context().clearCookies();
     await signInAgain(b.child, { code: b.code, pin: '640193' });
     await expect(welcome(b.child)).toBeVisible();
 
     // The first family exports only its own data.
+    await openParentPart(a.parent, '隐私与数据');
     const exporting = a.parent.getByRole('region', { name: '导出家庭数据' });
     await exporting.getByLabel('导出前输入家长密码').fill(first.password);
     const download = a.parent.waitForEvent('download');

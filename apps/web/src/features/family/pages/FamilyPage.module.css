@@ -1,24 +1,7 @@
 /* While the page asks who is signed in, the dots wait in the middle of the
-   screen, where the card is about to appear. */
+   screen, where the page is about to appear. */
 .waiting {
   display: grid;
   place-items: center;
   min-block-size: 100dvh;
-}
-
-/* The parent space in a column of the site's width, its side margins clear
-   of a phone's notch or rounded corners when the phone is turned sideways. */
-.space {
-  --gutter: var(--space-6);
-  max-width: 75rem;
-  margin: auto;
-  padding: var(--space-4) max(var(--gutter), env(safe-area-inset-right)) var(--space-10)
-    max(var(--gutter), env(safe-area-inset-left));
-}
-
-@media (max-width: 600px) {
-  .space {
-    --gutter: var(--space-4);
-    padding-block: var(--space-3) var(--space-8);
-  }
 }

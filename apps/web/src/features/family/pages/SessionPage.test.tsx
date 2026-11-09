@@ -51,7 +51,7 @@ it('shows only the verification step after an unverified login and clears the ac
   expect(screen.getByText(session.email)).toBeVisible();
   expect(screen.getByText('待验证', { exact: true })).toBeVisible();
   expect(await screen.findByRole('button', { name: '发送验证邮件' })).toBeVisible();
-  expect(screen.queryByLabelText('登录密码')).toBeNull();
+  expect(screen.queryByRole('navigation', { name: '家长空间' })).toBeNull();
   await userEvent.click(screen.getByRole('button', { name: '退出账号' }));
   expect(await screen.findByRole('heading', { name: '家长登录' })).toBeVisible();
   expect(screen.queryByText(session.email)).toBeNull();

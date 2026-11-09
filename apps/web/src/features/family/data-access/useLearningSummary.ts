@@ -1,7 +1,13 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQueries, useQuery } from '@tanstack/react-query';
 import { Value } from '@sinclair/typebox/value';
-import { LearningSummary } from '@education/contracts';
+import {
+  LearningSummary,
+  learningSummaryPageSize,
+  type ProblemLearningSummary,
+} from '@education/contracts';
 import { sessionRequest } from './session-request';
+
+const key = 'parent-learning-summary';
 
 async function readSummary(childId: string, offset: number) {
   const unavailable = '暂时无法查看学习摘要，请重试。';
@@ -20,9 +26,42 @@ async function readSummary(childId: string, offset: number) {
 
 export function useLearningSummary(csrf: string, childId: string, offset: number) {
   return useQuery({
-    queryKey: ['parent-learning-summary', csrf, childId, offset],
+    queryKey: [key, csrf, childId, offset],
     retry: false,
     gcTime: 0,
     queryFn: () => readSummary(childId, offset),
+  });
+}
+
+// Every problem a child has a record of, read page after page. A family's
+// records are a handful of pages; past the last page read here the record is
+// marked incomplete, so a total built from it is never shown as the whole.
+const pagesRead = 10;
+
+export type ChildRecord = {
+  childId: string;
+  problems: ProblemLearningSummary[];
+  complete: boolean;
+};
+
+async function readRecord(childId: string): Promise<ChildRecord> {
+  const problems: ProblemLearningSummary[] = [];
+  for (let page = 0; page < pagesRead; page++) {
+    const summary = await readSummary(childId, page * learningSummaryPageSize);
+    problems.push(...summary.problems);
+    if (!summary.hasMore) return { childId, problems, complete: true };
+  }
+  return { childId, problems, complete: false };
+}
+
+// The whole record of each child, one query per child.
+export function useChildRecords(csrf: string, childIds: readonly string[]) {
+  return useQueries({
+    queries: childIds.map((childId) => ({
+      queryKey: [key, 'record', csrf, childId],
+      retry: false,
+      gcTime: 0,
+      queryFn: () => readRecord(childId),
+    })),
   });
 }

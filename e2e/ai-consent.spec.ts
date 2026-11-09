@@ -36,7 +36,7 @@ test('parent reads both disclosures, confirms their password, grants and revokes
         sameSite: 'Lax',
       },
     ]);
-    await page.goto('/family');
+    await page.goto('/family/privacy');
     const panel = page.getByRole('region', { name: '外部 AI 授权' });
     await expect(panel.getByText('AI 解题提示预算未设置。')).toBeVisible();
     const tutoring = panel.getByRole('group', { name: 'AI 解题提示' });

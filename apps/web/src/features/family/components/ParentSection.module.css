@@ -1,0 +1,50 @@
+/* The title and the leading actions share a row while there is room; the
+   actions wrap under the title on a narrow screen. */
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+}
+.space {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: var(--text-sm);
+  font-weight: 700;
+}
+.title {
+  margin: 0;
+  font-size: var(--text-xl);
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+/* The cards stack at an even spacing, each one rising into place in turn. */
+.cards {
+  display: grid;
+  gap: var(--space-5);
+}
+.cards > * {
+  animation: rise var(--enter) var(--ease-out) both;
+}
+.cards > :nth-child(2) {
+  animation-delay: var(--enter-step);
+}
+.cards > :nth-child(3) {
+  animation-delay: calc(var(--enter-step) * 2);
+}
+.cards > :nth-child(n + 4) {
+  animation-delay: calc(var(--enter-step) * 3);
+}
+@keyframes rise {
+  from {
+    opacity: 0;
+    translate: 0 var(--space-4);
+  }
+}

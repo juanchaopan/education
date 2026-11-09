@@ -1,0 +1,15 @@
+/* A card for each child, as many side by side as the width holds. */
+.children {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr));
+  gap: var(--space-5);
+}
+
+/* Problems worth another try beside the practice already planned; one above
+   the other on a narrow screen. */
+.pair {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+  gap: var(--space-5);
+  align-items: start;
+}

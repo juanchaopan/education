@@ -18,9 +18,11 @@ import { useDayNightTheme } from './theme/useDayNightTheme';
 import styles from './App.module.css';
 
 // Three layouts: the children's pages under the site's header; the parents'
-// pages, which bring their own frame and show a lesson scene beside their
-// card; and a problem's page, which fills the screen on its own with a back
-// button in place of the header. The update notice lies over all of them.
+// pages, which bring their own frame — the account pages show a lesson scene
+// beside their card and the parent space has its own navigation for the
+// parts under /family; and a problem's page, which fills the screen on its
+// own with a back button in place of the header. The update notice lies over
+// all of them.
 export function App() {
   useDayNightTheme();
   return (
@@ -40,10 +42,10 @@ export function App() {
           />
         </Route>
         <Route element={<PlainLayout />}>
-          <Route path="/family" element={<FamilyPage art={accountArt} />} />
           <Route path="/family/recover" element={<RecoveryPage art={accountArt} />} />
           <Route path="/family/reset" element={<ResetPasswordPage art={accountArt} />} />
           <Route path="/family/verify" element={<VerifyEmailPage art={accountArt} />} />
+          <Route path="/family/*" element={<FamilyPage art={accountArt} />} />
         </Route>
         <Route path="/problems/:id/:version?" element={<ProblemPage pages={lessonPages} />} />
       </Routes>

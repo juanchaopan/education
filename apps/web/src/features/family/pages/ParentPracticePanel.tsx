@@ -52,7 +52,7 @@ export function ParentPracticePanel({ csrf }: { csrf: string }) {
 
 function AssignmentForm({ csrf, childId }: { csrf: string; childId: string }) {
   const catalog = useCatalog();
-  const assign = useAssignPractice(csrf, childId);
+  const assign = useAssignPractice(csrf);
   const [choice, choose] = useState('');
   if (catalog.isPending) return <Loading label="正在加载题目…" />;
   if (catalog.isError) return <p role="alert">暂时无法加载题库，请刷新页面。</p>;
@@ -67,7 +67,7 @@ function AssignmentForm({ csrf, childId }: { csrf: string; childId: string }) {
   const selected = problems.find(({ id, version }) => problemPath(id, version) === choice);
   const submit = () => {
     if (!selected || assign.isPending) return;
-    assign.mutate({ id: selected.id, version: selected.version });
+    assign.mutate({ childId, problem: { id: selected.id, version: selected.version } });
   };
   return (
     <Form className={styles.assignment} onSubmit={submit}>
