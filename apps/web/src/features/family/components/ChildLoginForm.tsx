@@ -1,9 +1,9 @@
 import { Button } from '../../../shared/ui/Button';
-import { Checkbox } from '../../../shared/ui/Checkbox';
 import { Form } from '../../../shared/ui/Form';
 import { Hint } from '../../../shared/ui/Hint';
 import { Icon } from '../../../shared/ui/Icon';
 import { Notice } from '../../../shared/ui/Notice';
+import { Switch } from '../../../shared/ui/Switch';
 import { TextField } from '../../../shared/ui/TextField';
 import { AccountLayout } from './AccountLayout';
 
@@ -80,7 +80,7 @@ function ChildLoginFields(props: ChildLoginFormProps) {
         disabled={props.pending}
         onChange={(event) => props.onChange('pin', event.target.value)}
       />
-      <Checkbox
+      <Switch
         label="在这台设备上记住家庭码和昵称"
         checked={props.remember}
         disabled={props.pending}

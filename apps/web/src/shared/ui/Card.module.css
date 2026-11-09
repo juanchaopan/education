@@ -1,8 +1,12 @@
+/* Paper with a fine grain by day, smoked glass over the lit backdrop by night;
+   the theme supplies the texture and the blur. */
 .card {
   padding: var(--space-6);
-  background: var(--surface);
+  background-color: var(--surface);
+  background-image: var(--texture);
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
+  backdrop-filter: var(--surface-filter);
 }
 .raised {
   overflow-wrap: anywhere;

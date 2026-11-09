@@ -2,11 +2,12 @@ import type { ButtonHTMLAttributes } from 'react';
 import { classNames } from '../lib/class-names';
 import styles from './Button.module.css';
 
-export type ButtonVariant = 'primary' | 'secondary' | 'text';
+export type ButtonVariant = 'primary' | 'secondary' | 'text' | 'danger';
 
 type Props = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'type'> & {
-  // primary carries the step a card is for, secondary switches between views
-  // and text is for small actions beside other content.
+  // primary carries the step a card is for, secondary switches between views,
+  // text is for small actions beside other content, and danger is only for
+  // the last step of an action that cannot be undone.
   variant?: ButtonVariant;
   // A regular weight lets the button read as part of the message it sits in.
   weight?: 'bold' | 'regular';

@@ -91,7 +91,7 @@ test('remembered family and nickname never authenticate, and limited or unavaila
   expect(attempts).toBe(1);
   await expect(page.getByLabel('我的家庭码', { exact: true })).toHaveValue('ABCD-EFGH-JKMN');
   await expect(page.getByLabel('我的六位 PIN')).toHaveValue('');
-  await page.getByRole('checkbox', { name: '在这台设备上记住家庭码和昵称' }).uncheck();
+  await page.getByRole('switch', { name: '在这台设备上记住家庭码和昵称' }).uncheck();
   expect(await page.evaluate(() => localStorage.getItem('education-child-locator'))).toBeNull();
   await page.route('**/api/v1/children/session', (route) =>
     route.fulfill({ status: 503, json: {} }),

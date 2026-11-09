@@ -1,14 +1,14 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { Checkbox } from './Checkbox';
+import { Switch } from './Switch';
 
 const meta = {
-  title: '公共部件/复选框',
-  component: Checkbox,
+  title: '公共部件/开关',
+  component: Switch,
   args: { label: '在这台设备上记住家庭码和昵称', checked: true, onChange: () => {} },
-} satisfies Meta<typeof Checkbox>;
+} satisfies Meta<typeof Switch>;
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Checked: Story = {};
-export const Unchecked: Story = { args: { checked: false } };
+export const On: Story = {};
+export const Off: Story = { args: { checked: false } };
 export const Disabled: Story = { args: { disabled: true } };

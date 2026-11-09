@@ -17,8 +17,8 @@ type Props = {
 };
 
 // Deleting cannot be undone, so the card says what goes and what stays before
-// asking for anything, and the button stays disabled until the parent has typed
-// the phrase exactly.
+// asking for anything, the button stays disabled until the parent has typed
+// the phrase exactly, and it takes the danger look.
 export function FamilyDeletionCard(props: Props) {
   return (
     <Panel titleId="family-deletion-title" title="删除家庭">
@@ -42,6 +42,7 @@ export function FamilyDeletionCard(props: Props) {
         password={props.password}
         pending={props.pending}
         ready={props.phrase === familyDeletionPhrase}
+        destructive
         onChange={props.onPassword}
         onSubmit={props.onDelete}
       >

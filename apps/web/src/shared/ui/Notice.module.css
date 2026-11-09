@@ -1,8 +1,45 @@
-/* Every tone shares one surface for now; the tone is on data-tone so a theme
-   can colour each one without the callers changing. */
+/* A soft band tinted with its tone, the tone's icon beside the message, which
+   slides in from above when it appears. The text stays in the body ink, so
+   every tone reads alike. */
 .notice {
-  padding: var(--space-4);
+  --tone: var(--accent);
+  --tone-mark: var(--accent-ink);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
   border-radius: var(--radius);
-  background: var(--accent-soft);
+  background: color-mix(in srgb, var(--tone) 16%, var(--surface));
+  color: var(--ink);
   overflow-wrap: anywhere;
+  animation: slide-in var(--lift) var(--ease-out) both;
+}
+.notice[data-tone='success'] {
+  --tone: var(--ok);
+  --tone-mark: var(--ok);
+}
+.notice[data-tone='error'] {
+  --tone: var(--danger);
+  --tone-mark: var(--danger);
+}
+.icon {
+  flex: none;
+  color: var(--tone-mark);
+  font-size: 1.2em;
+}
+.body {
+  flex: 1;
+  min-width: 0;
+}
+.body > :first-child {
+  margin-top: 0;
+}
+.body > :last-child {
+  margin-bottom: 0;
+}
+@keyframes slide-in {
+  from {
+    opacity: 0;
+    translate: 0 calc(var(--space-2) * -1);
+  }
 }

@@ -1,7 +1,11 @@
 import type { ReactNode } from 'react';
+import { Icon } from './Icon';
+import type { IconName } from './icons';
 import styles from './Notice.module.css';
 
 export type NoticeTone = 'info' | 'success' | 'error';
+
+const toneIcons: Record<NoticeTone, IconName> = { info: 'info', success: 'check', error: 'alert' };
 
 type Props = {
   tone?: NoticeTone;
@@ -14,11 +18,15 @@ type Props = {
   children: ReactNode;
 };
 
+// An icon for the tone, then the message; the words carry the meaning, so
+// the tone never rests on the colour or the icon alone.
 export function Notice({ tone = 'info', as: Element = 'p', live = true, children }: Props) {
   const role = live ? (tone === 'error' ? 'alert' : 'status') : undefined;
+  const Body = Element === 'p' ? 'span' : 'div';
   return (
     <Element role={role} data-tone={tone} className={styles.notice}>
-      {children}
+      <Icon name={toneIcons[tone]} className={styles.icon} />
+      <Body className={styles.body}>{children}</Body>
     </Element>
   );
 }

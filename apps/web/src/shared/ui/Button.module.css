@@ -1,30 +1,73 @@
 .button {
+  /* How far a pressable button stands above the page: the thick lower edge
+     it sinks into when pressed. */
+  --edge: var(--space-1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
   min-block-size: var(--touch-target);
   padding: var(--space-3) var(--space-5);
+  border: 0;
   border-radius: var(--radius-pill);
+  font: inherit;
   font-weight: 700;
   cursor: pointer;
+  transition:
+    translate var(--press) var(--ease-out),
+    scale var(--press) var(--ease-out),
+    box-shadow var(--press) var(--ease-out);
 }
 .button:disabled {
   opacity: 0.6;
   cursor: default;
 }
+
+/* Primary and danger buttons are like a piece of clay: lit from above, with a
+   thick lower edge. They rise a little under the pointer and sink into their
+   edge when pressed. */
 .primary {
-  border: 0;
   color: var(--primary-ink);
-  background: var(--primary);
+  background: linear-gradient(var(--primary-hi), var(--primary) 60%);
+  box-shadow:
+    0 var(--edge) 0 var(--primary-edge),
+    var(--primary-shadow);
 }
+.danger {
+  color: var(--danger-ink);
+  background: var(--danger);
+  box-shadow: 0 var(--edge) 0 var(--danger-edge);
+}
+.primary:hover:not(:disabled),
+.danger:hover:not(:disabled) {
+  translate: 0 -1px;
+}
+.primary:active:not(:disabled),
+.danger:active:not(:disabled) {
+  translate: 0 var(--edge);
+}
+.primary:active:not(:disabled) {
+  box-shadow: 0 0 0 var(--primary-edge);
+}
+.danger:active:not(:disabled) {
+  box-shadow: 0 0 0 var(--danger-edge);
+}
+
 .secondary {
-  border: 1px solid var(--primary);
   color: var(--primary);
-  background: var(--surface);
+  background: var(--surface-2);
+  box-shadow: inset 0 0 0 1.5px var(--line);
 }
+.secondary:active:not(:disabled) {
+  scale: 0.97;
+}
+
 .text {
   padding-inline: var(--space-2);
-  border: 0;
   color: var(--primary);
   background: none;
 }
+
 .regular {
   font-weight: 400;
 }

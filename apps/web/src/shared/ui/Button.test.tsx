@@ -42,14 +42,15 @@ it('gives each variant and weight its own look and keeps the caller placement cl
       <Button>主要</Button>
       <Button variant="secondary">次要</Button>
       <Button variant="text">文字</Button>
+      <Button variant="danger">删除</Button>
       <Button weight="regular" className="placed">
         常规
       </Button>
     </>,
   );
-  const classes = ['主要', '次要', '文字', '常规'].map(
+  const classes = ['主要', '次要', '文字', '删除', '常规'].map(
     (name) => screen.getByRole('button', { name }).className,
   );
-  expect(new Set(classes).size).toBe(4);
-  expect(classes[3]).toContain('placed');
+  expect(new Set(classes).size).toBe(5);
+  expect(classes[4]).toContain('placed');
 });
