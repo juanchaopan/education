@@ -5,8 +5,9 @@ import { FixtureScene, type FixtureShot, type FixtureState } from './FixtureScen
 
 // A small lesson for testing the shared lesson page: the child taps a pebble
 // to move from looking to counting, counts in the answer scene, then hears
-// the closing line. It is drawn on the lesson stage's own story look and is
-// never registered as a problem.
+// the closing line. It takes its names and palette from the lesson stage's
+// own story look and its pictures from the library, and is never registered
+// as a problem.
 
 type Line = 'hello' | 'ask' | 'bye';
 type Move = 'tap';
@@ -27,13 +28,17 @@ function arrive(shot: FixtureShot): Reaction<FixtureState, FixtureShot, Line> {
   return { state: { shot }, say: entryLines[shot], chime: [] };
 }
 
+const { place, ground } = storyLook.teacher;
+
 export const fixtureLesson = {
   problem: { id: 'fixture', version: 1 },
   title: storyLook.title,
   theater: storyLook.theater,
   labels: { film: storyLook.label, world: storyLook.worldLabel },
-  backdrop: storyLook.backdrop,
-  teacher: storyLook.teacher,
+  backdrop: 'garden-morning',
+  teacher: { id: 'rabbit', place, ground },
+  // The pebble, round its centre.
+  staging: { x: 570, y: 370, width: 60, height: 60 },
   palette: storyLook.palette,
   script: { lines, shots: ['look', 'count', 'after'], entryLines },
   story: {

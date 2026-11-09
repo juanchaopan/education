@@ -4,7 +4,7 @@ import { GardenScene } from '../../components/garden-balance/garden-scenes';
 import type { MovableLook, movableProps } from '../../components/garden-balance/movable-props';
 import { Ambience } from '../../components/lesson-stage/Ambience';
 import type { LessonDefinition } from '../lesson-definition';
-import { gardenBackdrop, gardenCameras, gardenPalette, gardenTeacher } from './garden-look';
+import { gardenCameras, gardenPalette, gardenStaging, gardenTeacher } from './garden-look';
 import { gardenProps } from './garden-props';
 import {
   arrive,
@@ -31,14 +31,16 @@ type Piece = keyof typeof movableProps;
 
 // 菜园天平：一棵青菜和几根黄瓜一样重。The rabbit halves the scale, weighs one
 // apple against cucumbers and swaps each apple for its cucumbers, then asks
-// for the count; a variation with two cucumbers to an apple follows.
+// for the count; a variation with two cucumbers to an apple follows. It plays
+// on the library's morning garden, with the scale on its round workbench.
 export const gardenLesson = {
   problem: gardenBalance,
   title: '一棵青菜有多重？',
   theater: '菜园小剧场',
   labels: { film: '菜园天平互动短片', world: '可互动的菜园道具' },
-  backdrop: gardenBackdrop,
+  backdrop: 'garden-morning',
   teacher: gardenTeacher,
+  staging: gardenStaging,
   palette: gardenPalette,
   defs: <GardenDefs />,
   ambience: <Ambience kind="fireflies" />,

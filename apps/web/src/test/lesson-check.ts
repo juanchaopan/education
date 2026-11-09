@@ -1,5 +1,8 @@
 import { shotAfter, type ProblemVersion } from '../features/learning/lessons/lesson-definition';
 import type { LessonOutline } from '../features/learning/lessons/registry';
+import { backdrops } from '../features/learning/media/backdrops/backdrops';
+import { inside } from '../features/learning/media/library';
+import { teachers } from '../features/learning/media/teachers/teachers';
 
 // What a lesson must agree with in the plugin the server keeps for its
 // problem version: the steps a model may see and the authored hints.
@@ -36,6 +39,20 @@ function answerProblems({ script, answer }: LessonOutline) {
   return shotAfter(script, shot) ? [] : [`answer scene ${shot} has no scene after it`];
 }
 
+// The backdrop and the teacher come from the library, and the lesson's props
+// stand in the backdrop's clearing.
+function mediaProblems({ backdrop, teacher, staging }: LessonOutline) {
+  const picked = Object.values(backdrops).find(({ id }) => id === backdrop);
+  const known = Object.values(teachers).some(({ id }) => id === teacher.id);
+  return [
+    ...(picked ? [] : [`backdrop ${backdrop} is not in the library`]),
+    ...(known ? [] : [`teacher ${teacher.id} is not in the library`]),
+    ...(picked && !inside(staging, picked.clearZone)
+      ? [`the props stand outside the clearing of ${backdrop}`]
+      : []),
+  ];
+}
+
 function pluginProblems(listed: ProblemVersion, lesson: LessonOutline, plugin?: PluginOutline) {
   if (!plugin) return [`the server has no plugin for ${versionName(listed)}`];
   const { script, answer } = lesson;
@@ -48,7 +65,8 @@ function pluginProblems(listed: ProblemVersion, lesson: LessonOutline, plugin?: 
 
 // Everything wrong with a registered lesson, or nothing: its version against
 // its registry line, its recordings and entry lines, its answer scene and the
-// scene after it, and the server's plugin for it, with its steps and hints.
+// scene after it, its library backdrop and teacher and where its props stand,
+// and the server's plugin for it, with its steps and hints.
 export function lessonProblems(
   listed: ProblemVersion,
   lesson: LessonOutline,
@@ -58,6 +76,7 @@ export function lessonProblems(
     ...versionProblems(listed, lesson),
     ...scriptProblems(lesson),
     ...answerProblems(lesson),
+    ...mediaProblems(lesson),
     ...pluginProblems(listed, lesson, plugin),
   ];
 }

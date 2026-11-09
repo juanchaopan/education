@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { LessonOutline } from '../features/learning/lessons/registry';
+import { backdrops } from '../features/learning/media/backdrops/backdrops';
 import { lessonProblems, type PluginOutline } from './lesson-check';
 import { fixtureLesson } from './lesson-fixture';
 
@@ -38,6 +39,22 @@ describe('the lesson definition check', () => {
   it('finds an answer scene with no scene after it to play on into', () => {
     const answer = { ...outline.answer, shot: 'after' };
     expect(problems({ answer })).toEqual(['answer scene after has no scene after it']);
+  });
+
+  it('finds a backdrop or a teacher the library does not have', () => {
+    expect(problems({ backdrop: 'moon-base', teacher: { id: 'owl' } })).toEqual([
+      'backdrop moon-base is not in the library',
+      'teacher owl is not in the library',
+    ]);
+  });
+
+  it('finds props that stand outside the backdrop clearing, even by a little', () => {
+    const { clearZone } = backdrops[fixtureLesson.backdrop];
+    const staging = { ...clearZone, width: clearZone.width + 1 };
+    expect(problems({ staging })).toEqual([
+      `the props stand outside the clearing of ${fixtureLesson.backdrop}`,
+    ]);
+    expect(problems({ staging: clearZone })).toEqual([]);
   });
 
   it('finds scenes and plugin steps that do not match', () => {

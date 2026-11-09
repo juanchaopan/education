@@ -1,12 +1,6 @@
-import type {
-  Backdrop,
-  Camera,
-  StagePalette,
-  Teacher,
-} from '../../components/lesson-stage/stage-look';
-import plate from './assets/garden-plate.webp';
-import rabbit from './assets/garden-rabbit.webp';
-import { teacher, type Shot } from './script';
+import type { Box, Camera, StagePalette } from '../../components/lesson-stage/stage-look';
+import type { TeacherRole } from '../lesson-definition';
+import type { Shot } from './script';
 
 // The scale fills the frame while it is halved and weighed, the single apple
 // is seen up close, and the swaps keep the whole scale in view.
@@ -23,17 +17,18 @@ export const gardenCameras: Record<Shot, Camera> = {
   end: swapping,
 };
 
-export const gardenBackdrop: Backdrop = { image: plate, focus: 'center 56%' };
-
 // The rabbit stands at the scale's left.
-export const gardenTeacher: Teacher = {
-  name: teacher,
-  image: rabbit,
+export const gardenTeacher: TeacherRole = {
+  id: 'rabbit',
   place: { x: 174, y: 210, width: 194, height: 271 },
   ground: { cx: 262, cy: 472, rx: 75, ry: 13 },
 };
 
-// The warm evening colours taken from the plate.
+// The scale with its pans raised as high as they go, the cues that point at
+// it, the basket beside it and the note under it in the last scene.
+export const gardenStaging: Box = { x: 380, y: 210, width: 690, height: 340 };
+
+// The warm morning colours taken from the garden backdrop.
 export const gardenPalette: StagePalette = {
   sky: 'radial-gradient(ellipse at 64% 32%, #e5c990, #47735b 66%, #122a25)',
   text: '#fff8e6',

@@ -1,6 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { fixtureLesson } from '../../../test/lesson-fixture';
-import { filmStory, guidance, resumed, shotAfter, stageLook } from './lesson-definition';
+import { backdrops } from '../media/backdrops/backdrops';
+import { teachers } from '../media/teachers/teachers';
+import {
+  filmStory,
+  guidance,
+  lessonTeacher,
+  resumed,
+  shotAfter,
+  stageLook,
+} from './lesson-definition';
 
 const { script } = fixtureLesson;
 
@@ -12,17 +21,28 @@ describe('lesson definitions', () => {
     expect(story.arrive('count').say).toEqual(['ask']);
   });
 
-  it('give the stage the title, names, pictures, palette and framing', () => {
+  it('give the stage the title, names, library pictures, palette and framing', () => {
     const cameras = { count: { zoom: 1.2 } };
+    const { image, focus } = backdrops['garden-morning'];
     expect(stageLook({ ...fixtureLesson, script: { ...script, cameras } })).toEqual({
       label: '示例互动短片',
       worldLabel: '可互动的示例道具',
       title: '示例题目',
       theater: '示例小剧场',
-      backdrop: fixtureLesson.backdrop,
-      teacher: fixtureLesson.teacher,
+      backdrop: { image, focus },
+      teacher: lessonTeacher(fixtureLesson.teacher),
       palette: fixtureLesson.palette,
       cameras,
+    });
+  });
+
+  it('cast the library teacher where the lesson puts it', () => {
+    const { place, ground } = fixtureLesson.teacher;
+    expect(lessonTeacher(fixtureLesson.teacher)).toEqual({
+      name: '小兔',
+      image: teachers.rabbit.image,
+      place,
+      ground,
     });
   });
 

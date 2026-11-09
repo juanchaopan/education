@@ -58,8 +58,9 @@ export type Camera = Readonly<{ zoom: number; x?: number; y?: number }>;
 // The painted picture behind the props and the part of it kept in view.
 export type Backdrop = Readonly<{ image: string; focus: string }>;
 
-type Box = Readonly<{ x: number; y: number; width: number; height: number }>;
-type Ellipse = Readonly<{ cx: number; cy: number; rx: number; ry: number }>;
+// A rectangle and an ellipse in the stage's 1200×675 world.
+export type Box = Readonly<{ x: number; y: number; width: number; height: number }>;
+export type Ellipse = Readonly<{ cx: number; cy: number; rx: number; ry: number }>;
 
 // The character who tells the lesson: where it stands in the stage's world and
 // the shadow at its feet.
