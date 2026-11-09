@@ -11,7 +11,7 @@ type Props = {
 };
 
 // Tells the child or parent that the site has an update the page is waiting
-// to take, and why, and that nothing they did is lost.
+// to take, and why. The words fit a visitor as well as a signed-in child.
 export function UpdateNotice({ phase, onRetry }: Props) {
   return (
     <aside className={styles.notice} aria-label="网站更新">
@@ -19,7 +19,7 @@ export function UpdateNotice({ phase, onRetry }: Props) {
         <p>
           {phase === 'held'
             ? '更新已准备好，保存后将自动更新。'
-            : '新版本还没准备好。刚才做的和登录都还在。'}
+            : '新版本还没准备好，过一会儿可以再试一次。'}
         </p>
         {phase === 'stuck' && (
           <Actions>
