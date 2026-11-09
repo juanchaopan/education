@@ -1,0 +1,11 @@
+/* The notice floats over the page, so a shadow sets it apart from what lies
+   beneath it. */
+.notice {
+  max-inline-size: 36rem;
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow);
+}
+
+.notice p {
+  margin: 0;
+}

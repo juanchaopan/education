@@ -1,13 +1,15 @@
 import { useEffect, useEffectEvent, useRef, useState } from 'react';
+import { useReloadReadiness } from '../../../shared/lib/reload-readiness';
 import type { RecorderHost } from '../voice/recorder';
 import type { LearningScope } from './learning-request';
 import { useTeachingFeedback } from './useTeachingFeedback';
 import { createVoiceInput, type VoiceState } from './voice-input';
+import { voiceReadiness } from './voice-readiness';
 
 // A question the child asks out loud in the middle of a scene. What was heard
 // goes to the teacher straight away, about the scene it was asked in: a
 // question is not an answer, so there is nothing to confirm and nothing is
-// recorded as an attempt.
+// recorded as an attempt. A reload waits while the child is asking.
 export function useLessonQuestion(scope: LearningScope, stepId: string, host?: RecorderHost) {
   const [voice, setVoice] = useState<VoiceState>({ status: 'idle' });
   const feedback = useTeachingFeedback(scope);
@@ -19,6 +21,7 @@ export function useLessonQuestion(scope: LearningScope, stepId: string, host?: R
     createVoiceInput(setVoice, { host, onHeard: (text) => ask(text) }),
   );
   useEffect(() => () => input.dispose(), [input]);
+  useReloadReadiness(voiceReadiness(voice));
 
   return {
     voice,

@@ -99,9 +99,9 @@ GitHub 的定时任务可能推迟几分钟到几十分钟。探测从 GitHub �
 ## 发布流程与失败处理
 
 1. `workflow_run` 监听本仓库 ci、ai-review、commits 的成功运行；PR 事件必须关联到已经合并 main 的同仓库、同 head SHA。准备任务只检出可信 main，用 API 选择当前 main 的精确 SHA；缺少检查时以 workflow_dispatch 显式派发真实 CI，正在运行或失败时不发布，也不把 PR 成功套用到 squash 提交。准备任务仅为派发 CI 获得 actions:write；部署任务仍是 actions:read。main 的 push 或显式派发 CI 成功后，才检出准确 SHA 安装/构建；这些步骤不接收部署秘密。发布步骤读取秘密，并再次确认 main 和工作区没有变化。
-2. 仅上传明确允许的 Git 跟踪源文件；不上传 `.env`、本地文件、证书、测试结果或文档截图。Vercel 运行 `npm run build:staging`，将 SHA 写入构建内的 `release.json`。函数复用容器的 Fastify 组装，无第二套账号实现。SQL 迁移文件及版本文件明确包含在函数产物内；SPA HTML 和散列资源由 Vercel 静态路由提供，不在函数中加载静态服务器插件。
+2. 仅上传明确允许的 Git 跟踪源文件；不上传 `.env`、本地文件、证书、测试结果或文档截图。Vercel 运行 `npm run build:staging`，将 SHA 写入构建内的 `release.json`，也写进页面的 `<meta name="education-release">`，已打开的页面据此判断有没有新版本。函数复用容器的 Fastify 组装，无第二套账号实现。SQL 迁移文件及版本文件明确包含在函数产物内；SPA HTML 和散列资源由 Vercel 静态路由提供，不在函数中加载静态服务器插件。
 3. 等待候选构建 READY。对应用库和配置了的删除清单库，先撤销迁移角色对托管数据 API 角色 anon/authenticated 的默认表和序列授权（这两个角色存在时），再单独运行迁移，随后对迁移角色拥有的所有 `public` 表启用 RLS 并撤销这两个角色的表权限，之后迁移新增的表也会自动包括在内；供应商或扩展拥有的表不在其中。运行时凭据只交服务端。
-4. 对精确候选 URL 检查版本、数据库就绪、注册、登录、读取会话、退出和旧 cookie 拒绝。服务开关关闭时就绪检查失败，不发布。仅生成随机 `@example.invalid` 合成账号，不发送邮件。finally 定向删除该账号所属且没有其他成员的测试家庭；失败时不清空其他账号或限流表。网络故障后需核对是否有未完成的合成账号清理。
+4. 对精确候选 URL 检查版本（`/version.json` 和页面写的版本都是这次的 SHA，页面 `no-cache`）、数据库就绪、注册、登录、读取会话、退出和旧 cookie 拒绝。服务开关关闭时就绪检查失败，不发布。仅生成随机 `@example.invalid` 合成账号，不发送邮件。finally 定向删除该账号所属且没有其他成员的测试家庭；失败时不清空其他账号或限流表。网络故障后需核对是否有未完成的合成账号清理。
 5. 再确认 main 没有更新，才将自定义测试域名 alias 指向候选，并从 API 读回实际 deployment/project ID。记录准确 SHA、deployment ID 和请求耗时。候选页面在切换前的写请求以已配置 staging Origin 检查；它不作为独立 PR 页面使用。
 
 构建、迁移、冒烟或过期提交失败不修改稳定 alias，删除本次失败候选。alias 提交发生超时/失败时结果可能不确定，保留候选并人工查询 alias，不能自动删除可能已在服务的版本。
@@ -129,7 +129,7 @@ Vercel 支持 PR 预览，Neon Free 每个项目也能建少量数据库分支�
 - 本地真实双实例场景中 A 为容器入口、B 为部署用函数处理器；仍不能替代真正 Vercel 的打包、冷启动、数据库 TLS/会话锁及重启持久化测试。
 - main 自动发布、Singapore 实际区域、账号冒烟、域名推广和真实浏览器跨部署持久登录的验收见 [#20 证据](../evidence/20/README.md)；Neon 数据库上的发布、家庭删除和每小时维护见 [#111 验收记录](../evidence/111/README.md)；备份和恢复演练见 [#45 验收记录](../evidence/45/README.md)；请求日志、告警和演练见 [#50 验收记录](../evidence/50/README.md)。
 - 本流程不信任客户端转发 IP。Vercel 中默认看到的代理来源可能聚合用户，限流会保守拒绝；平台可信来源和池大小（每函数最多 4 连接）、冷启动、Argon2/RSS 与目标资源容量必须实际测量，未宣称两秒达标。
-- HTML 重新验证、版本接口 no-store、散列资源可缓存。已打开页面保存草稿后自动刷新由 [#118](https://github.com/juanchaopan/education/issues/118) 完成，不能把版本文件当成整个更新策略已经实现。
+- HTML 重新验证、版本接口 no-store、散列资源可缓存。已打开的页面检查新版本、先保存草稿再刷新，做法和浏览器检查见 [#118 验收记录](../evidence/118/README.md)；在真实 staging 上跨两次发布的验收列在那里的未完成项。
 - Vercel Hobby 详细资格/配额、Gmail 条款/额度正文无法从本开发环境读取，没有据此填入数字或断言服务不可达；Gmail 保持隔离适配器，回执明确 `mail: not-sent`。无后台真实发信、AI 调用或儿童输入。
 
 ## 撤回

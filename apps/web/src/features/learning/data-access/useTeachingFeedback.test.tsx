@@ -1,5 +1,7 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
+import { usePageReadiness } from '../../../shared/lib/reload-readiness';
+import { pageWrapper } from '../../../test/page-wrapper';
 import { exportInk } from '../drawing/export-ink';
 import { requestTeachingFeedback } from './feedback-request';
 import { useTeachingFeedback } from './useTeachingFeedback';
@@ -88,6 +90,26 @@ it('ignores a late reply once the child chooses guidance, and ignores repeated a
   await act(async () => finish(ready));
   expect(result.current.state).toEqual({ status: 'guidance' });
   expect(requestTeachingFeedback).toHaveBeenCalledTimes(1);
+});
+
+it('holds a reload while a reply is on its way', async () => {
+  let finish!: (value: typeof ready) => void;
+  vi.mocked(requestTeachingFeedback).mockReturnValue(
+    new Promise((resolve) => {
+      finish = resolve;
+    }),
+  );
+  const { result } = renderHook(
+    () => ({ feedback: useTeachingFeedback(scope), page: usePageReadiness().readiness }),
+    { wrapper: pageWrapper() },
+  );
+  expect(result.current.page).toBe('ready');
+  act(() => {
+    void result.current.feedback.ask({ stepId: 'count-left', text: '三个', drawing: [] });
+  });
+  await waitFor(() => expect(result.current.page).toBe('saving'));
+  await act(async () => finish(ready));
+  await waitFor(() => expect(result.current.page).toBe('ready'));
 });
 
 it('releases a pending request when the lesson closes', async () => {

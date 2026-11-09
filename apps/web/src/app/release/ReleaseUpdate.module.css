@@ -1,0 +1,14 @@
+/* Over the foot of every page, lessons included, without taking up its room. */
+.dock {
+  position: fixed;
+  inset-inline: var(--space-4);
+  inset-block-end: var(--space-4);
+  z-index: 10;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.dock > * {
+  pointer-events: auto;
+}

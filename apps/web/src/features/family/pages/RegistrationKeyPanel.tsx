@@ -2,6 +2,7 @@ import { useParentReauthentication } from '../data-access/useParentReauthenticat
 import { FamilyCodePanel } from './FamilyCodePanel';
 import type { RegistrationKeyStatus } from '@education/contracts';
 import { useState } from 'react';
+import { useReloadReadiness, type Readiness } from '../../../shared/lib/reload-readiness';
 import { RegistrationKeyCard } from '../components/RegistrationKeyCard';
 import { useRegistrationKey, useManageRegistrationKey } from '../data-access/useRegistrationKey';
 export function RegistrationKeyPanel({ csrf }: { csrf: string }) {
@@ -14,6 +15,7 @@ export function RegistrationKeyPanel({ csrf }: { csrf: string }) {
   const [confirmationError, setConfirmationError] = useState('');
   const pending = manage.isPending || confirm.isPending;
   const value = visibleKey(status.isSuccess && !status.isFetching ? status.data : undefined, shown);
+  useReloadReadiness(keyReadiness({ shown: shown !== null, value, reading: status.isFetching }));
   const clear = () => {
     setShown(null);
     setCopyNotice('');
@@ -83,6 +85,17 @@ export function RegistrationKeyPanel({ csrf }: { csrf: string }) {
       />
     </>
   );
+}
+
+type KeyOnScreen = { shown: boolean; value: string | undefined; reading: boolean };
+
+// A new KEY is shown only once and a reload would take it away, so the page
+// holds an update while the KEY is on screen, and while its status is read
+// again, after which it shows once more if it is still active. The hold ends
+// when the parent closes the KEY, leaves the page, or the status no longer
+// shows it.
+function keyReadiness({ shown, value, reading }: KeyOnScreen): Readiness {
+  return shown && (value !== undefined || reading) ? 'showing' : 'ready';
 }
 
 function visibleKey(

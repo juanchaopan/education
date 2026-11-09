@@ -21,3 +21,4 @@ export * from './teaching-feedback.js';
 export * from './transcription.js';
 export * from './family-export.js';
 export * from './family-deletion.js';
+export * from './release.js';

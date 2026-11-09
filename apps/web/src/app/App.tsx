@@ -11,6 +11,7 @@ import { Icon } from '../shared/ui/Icon';
 import { Page } from '../shared/ui/Page';
 import { StandaloneLink } from '../shared/ui/StandaloneLink';
 import { lessonPages } from './lesson-pages';
+import { ReleaseUpdate } from './release/ReleaseUpdate';
 import styles from './App.module.css';
 
 export function App() {
@@ -56,6 +57,7 @@ export function App() {
         <span>慢慢想，每一步都算数。</span>
         <span>为好奇心，留一点空间。</span>
       </footer>
+      <ReleaseUpdate />
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { AiHelpFallback, TeachingFeedback } from '@education/contracts';
+import { useReloadReadiness } from '../../../shared/lib/reload-readiness';
 import { exportInk } from '../drawing/export-ink';
 import type { Drawing } from '../drawing/ink';
 import { createAiHelpRequest } from './ai-help-request';
@@ -20,10 +21,13 @@ export type FeedbackState =
 
 type Ask = { stepId: string; text?: string; drawing: Drawing };
 
+// The teacher's reply to what the child asked or drew. A reload waits for a
+// reply on its way, which it would otherwise throw away.
 export function useTeachingFeedback(scope: LearningScope) {
   const [state, setState] = useState<FeedbackState>({ status: 'idle' });
   const [requests] = useState(() => createAiHelpRequest<Ready>(setState));
   useEffect(() => () => requests.dispose(), [requests]);
+  useReloadReadiness(state.status === 'pending' ? 'saving' : 'ready');
 
   return {
     state,
