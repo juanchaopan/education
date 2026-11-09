@@ -6,7 +6,9 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { usePageReadiness } from '../../../shared/lib/reload-readiness';
 import { fixtureLesson } from '../../../test/lesson-fixture';
 import { pageWrapper } from '../../../test/page-wrapper';
-import { LessonPage } from './LessonPage';
+import { lessonPage } from './LessonPage';
+
+const FixturePage = lessonPage(fixtureLesson);
 
 const draftPath = '/api/v1/problems/fixture/1/draft';
 const savedAt = (stepId: string): SavedDraft => ({
@@ -46,7 +48,7 @@ function open(csrf?: string) {
   render(
     <MemoryRouter>
       <Page>
-        <LessonPage lesson={fixtureLesson} csrf={csrf} />
+        <FixturePage csrf={csrf} />
         <PageReadiness />
       </Page>
     </MemoryRouter>,

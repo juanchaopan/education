@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useLatest } from '../../../shared/lib/useLatest';
 import { useReloadReadiness } from '../../../shared/lib/reload-readiness';
 import { createChime } from './chime';
-import { tell, type FilmScene, type FilmStory, type Reaction } from './lesson-film';
+import { tell, type FilmScene, type FilmState, type FilmStory, type Reaction } from './lesson-film';
 import type { NarrationFailure } from './narration';
 import { useNarration } from './useNarration';
 
@@ -75,7 +75,7 @@ function useFilmRuns() {
 // them included, the page knows a reload would cut the film off. Leaving the
 // lesson stops whatever was still to be said.
 export function useLessonFilm<
-  State extends Readonly<{ shot: FilmScene<Shot> }>,
+  State extends FilmState<Shot>,
   Shot extends string,
   Line extends string,
   Move,

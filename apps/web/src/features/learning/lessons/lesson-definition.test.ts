@@ -1,17 +1,20 @@
 import { describe, expect, it } from 'vitest';
 import { fixtureLesson } from '../../../test/lesson-fixture';
-import { filmStory, guidance, resumes, shotAfter, stageLook } from './lesson-definition';
+import { filmStory, guidance, resumed, shotAfter, stageLook } from './lesson-definition';
+
+const { script } = fixtureLesson;
 
 describe('lesson definitions', () => {
   it('start the film at the first scene, with the lesson rules and lines', () => {
-    const story = filmStory(fixtureLesson);
+    const story = filmStory(script, fixtureLesson.story);
     expect(story).toMatchObject({ first: 'look', opening: { shot: 'opening' } });
-    expect(story.lines).toBe(fixtureLesson.script.lines);
+    expect(story.lines).toBe(script.lines);
     expect(story.arrive('count').say).toEqual(['ask']);
   });
 
   it('give the stage the title, names, pictures, palette and framing', () => {
-    expect(stageLook(fixtureLesson)).toEqual({
+    const cameras = { count: { zoom: 1.2 } };
+    expect(stageLook({ ...fixtureLesson, script: { ...script, cameras } })).toEqual({
       label: '示例互动短片',
       worldLabel: '可互动的示例道具',
       title: '示例题目',
@@ -19,24 +22,26 @@ describe('lesson definitions', () => {
       backdrop: fixtureLesson.backdrop,
       teacher: fixtureLesson.teacher,
       palette: fixtureLesson.palette,
-      cameras: undefined,
+      cameras,
     });
   });
 
-  it("take a scene's instruction from its last entry line", () => {
-    expect(guidance(fixtureLesson, 'count')).toBe('一共有几颗？');
-    expect(guidance(fixtureLesson, 'missing')).toBe('');
+  it("take a scene's instruction from its last entry line, or none when it says nothing", () => {
+    expect(guidance(script, 'count')).toBe('一共有几颗？');
+    expect(guidance({ ...script, entryLines: { ...script.entryLines, count: [] } }, 'count')).toBe(
+      '',
+    );
   });
 
-  it('follow a scene with the next one in teaching order', () => {
-    expect(shotAfter(fixtureLesson, 'look')).toBe('count');
-    expect(shotAfter(fixtureLesson, 'after')).toBeUndefined();
-    expect(shotAfter(fixtureLesson, 'missing')).toBeUndefined();
+  it('follow a scene with the next one in teaching order, and nothing else', () => {
+    expect(shotAfter(script, 'look')).toBe('count');
+    expect(shotAfter(script, 'after')).toBeUndefined();
+    expect(shotAfter({ shots: ['look', 'count'] }, 'after')).toBeUndefined();
   });
 
   it('resume only at a scene of the lesson past its first', () => {
-    expect(resumes(fixtureLesson, 'count')).toBe(true);
-    expect(resumes(fixtureLesson, 'look')).toBe(false);
-    expect(resumes(fixtureLesson, 'missing')).toBe(false);
+    expect(resumed(script, 'count')).toBe('count');
+    expect(resumed(script, 'look')).toBeUndefined();
+    expect(resumed(script, 'missing')).toBeUndefined();
   });
 });

@@ -4,6 +4,9 @@ import type { CueResult } from './narration';
 // scenes in teaching order.
 export type FilmScene<Shot extends string> = Shot | 'opening';
 
+// A film's state always tells the scene on screen, the title card included.
+export type FilmState<Shot extends string> = Readonly<{ shot: FilmScene<Shot> }>;
+
 // One narrated line: the caption shown while it plays and its recording.
 export type FilmLine = Readonly<{ text: string; clip: string }>;
 
@@ -20,7 +23,7 @@ export type Reaction<State, Shot extends string, Line extends string> = Readonly
 // state, the scene the film starts at, how each scene first appears, and how
 // the scene on screen answers a move. A move a scene does not take is ignored.
 export type FilmStory<
-  State extends Readonly<{ shot: FilmScene<Shot> }>,
+  State extends FilmState<Shot>,
   Shot extends string,
   Line extends string,
   Move,

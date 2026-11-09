@@ -1,17 +1,31 @@
 import { DraftNotice } from '../components/DraftNotice';
 import type { LearningScope } from '../data-access/learning-request';
 import type { useLessonDraft } from '../data-access/useLessonDraft';
+import type { FilmState } from '../interaction/lesson-film';
 import type { LessonFilm } from '../interaction/useLessonFilm';
-import { guidance, shotAfter, type Lesson, type LessonState } from '../lessons/lesson-definition';
+import { guidance, shotAfter, type LessonDefinition } from '../lessons/lesson-definition';
 import { SceneQuestions } from './SceneQuestions';
 import { SpokenFinalAnswer } from './SpokenFinalAnswer';
 
-export type PlayingLesson = LessonFilm<LessonState, string, unknown>;
+// What the panels read of a lesson: who teaches it, its script and its
+// final count.
+type PanelLesson<Shot extends string> = Pick<
+  LessonDefinition<FilmState<Shot>, Shot, string, unknown, string, object>,
+  'teacher' | 'script' | 'answer'
+>;
 
-type Props = {
-  lesson: Lesson;
+// What the panels need from the playing film: the scene on screen, a way to
+// move to another, and the teacher's voice, which questions and the answer
+// hold while the child speaks.
+type PanelFilm<Shot extends string> = Pick<
+  LessonFilm<FilmState<Shot>, Shot, unknown>,
+  'state' | 'go' | 'paused' | 'pause' | 'resume'
+>;
+
+type Props<Shot extends string> = {
+  lesson: PanelLesson<Shot>;
   scope: LearningScope;
-  film: PlayingLesson;
+  film: PanelFilm<Shot>;
   draft: ReturnType<typeof useLessonDraft>;
 };
 
@@ -20,10 +34,10 @@ type Props = {
 // answer; in every other scene a question about it; and the draft's state. A
 // correct answer ends the saved work, so its draft is discarded, and the film
 // plays on from the scene after the answer.
-export function LessonPanels({ lesson, scope, film, draft }: Props) {
+export function LessonPanels<Shot extends string>({ lesson, scope, film, draft }: Props<Shot>) {
   const { shot } = film.state;
   if (shot === 'opening') return null;
-  const { answer } = lesson;
+  const { answer, script } = lesson;
   return (
     <>
       {shot === answer.shot ? (
@@ -36,7 +50,7 @@ export function LessonPanels({ lesson, scope, film, draft }: Props) {
           narration={film}
           onDone={() => {
             void draft.discard();
-            const next = shotAfter(lesson, answer.shot);
+            const next = shotAfter(script, answer.shot);
             if (next) film.go(next);
           }}
         />
@@ -45,7 +59,7 @@ export function LessonPanels({ lesson, scope, film, draft }: Props) {
           scope={scope}
           teacher={lesson.teacher.name}
           stepId={shot}
-          guidance={guidance(lesson, shot)}
+          guidance={guidance(script, shot)}
           narration={film}
         />
       )}
