@@ -2,8 +2,13 @@ import type { ComponentType } from 'react';
 import type { Box } from '../components/lesson-stage/stage-look';
 import type { FilmState } from '../interaction/lesson-film';
 import type { BackdropId } from '../media/backdrops/backdrops';
-import type { TeacherId } from '../media/teachers/teachers';
-import type { LessonAnswer, LessonDefinition, ProblemVersion, Script } from './lesson-definition';
+import type {
+  LessonAnswer,
+  LessonDefinition,
+  ProblemVersion,
+  Script,
+  TeacherRole,
+} from './lesson-definition';
 
 // What the checks read of a lesson's definition: its version, its lines,
 // scenes and entry lines, its answer scene and hints, the library backdrop
@@ -14,7 +19,7 @@ export type LessonOutline = Readonly<{
   script: Pick<Script<string, string>, 'lines' | 'shots' | 'entryLines'>;
   answer: Pick<LessonAnswer<string>, 'shot' | 'hints'>;
   backdrop: BackdropId;
-  teacher: Readonly<{ id: TeacherId }>;
+  teacher: Pick<TeacherRole, 'id'>;
   staging: Box;
 }>;
 
