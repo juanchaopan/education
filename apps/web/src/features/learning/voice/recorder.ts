@@ -3,9 +3,17 @@ import {
   transcriptionMaxSeconds,
   type TranscriptionFormat,
 } from '@education/contracts';
+import { browserMeter, createListening, type Meter } from './listening';
 
-export type RecorderFailure = 'unsupported' | 'denied' | 'interrupted' | 'empty';
+// Why a recording gave nothing to hear: no recording on this device, no
+// permission, a recorder that broke off, no audio, a recording too short to
+// hold a word, or nobody speaking while the microphone listened.
+export type RecorderFailure =
+  'unsupported' | 'denied' | 'interrupted' | 'empty' | 'short' | 'quiet';
 export type Recording = { audio: Blob; format: TranscriptionFormat };
+// How a recording is ended: by the child letting go of the button, or, when
+// the microphone listens on its own, by the child falling quiet after speaking.
+export type RecordingMode = 'hold' | 'listen';
 type Events = {
   onStart(): void;
   onStop(recording: Recording): void;
@@ -14,13 +22,20 @@ type Events = {
 export type RecorderHost = {
   getUserMedia?: (constraints: MediaStreamConstraints) => Promise<MediaStream>;
   Recorder?: typeof MediaRecorder;
+  meter?: (stream: MediaStream) => Meter | undefined;
+  now?: () => number;
   document: Document;
 };
 // How a recording ends: kept for transcription, dropped by the child, or lost.
-type Ending = 'keep' | 'discard' | RecorderFailure;
+type Ending = 'keep' | 'discard' | 'quiet' | 'interrupted' | 'unsupported';
 type Outcome = Recording | RecorderFailure | undefined;
 type Choice = (typeof candidates)[number];
 type Microphone = { stream: MediaStream; Recorder: typeof MediaRecorder; choice: Choice };
+
+// Anything shorter cannot hold a spoken word, so it is not sent.
+const shortestRecordingMs = 500;
+// How often a listening microphone checks whether the child has finished.
+const listenEveryMs = 100;
 
 // WebM/Opus where the browser records it, otherwise MP4/AAC as Safari does.
 const candidates = [
@@ -33,13 +48,17 @@ export function recordingFormat(Recorder: Pick<typeof MediaRecorder, 'isTypeSupp
   return candidates.find(({ mimeType }) => Recorder.isTypeSupported(mimeType));
 }
 
-function browserHost(): RecorderHost {
+// The browser's microphone and recorder. Listening is measured on `audio`,
+// the lesson's audio context, when there is one.
+export function browserHost(audio?: () => AudioContext | undefined): RecorderHost {
   const devices = globalThis.navigator?.mediaDevices;
   return {
     getUserMedia: devices?.getUserMedia
       ? (constraints) => devices.getUserMedia(constraints)
       : undefined,
     Recorder: globalThis.MediaRecorder,
+    meter: (stream) => browserMeter(audio?.(), stream),
+    now: () => performance.now(),
     document,
   };
 }
@@ -67,12 +86,6 @@ async function openMicrophone(host: RecorderHost): Promise<Microphone | Recorder
   }
 }
 
-function outcome(ending: Ending, chunks: Blob[], recorder: MediaRecorder, choice: Choice): Outcome {
-  if (ending !== 'keep') return ending === 'discard' ? undefined : ending;
-  const audio = new Blob(chunks, { type: recorder.mimeType || choice.mimeType });
-  return audio.size ? { audio, format: choice.format } : 'empty';
-}
-
 function createRecorder({ stream, Recorder, choice }: Microphone) {
   try {
     return new Recorder(stream, {
@@ -84,41 +97,92 @@ function createRecorder({ stream, Recorder, choice }: Microphone) {
   }
 }
 
-// Records until stopped, the time limit, the page being hidden, the track
-// ending or a recorder error. The first of these decides the outcome, and the
-// microphone is released as soon as it happens. Returns nothing, with the
-// microphone released, when the browser refuses to record in the chosen format.
-function record(host: RecorderHost, microphone: Microphone, done: (result: Outcome) => void) {
+// Ends a listening recording once the child has spoken and fallen quiet, or
+// when nobody speaks. Returns how to stop listening.
+function listenFor(
+  host: RecorderHost,
+  stream: MediaStream,
+  now: () => number,
+  end: (how: Ending) => void,
+) {
+  const meter = host.meter?.(stream);
+  if (!meter) return () => {};
+  const heard = createListening(now());
+  const timer = setInterval(() => {
+    const result = heard(meter.level(), now());
+    if (result !== 'listening') end(result === 'spoken' ? 'keep' : 'quiet');
+  }, listenEveryMs);
+  return () => {
+    clearInterval(timer);
+    meter.close();
+  };
+}
+
+function outcome(
+  ending: Ending,
+  length: number,
+  chunks: Blob[],
+  recorder: MediaRecorder,
+  choice: Choice,
+): Outcome {
+  if (ending === 'discard') return undefined;
+  if (ending !== 'keep') return ending;
+  if (length < shortestRecordingMs) return 'short';
+  const audio = new Blob(chunks, { type: recorder.mimeType || choice.mimeType });
+  return audio.size ? { audio, format: choice.format } : 'empty';
+}
+
+// Records until the child stops, the time limit, or, when listening, the
+// child falling quiet. The page being hidden or the microphone going away
+// also ends it: a recording the child holds keeps what was said, as letting
+// go does, while one the page listened for on its own is dropped, as the
+// child may have left before saying anything. A recorder error loses it. The
+// first of these decides the outcome, and the microphone is released as soon
+// as it happens. Returns nothing, with the microphone released, when the
+// browser refuses to record in the chosen format.
+function record(
+  host: RecorderHost,
+  microphone: Microphone,
+  mode: RecordingMode,
+  done: (result: Outcome) => void,
+) {
   const recorder = createRecorder(microphone);
   if (!recorder) {
     release(microphone.stream);
     return;
   }
+  const now = host.now ?? Date.now;
   const chunks: Blob[] = [];
   const listeners = new AbortController();
+  const startedAt = now();
+  const leaving: Ending = mode === 'hold' ? 'keep' : 'interrupted';
   let ending: Ending | undefined;
-  const timer = setTimeout(() => end('keep'), transcriptionMaxSeconds * 1000);
+  let length = 0;
   const end = (how: Ending) => {
     if (ending) return;
     ending = how;
+    length = now() - startedAt;
     clearTimeout(timer);
+    stopListening();
     listeners.abort();
     if (recorder.state !== 'inactive') recorder.stop();
     release(microphone.stream);
   };
+  const timer = setTimeout(() => end('keep'), transcriptionMaxSeconds * 1000);
+  const stopListening = mode === 'listen' ? listenFor(host, microphone.stream, now, end) : () => {};
   recorder.ondataavailable = (event) => {
     if (event.data.size) chunks.push(event.data);
   };
   recorder.onerror = () => end('interrupted');
   recorder.onstop = () => {
     end('interrupted');
-    done(outcome(ending ?? 'interrupted', chunks, recorder, microphone.choice));
+    done(outcome(ending ?? 'interrupted', length, chunks, recorder, microphone.choice));
   };
   const { signal } = listeners;
   for (const track of microphone.stream.getAudioTracks())
-    track.addEventListener('ended', () => end('interrupted'), { signal });
+    track.addEventListener('ended', () => end(leaving), { signal });
   const hidden = () => {
-    if (host.document.hidden) end('interrupted');
+    if (host.document.hidden) end(leaving);
   };
   host.document.addEventListener('visibilitychange', hidden, { signal });
   try {
@@ -130,10 +194,12 @@ function record(host: RecorderHost, microphone: Microphone, done: (result: Outco
   return { end };
 }
 
-// One short recording at a time, started only by the child. Stopping keeps it
-// for transcription; cancelling, leaving the page, losing the microphone or a
-// recorder error drops it. A start the child cancelled ends silently, and the
-// audio exists only in memory until it is handed on.
+// One short recording at a time, started by the child or by a page that has
+// just asked the child a question out loud. Stopping keeps it for
+// transcription, and stopping before the microphone has opened is too short
+// to hold anything; cancelling drops it. A start that was stopped or
+// cancelled ends silently, and the audio exists only in memory until it is
+// handed on.
 export function createVoiceRecorder(events: Events, host: RecorderHost = browserHost()) {
   let session: ReturnType<typeof record>;
   let opening: { cancelled: boolean } | undefined;
@@ -144,8 +210,14 @@ export function createVoiceRecorder(events: Events, host: RecorderHost = browser
     else if (result) events.onStop(result);
   }
 
+  function cancelOpening() {
+    if (!opening || opening.cancelled) return false;
+    opening.cancelled = true;
+    return true;
+  }
+
   return {
-    async start() {
+    async start(mode: RecordingMode) {
       if (session || (opening && !opening.cancelled)) return;
       const request = { cancelled: false };
       opening = request;
@@ -156,13 +228,16 @@ export function createVoiceRecorder(events: Events, host: RecorderHost = browser
         return;
       }
       if (typeof microphone === 'string') return events.onFail(microphone);
-      session = record(host, microphone, report);
+      session = record(host, microphone, mode, report);
       if (session) events.onStart();
       else events.onFail('unsupported');
     },
-    stop: () => session?.end('keep'),
+    stop() {
+      if (cancelOpening()) events.onFail('short');
+      else session?.end('keep');
+    },
     cancel() {
-      if (opening) opening.cancelled = true;
+      cancelOpening();
       session?.end('discard');
     },
   };

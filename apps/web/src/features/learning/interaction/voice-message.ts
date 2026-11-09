@@ -7,17 +7,16 @@ import type { RecorderFailure } from '../voice/recorder';
 // only wants another try leaves it out.
 export type Alternative = { instead: string; or?: string };
 
-// Voice is one way to answer, never the only one: by default the child types.
-export const typing: Alternative = { instead: '可以直接打字告诉我。', or: '直接打字' };
-
 type Failure = Extract<VoiceState, { status: 'unavailable' | 'fallback' }>;
 
 // Failures of this one recording, which speaking again may get past. The
 // others mean speech cannot be used here: no microphone, no consent or no
-// transcription service.
+// transcription service. A recording too short to send says for itself how
+// to try again.
 const retryReasons = new Set<RecorderFailure | AiHelpFallback>([
   'interrupted',
   'empty',
+  'quiet',
   'invalid-input',
   'unavailable',
   'timeout',
@@ -51,24 +50,28 @@ const reasons: Record<RecorderFailure | AiHelpFallback, string> = {
   denied: '没有拿到麦克风权限。',
   interrupted: '录音中断了，这段没有保存。',
   empty: '这次没有录到声音。',
+  short: '还没录上就松开了。按住按钮，看到「正在听」再说话，说完再松开。',
+  quiet: '没有听到你说话。',
 };
 
 function failureMessage(state: Failure, alternative: Alternative) {
   const reason = reasons[state.reason];
+  if (state.reason === 'short') return reason;
   if (state.reason === 'denied') return `${reason}${permission(alternative)}`;
   if (state.reason === 'invalid-input') return `${reason}${again(alternative, '说短一点再试')}`;
-  return `${reason}${retryable(state) ? again(alternative, '再录一次') : alternative.instead}`;
+  return `${reason}${retryable(state) ? again(alternative, '再说一次') : alternative.instead}`;
 }
 
+// The progress of a recording the child holds a button for.
 const progress = {
   idle: '',
-  starting: '正在打开麦克风…',
-  recording: `正在录音。说完点「说完了」，最长 ${transcriptionMaxSeconds} 秒。`,
+  starting: '正在打开麦克风，先别松开…',
+  recording: `正在听。说完松开按钮，最长 ${transcriptionMaxSeconds} 秒。`,
   transcribing: '正在听你说的话…',
-  review: '我听到的是下面这句。不对的地方可以直接改，改好再点「用这句话」。',
+  review: '我听到的是下面这句。不对的地方可以直接改。',
 } as const;
 
-export function voiceMessage(state: VoiceState, alternative: Alternative = typing) {
+export function voiceMessage(state: VoiceState, alternative: Alternative) {
   switch (state.status) {
     case 'unavailable':
     case 'fallback':

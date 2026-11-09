@@ -8,9 +8,8 @@ type Props = ComponentProps<typeof SpokenAnswerPanel>;
 
 function show(step: Props['step'], extra: Partial<Props> = {}) {
   const on = {
-    onSpeak: vi.fn(),
-    onStop: vi.fn(),
-    onCancel: vi.fn(),
+    onListen: vi.fn(),
+    onFinish: vi.fn(),
     onStopWaiting: vi.fn(),
     onConfirm: vi.fn(),
     onChoose: vi.fn(),
@@ -24,6 +23,7 @@ function show(step: Props['step'], extra: Partial<Props> = {}) {
       step={step}
       choices={[3, 6, 9]}
       canHint={false}
+      blocked={false}
       {...on}
       {...extra}
     />,
@@ -31,13 +31,31 @@ function show(step: Props['step'], extra: Partial<Props> = {}) {
   return on;
 }
 
+it('needs no button to start: it waits for the question, then listens until the child is done', async () => {
+  show({ kind: 'waiting' });
+  expect(screen.getByRole('status')).toHaveTextContent('听完这句话，就可以说出答案了。');
+  expect(screen.queryByRole('button')).toBeNull();
+  const listening = show({ kind: 'listening', message: '我在听，说出你的答案吧。' });
+  expect(screen.getAllByRole('status')[1]).toHaveTextContent('我在听');
+  await userEvent.click(screen.getByRole('button', { name: '说完了' }));
+  expect(listening.onFinish).toHaveBeenCalledOnce();
+});
+
 it('asks the child to confirm the number that was heard before it counts', async () => {
   const on = show({ kind: 'confirm', heard: '九根', count: 9 });
   expect(screen.getByRole('status')).toHaveTextContent('我听到你说「九根」，是 9 吗？');
   await userEvent.click(screen.getByRole('button', { name: '对，是 9' }));
   expect(on.onConfirm).toHaveBeenCalledOnce();
   await userEvent.click(screen.getByRole('button', { name: '不对，再说一次' }));
-  expect(on.onSpeak).toHaveBeenCalledOnce();
+  expect(on.onListen).toHaveBeenCalledOnce();
+});
+
+it('lets the child ask to speak again, except while someone else is speaking', async () => {
+  const on = show({ kind: 'ask', message: '没有听到你说话。可以再说一次。', choices: false });
+  await userEvent.click(screen.getByRole('button', { name: '点这里再说' }));
+  expect(on.onListen).toHaveBeenCalledOnce();
+  show({ kind: 'ask', message: '', choices: false }, { blocked: true });
+  expect(screen.getAllByRole('button', { name: '点这里再说' })[1]).toBeDisabled();
 });
 
 it('shows numbers to tap only when the step offers them', async () => {

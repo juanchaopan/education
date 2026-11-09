@@ -1,39 +1,54 @@
-import { useEffect, useEffectEvent, useRef, useState } from 'react';
-import { useReloadReadiness } from '../../../shared/lib/reload-readiness';
-import type { RecorderHost } from '../voice/recorder';
+import { useRef } from 'react';
 import type { LearningScope } from './learning-request';
+import { useQuestionHelp } from './useQuestionHelp';
 import { useTeachingFeedback } from './useTeachingFeedback';
-import { createVoiceInput, type VoiceState } from './voice-input';
-import { voiceReadiness } from './voice-readiness';
+import { useVoiceInput } from './useVoiceInput';
+import type { VoiceOptions } from './voice-input';
 
-// A question the child asks out loud in the middle of a scene. What was heard
-// goes to the teacher straight away, about the scene it was asked in: a
-// question is not an answer, so there is nothing to confirm and nothing is
-// recorded as an attempt. A reload waits while the child is asking.
-export function useLessonQuestion(scope: LearningScope, stepId: string, host?: RecorderHost) {
-  const [voice, setVoice] = useState<VoiceState>({ status: 'idle' });
+type Options = VoiceOptions & {
+  // The step in which the child gives the final answer, where a question is
+  // help and is recorded as such.
+  answerStep?: string;
+};
+
+// A question the child asks out loud in the middle of a scene, holding the
+// button while speaking. The child reads over what was heard and corrects it
+// before it goes to the teacher, about the scene it was asked in, or drops
+// it. A question is never an attempt; sent while the child is answering it
+// is recorded as help first, and does not go out until that is recorded.
+export function useLessonQuestion(
+  scope: LearningScope,
+  stepId: string,
+  { answerStep, ...voiceOptions }: Options = {},
+) {
+  const voice = useVoiceInput(scope, stepId, 'hold', voiceOptions);
   const feedback = useTeachingFeedback(scope);
   const askedIn = useRef(stepId);
-  const ask = useEffectEvent((text: string) => {
-    void feedback.ask({ stepId: askedIn.current, text, drawing: [] });
-  });
-  const [input] = useState(() =>
-    createVoiceInput(setVoice, { host, onHeard: (text) => ask(text) }),
-  );
-  useEffect(() => () => input.dispose(), [input]);
-  useReloadReadiness(voiceReadiness(voice));
+  const answering = stepId === answerStep;
+  const help = useQuestionHelp(scope, answering);
 
   return {
-    voice,
+    voice: voice.state,
+    blocked: voice.blocked,
     reply: feedback.state,
-    start() {
+    sending: help.recording,
+    sendFailed: help.failed,
+    press() {
       askedIn.current = stepId;
-      input.start(scope, stepId);
+      help.reset();
+      return voice.start();
     },
-    stop: input.stop,
-    cancel: input.cancel,
+    release: voice.release,
+    edit: voice.edit,
+    drop: voice.cancel,
+    async send() {
+      if (voice.state.status !== 'review' || !voice.state.text.trim()) return;
+      if (answering && !(await help.counted())) return;
+      const text = voice.confirm();
+      if (text) void feedback.ask({ stepId: askedIn.current, text, drawing: [] });
+    },
     guide() {
-      input.guide();
+      voice.guide();
       feedback.guide();
     },
   };

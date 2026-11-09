@@ -49,6 +49,9 @@ export class FakeRecorder {
   }
 }
 
+// A microphone, its page and its clock. Each reading of the clock moves it on
+// by `clock.step` milliseconds, a second unless a test makes recordings
+// shorter; `sound.level` is how loud the room is.
 export function fakeMicrophone(getUserMedia?: RecorderHost['getUserMedia']) {
   const track = new FakeTrack();
   const stream = {
@@ -56,10 +59,19 @@ export function fakeMicrophone(getUserMedia?: RecorderHost['getUserMedia']) {
     getAudioTracks: () => [track],
   } as unknown as MediaStream;
   const document = Object.assign(new EventTarget(), { hidden: false }) as unknown as Document;
+  const clock = { time: 0, step: 1000 };
+  const sound = { level: 0, closed: false };
   const host: RecorderHost = {
     getUserMedia: getUserMedia ?? vi.fn(async () => stream),
     Recorder: FakeRecorder as unknown as typeof MediaRecorder,
+    meter: () => ({
+      level: () => sound.level,
+      close: () => {
+        sound.closed = true;
+      },
+    }),
+    now: () => (clock.time += clock.step),
     document,
   };
-  return { track, stream, document, host };
+  return { track, stream, document, clock, sound, host };
 }

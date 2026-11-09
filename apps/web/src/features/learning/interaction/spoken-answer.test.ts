@@ -8,6 +8,18 @@ const idle: VoiceState = { status: 'idle' };
 const wrong: Judgement = { status: 'judged', outcome: 'incorrect', count: 3 };
 const words: CountWords = { unit: '根', explain: (count) => `不是 ${count}` };
 
+it('waits for the microphone to open by itself, then listens for the answer', () => {
+  expect(answerStep(idle, open, words, true)).toEqual({ kind: 'waiting' });
+  expect(answerStep({ status: 'starting' }, open, words, true)).toEqual({
+    kind: 'listening',
+    message: '正在打开麦克风…',
+  });
+  expect(answerStep({ status: 'recording' }, open, words)).toEqual({
+    kind: 'listening',
+    message: '我在听，说出你的答案吧。说完停一下就好。',
+  });
+});
+
 it('asks for the confirmation of a heard number before anything is sent', () => {
   expect(answerStep({ status: 'review', text: '九根' }, open, words)).toEqual({
     kind: 'confirm',
@@ -24,11 +36,21 @@ it('hears the count in the answer’s unit inside a whole sentence', () => {
   });
 });
 
-it('asks again, without judging, when no single number was heard', () => {
+it('asks again, without judging, when no single number was heard or nothing was said', () => {
   const step = answerStep({ status: 'review', text: '黄瓜' }, open, words);
   expect(step).toMatchObject({ kind: 'ask', choices: false });
   expect(answerStep({ status: 'unheard' }, open, words)).toMatchObject({
     kind: 'ask',
+    choices: false,
+  });
+  expect(answerStep({ status: 'unavailable', reason: 'quiet' }, open, words)).toEqual({
+    kind: 'ask',
+    message: '没有听到你说话。可以再说一次。',
+    choices: false,
+  });
+  expect(answerStep({ status: 'unavailable', reason: 'short' }, open, words)).toEqual({
+    kind: 'ask',
+    message: '这次没录上，可以再说一次。',
     choices: false,
   });
 });
@@ -58,7 +80,7 @@ it('says what to do instead of speaking in the words of tapping', () => {
     choices: true,
   });
   expect(answerStep({ status: 'unavailable', reason: 'empty' }, open, words)).toMatchObject({
-    message: '这次没有录到声音。可以再录一次。',
+    message: '这次没有录到声音。可以再说一次。',
   });
 });
 
@@ -87,7 +109,7 @@ it('finishes with a correct answer and tells whether a hint helped', () => {
     ['independent', false],
     ['assisted', true],
   ] as const)
-    expect(answerStep(idle, { status: 'judged', outcome, count: 9 }, words)).toEqual({
+    expect(answerStep(idle, { status: 'judged', outcome, count: 9 }, words, true)).toEqual({
       kind: 'done',
       assisted,
     });

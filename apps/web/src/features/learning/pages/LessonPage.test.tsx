@@ -125,13 +125,25 @@ it('saves each scene a signed-in child reaches and asks about the scene on scree
   await waitFor(() => expect(savedSteps(fetch)).toEqual(['look', 'count']));
 });
 
-it('resumes a signed-in child at the scene saved last time, in the answer scene', async () => {
+it('resumes a signed-in child in the answer scene, where the child can also ask', async () => {
   serve(savedAt('count'));
   open('token');
   await userEvent.click(await screen.findByRole('button', { name: /接着上次的地方/ }));
   expect(caption()).toHaveTextContent('一共有几颗？');
   expect(screen.getByRole('region', { name: '说出答案' })).toBeInTheDocument();
-  expect(screen.queryByRole('region', { name: '问问小猫头鹰' })).not.toBeInTheDocument();
+  expect(screen.getByRole('region', { name: '问问小猫头鹰' })).toBeInTheDocument();
+});
+
+it('listens for the answer by itself once the question is heard, and offers numbers without a microphone', async () => {
+  serve(savedAt('count'));
+  open('token');
+  await userEvent.click(await screen.findByRole('button', { name: /接着上次的地方/ }));
+  const answer = screen.getByRole('region', { name: '说出答案' });
+  expect(within(answer).getByRole('status')).toHaveTextContent('听完这句话，就可以说出答案了。');
+  expect(within(answer).queryByRole('button')).toBeNull();
+  await hearLineToEnd();
+  expect(await within(answer).findByRole('group', { name: '点一个数字回答' })).toBeInTheDocument();
+  expect(within(answer).getByRole('status')).toHaveTextContent('这台设备现在不能录音。');
 });
 
 it('starts over at the first scene when the saved step is not a later scene', async () => {

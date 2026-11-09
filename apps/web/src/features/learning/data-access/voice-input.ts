@@ -1,5 +1,12 @@
 import type { AiHelpFallback, TranscriptionResult } from '@education/contracts';
-import { createVoiceRecorder, type RecorderFailure, type RecorderHost } from '../voice/recorder';
+import { usesMicrophone, type MicrophoneTurn } from '../voice/microphone-turn';
+import {
+  browserHost,
+  createVoiceRecorder,
+  type RecorderFailure,
+  type RecorderHost,
+  type RecordingMode,
+} from '../voice/recorder';
 import { createAiHelpRequest } from './ai-help-request';
 import type { LearningScope } from './learning-request';
 import { requestTranscription } from './transcription-request';
@@ -13,11 +20,12 @@ export type VoiceState =
 type RequestState = TranscriptionResult | { status: 'pending' | 'guidance' };
 type Target = { scope: LearningScope; stepId: string };
 type Transcriptions = ReturnType<typeof createAiHelpRequest<TranscriptionResult>>;
-type Options = {
+// `audio` is the lesson's audio context, which a listening microphone is
+// measured on; `host` stands in for the browser's microphone.
+export type VoiceOptions = {
   host?: RecorderHost;
-  // Hands what was heard straight on, without a review: for a question,
-  // which is not an answer and has nothing to confirm.
-  onHeard?: (text: string) => void;
+  turn?: MicrophoneTurn;
+  audio?: () => AudioContext | undefined;
 };
 
 function fromRequest(state: RequestState): VoiceState {
@@ -38,7 +46,7 @@ function transcribingRecorder(
   set: (state: VoiceState) => void,
   requests: Transcriptions,
   target: () => Target | undefined,
-  host?: RecorderHost,
+  host: RecorderHost,
 ) {
   return createVoiceRecorder(
     {
@@ -56,46 +64,54 @@ function transcribingRecorder(
   );
 }
 
-// Records one answer for a step, asks for its transcription and holds what was
-// heard while the child corrects it. One request runs at a time, a slow one can
-// be abandoned for typing, a late reply after that is ignored, and only a
-// confirmed, non-empty text is handed on.
+// Records what the child says for a step, asks for its transcription and holds
+// what was heard while the child reads it over and corrects it. A recording is
+// held to speak and ends when the child lets go, or listens on its own and
+// ends when the child falls quiet. With a lesson's microphone turn it starts
+// only while no one else is speaking, and a listening one gives way to a child
+// pressing to speak. One request runs at a time, a slow one can be abandoned,
+// a late reply after that is ignored, and only a confirmed, non-empty text is
+// handed on.
 export function createVoiceInput(
   update: (state: VoiceState) => void,
-  { host, onHeard }: Options = {},
+  { host, turn, audio }: VoiceOptions = {},
 ) {
+  const owner = Symbol('voice input');
   let state: VoiceState = { status: 'idle' };
   let target: Target | undefined;
   const set = (next: VoiceState) => {
-    const heard = onHeard && next.status === 'review' ? next.text.trim() : undefined;
-    state = heard === undefined ? next : { status: 'idle' };
+    state = next;
+    if (!usesMicrophone(next.status)) turn?.give(owner);
     update(state);
-    if (heard) onHeard?.(heard);
   };
   const requests = createAiHelpRequest<TranscriptionResult>((next) => set(fromRequest(next)));
-  const recorder = transcribingRecorder(set, requests, () => target, host);
+  const recorder = transcribingRecorder(set, requests, () => target, host ?? browserHost(audio));
   const dispose = () => {
     recorder.cancel();
     requests.dispose();
   };
+  const cancel = () => {
+    dispose();
+    set({ status: 'idle' });
+  };
   return {
-    start(scope: LearningScope, stepId: string) {
+    // Returns whether the microphone could be had.
+    start(scope: LearningScope, stepId: string, mode: RecordingMode) {
+      if (turn && !turn.take(owner, mode === 'listen' ? cancel : undefined)) return false;
       dispose();
       target = { scope, stepId };
       set({ status: 'starting' });
-      void recorder.start();
+      void recorder.start(mode);
+      return true;
     },
-    // Recognition starts as soon as the recording closes, so the child sees it
-    // is being handled and cannot drop the finished recording by mistake.
-    stop() {
-      if (state.status !== 'recording') return;
-      set({ status: 'transcribing' });
+    // The child letting go of the button. A finished recording goes to
+    // recognition at once, so the child sees it is being handled.
+    release() {
+      if (!usesMicrophone(state.status)) return;
+      if (state.status === 'recording') set({ status: 'transcribing' });
       recorder.stop();
     },
-    cancel() {
-      dispose();
-      set({ status: 'idle' });
-    },
+    cancel,
     guide: requests.guide,
     edit(text: string) {
       if (state.status === 'review') set({ status: 'review', text });
@@ -106,9 +122,11 @@ export function createVoiceInput(
       if (text) set({ status: 'idle' });
       return text || undefined;
     },
-    discard() {
-      if (state.status === 'review') set({ status: 'idle' });
+    // Whether someone else is speaking, so this input cannot start.
+    blocked: () => !!turn?.blocks(owner),
+    dispose() {
+      dispose();
+      turn?.give(owner);
     },
-    dispose,
   };
 }
