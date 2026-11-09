@@ -10,8 +10,8 @@
   width: 64px;
   height: 64px;
   border-radius: var(--radius-lg);
-  color: var(--teal);
-  background: var(--teal-light);
+  color: var(--primary-hi);
+  background: var(--accent-soft);
   font-size: var(--text-xl);
 }
 .empty h3 {
@@ -19,7 +19,7 @@
   font-size: var(--text-lg);
 }
 .empty p {
-  color: var(--muted);
+  color: var(--ink-soft);
   line-height: 1.8;
   margin: 0;
 }

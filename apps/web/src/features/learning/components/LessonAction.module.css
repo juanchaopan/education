@@ -3,18 +3,18 @@
   padding-inline: var(--space-4);
   border: 1px solid var(--line);
   border-radius: var(--radius-pill);
-  background: var(--teal-light);
-  color: var(--teal-dark);
+  background: var(--accent-soft);
+  color: var(--primary);
   font: inherit;
   font-weight: 700;
 }
 
 .button:disabled {
-  background: var(--paper);
-  color: var(--muted);
+  background: var(--surface);
+  color: var(--ink-soft);
 }
 
 .button:focus-visible {
-  outline: 2px solid var(--teal-dark);
+  outline: 2px solid var(--primary);
   outline-offset: 2px;
 }

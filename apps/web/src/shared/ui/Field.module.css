@@ -9,9 +9,9 @@
   width: 100%;
   min-width: 0;
   color: var(--ink);
-  background: var(--paper);
-  border: 1px solid var(--muted);
-  border-radius: var(--radius-sm);
+  background: var(--surface);
+  border: 1px solid var(--ink-soft);
+  border-radius: var(--radius);
 }
 .input {
   padding: var(--space-3);
@@ -22,7 +22,7 @@
   font: inherit;
 }
 .emphasisLabel {
-  color: var(--teal-dark);
+  color: var(--primary);
 }
 .emphasisValue {
   font-weight: 700;

@@ -7,8 +7,8 @@
   padding: 0;
   border: 1px solid var(--line);
   border-radius: 50%;
-  color: var(--teal-dark);
-  background: var(--paper);
+  color: var(--primary);
+  background: var(--surface);
   box-shadow: var(--shadow);
   font-size: var(--text-lg);
   cursor: pointer;

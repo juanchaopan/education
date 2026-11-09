@@ -3,7 +3,7 @@
 }
 body {
   margin: 0;
-  background: var(--background);
+  background: var(--bg);
   color: var(--ink);
   font-family: 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', system-ui, sans-serif;
   line-height: 1.6;
@@ -20,7 +20,7 @@ button {
   touch-action: manipulation;
 }
 :focus-visible {
-  outline: 3px solid var(--teal-dark);
+  outline: 3px solid var(--primary);
   outline-offset: 4px;
 }
 main {
@@ -30,7 +30,7 @@ main:focus {
   outline: none;
 }
 ::selection {
-  background: var(--teal-light);
+  background: var(--accent-soft);
 }
 @media (prefers-reduced-motion: reduce) {
   *,

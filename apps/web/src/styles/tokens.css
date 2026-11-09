@@ -1,15 +1,25 @@
+/* Design tokens. Components name a colour by its role, never by its hue, so a
+   theme can repaint the site by changing the values here alone. */
 :root {
-  --background: #faf8f2;
-  --paper: #fffefa;
+  /* The page, the cards on it, and the warmer surface of tiles. */
+  --bg: #faf8f2;
+  --surface: #fffefa;
+  --surface-2: #f3e8d6;
+  /* Body text and secondary text. */
   --ink: #243c37;
-  --muted: #596c66;
-  --teal: #398271;
-  --teal-dark: #226451;
-  --teal-light: #e8f0e9;
+  --ink-soft: #596c66;
+  /* Borders and dividers. */
   --line: #dedfd4;
-  --gold: #e5b950;
-  --coral: #dd9276;
-  --peach: #f3e8d6;
+  /* The main action: its face, its highlight and the text on it. */
+  --primary: #226451;
+  --primary-hi: #398271;
+  --primary-ink: #fffefa;
+  /* Highlights: the accent itself, the soft tint behind highlighted and
+     selected things, and a second accent. */
+  --accent: #e5b950;
+  --accent-soft: #e8f0e9;
+  --accent-2: #dd9276;
+  --shadow: 0 16px 40px #243c3710;
   --space-2: 0.5rem;
   --space-3: 0.75rem;
   --space-4: 1rem;
@@ -21,10 +31,11 @@
   --text-base: 1.0625rem;
   --text-lg: 1.375rem;
   --text-xl: 1.75rem;
-  --radius-sm: 0.5rem;
+  /* Corners: --radius for inputs, notices and small tiles, --radius-lg for
+     cards and panels, --radius-pill for fully round ends. */
+  --radius: 0.5rem;
   --radius-lg: 1.5rem;
   --radius-pill: 999px;
-  --shadow: 0 16px 40px #243c3710;
   /* The smallest area a child's finger can reliably hit. */
   --touch-target: 2.75rem;
   color-scheme: light;
