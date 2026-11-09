@@ -1,12 +1,11 @@
 import { expect, test, type Page } from '@playwright/test';
+import { sourceName } from './built-file.js';
 
-// The library pictures a page asks for, by file name without the build's
-// content hash.
+// The library pictures a page asks for, by source file name.
 function picturesAsked(page: Page) {
   const asked = new Set<string>();
   page.on('request', (request) => {
-    const name = new URL(request.url()).pathname.split('/').pop() ?? '';
-    if (name.endsWith('.webp')) asked.add(name.replace(/-[\w-]{8}\.webp$/, '.webp'));
+    if (new URL(request.url()).pathname.endsWith('.webp')) asked.add(sourceName(request.url()));
   });
   return asked;
 }
@@ -23,5 +22,5 @@ test('the problem list loads no library pictures, and a lesson only its own', as
   await lesson.click();
   await page.getByRole('button', { name: /开始短片/ }).click({ timeout: 30_000 });
   await expect(page.getByRole('status').filter({ hasText: '菜园里有两棵青菜' })).toBeVisible();
-  await expect.poll(() => [...asked].sort()).toEqual(['garden-morning.webp', 'rabbit.webp']);
+  await expect.poll(() => [...asked].sort()).toEqual(['garden-morning', 'rabbit']);
 });
