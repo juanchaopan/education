@@ -141,12 +141,9 @@ test.describe('a lesson page', () => {
     const { narration, site } = await newReleaseWhileTheFilmPlays(page);
     expect(site.loads).toBe(1);
     expect(narration.told()).not.toContain('question ended');
-    await page
-      .getByRole('navigation', { name: '主导航' })
-      .getByRole('link', { name: '探索题目' })
-      .click();
+    await page.getByRole('button', { name: '返回', exact: true }).click();
     await expect.poll(() => site.loads).toBe(2);
-    await expect(page).toHaveURL(/\/$/);
+    await expect(page).toHaveURL(/\/\?grade=/);
     await expect(releaseName(page)).toHaveAttribute('content', newer);
   });
 });

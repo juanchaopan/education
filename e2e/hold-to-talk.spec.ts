@@ -1,5 +1,6 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { expect, test, type Locator, type Page, type Request } from '@playwright/test';
+import { gardenApi, round, signInAtTheGardenAnswer } from './child-at-the-answer.js';
 import { centreOf, holdWhile } from './hold.js';
 
 // Speaking in the garden lesson with a real browser microphone. Chromium
@@ -49,9 +50,6 @@ test.use({
   },
 });
 
-const lesson = '/api/v1/problems/garden-balance/1';
-const round = '11111111-1111-1111-1111-111111111111';
-
 // What the lesson asked of the server, in order.
 type Asked = { path: string; body?: Record<string, unknown> };
 
@@ -68,28 +66,20 @@ async function serveLesson(page: Page, heard: readonly string[]) {
       body: body ? JSON.parse(body) : undefined,
     });
   };
-  const savedAnswer = {
-    revision: '33333333-3333-3333-3333-333333333333',
-    expiresAt: '2099-01-01T00:00:00.000Z',
-    content: { stepId: 'answer', drawing: [] },
-  };
-  await page.route('**/api/v1/children/session', (route) =>
-    route.fulfill({ json: { role: 'child', nickname: '小鹿', csrfToken: 'a'.repeat(43) } }),
-  );
-  await page.route(`**${lesson}/draft`, (route) => route.fulfill({ json: { draft: savedAnswer } }));
-  await page.route(`**${lesson}/answer`, (route) => {
+  await signInAtTheGardenAnswer(page);
+  await page.route(`**${gardenApi}/answer`, (route) => {
     note(route.request());
     const body = route.request().postDataJSON() as { action?: string; attemptId?: string } | null;
     if (!body) return route.fulfill({ json: { round } });
     if (body.action === 'question') return route.fulfill({ json: { helped: true } });
     return route.fulfill({ json: { attemptId: body.attemptId, outcome: 'assisted' } });
   });
-  await page.route(`**${lesson}/transcription`, (route) => {
+  await page.route(`**${gardenApi}/transcription`, (route) => {
     note(route.request());
     const text = heard[Math.min(recordings++, heard.length - 1)];
     return route.fulfill({ json: { status: 'ready', text } });
   });
-  await page.route(`**${lesson}/feedback`, (route) => {
+  await page.route(`**${gardenApi}/feedback`, (route) => {
     note(route.request());
     const { stepId } = route.request().postDataJSON() as { stepId: string };
     return route.fulfill({

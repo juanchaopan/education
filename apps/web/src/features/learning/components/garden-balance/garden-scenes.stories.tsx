@@ -6,6 +6,7 @@ import { arrive, type GardenState } from '../../lessons/garden-balance/garden-st
 import { lines } from '../../lessons/garden-balance/script';
 import { stageLook } from '../../lessons/lesson-definition';
 import { LessonStage } from '../lesson-stage/LessonStage';
+import { StoryFrame } from '../lesson-stage/StoryFrame';
 import { GardenScene } from './garden-scenes';
 
 type FilmArgs = Omit<ComponentProps<typeof LessonStage>, 'look' | 'shot' | 'children'> & {
@@ -18,15 +19,17 @@ const look = stageLook(gardenLesson);
 // The garden scenes on the lesson stage, as the lesson page shows them.
 function GardenFilm({ state, handling, ...stage }: FilmArgs) {
   return (
-    <LessonStage
-      {...stage}
-      look={look}
-      shot={state.shot}
-      defs={gardenLesson.defs}
-      ambience={gardenLesson.ambience}
-    >
-      <GardenScene state={state} handling={handling} />
-    </LessonStage>
+    <StoryFrame>
+      <LessonStage
+        {...stage}
+        look={look}
+        shot={state.shot}
+        defs={gardenLesson.defs}
+        ambience={gardenLesson.ambience}
+      >
+        <GardenScene state={state} handling={handling} />
+      </LessonStage>
+    </StoryFrame>
   );
 }
 
@@ -37,7 +40,6 @@ const meta = {
     state: arrive('leaves').state,
     handling: {},
     speaking: false,
-    narrow: false,
     entryLabel: '开始短片',
     onEnter: () => {},
     onReplay: () => {},

@@ -12,7 +12,6 @@ function stage() {
       look={storyLook}
       shot="first"
       speaking={false}
-      narrow={false}
       entryLabel="开始短片"
       onReplay={() => {}}
       onActivate={onActivate}

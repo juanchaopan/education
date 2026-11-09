@@ -1,23 +1,39 @@
 import { Fragment, type ReactNode } from 'react';
 import { useParams } from 'react-router-dom';
 import type { ProblemSummary } from '@education/contracts';
+import { problemPath } from '../../../shared/lib/problem-path';
+import { useLeave } from '../../../shared/lib/useLeave';
 import { EmptyState } from '../../../shared/ui/EmptyState';
-import { StandaloneLink } from '../../../shared/ui/StandaloneLink';
+import { FullscreenFrame } from '../../../shared/ui/FullscreenFrame';
 import { useProblem } from '../data-access/useProblem';
 import { catalogPath } from '../model';
-import { problemPath } from '../../../shared/lib/problem-path';
 
 // Each problem version's own page, keyed by problemPath. The app shell supplies
 // them, so a page can come from whichever feature teaches it.
 export type ProblemPages = ReadonlyMap<string, (problem: ProblemSummary) => ReactNode>;
 
+// The full-screen frame and its way back. Leaving follows every write on its
+// way to the server, such as each hint and answer, so only the frame redraws
+// for them, never the problem's page it holds.
+function LeavingFrame({ fallback, children }: { fallback: string; children: ReactNode }) {
+  const back = useLeave(fallback);
+  return (
+    <FullscreenFrame waiting={back.waiting} onBack={back.leave}>
+      {children}
+    </FullscreenFrame>
+  );
+}
+
+// A problem fills the screen. Its back button returns the child to the page
+// they came from, or, for a link opened directly, to the problem's own
+// category of the catalog; a problem that cannot be found goes back to the
+// catalog as it first opens.
 export function ProblemPage({ pages }: { pages: ProblemPages }) {
   const { id = '', version = '' } = useParams();
   const query = useProblem(id, version);
   const problem = query.data;
   return (
-    <section aria-label="题目">
-      <StandaloneLink to={problem ? catalogPath(problem) : '/'}>返回题库</StandaloneLink>
+    <LeavingFrame fallback={problem ? catalogPath(problem) : '/'}>
       {query.isPending && (
         <EmptyState icon="clock" title="正在打开这道题" description="请稍等一下。" />
       )}
@@ -33,7 +49,7 @@ export function ProblemPage({ pages }: { pages: ProblemPages }) {
         />
       )}
       {query.isSuccess && <ProblemContent problem={query.data} pages={pages} />}
-    </section>
+    </LeavingFrame>
   );
 }
 
