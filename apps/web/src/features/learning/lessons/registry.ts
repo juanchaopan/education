@@ -1,26 +1,20 @@
 import type { ComponentType } from 'react';
-import type { FilmLine, FilmState } from '../interaction/lesson-film';
-import type { LessonDefinition } from './lesson-definition';
-
-type Problem = Readonly<{ id: string; version: number }>;
+import type { FilmState } from '../interaction/lesson-film';
+import type { LessonAnswer, LessonDefinition, ProblemVersion, Script } from './lesson-definition';
 
 // What the checks read of a lesson's definition: its version, its lines,
 // scenes and entry lines, and its answer scene and hints. Every lesson's
 // definition is one, whatever its own types.
 export type LessonOutline = Readonly<{
-  problem: Problem;
-  script: Readonly<{
-    lines: Readonly<Record<string, FilmLine>>;
-    shots: readonly string[];
-    entryLines: Readonly<Record<string, readonly string[]>>;
-  }>;
-  answer: Readonly<{ shot: string; hints: readonly string[] }>;
+  problem: ProblemVersion;
+  script: Pick<Script<string, string>, 'lines' | 'shots' | 'entryLines'>;
+  answer: Pick<LessonAnswer<string>, 'shot' | 'hints'>;
 }>;
 
 // A maintained problem version, its lesson's definition and the lesson's
 // page, both loaded only when asked for.
 export type LessonEntry = Readonly<{
-  problem: Problem;
+  problem: ProblemVersion;
   definition: () => Promise<LessonOutline>;
   page: () => Promise<ComponentType<{ csrf?: string }>>;
 }>;
@@ -35,7 +29,7 @@ function lesson<
   Piece extends string,
   Look extends object,
 >(
-  problem: Problem,
+  problem: ProblemVersion,
   definition: () => Promise<LessonDefinition<State, Shot, Line, Move, Piece, Look>>,
 ): LessonEntry {
   return {

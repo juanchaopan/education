@@ -3,6 +3,7 @@
 
 // 一道题自己的文件夹：lessons/<题目>/ 和 components/<题目>/。components/lesson-stage/ 是所有题目共用的画面部件，不算题目。
 const lessonFolder = '^src/features/learning/(?:lessons|components)/(?!lesson-stage/)';
+const lessonFiles = `${lessonFolder}[^/]+/`;
 
 module.exports = {
   forbidden: [
@@ -44,19 +45,16 @@ module.exports = {
         '一道题的文件不引用另一道题的文件。几道题都要用的东西放进公共部件（components/lesson-stage/、interaction/、lessons/lesson-definition.ts）。',
       severity: 'error',
       from: { path: `${lessonFolder}([^/]+)/` },
-      to: {
-        path: `${lessonFolder}[^/]+/`,
-        pathNot: '^src/features/learning/(?:lessons|components)/$1/',
-      },
+      to: { path: lessonFiles, pathNot: `${lessonFolder}$1/` },
     },
     {
       name: 'lessons-loaded-on-demand',
       comment:
         '题目的文件和公共题目页只在孩子打开题目时加载：题目以外的代码只能用动态 import 引用它们，题库页因此不带任何题目的代码。',
       severity: 'error',
-      from: { pathNot: `${lessonFolder}[^/]+/` },
+      from: { pathNot: lessonFiles },
       to: {
-        path: `(${lessonFolder}[^/]+/|^src/features/learning/pages/LessonPage[.]tsx$)`,
+        path: `(${lessonFiles}|^src/features/learning/pages/LessonPage[.]tsx$)`,
         dependencyTypesNot: ['dynamic-import', 'type-only'],
       },
     },

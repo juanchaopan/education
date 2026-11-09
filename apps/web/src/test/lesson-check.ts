@@ -1,22 +1,19 @@
-import { shotAfter } from '../features/learning/lessons/lesson-definition';
+import { shotAfter, type ProblemVersion } from '../features/learning/lessons/lesson-definition';
 import type { LessonOutline } from '../features/learning/lessons/registry';
-
-type Problem = LessonOutline['problem'];
 
 // What a lesson must agree with in the plugin the server keeps for its
 // problem version: the steps a model may see and the authored hints.
 export type PluginOutline = Readonly<{ steps: readonly string[]; hints: readonly string[] }>;
 
+// A problem version as the checks name it.
+export const versionName = ({ id, version }: ProblemVersion) => `${id}/${version}`;
+
 const missing = (from: readonly string[], within: readonly string[]) =>
   from.filter((name) => !within.includes(name));
 
-function versionProblems(listed: Problem, lesson: LessonOutline, plugin?: PluginOutline) {
-  const registered = `${listed.id}/${listed.version}`;
-  const own = `${lesson.problem.id}/${lesson.problem.version}`;
-  return [
-    ...(plugin ? [] : [`the server has no plugin for ${registered}`]),
-    ...(own === registered ? [] : [`registered as ${registered} but defined as ${own}`]),
-  ];
+function versionProblems(listed: ProblemVersion, lesson: LessonOutline) {
+  const [registered, own] = [versionName(listed), versionName(lesson.problem)];
+  return own === registered ? [] : [`registered as ${registered} but defined as ${own}`];
 }
 
 function scriptProblems({ script }: LessonOutline) {
@@ -39,8 +36,9 @@ function answerProblems({ script, answer }: LessonOutline) {
   return shotAfter(script, shot) ? [] : [`answer scene ${shot} has no scene after it`];
 }
 
-function pluginProblems({ script, answer }: LessonOutline, plugin?: PluginOutline) {
-  if (!plugin) return [];
+function pluginProblems(listed: ProblemVersion, lesson: LessonOutline, plugin?: PluginOutline) {
+  if (!plugin) return [`the server has no plugin for ${versionName(listed)}`];
+  const { script, answer } = lesson;
   return [
     ...missing(script.shots, plugin.steps).map((shot) => `scene ${shot} is not a plugin step`),
     ...missing(plugin.steps, script.shots).map((step) => `plugin step ${step} is not a scene`),
@@ -49,14 +47,17 @@ function pluginProblems({ script, answer }: LessonOutline, plugin?: PluginOutlin
 }
 
 // Everything wrong with a registered lesson, or nothing: its version against
-// its registry line and the server's plugins, its recordings and entry lines,
-// its answer scene and the scene after it, and its scenes and hints against
-// the plugin's steps and hints.
-export function lessonProblems(listed: Problem, lesson: LessonOutline, plugin?: PluginOutline) {
+// its registry line, its recordings and entry lines, its answer scene and the
+// scene after it, and the server's plugin for it, with its steps and hints.
+export function lessonProblems(
+  listed: ProblemVersion,
+  lesson: LessonOutline,
+  plugin?: PluginOutline,
+) {
   return [
-    ...versionProblems(listed, lesson, plugin),
+    ...versionProblems(listed, lesson),
     ...scriptProblems(lesson),
     ...answerProblems(lesson),
-    ...pluginProblems(lesson, plugin),
+    ...pluginProblems(listed, lesson, plugin),
   ];
 }
