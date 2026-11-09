@@ -1,0 +1,50 @@
+/* Exactly the visible screen, however the browser's own bars come and go,
+   with the parts a notch or a rounded corner hides left out. */
+.frame {
+  /* Where the back button sits, and how far in it reaches, from the edge of
+     what the frame holds. */
+  --back-inset: var(--space-3);
+  --frame-corner: calc(var(--back-inset) + var(--space-8));
+  position: relative;
+  display: grid;
+  grid-template: minmax(0, 1fr) / minmax(0, 1fr);
+  inline-size: 100%;
+  block-size: 100dvh;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)
+    env(safe-area-inset-left);
+  overflow: hidden;
+}
+
+/* What the page shows sits in the middle of one cell the size of the frame;
+   a page that fills the frame stretches itself over the whole cell. */
+.content {
+  display: grid;
+  grid-template: minmax(0, 1fr) / minmax(0, 1fr);
+  place-items: center;
+  min-block-size: 0;
+  overflow: auto;
+}
+
+/* The button, and below it what the page waits for, so the note stays in
+   the corner, clear of whatever runs along the top. */
+.back {
+  position: absolute;
+  z-index: 5;
+  inset-block-start: calc(env(safe-area-inset-top) + var(--back-inset));
+  inset-inline-start: calc(env(safe-area-inset-left) + var(--back-inset));
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+/* What the page waits for before it leaves, on the same glass as the button. */
+.note {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-pill);
+  color: var(--glass-ink);
+  background: var(--glass);
+  backdrop-filter: var(--glass-filter);
+  font-size: var(--text-sm);
+  font-weight: 700;
+}
