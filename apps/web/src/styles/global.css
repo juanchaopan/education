@@ -1,3 +1,13 @@
+/* LXGW WenKai (SIL Open Font License 1.1), cut down at build time to the
+   characters the site uses; see vite/title-font.ts. Text shows in the
+   fallback font until it loads, and stays there if it never does. */
+@font-face {
+  font-family: 'LXGW WenKai Subset';
+  src: url('./generated/title-font.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
 * {
   box-sizing: border-box;
 }
@@ -28,6 +38,14 @@ body::before {
 body::after {
   background: var(--backdrop-night);
   opacity: calc(1 - var(--day-layer));
+}
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.25;
 }
 a {
   color: inherit;

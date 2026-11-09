@@ -58,3 +58,38 @@ test.describe('with reduced motion', () => {
     await expect(key).toHaveValue('ABCD-EFGH');
   });
 });
+
+// The font family a page heading asks for, and whether the self-hosted title
+// font loaded.
+function titleFont(page: Page) {
+  return page.evaluate(() => {
+    const heading = document.querySelector('h1')!;
+    const face = [...document.fonts].find((font) => font.family.includes('LXGW WenKai'));
+    return { family: getComputedStyle(heading).fontFamily, status: face?.status };
+  });
+}
+
+test('titles use the self-hosted LXGW WenKai from the site itself', async ({ page }) => {
+  const fontHosts = new Set<string>();
+  page.on('request', (request) => {
+    if (request.resourceType() === 'font') fontHosts.add(new URL(request.url()).origin);
+  });
+  await page.goto('/');
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+  await page.evaluate(() => document.fonts.ready);
+  expect((await titleFont(page)).status).toBe('loaded');
+  expect([...fontHosts]).toEqual([new URL(page.url()).origin]);
+});
+
+test('titles fall back to kaishu and then the body font when the title font fails', async ({
+  page,
+}) => {
+  await page.route('**/title-font-*.woff2', (route) => route.abort());
+  await page.goto('/');
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+  await page.evaluate(() => document.fonts.ready);
+  const font = await titleFont(page);
+  expect(font.status).toBe('error');
+  expect(font.family).toMatch(/LXGW WenKai Subset.*KaiTi.*PingFang SC/);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+});
