@@ -10,11 +10,12 @@ import {
 
 // A problem's props: the kinds the child can pick up, each with how it looks
 // while carried; the move that putting one on a place makes; and the move that
-// tapping a prop makes. A place or a prop without a move does nothing.
+// tapping a prop makes. A place or a prop without a move does nothing. The
+// moves are methods, so any lesson's props fit the shared lesson page.
 export type StageProps<Move, Lifts extends Readonly<Record<string, object>>> = Readonly<{
   lifts: Lifts;
-  drop: (piece: keyof Lifts & string, place: string) => Move | undefined;
-  tap: (part: string) => Move | undefined;
+  drop(piece: keyof Lifts & string, place: string): Move | undefined;
+  tap(part: string): Move | undefined;
 }>;
 
 // What the drag needs from the playing film: the scene on screen and a way to

@@ -2,55 +2,50 @@ import { DraftNotice } from '../components/DraftNotice';
 import type { LearningScope } from '../data-access/learning-request';
 import type { useLessonDraft } from '../data-access/useLessonDraft';
 import type { LessonFilm } from '../interaction/useLessonFilm';
-import type { GardenState, Move } from '../lessons/garden-balance/garden-story';
-import {
-  answerChoices,
-  answerHints,
-  answerQuestion,
-  answerWords,
-  guidance,
-  teacher,
-  type Shot,
-} from '../lessons/garden-balance/script';
+import { guidance, shotAfter, type Lesson, type LessonState } from '../lessons/lesson-definition';
 import { SceneQuestions } from './SceneQuestions';
 import { SpokenFinalAnswer } from './SpokenFinalAnswer';
 
-export type GardenFilm = LessonFilm<GardenState, Shot, Move>;
+export type PlayingLesson = LessonFilm<LessonState, string, unknown>;
 
 type Props = {
+  lesson: Lesson;
   scope: LearningScope;
-  film: GardenFilm;
+  film: PlayingLesson;
   draft: ReturnType<typeof useLessonDraft>;
 };
 
 // Everything under the film for a signed-in child: in the answer scene the
 // final count, which has its own hints and keeps the one microphone for the
 // answer; in every other scene a question about it; and the draft's state. A
-// correct answer ends the saved work, so its draft is discarded.
-export function GardenPanels({ scope, film, draft }: Props) {
+// correct answer ends the saved work, so its draft is discarded, and the film
+// plays on from the scene after the answer.
+export function LessonPanels({ lesson, scope, film, draft }: Props) {
   const { shot } = film.state;
   if (shot === 'opening') return null;
+  const { answer } = lesson;
   return (
     <>
-      {shot === 'answer' ? (
+      {shot === answer.shot ? (
         <SpokenFinalAnswer
           scope={scope}
-          question={answerQuestion}
-          words={answerWords}
-          choices={answerChoices}
-          hintIds={answerHints}
+          question={answer.question}
+          words={answer.words}
+          choices={answer.choices}
+          hintIds={answer.hints}
           narration={film}
           onDone={() => {
             void draft.discard();
-            film.go('variation');
+            const next = shotAfter(lesson, answer.shot);
+            if (next) film.go(next);
           }}
         />
       ) : (
         <SceneQuestions
           scope={scope}
-          teacher={teacher}
+          teacher={lesson.teacher.name}
           stepId={shot}
-          guidance={guidance(shot)}
+          guidance={guidance(lesson, shot)}
           narration={film}
         />
       )}

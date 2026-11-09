@@ -70,10 +70,6 @@ export const shots = [
 ] as const;
 export type Shot = (typeof shots)[number];
 
-export function isShot(value: string): value is Shot {
-  return (shots as readonly string[]).includes(value);
-}
-
 // What the rabbit says on arriving at a scene, whether by playing on or by
 // coming back to a saved one.
 export const entryLines: Record<Shot, readonly LineId[]> = {
@@ -85,12 +81,6 @@ export const entryLines: Record<Shot, readonly LineId[]> = {
   variation: ['change'],
   end: ['changeDone'],
 };
-
-// The scene's own instruction, which stands in when the teacher cannot answer.
-export function guidance(shot: Shot) {
-  const said = entryLines[shot];
-  return lines[said[said.length - 1] ?? 'hello'].text;
-}
 
 export const answerQuestion = '一棵青菜和几根黄瓜一样重？';
 export const answerChoices = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] as const;

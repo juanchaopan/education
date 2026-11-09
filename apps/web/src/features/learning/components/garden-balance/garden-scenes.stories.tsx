@@ -1,12 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import type { ComponentProps } from 'react';
 import type { Handling } from '../../interaction/stage-activation';
-import { gardenLook } from '../../lessons/garden-balance/garden-look';
+import { gardenLesson } from '../../lessons/garden-balance/definition';
 import { arrive, type GardenState } from '../../lessons/garden-balance/garden-story';
 import { lines } from '../../lessons/garden-balance/script';
-import { Ambience } from '../lesson-stage/Ambience';
+import { stageLook } from '../../lessons/lesson-definition';
 import { LessonStage } from '../lesson-stage/LessonStage';
-import { GardenDefs } from './garden-defs';
 import { GardenScene } from './garden-scenes';
 
 type FilmArgs = Omit<ComponentProps<typeof LessonStage>, 'look' | 'shot' | 'children'> & {
@@ -14,13 +13,18 @@ type FilmArgs = Omit<ComponentProps<typeof LessonStage>, 'look' | 'shot' | 'chil
   handling: Handling;
 };
 
-const defs = <GardenDefs />;
-const fireflies = <Ambience kind="fireflies" />;
+const look = stageLook(gardenLesson);
 
 // The garden scenes on the lesson stage, as the lesson page shows them.
 function GardenFilm({ state, handling, ...stage }: FilmArgs) {
   return (
-    <LessonStage {...stage} look={gardenLook} shot={state.shot} defs={defs} ambience={fireflies}>
+    <LessonStage
+      {...stage}
+      look={look}
+      shot={state.shot}
+      defs={gardenLesson.defs}
+      ambience={gardenLesson.ambience}
+    >
       <GardenScene state={state} handling={handling} />
     </LessonStage>
   );
