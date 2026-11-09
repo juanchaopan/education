@@ -50,7 +50,7 @@ module.exports = {
     {
       name: 'lessons-loaded-on-demand',
       comment:
-        '题目的文件和公共题目页只在孩子打开题目时加载：题目以外的代码只能用动态 import 引用它们，题库页因此不带任何题目的代码。',
+        '题目的文件和公共题目页只在孩子打开题目时加载：题目以外的代码只能用动态 import 引用它们，题库页因此不带题目的代码。',
       severity: 'error',
       from: { pathNot: lessonFiles },
       to: {
@@ -64,7 +64,7 @@ module.exports = {
         '题目插件里有答案和判定规则，只在服务器上运行，网站的代码不引用它们。测试可以读插件，用来检查题目定义和插件一致。',
       severity: 'error',
       from: {},
-      to: { path: '(^|/)(@education|libs)/problems/' },
+      to: { path: '(^|/)(@education|libs)/problems(/|$)' },
     },
     {
       name: 'shared-independent',
