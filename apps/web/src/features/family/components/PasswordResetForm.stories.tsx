@@ -1,15 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { Card } from '../../../shared/ui/Card';
 import { PasswordResetForm } from './PasswordResetForm';
+import { inCard } from './story-card';
 const meta = {
   component: PasswordResetForm,
-  decorators: [
-    (Story) => (
-      <Card>
-        <Story />
-      </Card>
-    ),
-  ],
+  decorators: [inCard],
   args: {
     password: '',
     confirmation: '',

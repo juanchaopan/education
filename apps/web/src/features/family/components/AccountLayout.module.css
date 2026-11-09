@@ -26,7 +26,9 @@
   object-fit: cover;
 }
 
-/* The character stands on the table in the scene and breathes a little. */
+/* The character stands on the table in the scene and breathes a little. The
+   breathing layer carries no filter, so the page stays cheap to draw while
+   it waits. */
 .teacher {
   position: absolute;
   z-index: 1;
@@ -34,9 +36,6 @@
   inset-block-end: 6%;
   block-size: 58%;
   translate: -50% 0;
-  filter: drop-shadow(
-    0 var(--space-4) var(--space-4) color-mix(in srgb, var(--ink) 30%, transparent)
-  );
   transform-origin: 50% 100%;
   animation: breathe 4s ease-in-out infinite;
 }

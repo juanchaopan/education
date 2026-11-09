@@ -1,16 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { Card } from '../../../shared/ui/Card';
 import { LoginForm } from './LoginForm';
+import { inCard } from './story-card';
 
 const meta = {
   component: LoginForm,
-  decorators: [
-    (Story) => (
-      <Card>
-        <Story />
-      </Card>
-    ),
-  ],
+  decorators: [inCard],
   args: {
     email: '',
     password: '',

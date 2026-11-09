@@ -1,9 +1,8 @@
 import { useState } from 'react';
 import { Button } from '../../../shared/ui/Button';
-import { Icon } from '../../../shared/ui/Icon';
 import { Notice } from '../../../shared/ui/Notice';
-import { StandaloneLink } from '../../../shared/ui/StandaloneLink';
 import { AccountLayout, type AccountArt } from '../components/AccountLayout';
+import { BackToFamily } from '../components/BackToFamily';
 import { readLinkToken, useForgetLinkToken } from '../data-access/link-token';
 import { useConfirmVerification } from '../data-access/useVerification';
 
@@ -22,12 +21,7 @@ export function VerifyEmailPage({ art }: { art: AccountArt }) {
       art={art}
       titleId="verify-email-title"
       title="验证家长邮箱"
-      footer={
-        <StandaloneLink to="/family">
-          <Icon name="back" />
-          返回家长空间
-        </StandaloneLink>
-      }
+      footer={<BackToFamily />}
     >
       {confirm.isSuccess ? (
         <Notice tone="success">邮箱验证成功。回到家长空间，退出后重新登录即可。</Notice>

@@ -1,7 +1,7 @@
 import type { ParentSession } from '@education/contracts';
 import { Button } from '../../../shared/ui/Button';
 import { Card } from '../../../shared/ui/Card';
-import { Notice } from '../../../shared/ui/Notice';
+import { AccountNotices } from './AccountNotices';
 import { ParentAddress } from './ParentAddress';
 
 export type AccountStatusProps = {
@@ -25,8 +25,7 @@ export function AccountStatus({
     <Card aria-labelledby="account-title">
       <h2 id="account-title">我的家长账号</h2>
       <ParentAddress email={session.email} verified={session.emailVerified} />
-      {refreshing && <Notice>暂时无法刷新账号状态，请稍后重试。</Notice>}
-      {error && <Notice tone="error">{error}</Notice>}
+      <AccountNotices refreshing={refreshing} error={error} />
       <Button variant="secondary" onClick={onLogout} disabled={pending}>
         {pending ? '正在退出…' : '退出账号'}
       </Button>

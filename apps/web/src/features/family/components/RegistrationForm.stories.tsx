@@ -1,17 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { Card } from '../../../shared/ui/Card';
 import { RegistrationForm } from './RegistrationForm';
+import { inCard } from './story-card';
 
 const meta = {
   title: '家长空间/注册',
   component: RegistrationForm,
-  decorators: [
-    (Story) => (
-      <Card>
-        <Story />
-      </Card>
-    ),
-  ],
+  decorators: [inCard],
   args: {
     email: '',
     password: '',

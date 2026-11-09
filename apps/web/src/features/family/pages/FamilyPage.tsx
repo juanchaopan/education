@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { preload } from 'react-dom';
 import { Brand } from '../../../shared/ui/Brand';
 import { Button } from '../../../shared/ui/Button';
 import { Icon } from '../../../shared/ui/Icon';
@@ -7,9 +8,9 @@ import { Notice } from '../../../shared/ui/Notice';
 import { Page } from '../../../shared/ui/Page';
 import { StandaloneLink } from '../../../shared/ui/StandaloneLink';
 import { AccountLayout, type AccountArt } from '../components/AccountLayout';
+import { AccountNotices } from '../components/AccountNotices';
 import { AccountStatus, type AccountStatusProps } from '../components/AccountStatus';
 import { FamilyDeleted } from '../components/FamilyDeleted';
-import { ParentAddress } from '../components/ParentAddress';
 import { useParentLogout, useParentSession } from '../data-access/useParentSession';
 import { AiConsentPanel } from './AiConsentPanel';
 import { ChildAccessPanel } from './ChildAccessPanel';
@@ -28,12 +29,14 @@ type Mode = 'register' | 'login';
 // The parents' entrance. Signed out, it is the sign-up or the sign-in; signed
 // in before the email is verified, it is the verification step; verified, it
 // is the parent space. A finished deletion signs the page out and keeps
-// saying so until the parent moves on to register a new family.
+// saying so until the parent moves on to register a new family. The scene's
+// backdrop starts loading while the page still asks who is signed in.
 export function FamilyPage({ art }: { art: AccountArt }) {
   const [mode, setMode] = useState<Mode>('register');
   const [deleted, setDeleted] = useState(false);
   const session = useParentSession();
   const logout = useParentLogout();
+  preload(art.backdrop, { as: 'image', fetchPriority: 'high' });
   if (deleted)
     return (
       <AccountLayout art={art} titleId="family-deleted-title" title="家庭已删除">
@@ -53,7 +56,7 @@ export function FamilyPage({ art }: { art: AccountArt }) {
     );
   if (!session.data)
     return <SignedOut art={art} mode={mode} failed={session.isError} onMode={setMode} />;
-  const csrf = session.data.csrfToken;
+  const { csrfToken } = session.data;
   const account: AccountStatusProps = {
     session: session.data,
     pending: logout.isPending,
@@ -61,7 +64,7 @@ export function FamilyPage({ art }: { art: AccountArt }) {
     refreshing: session.isError,
     onLogout: () => {
       if (logout.isPending) return;
-      logout.mutate(csrf, {
+      logout.mutate(csrfToken, {
         onSuccess: () => {
           setMode('login');
           logout.reset();
@@ -116,9 +119,15 @@ function SignedOut({
 
 // A parent signed in whose account is not verified yet sees only the
 // verification step and the way to sign out. Once the mail link is confirmed,
-// signing in again opens the parent space.
-function Unverified({ art, ...account }: AccountStatusProps & { art: AccountArt }) {
-  const { session, pending, error, refreshing, onLogout } = account;
+// the step says so, and signing in again opens the parent space.
+function Unverified({
+  art,
+  session,
+  pending,
+  error,
+  refreshing,
+  onLogout,
+}: AccountStatusProps & { art: AccountArt }) {
   return (
     <AccountLayout
       art={art}
@@ -131,16 +140,8 @@ function Unverified({ art, ...account }: AccountStatusProps & { art: AccountArt 
         </Button>
       }
     >
-      {refreshing && <Notice>暂时无法刷新账号状态，请稍后重试。</Notice>}
-      {error && <Notice tone="error">{error}</Notice>}
-      {session.emailVerified ? (
-        <>
-          <ParentAddress email={session.email} verified />
-          <p role="status">邮箱已验证，退出后重新登录即可。</p>
-        </>
-      ) : (
-        <VerificationPanel csrf={session.csrfToken} email={session.email} />
-      )}
+      <AccountNotices refreshing={refreshing} error={error} />
+      <VerificationPanel csrf={session.csrfToken} email={session.email} />
     </AccountLayout>
   );
 }

@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import type { RecoveryRequest } from '@education/contracts';
-import { Icon } from '../../../shared/ui/Icon';
-import { StandaloneLink } from '../../../shared/ui/StandaloneLink';
 import { AccountLayout, type AccountArt } from '../components/AccountLayout';
+import { BackToFamily } from '../components/BackToFamily';
 import { RecoveryForm } from '../components/RecoveryForm';
 import { useRecoveryRequest } from '../data-access/useRecovery';
 
@@ -35,12 +34,7 @@ export function RecoveryPage({ art }: { art: AccountArt }) {
       art={art}
       titleId="recovery-title"
       title="找回家长密码"
-      footer={
-        <StandaloneLink to="/family">
-          <Icon name="back" />
-          返回家长空间
-        </StandaloneLink>
-      }
+      footer={<BackToFamily />}
     >
       <RecoveryForm
         email={email}

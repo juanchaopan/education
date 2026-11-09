@@ -1,17 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { fn } from 'storybook/test';
-import { Card } from '../../../shared/ui/Card';
 import { FamilyDeleted } from './FamilyDeleted';
+import { inCard } from './story-card';
 
 const meta = {
   component: FamilyDeleted,
-  decorators: [
-    (Story) => (
-      <Card>
-        <Story />
-      </Card>
-    ),
-  ],
+  decorators: [inCard],
   args: { onRegister: fn() },
 } satisfies Meta<typeof FamilyDeleted>;
 export default meta;

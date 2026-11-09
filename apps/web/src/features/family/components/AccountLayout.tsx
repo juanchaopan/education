@@ -16,16 +16,17 @@ type Props = {
   footer?: ReactNode;
 };
 
-// Sign-in, sign-up, email verification and password recovery: the lit scene
+// Sign-up, sign-in, email verification and password recovery: the lit scene
 // with its character on one half and the page's card on the other, so the
 // account pages look like the lessons a family came for. On a phone the scene
 // sits on top and the card overlaps its lower edge. The picture is decoration;
-// the card carries everything the page says.
+// the card carries everything the page says. The backdrop is the largest
+// thing on the page, so it is fetched first.
 export function AccountLayout({ art, titleId, title, children, footer }: Props) {
   return (
     <div className={styles.layout}>
       <div className={styles.scene}>
-        <img className={styles.backdrop} src={art.backdrop} alt="" />
+        <img className={styles.backdrop} src={art.backdrop} alt="" fetchPriority="high" />
         <img className={styles.teacher} src={art.teacher} alt="" />
       </div>
       <div className={styles.side}>

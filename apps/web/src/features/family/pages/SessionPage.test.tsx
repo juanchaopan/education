@@ -1,9 +1,7 @@
-import { MemoryRouter } from 'react-router-dom';
 import { afterEach, expect, it, vi } from 'vitest';
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { FamilyPage } from './FamilyPage';
+import { renderFamilyPage } from '../../../test/family-page';
 const session = {
   role: 'parent',
   email: 'parent@example.test',
@@ -11,7 +9,6 @@ const session = {
   access: 'verification-only',
   csrfToken: 'a'.repeat(43),
 };
-const art = { backdrop: '/backdrop.webp', teacher: '/teacher.webp' };
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
@@ -36,13 +33,7 @@ function setup(mode: 'success' | 'failure' | 'remembered' = 'success') {
     return Response.json({ enabled: true });
   });
   vi.stubGlobal('fetch', fetcher);
-  render(
-    <QueryClientProvider client={new QueryClient()}>
-      <MemoryRouter>
-        <FamilyPage art={art} />
-      </MemoryRouter>
-    </QueryClientProvider>,
-  );
+  renderFamilyPage();
   return fetcher;
 }
 async function login() {

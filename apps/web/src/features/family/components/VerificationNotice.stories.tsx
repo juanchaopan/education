@@ -1,16 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { Card } from '../../../shared/ui/Card';
+import { inCard } from './story-card';
 import { VerificationNotice } from './VerificationNotice';
 
 const meta = {
   component: VerificationNotice,
-  decorators: [
-    (Story) => (
-      <Card>
-        <Story />
-      </Card>
-    ),
-  ],
+  decorators: [inCard],
   args: {
     email: 'parent@example.test',
     onSend: () => {},

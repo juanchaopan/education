@@ -4,6 +4,7 @@ import { Icon } from '../../../shared/ui/Icon';
 import { Notice } from '../../../shared/ui/Notice';
 import { StandaloneLink } from '../../../shared/ui/StandaloneLink';
 import { AccountLayout, type AccountArt } from '../components/AccountLayout';
+import { BackToFamily } from '../components/BackToFamily';
 import { PasswordResetForm } from '../components/PasswordResetForm';
 import { readLinkToken, useForgetLinkToken } from '../data-access/link-token';
 import { usePasswordReset } from '../data-access/useRecovery';
@@ -51,10 +52,7 @@ export function ResetPasswordPage({ art }: { art: AccountArt }) {
           重新申请恢复邮件
         </StandaloneLink>
       )}
-      <StandaloneLink to="/family">
-        <Icon name="back" />
-        返回家长空间
-      </StandaloneLink>
+      <BackToFamily />
     </>
   );
   if (done)

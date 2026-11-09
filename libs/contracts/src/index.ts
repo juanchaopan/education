@@ -1,4 +1,11 @@
-export { ParentRegistration, RegistrationReceipt, passwordIssue } from './registration.js';
+export {
+  ParentPassword,
+  ParentRegistration,
+  RegistrationReceipt,
+  parentPasswordLength,
+  passwordCharacters,
+  passwordIssue,
+} from './registration.js';
 export * from './catalog.js';
 
 export { ParentLogin, ParentSession } from './session.js';

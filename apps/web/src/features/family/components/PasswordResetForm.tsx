@@ -15,16 +15,16 @@ export type PasswordResetFormProps = {
   onSubmit: () => void;
 };
 
-// The new password is typed twice. What the change signs out is said beside
-// the button that makes it, where the parent decides.
+// The new password is typed twice. Its length is counted in the hint and
+// checked on submit by the shared password rule, as the sign-up does. What
+// the change signs out is said beside the button that makes it, where the
+// parent decides.
 export function PasswordResetForm(props: PasswordResetFormProps) {
   const field = {
     type: 'password',
     autoComplete: 'new-password',
     icon: 'lock',
     required: true,
-    minLength: 15,
-    maxLength: 128,
     disabled: props.pending,
   } as const;
   return (

@@ -1,9 +1,20 @@
 import { Type, type Static } from '@sinclair/typebox';
 
+// How long a parent's password may be, in characters as a person counts
+// them: an emoji or a Chinese character is one. Sign-up and password reset
+// share the rule, and the web pages count a password being typed the same way.
+export const parentPasswordLength = { shortest: 15, longest: 128 } as const;
+export const passwordCharacters = (password: string) => Array.from(password).length;
+
+export const ParentPassword = Type.String({
+  minLength: parentPasswordLength.shortest,
+  maxLength: parentPasswordLength.longest,
+});
+
 export const ParentRegistration = Type.Object(
   {
     email: Type.String({ minLength: 3, maxLength: 254 }),
-    password: Type.String({ minLength: 15, maxLength: 128 }),
+    password: ParentPassword,
   },
   { additionalProperties: false },
 );
@@ -25,9 +36,10 @@ const commonPasswords = new Set([
 ]);
 
 export function passwordIssue(password: string): string | undefined {
-  const length = Array.from(password).length;
-  if (length < 15 || length > 128) {
-    return '密码需要 15–128 个字符，最多 512 字节。可以使用空格或一句好记的话。';
+  const length = passwordCharacters(password);
+  const { shortest, longest } = parentPasswordLength;
+  if (length < shortest || length > longest) {
+    return `密码需要 ${shortest}–${longest} 个字符，最多 512 字节。可以使用空格或一句好记的话。`;
   }
   if (commonPasswords.has(password.toLowerCase()) || /^(.)\1+$/su.test(password)) {
     return '这个密码太常见了，请换一句只有您知道的话。';

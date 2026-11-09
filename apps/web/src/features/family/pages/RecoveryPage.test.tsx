@@ -3,9 +3,9 @@ import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { accountArt } from '../../../test/account-art';
 import { RecoveryPage } from './RecoveryPage';
 import { ResetPasswordPage } from './ResetPasswordPage';
-const art = { backdrop: '/backdrop.webp', teacher: '/teacher.webp' };
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
@@ -23,7 +23,7 @@ function setup(component: React.ReactNode) {
 it('does not expose provider messages or claim a mailbox exists', async () => {
   const fetcher = vi.fn().mockResolvedValue(Response.json({ status: 'requested' }));
   vi.stubGlobal('fetch', fetcher);
-  const client = setup(<RecoveryPage art={art} />);
+  const client = setup(<RecoveryPage art={accountArt} />);
   const user = userEvent.setup();
   await user.type(screen.getByLabelText('注册邮箱'), 'parent@example.test');
   await user.click(screen.getByRole('button', { name: '发送恢复邮件' }));
@@ -37,7 +37,7 @@ it('does not expose provider messages or claim a mailbox exists', async () => {
   ).toBe(true);
 });
 it('folds the mail rules away until the parent asks for them', async () => {
-  setup(<RecoveryPage art={art} />);
+  setup(<RecoveryPage art={accountArt} />);
   const rule = screen.getByText(/链接 30 分钟有效/);
   expect(rule).not.toBeVisible();
   await userEvent.click(screen.getByText('邮件规则'));
@@ -48,7 +48,7 @@ it('strips the bearer fragment before interaction, requires password confirmatio
   window.history.replaceState({}, '', '/family/reset#token=' + token);
   const fetcher = vi.fn().mockResolvedValue(Response.json({ status: 'reset' }));
   vi.stubGlobal('fetch', fetcher);
-  const client = setup(<ResetPasswordPage art={art} />);
+  const client = setup(<ResetPasswordPage art={accountArt} />);
   const user = userEvent.setup();
   expect(window.location.hash).toBe('');
   expect(fetcher).not.toHaveBeenCalled();
