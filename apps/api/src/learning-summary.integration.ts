@@ -5,6 +5,7 @@ import { buildApp } from './app.js';
 import { createAnswering } from './answer-application.js';
 import { createLearningSummary } from './learning-summary-application.js';
 import { csrfToken, tokenHash } from './identity/services/session-security.js';
+import { teacherQuestion } from './learning/services/answer.js';
 
 if (!process.env.DATABASE_URL?.endsWith('/education_test'))
   throw new Error('Use isolated education_test');
@@ -74,6 +75,8 @@ function read(id: string, token: string, query = '') {
   });
 }
 
+// One round of a problem as a child plays it: open hints, ask the teacher
+// while answering, and submit answers.
 async function lesson(token: string, version: number, id = 'test-pattern') {
   const url = `/api/v1/problems/${id}/${version}/answer`;
   const headers = {
@@ -83,21 +86,12 @@ async function lesson(token: string, version: number, id = 'test-pattern') {
     'x-education-request': 'session',
   };
   const { round } = (await app.inject({ url, headers })).json<{ round: string }>();
+  const post = (payload: object) => app.inject({ method: 'POST', url, headers, payload });
   return {
-    hint: () =>
-      app.inject({
-        method: 'POST',
-        url,
-        headers,
-        payload: { action: 'hint', round, hintId: 'observe' },
-      }),
+    hint: (hintId = 'observe') => post({ action: 'hint', round, hintId }),
+    question: () => post({ action: 'question', round }),
     submit: (input: unknown, attemptId = randomUUID()) =>
-      app.inject({
-        method: 'POST',
-        url,
-        headers,
-        payload: { action: 'submit', round, attemptId, input, draftRevision: null },
-      }),
+      post({ action: 'submit', round, attemptId, input, draftRevision: null }),
   };
 }
 
@@ -153,6 +147,29 @@ it('separates assisted and independent completion by version and removes the rec
     independent: 1,
     reviewSuggested: false,
   });
+});
+
+it('counts questions to the teacher while answering as one help per round, beside the hints', async () => {
+  const owner = await parent();
+  const learner = await child(owner.family);
+  const first = await lesson(learner.token, 1);
+  expect((await first.question()).json()).toEqual({ helped: true });
+  expect((await first.question()).statusCode).toBe(200);
+  expect((await first.hint()).statusCode).toBe(200);
+  expect((await first.hint(teacherQuestion)).statusCode).toBe(400);
+  expect((await first.submit(true)).json().outcome).toBe('assisted');
+  expect((await first.question()).statusCode).toBe(409);
+  const second = await lesson(learner.token, 1);
+  expect((await second.question()).statusCode).toBe(200);
+  expect((await second.submit(true)).json().outcome).toBe('assisted');
+  expect((await read(learner.id, owner.token)).json().problems).toEqual([
+    expect.objectContaining({ id: 'test-pattern', version: 1, assisted: 2, hints: 3 }),
+  ]);
+  const { rows } = await pool.query<{ hint_id: string }>(
+    'SELECT hint_id FROM help_events WHERE child_id=$1 ORDER BY hint_id',
+    [learner.id],
+  );
+  expect(rows.map((row) => row.hint_id)).toEqual(['observe', teacherQuestion, teacherQuestion]);
 });
 
 it('includes hint-only records, excludes uncertain results from review evidence, and isolates siblings', async () => {

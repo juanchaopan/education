@@ -20,7 +20,13 @@ type WithAnswers = <T>(
   work: (store: AnswerStore) => Promise<T>,
 ) => Promise<T>;
 
-// The final answer of one problem and the help taken on the way to it. Help
+// The help id of a question to the teacher while answering. Hint requests
+// take only identifiers, which have no colon, so no authored hint can be
+// asked for under it; the integration tests hold the two apart.
+export const teacherQuestion = 'teacher:question';
+
+// The final answer of one problem and the help taken on the way to it: the
+// authored hints and the questions asked of the teacher while answering. Help
 // is recorded once per round, and a correct answer after any of it counts as
 // helped.
 export function createAnswerService(
@@ -37,6 +43,8 @@ export function createAnswerService(
           return submit(store, policy, command);
         case 'hint':
           return hint(store, policy, command);
+        case 'question':
+          return question(store, command.round);
       }
     });
 }
@@ -53,6 +61,12 @@ async function hint(store: AnswerStore, policy: AnsweringPolicy, command: AskFor
   if (!text || text.length > 2000) throw new RequestError(404, '这条提示暂时不可用。');
   await store.help(command.round, command.hintId);
   return { hint: text };
+}
+
+async function question(store: AnswerStore, round: string) {
+  await requireRound(store, round);
+  await store.help(round, teacherQuestion);
+  return { helped: true as const };
 }
 
 async function submit(store: AnswerStore, policy: AnsweringPolicy, command: SubmitAnswer) {

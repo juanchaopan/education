@@ -41,12 +41,15 @@ export const AskForHint = Type.Object(
   },
   closed,
 );
-export const AnswerCommand = Type.Union([SubmitAnswer, AskForHint]);
+// Sent before a question the child asks the teacher while answering.
+export const AskTeacher = Type.Object({ action: Type.Literal('question'), round: uuid }, closed);
+export const AnswerCommand = Type.Union([SubmitAnswer, AskForHint, AskTeacher]);
 export const AttemptReceipt = Type.Object({ attemptId: uuid, outcome }, closed);
 export const HintReceipt = Type.Object(
   { hint: Type.String({ minLength: 1, maxLength: 2000 }) },
   closed,
 );
+export const QuestionReceipt = Type.Object({ helped: Type.Literal(true) }, closed);
 export type AnswerRound = Static<typeof AnswerRound>;
 export type SubmitAnswer = Static<typeof SubmitAnswer>;
 export type AskForHint = Static<typeof AskForHint>;
