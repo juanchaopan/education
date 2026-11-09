@@ -1,4 +1,4 @@
-import { catalog, pictureFiles, type Age } from '../library';
+import { catalog, type Age } from '../library';
 
 // One character who tells lessons: its name, which the captions and the
 // question panel use, the school years it suits, its manner as the lines
@@ -29,9 +29,7 @@ export type TeacherId = keyof typeof entries;
 // Every teacher in the library, by id, each with the address of its picture.
 export const teachers = catalog<TeacherId, TeacherEntry>(
   entries,
-  pictureFiles(
-    import.meta.glob<string>('./*.webp', { eager: true, query: '?url', import: 'default' }),
-  ),
+  import.meta.glob<string>('./*.webp', { eager: true, query: '?url', import: 'default' }),
 );
 
 export type LibraryTeacher = (typeof teachers)[TeacherId];

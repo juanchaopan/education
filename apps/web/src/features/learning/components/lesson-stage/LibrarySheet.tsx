@@ -1,7 +1,8 @@
 import { clearingNames, type LibraryBackdrop } from '../../media/backdrops/backdrops';
-import { ageNames, world, type Age } from '../../media/library';
+import { ageNames, type Age } from '../../media/library';
 import type { LibraryTeacher } from '../../media/teachers/teachers';
 import { ClearingOutline } from './ClearingOutline';
+import { world } from './stage-look';
 import styles from './LibrarySheet.module.css';
 
 const years = (ages: readonly Age[]) => ages.map((age) => ageNames[age]).join('、');
@@ -38,7 +39,7 @@ export function BackdropSheet({
           backgroundPosition: backdrop.focus,
         }}
       >
-        <svg viewBox={`0 0 ${world.width} ${world.height}`} aria-hidden="true">
+        <svg viewBox={`${world.x} ${world.y} ${world.width} ${world.height}`} aria-hidden="true">
           {showClearing && <ClearingOutline box={backdrop.clearZone} kind="clearing" />}
         </svg>
       </div>

@@ -58,9 +58,23 @@ export type Camera = Readonly<{ zoom: number; x?: number; y?: number }>;
 // The painted picture behind the props and the part of it kept in view.
 export type Backdrop = Readonly<{ image: string; focus: string }>;
 
-// A rectangle and an ellipse in the stage's 1200×675 world.
+// A rectangle and an ellipse in the stage's world.
 export type Box = Readonly<{ x: number; y: number; width: number; height: number }>;
 export type Ellipse = Readonly<{ cx: number; cy: number; rx: number; ry: number }>;
+
+// Every lesson draws on the same 1200×675 world, and a backdrop is laid over
+// the whole of it.
+export const world: Box = { x: 0, y: 0, width: 1200, height: 675 };
+
+// Whether a box lies wholly inside another.
+export function inside(box: Box, frame: Box) {
+  return (
+    box.x >= frame.x &&
+    box.y >= frame.y &&
+    box.x + box.width <= frame.x + frame.width &&
+    box.y + box.height <= frame.y + frame.height
+  );
+}
 
 // The character who tells the lesson: where it stands in the stage's world and
 // the shadow at its feet.

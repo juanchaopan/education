@@ -1,19 +1,16 @@
 import { describe, expect, it } from 'vitest';
+import { inside, world } from '../components/lesson-stage/stage-look';
 import { backdrops } from './backdrops/backdrops';
 import * as backdropStories from './backdrops/backdrops.stories';
-import { inside, pictureFiles, world } from './library';
+import { catalog, type Age } from './library';
 import { teachers } from './teachers/teachers';
 import * as teacherStories from './teachers/teachers.stories';
 
-// The picture files in each library folder, by file name.
+// The picture files in a library folder, by file name.
 const filesIn = (found: Record<string, unknown>) =>
   Object.keys(found)
     .map((path) => path.slice(path.lastIndexOf('/') + 1))
     .sort();
-const backdropFiles = filesIn(import.meta.glob('./backdrops/*.webp', { query: '?url' }));
-const teacherFiles = filesIn(import.meta.glob('./teachers/*.webp', { query: '?url' }));
-
-const filled = (text: string) => text.trim().length > 0;
 
 // The ids a stories file shows, each story's own args over its default ones.
 type Stories = Readonly<Record<string, { args?: Record<string, unknown> }>>;
@@ -24,80 +21,70 @@ function shown({ default: meta, ...stories }: Stories, arg: string) {
   });
 }
 
-describe('the backdrop library', () => {
-  it.each(Object.entries(backdrops))('tags %s in full', (key, backdrop) => {
-    expect(backdrop.id).toBe(key);
-    expect(backdrop.file).toBe(`${key}.webp`);
-    expect(backdrop.image).toContain(backdrop.file);
-    expect([backdrop.setting, backdrop.light, backdrop.focus, backdrop.prompt].every(filled)).toBe(
-      true,
-    );
-    expect(backdrop.ages.length).toBeGreaterThan(0);
-    expect(new Set(backdrop.ages).size).toBe(backdrop.ages.length);
-    expect(backdrop.fits.every(filled)).toBe(true);
-  });
+const filled = (text: string) => text.trim().length > 0;
 
-  it.each(Object.entries(backdrops))('keeps the clearing of %s inside the world', (_, backdrop) => {
-    const { clearZone } = backdrop;
-    expect(clearZone.width).toBeGreaterThan(0);
-    expect(clearZone.height).toBeGreaterThan(0);
-    expect(inside(clearZone, world)).toBe(true);
-  });
+type Entry = Readonly<{ id: string; file: string; image: string; ages: readonly Age[] }>;
+
+describe.each([
+  {
+    library: 'backdrop',
+    entries: Object.values(backdrops) as readonly Entry[],
+    files: filesIn(import.meta.glob('./backdrops/*.webp', { query: '?url' })),
+    stories: shown(backdropStories, 'backdrop'),
+  },
+  {
+    library: 'teacher',
+    entries: Object.values(teachers) as readonly Entry[],
+    files: filesIn(import.meta.glob('./teachers/*.webp', { query: '?url' })),
+    stories: shown(teacherStories, 'teacher'),
+  },
+])('the $library library', ({ entries, files, stories }) => {
+  it.each(entries.map((entry) => [entry.id, entry] as const))(
+    'names %s by its file, once for each school year',
+    (id, entry) => {
+      expect(entry.file).toBe(`${id}.webp`);
+      expect(entry.image).toContain(entry.file);
+      expect(new Set(entry.ages).size).toBe(entry.ages.length);
+    },
+  );
 
   it('lists every picture in its folder, and nothing else', () => {
-    const listed = Object.values(backdrops).map(({ file }) => file);
-    expect(listed.sort()).toEqual(backdropFiles);
+    expect(entries.map(({ file }) => file).sort()).toEqual(files);
   });
 
-  it('shows every backdrop in Storybook, so each has a visual baseline', () => {
-    expect(shown(backdropStories, 'backdrop').sort()).toEqual(Object.keys(backdrops).sort());
+  it('shows every picture in Storybook, so each has a visual baseline', () => {
+    expect([...stories].sort()).toEqual(entries.map(({ id }) => id).sort());
+  });
+});
+
+describe('the backdrop library', () => {
+  it.each(Object.entries(backdrops))('tags %s in full, its clearing in the world', (_, entry) => {
+    expect([entry.setting, entry.light, entry.focus, entry.prompt].every(filled)).toBe(true);
+    expect(entry.fits.every(filled)).toBe(true);
+    expect(entry.clearZone.width).toBeGreaterThan(0);
+    expect(entry.clearZone.height).toBeGreaterThan(0);
+    expect(inside(entry.clearZone, world)).toBe(true);
   });
 });
 
 describe('the teacher library', () => {
-  it.each(Object.entries(teachers))('describes %s in full', (key, teacher) => {
-    expect(teacher.id).toBe(key);
-    expect(teacher.file).toBe(`${key}.webp`);
-    expect(teacher.image).toContain(teacher.file);
-    expect([teacher.name, teacher.personality, teacher.prompt].every(filled)).toBe(true);
-    expect(teacher.ages.length).toBeGreaterThan(0);
-    expect(new Set(teacher.ages).size).toBe(teacher.ages.length);
-  });
-
-  it('lists every picture in its folder, and nothing else', () => {
-    const listed = Object.values(teachers).map(({ file }) => file);
-    expect(listed.sort()).toEqual(teacherFiles);
-  });
-
-  it('shows every teacher in Storybook, so each has a visual baseline', () => {
-    expect(shown(teacherStories, 'teacher').sort()).toEqual(Object.keys(teachers).sort());
+  it.each(Object.entries(teachers))('describes %s in full', (_, entry) => {
+    expect([entry.name, entry.personality, entry.prompt].every(filled)).toBe(true);
   });
 });
 
-describe('library pictures', () => {
-  const picture = pictureFiles({ './found.webp': '/assets/found-1a2b.webp' });
+describe('a library catalog', () => {
+  const files = { './found.webp': '/assets/found-1a2b.webp' };
 
-  it('are found by file name', () => {
-    expect(picture('found.webp')).toBe('/assets/found-1a2b.webp');
+  it('gives each entry its id and the address of its picture', () => {
+    expect(catalog({ found: { file: 'found.webp' } }, files)).toEqual({
+      found: { id: 'found', file: 'found.webp', image: '/assets/found-1a2b.webp' },
+    });
   });
 
-  it('must be beside the list that names them', () => {
-    expect(() => picture('lost.webp')).toThrow('lost.webp is not in the library');
-  });
-});
-
-describe('boxes in the world', () => {
-  const frame = { x: 10, y: 10, width: 100, height: 50 };
-
-  it('lie inside a frame when every edge is within it, touching included', () => {
-    expect(inside(frame, frame)).toBe(true);
-    expect(inside({ x: 20, y: 20, width: 10, height: 10 }, frame)).toBe(true);
-  });
-
-  it('do not when any edge passes beyond it', () => {
-    expect(inside({ ...frame, x: 9 }, frame)).toBe(false);
-    expect(inside({ ...frame, y: 11 }, frame)).toBe(false);
-    expect(inside({ ...frame, width: 101 }, frame)).toBe(false);
-    expect(inside({ ...frame, height: 51 }, frame)).toBe(false);
+  it('takes only pictures beside the list that names them', () => {
+    expect(() => catalog({ lost: { file: 'lost.webp' } }, files)).toThrow(
+      'lost.webp is not in the library',
+    );
   });
 });

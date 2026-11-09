@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import type { TeacherRole } from '../features/learning/lessons/lesson-definition';
 import type { LessonOutline } from '../features/learning/lessons/registry';
-import { backdrops } from '../features/learning/media/backdrops/backdrops';
+import { backdrops, type BackdropId } from '../features/learning/media/backdrops/backdrops';
 import { lessonProblems, type PluginOutline } from './lesson-check';
 import { fixtureLesson } from './lesson-fixture';
 
@@ -41,13 +42,6 @@ describe('the lesson definition check', () => {
     expect(problems({ answer })).toEqual(['answer scene after has no scene after it']);
   });
 
-  it('finds a backdrop or a teacher the library does not have', () => {
-    expect(problems({ backdrop: 'moon-base', teacher: { id: 'owl' } })).toEqual([
-      'backdrop moon-base is not in the library',
-      'teacher owl is not in the library',
-    ]);
-  });
-
   it('finds props that stand outside the backdrop clearing, even by a little', () => {
     const { clearZone } = backdrops[fixtureLesson.backdrop];
     const staging = { ...clearZone, width: clearZone.width + 1 };
@@ -55,6 +49,17 @@ describe('the lesson definition check', () => {
       `the props stand outside the clearing of ${fixtureLesson.backdrop}`,
     ]);
     expect(problems({ staging: clearZone })).toEqual([]);
+  });
+
+  // A lesson naming a backdrop or teacher outside the library fails the type
+  // check. Each expected error below is itself checked: were the name ever in
+  // the library, the type check would fail on the unused expectation.
+  it('lets a lesson pick only backdrops and teachers in the library', () => {
+    // @ts-expect-error moon-base is not in the backdrop library
+    const backdrop: BackdropId = 'moon-base';
+    // @ts-expect-error owl is not in the teacher library
+    const teacher: TeacherRole['id'] = 'owl';
+    expect([backdrop in backdrops, teacher]).toEqual([false, 'owl']);
   });
 
   it('finds scenes and plugin steps that do not match', () => {

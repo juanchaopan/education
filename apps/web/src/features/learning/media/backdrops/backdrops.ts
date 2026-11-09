@@ -1,5 +1,5 @@
 import type { Box } from '../../components/lesson-stage/stage-look';
-import { catalog, pictureFiles, type Age } from '../library';
+import { catalog, type Age } from '../library';
 
 // The shape of the clean, darker clearing a backdrop leaves for a lesson's
 // props: a table in the lower middle, a band across the middle, or most of
@@ -73,9 +73,7 @@ export type BackdropId = keyof typeof entries;
 // Every backdrop in the library, by id, each with the address of its picture.
 export const backdrops = catalog<BackdropId, BackdropEntry>(
   entries,
-  pictureFiles(
-    import.meta.glob<string>('./*.webp', { eager: true, query: '?url', import: 'default' }),
-  ),
+  import.meta.glob<string>('./*.webp', { eager: true, query: '?url', import: 'default' }),
 );
 
 export type LibraryBackdrop = (typeof backdrops)[BackdropId];
