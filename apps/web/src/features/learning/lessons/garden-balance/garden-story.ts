@@ -1,5 +1,5 @@
-import type { FilmScene, FilmStory, Reaction as FilmReaction } from '../../interaction/lesson-film';
-import { entryLines, lines, type LineId, type Shot } from './script';
+import type { FilmScene, Reaction as FilmReaction } from '../../interaction/lesson-film';
+import { entryLines, type LineId, type Shot } from './script';
 
 export type Scene = FilmScene<Shot>;
 export type GardenState = Readonly<{
@@ -19,6 +19,7 @@ type Drop = { kind: 'drop'; part: 'leaf' | 'apple'; place: 'basket' };
 type Tap = { kind: 'tap'; part: 'exchange' | 'replace' };
 export type Move = Drop | Tap;
 
+// The title card: the film starts among the two cabbages on the scale.
 export const opening: GardenState = {
   shot: 'opening',
   leaves: 2,
@@ -104,12 +105,3 @@ export function respond(state: GardenState, move: Move): Reaction | undefined {
 export function savesProgress(shot: Scene): shot is Shot {
   return shot !== 'opening' && shot !== 'variation' && shot !== 'end';
 }
-
-// The garden film: it starts among the two cabbages on the scale.
-export const gardenStory: FilmStory<GardenState, Shot, LineId, Move> = {
-  lines,
-  opening,
-  first: 'leaves',
-  arrive,
-  respond,
-};

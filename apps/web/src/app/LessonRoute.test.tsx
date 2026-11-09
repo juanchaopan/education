@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react';
 import { lazy } from 'react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { LessonBoundary } from './LessonBoundary';
-import { LessonRoute, type LessonPage } from './LessonRoute';
+import { LessonRoute, type LessonScreen } from './LessonRoute';
 
 // React reports every error a boundary catches; these tests make them on
 // purpose.
@@ -15,7 +15,7 @@ afterEach(() => {
 
 it('shows a way to open a lesson again when its files did not load', async () => {
   vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(null, { status: 401 })));
-  const missing: LessonPage = lazy(() => Promise.reject(new TypeError('Failed to fetch module')));
+  const missing: LessonScreen = lazy(() => Promise.reject(new TypeError('Failed to fetch module')));
   render(
     <QueryClientProvider client={new QueryClient()}>
       <LessonRoute lesson={missing} />

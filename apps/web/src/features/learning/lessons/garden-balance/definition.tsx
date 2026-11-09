@@ -1,0 +1,59 @@
+import { SpriteUse } from '../../components/garden-balance/garden-art';
+import { GardenDefs } from '../../components/garden-balance/garden-defs';
+import { GardenScene } from '../../components/garden-balance/garden-scenes';
+import type { MovableLook, movableProps } from '../../components/garden-balance/movable-props';
+import { Ambience } from '../../components/lesson-stage/Ambience';
+import type { LessonDefinition } from '../lesson-definition';
+import { gardenBackdrop, gardenCameras, gardenPalette, gardenTeacher } from './garden-look';
+import { gardenProps } from './garden-props';
+import {
+  arrive,
+  opening,
+  respond,
+  savesProgress,
+  type GardenState,
+  type Move,
+} from './garden-story';
+import {
+  answerChoices,
+  answerHints,
+  answerQuestion,
+  answerWords,
+  entryLines,
+  gardenBalance,
+  lines,
+  shots,
+  type LineId,
+  type Shot,
+} from './script';
+
+type Piece = keyof typeof movableProps;
+
+// 菜园天平：一棵青菜和几根黄瓜一样重。The rabbit halves the scale, weighs one
+// apple against cucumbers and swaps each apple for its cucumbers, then asks
+// for the count; a variation with two cucumbers to an apple follows.
+export const gardenLesson = {
+  problem: gardenBalance,
+  title: '一棵青菜有多重？',
+  theater: '菜园小剧场',
+  labels: { film: '菜园天平互动短片', world: '可互动的菜园道具' },
+  backdrop: gardenBackdrop,
+  teacher: gardenTeacher,
+  palette: gardenPalette,
+  defs: <GardenDefs />,
+  ambience: <Ambience kind="fireflies" />,
+  script: { lines, shots, entryLines, cameras: gardenCameras },
+  story: { opening, arrive, respond, savesProgress },
+  props: {
+    ...gardenProps,
+    carried: ({ sprite, size }) => <SpriteUse sprite={sprite} size={size} />,
+  },
+  answer: {
+    shot: 'answer',
+    question: answerQuestion,
+    words: answerWords,
+    choices: answerChoices,
+    hints: answerHints,
+  },
+  Scene: GardenScene,
+} satisfies LessonDefinition<GardenState, Shot, LineId, Move, Piece, MovableLook>;
