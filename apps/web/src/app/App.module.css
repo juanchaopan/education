@@ -16,6 +16,17 @@
   padding: var(--space-4) 0 var(--space-5);
 }
 
+/* The main navigation holds both the children's places and the parents'
+   space, and lays them on the header's middle and right columns. A browser
+   without subgrid keeps them in order, the places beside the brand. */
+.nav {
+  grid-column: 2 / 4;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-columns: subgrid;
+  align-items: center;
+}
+
 .brand {
   justify-self: start;
   display: inline-flex;

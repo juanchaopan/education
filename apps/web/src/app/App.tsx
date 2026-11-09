@@ -19,7 +19,7 @@ import styles from './App.module.css';
 type Destination = { to: string; icon: IconName; label: string; end?: boolean };
 
 // The children's places sit together in the middle of the header; the
-// parents' space stands apart on the right.
+// parents' space stands apart on the right. Both are the main navigation.
 const childPlaces: Destination[] = [
   { to: '/', icon: 'sparkle', label: '探索题目', end: true },
   { to: '/child', icon: 'user', label: '孩子空间' },
@@ -52,7 +52,7 @@ export function App() {
           </span>
           <span className={styles.brandName}>小小探索家</span>
         </NavLink>
-        <nav aria-label="主导航">
+        <nav aria-label="主导航" className={styles.nav}>
           <ul className={styles.tabs}>
             {childPlaces.map((place) => (
               <li key={place.to}>
@@ -60,8 +60,8 @@ export function App() {
               </li>
             ))}
           </ul>
+          <SiteLink {...parentSpace} className={styles.parent} />
         </nav>
-        <SiteLink {...parentSpace} className={styles.parent} />
       </header>
       <main id="main" tabIndex={-1} className={styles.main}>
         <Routes>
