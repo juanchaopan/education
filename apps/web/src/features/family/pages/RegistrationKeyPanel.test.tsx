@@ -93,7 +93,7 @@ it('holds a reload while a new key is on screen, until the parent closes it', as
   expect(screen.queryByText(value)).toBeNull();
   expect(readiness()).toHaveTextContent('ready');
 });
-it('keeps the hold while the status is read again, as the key comes back after it', async () => {
+it('keeps the hold while the status is read again, after which the key shows once more', async () => {
   const { server } = setup();
   await generate();
   server.reads = 'wait';
@@ -102,13 +102,23 @@ it('keeps the hold while the status is read again, as the key comes back after i
   expect(screen.queryByText(value)).toBeNull();
   expect(readiness()).toHaveTextContent('showing');
 });
-it('keeps the hold when the status cannot be read, as the key may still come back', async () => {
+it('lets the page reload once the status no longer shows the key', async () => {
   const { server } = setup();
   await generate();
-  server.reads = 'fail';
+  server.revoked = true;
+  readStatusAgain();
+  expect(await screen.findByText('已撤销')).toBeVisible();
+  expect(screen.queryByText(value)).toBeNull();
+  expect(readiness()).toHaveTextContent('ready');
+
+  cleanup();
+  const failing = setup();
+  await generate();
+  failing.server.reads = 'fail';
   readStatusAgain();
   expect(await screen.findByText(/暂时无法完成/)).toBeVisible();
-  expect(readiness()).toHaveTextContent('showing');
+  expect(screen.queryByText(value)).toBeNull();
+  expect(readiness()).toHaveTextContent('ready');
 });
 it('lets the page reload once the parent leaves the page with a key still shown', async () => {
   const { view, Page } = setup();

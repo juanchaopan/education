@@ -25,6 +25,11 @@ export const PartsContext = createContext<ReadonlyMap<string, ReadinessPart>>(ne
 // not disturb it.
 const holds: readonly Readiness[] = ['playing', 'unsaved', 'saving', 'showing'];
 
+// The strongest of these holds, or ready when none holds.
+export function strongest(readinesses: readonly Readiness[]): Readiness {
+  return holds.find((hold) => readinesses.includes(hold)) ?? 'ready';
+}
+
 // Reports how this part of the page stands toward a reload for as long as it
 // is on the page, and how to save its unsaved work. Outside a provider the
 // report goes nowhere.
@@ -44,7 +49,7 @@ export function useReloadReadiness(readiness: Readiness, save: () => void = () =
 export function usePageReadiness() {
   const parts = [...useContext(PartsContext).values()];
   return {
-    readiness: holds.find((hold) => parts.some((part) => part.readiness === hold)) ?? 'ready',
+    readiness: strongest(parts.map((part) => part.readiness)),
     saveUnsaved() {
       for (const part of parts) if (part.readiness === 'unsaved') part.save();
     },

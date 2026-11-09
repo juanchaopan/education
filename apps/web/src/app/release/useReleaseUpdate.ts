@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useIsMutating, useQuery, useQueryClient } from '@tanstack/react-query';
-import { usePageReadiness, type Readiness } from '../../shared/lib/reload-readiness';
+import { strongest, usePageReadiness, type Readiness } from '../../shared/lib/reload-readiness';
 import { ownRelease } from './own-release';
 import { requestRelease } from './release-request';
 import { createReloadGuard, type ReloadGuard } from './reload-guard';
@@ -57,13 +57,15 @@ function useLatestRelease(own: string | undefined) {
 }
 
 // How the page stands toward a reload: what its parts report, and any write
-// still on its way to the server, whose answer a reload would lose, counted
-// as work being saved.
+// still on its way to the server, whose answer a reload would lose, ranked
+// with them as work being saved.
 function useReadiness() {
   const page = usePageReadiness();
   const writing = useIsMutating() > 0;
-  const readiness: Readiness = page.readiness === 'ready' && writing ? 'saving' : page.readiness;
-  return { readiness, saveUnsaved: page.saveUnsaved };
+  return {
+    readiness: strongest([page.readiness, writing ? 'saving' : 'ready']),
+    saveUnsaved: page.saveUnsaved,
+  };
 }
 
 // Checks the deployment again now, for a page that met a sign of a new
