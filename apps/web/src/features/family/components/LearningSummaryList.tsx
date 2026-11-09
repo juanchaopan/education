@@ -6,7 +6,9 @@ export function LearningSummaryList({ problems }: { problems: readonly ProblemLe
   return (
     <>
       <p>当前记录不足以判断是否掌握。</p>
-      <p>每个版本分别统计。同一轮打开同一提示，只记一次。无法判定的作答不会记为答错。</p>
+      <p>
+        每个版本分别统计。同一轮打开同一条提示、或在作答时向老师提问，都只记一次。无法判定的作答不会记为答错。
+      </p>
       <ul className={styles.problems}>
         {problems.map((problem) => (
           <ProblemEvidence key={`${problem.id}/${problem.version}`} problem={problem} />
