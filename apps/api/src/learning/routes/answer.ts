@@ -7,6 +7,7 @@ import {
   AttemptReceipt,
   HintReceipt,
   ProblemParams,
+  QuestionReceipt,
 } from '@education/contracts';
 import { problemRequest } from '../../shared/problem-request.js';
 import { RequestError } from '../../shared/request-error.js';
@@ -41,7 +42,7 @@ export function registerAnswering(app: FastifyInstance, origin: string, answerin
       schema: {
         ...schema,
         body: AnswerCommand,
-        response: { 200: Type.Union([AttemptReceipt, HintReceipt]) },
+        response: { 200: Type.Union([AttemptReceipt, HintReceipt, QuestionReceipt]) },
       },
     },
     (request, reply) => {
