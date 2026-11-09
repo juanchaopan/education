@@ -49,5 +49,6 @@ export const HintReceipt = Type.Object(
 );
 export type AnswerRound = Static<typeof AnswerRound>;
 export type SubmitAnswer = Static<typeof SubmitAnswer>;
+export type AskForHint = Static<typeof AskForHint>;
 export type AnswerCommand = Static<typeof AnswerCommand>;
 export type AttemptReceipt = Static<typeof AttemptReceipt>;

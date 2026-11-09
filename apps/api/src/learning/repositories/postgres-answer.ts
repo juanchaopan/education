@@ -27,14 +27,15 @@ export function answersFor(client: pg.PoolClient, child: string, problem: Proble
       return rows[0];
     },
     fingerprint: (command: SubmitAnswer) => fingerprint(secret, key, command),
-    hint: async (round: string, hintId: string) => {
+    // Each kind of help is kept once per round, under the id of what helped.
+    help: async (round: string, helpId: string) => {
       await client.query(
         `INSERT INTO help_events(child_id,problem_id,problem_version,round,hint_id)
         VALUES($1,$2,$3,$4,$5) ON CONFLICT DO NOTHING`,
-        [...key, round, hintId],
+        [...key, round, helpId],
       );
     },
-    usedHint: async (round: string) => {
+    usedHelp: async (round: string) => {
       const result = await client.query(
         `SELECT 1 FROM help_events WHERE ${slot} AND round=$4 LIMIT 1`,
         [...key, round],
