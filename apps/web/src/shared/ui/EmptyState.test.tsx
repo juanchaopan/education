@@ -7,7 +7,7 @@ it('offers a working retry without hiding the error', async () => {
   const retry = vi.fn();
   render(
     <EmptyState
-      icon="cloud"
+      icon="wifiOff"
       title="刚才没能打开"
       description="请再试一次"
       actionLabel="重试"
@@ -20,6 +20,6 @@ it('offers a working retry without hiding the error', async () => {
 });
 
 it('offers no button without an action', () => {
-  render(<EmptyState icon="flower" title="这个分类还没有题目" description="换一个分类" />);
+  render(<EmptyState icon="sprout" title="这个分类还没有题目" description="换一个分类" />);
   expect(screen.queryByRole('button')).toBeNull();
 });

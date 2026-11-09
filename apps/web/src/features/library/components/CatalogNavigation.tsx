@@ -52,7 +52,7 @@ export function CatalogNavigation({ selection, problems, onChange }: CatalogNavi
         </ol>
       ) : (
         <EmptyState
-          icon="flower"
+          icon="sprout"
           title="这个分类还没有题目"
           description="可以换一个分类继续探索。"
         />

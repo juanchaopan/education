@@ -23,7 +23,7 @@ export function ChildRegistrationForm(props: ChildRegistrationFormProps) {
       title="加入我的家庭"
       introduction={
         <>
-          <Icon name="spark" badge />
+          <Icon name="key" badge />
           <h2>我们一起，迈出第一步</h2>
           <p>请家长把注册 KEY 给你。它像一张邀请卡，帮助你加入自己的家庭。</p>
           <p>慢慢填就好。遇到困难，可以请家长陪你一起完成。</p>

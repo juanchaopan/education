@@ -19,11 +19,11 @@ export function ProblemPage({ pages }: { pages: ProblemPages }) {
     <section aria-label="题目">
       <StandaloneLink to={problem ? catalogPath(problem) : '/'}>返回题库</StandaloneLink>
       {query.isPending && (
-        <EmptyState icon="waiting" title="正在打开这道题" description="请稍等一下。" />
+        <EmptyState icon="clock" title="正在打开这道题" description="请稍等一下。" />
       )}
       {query.isError && (
         <EmptyState
-          icon="cloud"
+          icon="alert"
           title="刚才没能打开这道题"
           description="可以再试一次。"
           actionLabel="再试一次"
@@ -51,7 +51,7 @@ function ProblemContent({
   }
   return (
     <EmptyState
-      icon="flower"
+      icon="sprout"
       title="这道题暂时不可用"
       description="这个题目或版本目前无法打开。可以返回题库，选一道其他题目。"
     />

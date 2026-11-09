@@ -17,12 +17,12 @@ export function WelcomeHero() {
           不用着急，我们陪你一步一步想明白。
         </p>
         <div className={styles.note}>
-          <Icon name="twinkle" /> 不怕再试一次，也可以再听一遍
+          <Icon name="replay" /> 不怕再试一次，也可以再听一遍
         </div>
       </div>
       <div className={styles.art} aria-hidden="true">
         <span className={styles.orbit} />
-        <Icon name="spark" className={styles.sun} />
+        <Icon name="sparkle" className={styles.sun} />
         <div className={styles.card}>
           <span className={styles.cardLabel}>今天，也有新发现</span>
           <div className={styles.blocks}>
@@ -33,7 +33,7 @@ export function WelcomeHero() {
           <span className={styles.drawnLine}>﹏﹏﹏</span>
           <span className={styles.cardCaption}>想法没有固定的形状</span>
         </div>
-        <Icon name="glimmer" className={styles.spark} />
+        <Icon name="star" className={styles.spark} />
         <span className={styles.dot} />
       </div>
     </section>

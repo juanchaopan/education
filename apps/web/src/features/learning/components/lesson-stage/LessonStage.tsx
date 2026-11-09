@@ -1,5 +1,6 @@
 import { useMemo, type KeyboardEvent, type MouseEvent, type ReactNode, type Ref } from 'react';
 import { classNames } from '../../../../shared/lib/class-names';
+import { Icon } from '../../../../shared/ui/Icon';
 import { activationAt, type Activation } from '../../interaction/stage-activation';
 import { paletteStyle, type Camera, type StageLook, type Teacher } from './stage-look';
 import styles from './LessonStage.module.css';
@@ -63,7 +64,7 @@ function TitleCard({ title, theater, entryLabel, onEnter }: EntryProps) {
       <small>小小探索家 · {theater}</small>
       <h2>{title}</h2>
       <button type="button" className={styles.entry} onClick={onEnter} disabled={!onEnter}>
-        <i aria-hidden="true">▶</i> {entryLabel}
+        <Icon name="play" className={styles.entryMark} /> {entryLabel}
       </button>
     </div>
   );
@@ -81,8 +82,9 @@ function TitleBar({ title, theater }: TitleProps) {
 
 type ReplayProps = Pick<Props, 'onReplay' | 'speaking'> & { again: boolean };
 
-// Hearing the line again: a small note while all is well, and a button that
-// says so in words while a line that did not come out waits for the child.
+// Hearing the line again: a small button with the replay icon while all is
+// well, and one that says so in words while a line that did not come out
+// waits for the child.
 function ReplayButton({ again, speaking, onReplay }: ReplayProps) {
   return (
     <button
@@ -91,7 +93,7 @@ function ReplayButton({ again, speaking, onReplay }: ReplayProps) {
       aria-label={again ? undefined : '重听这一句'}
       onClick={onReplay}
     >
-      <span aria-hidden="true">♪</span>
+      <Icon name="replay" />
       {again && ' 再听一次'}
     </button>
   );

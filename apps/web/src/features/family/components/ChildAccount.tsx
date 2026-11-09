@@ -13,7 +13,7 @@ export type ChildAccountProps = {
 export function ChildAccount({ session, pending, error, onLogout }: ChildAccountProps) {
   return (
     <Card aria-labelledby="child-account-title">
-      <Icon name="spark" badge />
+      <Icon name="user" badge />
       <h2 id="child-account-title">{session.nickname}，欢迎回来！</h2>
       <p>你已登录自己的空间，下次打开通常可以直接回来。</p>
       {error && <p role="alert">{error}</p>}

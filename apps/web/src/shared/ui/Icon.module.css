@@ -1,3 +1,11 @@
+/* The drawing is one em square, so an icon takes the size of the text it sits
+   in and lines up with that text's baseline. */
+.drawing {
+  display: inline-block;
+  inline-size: 1em;
+  block-size: 1em;
+  vertical-align: -0.125em;
+}
 .badge {
   display: inline-grid;
   place-items: center;
