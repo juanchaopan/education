@@ -1,4 +1,8 @@
-import { inside } from '../features/learning/components/lesson-stage/stage-look';
+import {
+  establishing,
+  framed,
+  inside,
+} from '../features/learning/components/lesson-stage/stage-look';
 import { shotAfter, type ProblemVersion } from '../features/learning/lessons/lesson-definition';
 import type { LessonOutline } from '../features/learning/lessons/registry';
 import { backdrops } from '../features/learning/media/backdrops/backdrops';
@@ -38,13 +42,15 @@ function answerProblems({ script, answer }: LessonOutline) {
   return shotAfter(script, shot) ? [] : [`answer scene ${shot} has no scene after it`];
 }
 
-// The lesson's props stand in its backdrop's clearing. Its backdrop and
-// teacher are library ids by type, so a lesson naming any other does not
-// compile.
-function stagingProblems({ backdrop, staging }: LessonOutline) {
-  return inside(staging, backdrops[backdrop].clearZone)
-    ? []
-    : [`the props stand outside the clearing of ${backdrop}`];
+// The lesson's props stand in its backdrop's clearing in every scene, as that
+// scene frames the backdrop; the props stay put while the backdrop zooms and
+// moves. Its backdrop and teacher are library ids by type, so a lesson naming
+// any other does not compile.
+function stagingProblems({ backdrop, staging, script }: LessonOutline) {
+  const { clearZone } = backdrops[backdrop];
+  return script.shots
+    .filter((shot) => !inside(staging, framed(clearZone, script.cameras?.[shot] ?? establishing)))
+    .map((shot) => `the props stand outside the clearing of ${backdrop} in scene ${shot}`);
 }
 
 function pluginProblems(listed: ProblemVersion, lesson: LessonOutline, plugin?: PluginOutline) {
@@ -59,8 +65,8 @@ function pluginProblems(listed: ProblemVersion, lesson: LessonOutline, plugin?: 
 
 // Everything wrong with a registered lesson, or nothing: its version against
 // its registry line, its recordings and entry lines, its answer scene and the
-// scene after it, where its props stand against its backdrop, and the
-// server's plugin for it, with its steps and hints.
+// scene after it, where its props stand against its backdrop in each scene,
+// and the server's plugin for it, with its steps and hints.
 export function lessonProblems(
   listed: ProblemVersion,
   lesson: LessonOutline,

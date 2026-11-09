@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { establishing, framed } from '../features/learning/components/lesson-stage/stage-look';
 import type { TeacherRole } from '../features/learning/lessons/lesson-definition';
 import type { LessonOutline } from '../features/learning/lessons/registry';
 import { backdrops, type BackdropId } from '../features/learning/media/backdrops/backdrops';
@@ -13,6 +14,9 @@ const { script } = outline;
 function problems(change: Partial<LessonOutline>, against = plugin) {
   return lessonProblems(listed, { ...outline, ...change }, against);
 }
+
+const outside = (shot: string) =>
+  `the props stand outside the clearing of ${fixtureLesson.backdrop} in scene ${shot}`;
 
 describe('the lesson definition check', () => {
   it('passes a lesson that agrees with its registry line and its plugin', () => {
@@ -43,12 +47,18 @@ describe('the lesson definition check', () => {
   });
 
   it('finds props that stand outside the backdrop clearing, even by a little', () => {
-    const { clearZone } = backdrops[fixtureLesson.backdrop];
-    const staging = { ...clearZone, width: clearZone.width + 1 };
-    expect(problems({ staging })).toEqual([
-      `the props stand outside the clearing of ${fixtureLesson.backdrop}`,
+    const clearing = framed(backdrops[fixtureLesson.backdrop].clearZone, establishing);
+    expect(problems({ staging: clearing })).toEqual([]);
+    expect(problems({ staging: { ...clearing, width: clearing.width + 1 } })).toEqual([
+      outside('look'),
+      outside('count'),
+      outside('after'),
     ]);
-    expect(problems({ staging: clearZone })).toEqual([]);
+  });
+
+  it('finds props that a scene framing the backdrop elsewhere leaves outside its clearing', () => {
+    const cameras = { count: { zoom: 1, x: 50 } };
+    expect(problems({ script: { ...script, cameras } })).toEqual([outside('count')]);
   });
 
   // A lesson naming a backdrop or teacher outside the library fails the type

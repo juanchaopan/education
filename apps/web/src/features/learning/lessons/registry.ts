@@ -11,12 +11,12 @@ import type {
 } from './lesson-definition';
 
 // What the checks read of a lesson's definition: its version, its lines,
-// scenes and entry lines, its answer scene and hints, the library backdrop
-// and teacher it picks, and where its props stand. Every lesson's definition
-// is one, whatever its own types.
+// scenes, entry lines and each scene's framing, its answer scene and hints,
+// the library backdrop and teacher it picks, and where its props stand.
+// Every lesson's definition is one, whatever its own types.
 export type LessonOutline = Readonly<{
   problem: ProblemVersion;
-  script: Pick<Script<string, string>, 'lines' | 'shots' | 'entryLines'>;
+  script: Pick<Script<string, string>, 'lines' | 'shots' | 'entryLines' | 'cameras'>;
   answer: Pick<LessonAnswer<string>, 'shot' | 'hints'>;
   backdrop: BackdropId;
   teacher: Pick<TeacherRole, 'id'>;
