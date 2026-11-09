@@ -6,7 +6,7 @@ import { Button } from '../../../shared/ui/Button';
 import { Loading } from '../../../shared/ui/Loading';
 import { SelectField } from '../../../shared/ui/SelectField';
 import { LearningSummaryList } from '../components/LearningSummaryList';
-import { Panel } from '../components/Panel';
+import { ParentCard } from '../components/ParentCard';
 import { useFamilyChildren } from '../data-access/useChildAccess';
 import { useLearningSummary } from '../data-access/useLearningSummary';
 import styles from '../components/LearningSummary.module.css';
@@ -16,9 +16,9 @@ import styles from '../components/LearningSummary.module.css';
 // overview links, opens on that child's record.
 export function LearningSummaryPanel({ csrf }: { csrf: string }) {
   return (
-    <Panel titleId="learning-summary-title" title="学习摘要">
+    <ParentCard titleId="learning-summary-title" icon="chart" title="学习摘要">
       <LearningSummaryBody csrf={csrf} />
-    </Panel>
+    </ParentCard>
   );
 }
 
@@ -85,12 +85,16 @@ function SummaryPage({
       {summary.isSuccess && <LearningSummaryList problems={summary.data.problems} />}
       <Actions>
         {offset > 0 && (
-          <Button onClick={() => onPage(offset - learningSummaryPageSize)}>上一页</Button>
+          <Button variant="secondary" onClick={() => onPage(offset - learningSummaryPageSize)}>
+            上一页
+          </Button>
         )}
         {summary.isSuccess && summary.data.hasMore && (
-          <Button onClick={() => onPage(offset + learningSummaryPageSize)}>下一页</Button>
+          <Button variant="secondary" onClick={() => onPage(offset + learningSummaryPageSize)}>
+            下一页
+          </Button>
         )}
-        <Button disabled={summary.isFetching} onClick={() => void summary.refetch()}>
+        <Button variant="text" disabled={summary.isFetching} onClick={() => void summary.refetch()}>
           刷新学习记录
         </Button>
       </Actions>

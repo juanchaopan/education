@@ -1,12 +1,34 @@
+.budget {
+  font-weight: 700;
+}
+
+/* Each service on a soft tile of its own, its consent as a badge beside its
+   name. */
 .policy {
   margin-block: var(--space-4);
   padding: var(--space-4);
-  border: 1px solid var(--line);
   border-radius: var(--radius);
+  background: var(--surface-2);
 }
-
-.policy h3 {
-  margin-block: 0 var(--space-2);
+.heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+.heading h3 {
+  margin: 0;
+}
+.state {
+  margin: 0;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-pill);
+  background: var(--accent-soft);
+  font-size: var(--text-sm);
+}
+.state[data-state='granted'] {
+  background: color-mix(in srgb, var(--ok) 18%, var(--surface));
 }
 
 .availability {

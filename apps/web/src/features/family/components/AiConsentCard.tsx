@@ -4,7 +4,7 @@ import { Button } from '../../../shared/ui/Button';
 import { Hint } from '../../../shared/ui/Hint';
 import { Loading } from '../../../shared/ui/Loading';
 import { Notice } from '../../../shared/ui/Notice';
-import { Panel } from './Panel';
+import { ParentCard } from './ParentCard';
 import { ParentPasswordForm } from './ParentPasswordForm';
 import styles from './AiConsentCard.module.css';
 
@@ -42,13 +42,30 @@ const budgets: Record<AiConsentView['tutoringBudget'], string> = {
   limited: 'AI 解题提示的可用额度不足，可继续使用题目引导。',
 };
 
+// The family's consent to each outside AI service. Everything a parent must
+// know to decide stays on the card: what each service is sent, what for, how
+// the app and the provider keep it, what withdrawing does, and the
+// provider's own data policy.
 export function AiConsentCard(props: Props) {
   const { view, pending, onChange } = props;
   return (
-    <Panel titleId="ai-consent-title" title="外部 AI 授权">
+    <ParentCard
+      titleId="ai-consent-title"
+      icon="sparkle"
+      title="外部 AI 授权"
+      action={
+        <Button variant="text" disabled={pending} onClick={props.onRefresh}>
+          刷新授权状态
+        </Button>
+      }
+    >
       <p>按用途为本家庭的孩子选择授权。服务启用后，才会处理已授权的输入。</p>
       <p>撤回后将停止新的发送。此前已发送的内容仍按供应商的保留政策处理。</p>
-      {view && <p role="status">{budgets[view.tutoringBudget]}</p>}
+      {view && (
+        <p role="status" className={styles.budget}>
+          {budgets[view.tutoringBudget]}
+        </p>
+      )}
       <p>
         <a href="https://developers.openai.com/api/docs/guides/your-data">
           查看 OpenAI 的数据保留说明
@@ -75,12 +92,7 @@ export function AiConsentCard(props: Props) {
           onSubmit={props.onConfirm}
         />
       )}
-      <Actions>
-        <Button disabled={pending} onClick={props.onRefresh}>
-          刷新授权状态
-        </Button>
-      </Actions>
-    </Panel>
+    </ParentCard>
   );
 }
 
@@ -98,7 +110,12 @@ function PolicyCard({
   const update = (granted: boolean) => onChange({ scope, policyVersion, revision, granted });
   return (
     <div role="group" aria-labelledby={label} className={styles.policy}>
-      <h3 id={label}>{title}</h3>
+      <div className={styles.heading}>
+        <h3 id={label}>{title}</h3>
+        <p role="status" className={styles.state} data-state={state}>
+          <strong>{states[state]}</strong>
+        </p>
+      </div>
       <Hint>
         {policy.provider} · 政策版本 {policyVersion}
       </Hint>
@@ -113,9 +130,6 @@ function PolicyCard({
         <dt>供应商如何保留</dt>
         <dd>{policy.providerRetention}</dd>
       </dl>
-      <p role="status">
-        <strong>{states[state]}</strong>
-      </p>
       <Actions>
         {state !== 'granted' && (
           <Button disabled={disabled} onClick={() => update(true)}>
@@ -123,7 +137,7 @@ function PolicyCard({
           </Button>
         )}
         {(state === 'granted' || state === 'policy-changed') && (
-          <Button disabled={disabled} onClick={() => update(false)}>
+          <Button variant="secondary" disabled={disabled} onClick={() => update(false)}>
             撤回 {title}授权
           </Button>
         )}
