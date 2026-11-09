@@ -1,19 +1,21 @@
 import { expect, type Page } from '@playwright/test';
 import { longCatalog, serveApi, signedOutApi, type Api } from './api';
-import { fixClock, waitForFonts } from './render';
+import { fixClock, waitForFonts, type Theme } from './render';
 
-// One page in one state: where to open it, how the API answers, and the
-// heading that shows it has finished rendering that state.
+// One page in one state: where to open it, how the API answers, the heading
+// that shows it has finished rendering that state, and the theme it is seen
+// in (the day theme unless named).
 export type PageState = {
   name: string;
   path: string;
   ready: string;
   api?: Api;
+  theme?: Theme;
 };
 
 const failed = { status: 500, json: { message: 'unavailable' } };
 
-export const pageStates: PageState[] = [
+const dayStates: PageState[] = [
   { name: 'explore-empty', path: '/', ready: '好问题，正在准备中' },
   {
     name: 'explore-loading',
@@ -59,13 +61,23 @@ export const pageStates: PageState[] = [
   { name: 'not-found', path: '/visual-fixture-missing-page', ready: '这条小路还没找到' },
 ];
 
+// The key pages are also seen in the night theme: the catalogue, the child's
+// and the parent's sign-in, and the page for a path that leads nowhere.
+const nightPages = ['explore-empty', 'child-signed-out', 'family-signed-out', 'not-found'];
+const nightStates = dayStates
+  .filter((state) => nightPages.includes(state.name))
+  .map((state): PageState => ({ ...state, name: `${state.name}-night`, theme: 'night' }));
+
+export const pageStates = [...dayStates, ...nightStates];
+
 // Opens a page state with a fixed clock and API, and waits until it and its
 // fonts have rendered. Returns the API requests the state did not plan for.
 export async function openPageState(page: Page, state: PageState) {
-  await fixClock(page);
+  await fixClock(page, state.theme);
   const unexpected = await serveApi(page, { ...signedOutApi, ...state.api });
   await page.goto(state.path);
   await expect(page.getByRole('heading', { name: state.ready })).toBeVisible();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', state.theme ?? 'day');
   await waitForFonts(page);
   return unexpected;
 }
