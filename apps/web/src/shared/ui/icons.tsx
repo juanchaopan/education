@@ -67,6 +67,12 @@ export const glyphs = {
       <path d="M4 21a8 8 0 0 1 16 0" />
     </>
   ),
+  users: (
+    <>
+      <circle cx="9" cy="8" r="4" />
+      <path d="M2.5 21a6.5 6.5 0 0 1 13 0M16 4.2a4 4 0 0 1 0 7.6M18 14.5a6.5 6.5 0 0 1 3.5 6.5" />
+    </>
+  ),
   check: <path d="m5 12.5 4.5 4.5L19 7.5" />,
   info: (
     <>

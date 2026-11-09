@@ -8,12 +8,35 @@ import { LibraryPage } from '../features/library/pages/LibraryPage';
 import { ProblemPage } from '../features/library/pages/ProblemPage';
 import { FamilyPage } from '../features/family/pages/FamilyPage';
 import { Icon } from '../shared/ui/Icon';
+import type { IconName } from '../shared/ui/icons';
 import { Page } from '../shared/ui/Page';
 import { StandaloneLink } from '../shared/ui/StandaloneLink';
 import { lessonPages } from './lesson-pages';
 import { ReleaseUpdate } from './release/ReleaseUpdate';
 import { useDayNightTheme } from './theme/useDayNightTheme';
 import styles from './App.module.css';
+
+type Destination = { to: string; icon: IconName; label: string; end?: boolean };
+
+// The children's places sit together in the middle of the header; the
+// parents' space stands apart on the right.
+const childPlaces: Destination[] = [
+  { to: '/', icon: 'sparkle', label: '探索题目', end: true },
+  { to: '/child', icon: 'user', label: '孩子空间' },
+  { to: '/join', icon: 'key', label: '孩子注册' },
+];
+const parentSpace: Destination = { to: '/family', icon: 'users', label: '家长空间' };
+
+// A header link with its icon. When the header is too narrow for labels only
+// the icon shows; the label stays as the link's name for screen readers.
+function SiteLink({ to, icon, label, end, className }: Destination & { className: string }) {
+  return (
+    <NavLink to={to} end={end} className={className}>
+      <Icon name={icon} className={styles.linkIcon} />
+      <span className={styles.linkLabel}>{label}</span>
+    </NavLink>
+  );
+}
 
 export function App() {
   useDayNightTheme();
@@ -24,18 +47,23 @@ export function App() {
       </a>
       <header className={styles.header}>
         <NavLink to="/" className={styles.brand} aria-label="小小探索家首页">
-          <Icon name="sprout" className={styles.mark} /> 小小探索家
+          <span className={styles.mark}>
+            <Icon name="sprout" />
+          </span>
+          <span className={styles.brandName}>小小探索家</span>
         </NavLink>
         <nav aria-label="主导航">
-          <NavLink to="/" end>
-            探索题目
-          </NavLink>
-          <NavLink to="/family">家长空间</NavLink>
-          <NavLink to="/child">孩子空间</NavLink>
-          <NavLink to="/join">孩子注册</NavLink>
+          <ul className={styles.tabs}>
+            {childPlaces.map((place) => (
+              <li key={place.to}>
+                <SiteLink {...place} className={styles.tab} />
+              </li>
+            ))}
+          </ul>
         </nav>
+        <SiteLink {...parentSpace} className={styles.parent} />
       </header>
-      <main id="main" tabIndex={-1}>
+      <main id="main" tabIndex={-1} className={styles.main}>
         <Routes>
           <Route path="/" element={<LibraryPage />} />
           <Route path="/problems/:id/:version?" element={<ProblemPage pages={lessonPages} />} />
@@ -55,10 +83,6 @@ export function App() {
           />
         </Routes>
       </main>
-      <footer className={styles.footer}>
-        <span>慢慢想，每一步都算数。</span>
-        <span>为好奇心，留一点空间。</span>
-      </footer>
       <ReleaseUpdate />
     </div>
   );
