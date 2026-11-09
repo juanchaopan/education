@@ -22,6 +22,7 @@
     "@education/contracts": "*"
   },
   "devDependencies": {
+    "@education/problems": "*",
     "@storybook/react-vite": "^10.6.5",
     "@types/node": "^24.19.2",
     "@types/react": "^19.3.0",

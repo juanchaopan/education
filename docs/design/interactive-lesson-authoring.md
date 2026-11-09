@@ -33,13 +33,16 @@
 
 以菜园天平（[#49](../evidence/49/README.md)）为参考，一道题分成下面几部分，新题照这个分法放：
 
-| 部分       | 位置                                                    | 内容                                                                                                                                           |
-| ---------- | ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| 题目插件   | `libs/problems/src/<题目>.ts`                           | 题库里的年级、学科、分类和顺序，最终作答的判定规则，按顺序的提示，每一幕给老师和语音识别的说明与用词                                           |
-| 台词和分镜 | `apps/web/src/features/learning/lessons/<题目>/`        | 台词和录音、讲课的角色、幕的顺序、每幕的进场台词、答案的单位和错数的说明；场景的状态与规则（纯函数，单元测试覆盖）                             |
-| 素材       | `apps/web/src/features/learning/lessons/<题目>/assets/` | 背景图、角色图和旁白录音，原样使用                                                                                                             |
-| 场景画面   | `apps/web/src/features/learning/components/<题目>/`     | 展示组件：背景、矢量道具、字幕、重听按钮，只报告孩子点了哪个对象或位置                                                                         |
-| 页面       | `apps/web/src/features/learning/pages/`                 | 把场景、旁白、拖动、草稿、作答和提问接起来；在应用外壳的 `lessons.tsx` 按需加载，在 `lesson-pages.tsx` 用 `LessonRoute` 登记，它传入孩子的登录 |
+| 部分       | 位置                                                           | 内容                                                                                                                                                                    |
+| ---------- | -------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 题目插件   | `libs/problems/src/<题目>.ts`                                  | 题库里的年级、学科、分类和顺序，最终作答的判定规则，按顺序的提示，每一幕给老师和语音识别的说明与用词；整数答案用 `wholeNumberAnswer` 判定，每幕说明用 `sceneSteps` 组装 |
+| 台词和分镜 | `apps/web/src/features/learning/lessons/<题目>/`               | 台词和录音、讲课的角色、幕的顺序、每幕的进场台词、答案的单位和错数的说明；场景的状态与规则（纯函数，单元测试覆盖）                                                      |
+| 题目定义   | `apps/web/src/features/learning/lessons/<题目>/definition.tsx` | 一份 `LessonDefinition`：题目版本、片名和剧场名、背景、讲课角色、调色板、每幕取景、台词、场景规则、道具、最终作答和本题的 `Scene`                                       |
+| 素材       | `apps/web/src/features/learning/lessons/<题目>/assets/`        | 背景图、角色图和旁白录音，原样使用                                                                                                                                      |
+| 场景画面   | `apps/web/src/features/learning/components/<题目>/`            | 展示组件：矢量道具和本题的 `Scene`，画在公共的 `LessonStage` 上，只报告孩子点了哪个对象或位置                                                                           |
+| 登记       | `apps/web/src/features/learning/lessons/registry.ts`           | 每道题一行：题目版本和按需加载的定义。应用外壳据此生成题目页，用 `LessonRoute` 传入孩子的登录                                                                           |
+
+题目不写自己的页面：`lessonPage` 按这道题的定义构造公共的 `LessonPage`，它和 `LessonPanels` 一起接起短片、旁白、拖动、草稿、作答和提问，每道题的类型从定义一直检查到页面。`lessons/registry.test.ts` 逐题检查登记表：每句台词都有录音，每幕都有进场台词，作答那一幕在幕序里且后面还有一幕，题目版本在登记表、定义和题目插件里一致，幕名和插件的步骤一致，作答用到的提示都在插件里。`npm run arch` 保证一道题不引用另一道题的文件、题目的代码只在打开时加载、网站的代码不引用题目插件。
 
 几道题共用的部分在 `features/learning` 里：旁白排队、重听和打断（`useNarration`）、对象拖动（`bindObjectDrag`）、提示音（`createChime`）、语音提示文字（`voiceMessage`）、说出的数（`spokenNumber`）、说出并确认最终答案（`SpokenFinalAnswer`）、每一幕的提问（`SceneQuestions`）、没登录时的提示（`LessonSignInNotice`）和草稿（`useLessonDraft`）。背景和角色这类绘景图由 OpenAI 的图像生成制作，提示词记在样例归档的 `SPIKE.md`；孩子能操作的数学对象写成 SVG。
 

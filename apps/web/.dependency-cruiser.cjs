@@ -1,5 +1,10 @@
-// 架构规则：页面（容器）和展示组件的分层、功能之间的隔离。说明见 .claude/rules/ 里本组件的规范。
+// 架构规则：页面（容器）和展示组件的分层、功能之间的隔离、题目之间的隔离和按需加载。说明见 .claude/rules/ 里本组件的规范。
 // 由 scripts/arch-check.mjs 运行（npm run arch），违反任何一条，自检和 CI 都会失败。
+
+// 一道题自己的文件夹：lessons/<题目>/ 和 components/<题目>/。components/lesson-stage/ 是所有题目共用的画面部件，不算题目。
+const lessonFolder = '^src/features/learning/(?:lessons|components)/(?!lesson-stage/)';
+const lessonFiles = `${lessonFolder}[^/]+/`;
+
 module.exports = {
   forbidden: [
     {
@@ -33,6 +38,33 @@ module.exports = {
       severity: 'error',
       from: { path: '^src/features/([^/]+)/' },
       to: { path: '^src/features/[^/]+/', pathNot: '^src/features/$1/' },
+    },
+    {
+      name: 'lessons-isolated',
+      comment:
+        '一道题的文件不引用另一道题的文件。几道题都要用的东西放进公共部件（components/lesson-stage/、interaction/、lessons/lesson-definition.ts）。',
+      severity: 'error',
+      from: { path: `${lessonFolder}([^/]+)/` },
+      to: { path: lessonFiles, pathNot: `${lessonFolder}$1/` },
+    },
+    {
+      name: 'lessons-loaded-on-demand',
+      comment:
+        '题目的文件和公共题目页只在孩子打开题目时加载：题目以外的代码只能用动态 import 引用它们，题库页因此不带题目的代码。',
+      severity: 'error',
+      from: { pathNot: lessonFiles },
+      to: {
+        path: `(${lessonFiles}|^src/features/learning/pages/LessonPage[.]tsx$)`,
+        dependencyTypesNot: ['dynamic-import', 'type-only'],
+      },
+    },
+    {
+      name: 'no-problem-plugins-in-browser',
+      comment:
+        '题目插件里有答案和判定规则，只在服务器上运行，网站的代码不引用它们。测试可以读插件，用来检查题目定义和插件一致。',
+      severity: 'error',
+      from: {},
+      to: { path: '(^|/)(@education|libs)/problems(/|$)' },
     },
     {
       name: 'shared-independent',

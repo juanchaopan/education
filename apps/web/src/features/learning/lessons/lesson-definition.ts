@@ -11,6 +11,9 @@ import type { CountWords } from '../interaction/spoken-answer';
 import type { Handling } from '../interaction/stage-activation';
 import type { StageProps } from '../interaction/useStageDrag';
 
+// The problem version a lesson teaches, as the catalog lists it.
+export type ProblemVersion = Readonly<{ id: string; version: number }>;
+
 // The lines, the scenes in teaching order and what is said on arriving at
 // each, and how the backdrop is framed in the scenes that move closer.
 export type Script<Shot extends string, Line extends string> = Readonly<{
@@ -78,7 +81,7 @@ export type LessonDefinition<
   Look extends object,
 > = Looks &
   Readonly<{
-    problem: Readonly<{ id: string; version: number }>;
+    problem: ProblemVersion;
     script: Script<Shot, Line>;
     story: Story<State, Shot, Line, Move>;
     props: LessonProps<Move, Piece, Look>;
