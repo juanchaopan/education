@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { backdrops } from './backdrops/backdrops';
+import * as backdropStories from './backdrops/backdrops.stories';
 import { inside, pictureFiles, world } from './library';
 import { teachers } from './teachers/teachers';
+import * as teacherStories from './teachers/teachers.stories';
 
 // The picture files in each library folder, by file name.
 const filesIn = (found: Record<string, unknown>) =>
@@ -12,6 +14,15 @@ const backdropFiles = filesIn(import.meta.glob('./backdrops/*.webp', { query: '?
 const teacherFiles = filesIn(import.meta.glob('./teachers/*.webp', { query: '?url' }));
 
 const filled = (text: string) => text.trim().length > 0;
+
+// The ids a stories file shows, each story's own args over its default ones.
+type Stories = Readonly<Record<string, { args?: Record<string, unknown> }>>;
+function shown({ default: meta, ...stories }: Stories, arg: string) {
+  return Object.values(stories).map((story) => {
+    const entry = (story.args?.[arg] ?? meta?.args?.[arg]) as { id: string } | undefined;
+    return entry?.id;
+  });
+}
 
 describe('the backdrop library', () => {
   it.each(Object.entries(backdrops))('tags %s in full', (key, backdrop) => {
@@ -37,6 +48,10 @@ describe('the backdrop library', () => {
     const listed = Object.values(backdrops).map(({ file }) => file);
     expect(listed.sort()).toEqual(backdropFiles);
   });
+
+  it('shows every backdrop in Storybook, so each has a visual baseline', () => {
+    expect(shown(backdropStories, 'backdrop').sort()).toEqual(Object.keys(backdrops).sort());
+  });
 });
 
 describe('the teacher library', () => {
@@ -52,6 +67,10 @@ describe('the teacher library', () => {
   it('lists every picture in its folder, and nothing else', () => {
     const listed = Object.values(teachers).map(({ file }) => file);
     expect(listed.sort()).toEqual(teacherFiles);
+  });
+
+  it('shows every teacher in Storybook, so each has a visual baseline', () => {
+    expect(shown(teacherStories, 'teacher').sort()).toEqual(Object.keys(teachers).sort());
   });
 });
 

@@ -5,6 +5,8 @@ import { gardenLesson } from '../../lessons/garden-balance/definition';
 import { arrive, type GardenState } from '../../lessons/garden-balance/garden-story';
 import { lines } from '../../lessons/garden-balance/script';
 import { stageLook } from '../../lessons/lesson-definition';
+import { backdrops } from '../../media/backdrops/backdrops';
+import { ClearingOutline } from '../lesson-stage/ClearingOutline';
 import { LessonStage } from '../lesson-stage/LessonStage';
 import { StoryFrame } from '../lesson-stage/StoryFrame';
 import { GardenScene } from './garden-scenes';
@@ -71,4 +73,26 @@ export const CountTheCucumbers: Story = {
 };
 export const TwoEachInstead: Story = {
   args: { state: arrive('end').state, caption: lines.changeDone.text },
+};
+
+// The backdrop's clearing and the part of the world the props take up, over
+// the scene whose apple side sinks lowest, so a person can see that the props
+// stand in the clearing. The backdrop keeps its establishing framing.
+export const PropsInTheClearing: Story = {
+  args: { state: arrive('apples').state },
+  render: ({ state, handling, ...stage }) => (
+    <StoryFrame>
+      <LessonStage
+        {...stage}
+        look={{ ...look, cameras: undefined }}
+        shot={state.shot}
+        defs={gardenLesson.defs}
+        ambience={gardenLesson.ambience}
+      >
+        <GardenScene state={state} handling={handling} />
+        <ClearingOutline box={backdrops[gardenLesson.backdrop].clearZone} kind="clearing" />
+        <ClearingOutline box={gardenLesson.staging} kind="staging" />
+      </LessonStage>
+    </StoryFrame>
+  ),
 };

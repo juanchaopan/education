@@ -1,0 +1,21 @@
+/* The outlines keep the same width on screen however small the stage is
+   drawn, so they stay readable on a phone. */
+.clearing,
+.staging {
+  pointer-events: none;
+  vector-effect: non-scaling-stroke;
+}
+
+.clearing {
+  fill: color-mix(in srgb, var(--accent) 16%, transparent);
+  stroke: var(--accent);
+  stroke-width: 3;
+  stroke-dasharray: 14 8;
+}
+
+.staging {
+  fill: none;
+  stroke: var(--primary-ink);
+  stroke-width: 2;
+  stroke-dasharray: 5 5;
+}
