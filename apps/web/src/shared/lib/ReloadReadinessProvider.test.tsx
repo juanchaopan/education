@@ -37,13 +37,13 @@ describe('reload readiness', () => {
   it('is ready with nothing on the page, and reports the strongest hold', () => {
     const { rerender } = render(<Screen parts={[]} />);
     expect(screen.getByRole('button')).toHaveTextContent('ready');
-    rerender(<Screen parts={[{ readiness: 'saving' }, { readiness: 'ready' }]} />);
+    rerender(<Screen parts={[{ readiness: 'showing' }, { readiness: 'ready' }]} />);
+    expect(screen.getByRole('button')).toHaveTextContent('showing');
+    rerender(<Screen parts={[{ readiness: 'showing' }, { readiness: 'saving' }]} />);
     expect(screen.getByRole('button')).toHaveTextContent('saving');
     rerender(<Screen parts={[{ readiness: 'saving' }, { readiness: 'unsaved' }]} />);
     expect(screen.getByRole('button')).toHaveTextContent('unsaved');
-    rerender(<Screen parts={[{ readiness: 'showing' }, { readiness: 'unsaved' }]} />);
-    expect(screen.getByRole('button')).toHaveTextContent('showing');
-    rerender(<Screen parts={[{ readiness: 'showing' }, { readiness: 'playing' }]} />);
+    rerender(<Screen parts={[{ readiness: 'playing' }, { readiness: 'unsaved' }]} />);
     expect(screen.getByRole('button')).toHaveTextContent('playing');
   });
 

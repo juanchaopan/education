@@ -2,7 +2,7 @@ import { useParentReauthentication } from '../data-access/useParentReauthenticat
 import { FamilyCodePanel } from './FamilyCodePanel';
 import type { RegistrationKeyStatus } from '@education/contracts';
 import { useState } from 'react';
-import { useReloadReadiness } from '../../../shared/lib/reload-readiness';
+import { useReloadReadiness, type Readiness } from '../../../shared/lib/reload-readiness';
 import { RegistrationKeyCard } from '../components/RegistrationKeyCard';
 import { useRegistrationKey, useManageRegistrationKey } from '../data-access/useRegistrationKey';
 export function RegistrationKeyPanel({ csrf }: { csrf: string }) {
@@ -15,7 +15,7 @@ export function RegistrationKeyPanel({ csrf }: { csrf: string }) {
   const [confirmationError, setConfirmationError] = useState('');
   const pending = manage.isPending || confirm.isPending;
   const value = visibleKey(status.isSuccess && !status.isFetching ? status.data : undefined, shown);
-  useKeyOnScreen(shown !== null, value !== undefined, status.isFetching);
+  useReloadReadiness(keyReadiness({ shown: shown !== null, value, status }));
   const clear = () => {
     setShown(null);
     setCopyNotice('');
@@ -87,11 +87,20 @@ export function RegistrationKeyPanel({ csrf }: { csrf: string }) {
   );
 }
 
+type KeyOnScreen = {
+  shown: boolean;
+  value: string | undefined;
+  status: { isSuccess: boolean; isFetching: boolean };
+};
+
 // A new KEY is shown only once and a reload would take it away, so the page
-// holds an update while the KEY is on screen, and while its status is fetched
-// again, until the parent closes it or leaves the page.
-function useKeyOnScreen(shown: boolean, visible: boolean, fetching: boolean) {
-  useReloadReadiness(shown && (visible || fetching) ? 'showing' : 'ready');
+// holds an update from the moment the KEY is shown until the parent closes it
+// or the status, read again, says it is no longer active. While the status is
+// being read again or could not be read, the KEY may still come back, so the
+// hold stays. Leaving the page ends it.
+function keyReadiness({ shown, value, status }: KeyOnScreen): Readiness {
+  const gone = status.isSuccess && !status.isFetching && value === undefined;
+  return shown && !gone ? 'showing' : 'ready';
 }
 
 function visibleKey(

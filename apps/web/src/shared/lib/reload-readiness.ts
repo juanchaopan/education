@@ -20,9 +20,10 @@ export const RegistryContext = createContext<ReadinessRegistry | undefined>(unde
 export const PartsContext = createContext<ReadonlyMap<string, ReadinessPart>>(new Map());
 
 // What keeps the page from reloading, the first that applies: a film is never
-// cut off and what is shown once stays until it is gone, not even to save;
-// unsaved work is saved; saving work is awaited.
-const holds: readonly Readiness[] = ['playing', 'showing', 'unsaved', 'saving'];
+// cut off, not even to save; unsaved work is saved; saving work is awaited;
+// and then what is shown only once stays until it is gone, since saving does
+// not disturb it.
+const holds: readonly Readiness[] = ['playing', 'unsaved', 'saving', 'showing'];
 
 // Reports how this part of the page stands toward a reload for as long as it
 // is on the page, and how to save its unsaved work. Outside a provider the

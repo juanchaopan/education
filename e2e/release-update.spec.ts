@@ -43,13 +43,16 @@ async function newReleaseWhileTheFilmPlays(page: Page) {
   return { narration, site };
 }
 
-// The isolated database a signed-in test needs, and Chromium, the one browser
-// that sends the test servers' session cookie over http.
-function needsDatabase() {
+// The isolated test database a signed-in test writes to, and Chromium, the
+// one browser that sends the test servers' session cookie over http.
+function needsIsolatedDatabase() {
   test.skip(
     ({ browserName }) => !database || browserName !== 'chromium',
     'Isolated database required',
   );
+  test.beforeEach(() => {
+    if (!database?.endsWith('/education_test')) throw new Error('Use isolated education_test');
+  });
 }
 
 test.describe('a page outside a lesson', () => {
@@ -150,12 +153,11 @@ test.describe('a lesson page', () => {
 
 // A signed-in child's draft.
 test.describe('a signed-in child', () => {
-  needsDatabase();
+  needsIsolatedDatabase();
 
   let pool: pg.Pool;
   let family: string;
   test.beforeEach(async ({ page, baseURL }) => {
-    if (!database?.endsWith('/education_test')) throw new Error('Use isolated education_test');
     await expect
       .poll(async () => (await page.request.get('/health/ready')).status(), { timeout: 15_000 })
       .toBe(200);
@@ -242,7 +244,7 @@ test.describe('a signed-in child', () => {
 
 // A parent's new registration KEY, which is shown only once.
 test.describe('a parent', () => {
-  needsDatabase();
+  needsIsolatedDatabase();
 
   test('keeps a new registration KEY on screen until the parent closes it', async ({
     page,

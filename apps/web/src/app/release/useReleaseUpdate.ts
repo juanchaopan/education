@@ -84,8 +84,8 @@ const sessionGuard = createReloadGuard();
 // for each release; signing in survives the reload. The page's own release
 // and the record of earlier reloads are read as the page loads, so the
 // reload this page starts never counts against it. A tab that cannot keep
-// the record never reloads on its own, but a reload the child asks for
-// always goes ahead.
+// the record never reloads on its own; when the child asks for another try
+// it reloads even so, once nothing on the page holds the reload.
 export function useReleaseUpdate({
   own: built,
   guard = sessionGuard,
