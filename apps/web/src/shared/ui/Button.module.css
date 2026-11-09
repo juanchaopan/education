@@ -24,19 +24,24 @@
 }
 
 /* Primary and danger buttons are like a piece of clay: lit from above, with a
-   thick lower edge. They rise a little under the pointer and sink into their
-   edge when pressed. */
+   thick lower edge in their `--edge-colour` and an optional cast shadow. They
+   rise a little under the pointer and sink into their edge when pressed. */
+.primary,
+.danger {
+  box-shadow:
+    0 var(--edge) 0 var(--edge-colour),
+    var(--cast, 0 0 transparent);
+}
 .primary {
+  --edge-colour: var(--primary-edge);
+  --cast: var(--primary-shadow);
   color: var(--primary-ink);
   background: linear-gradient(var(--primary-hi), var(--primary) 60%);
-  box-shadow:
-    0 var(--edge) 0 var(--primary-edge),
-    var(--primary-shadow);
 }
 .danger {
+  --edge-colour: var(--danger-edge);
   color: var(--danger-ink);
   background: var(--danger);
-  box-shadow: 0 var(--edge) 0 var(--danger-edge);
 }
 .primary:hover:not(:disabled),
 .danger:hover:not(:disabled) {
@@ -45,12 +50,7 @@
 .primary:active:not(:disabled),
 .danger:active:not(:disabled) {
   translate: 0 var(--edge);
-}
-.primary:active:not(:disabled) {
-  box-shadow: 0 0 0 var(--primary-edge);
-}
-.danger:active:not(:disabled) {
-  box-shadow: 0 0 0 var(--danger-edge);
+  box-shadow: 0 0 0 var(--edge-colour);
 }
 
 .secondary {

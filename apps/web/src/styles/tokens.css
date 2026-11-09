@@ -15,7 +15,8 @@
   --text-base: 1.0625rem;
   --text-lg: 1.375rem;
   --text-xl: 1.75rem;
-  /* Inputs and small tiles, cards, and fully round ends. */
+  /* Corners: --radius for inputs, notices and small tiles, --radius-lg for
+     cards and panels, --radius-pill for fully round ends. */
   --radius: 1rem;
   --radius-lg: 1.625rem;
   --radius-pill: 999px;
@@ -28,16 +29,18 @@
   --font-body: 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', system-ui, sans-serif;
   --font-display: 'LXGW WenKai Subset', 'KaiTi', 'STKaiti', 'Kaiti SC', var(--font-body);
 
-  /* Motion: a press, a lift or a hover, a page coming in step by step, a
-     spring for switches and bounces, and the fade between themes. The theme
-     fade stays in seconds: the page reads it to know when the fade ends. */
+  /* Motion: a press, a lift or a hover, a page coming in step by step, and a
+     spring for switches and bounces. The fade between themes is set by the
+     page while it switches; see app/theme/schedule.ts. */
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   --press: 120ms;
   --lift: 250ms;
   --enter: 600ms;
   --enter-step: 80ms;
-  --theme-fade: 1.2s;
+
+  /* The soft ring round a focused input, beside the keyboard focus outline. */
+  --focus-ring: 0 0 0 5px color-mix(in srgb, var(--primary) 18%, transparent);
 
   /* The knob of a switch, light on either theme. */
   --knob: #fffdf8;
@@ -92,12 +95,6 @@
   --shadow:
     0 1px 0 rgba(255, 255, 255, 0.9) inset, 0 2px 3px rgba(92, 62, 28, 0.07),
     0 14px 28px -14px rgba(92, 62, 28, 0.35);
-  --shadow-lift:
-    0 1px 0 #ffffff inset, 0 4px 6px rgba(92, 62, 28, 0.08),
-    0 24px 40px -16px rgba(92, 62, 28, 0.42);
-  /* Buttons and captions laid over a picture. */
-  --glass: rgba(255, 249, 238, 0.82);
-  --glass-ink: #33281d;
   /* Cards are paper with the grain; the day backdrop is the one on show. */
   --texture: var(--grain);
   --surface-filter: none;
@@ -127,11 +124,6 @@
   --danger-ink: #2a1d08;
   --ok: #8fe0a8;
   --shadow: 0 1px 0 rgba(255, 236, 196, 0.08) inset, 0 18px 40px -18px rgba(0, 0, 0, 0.7);
-  --shadow-lift:
-    0 1px 0 rgba(255, 236, 196, 0.12) inset, 0 0 0 1px rgba(242, 195, 91, 0.3),
-    0 26px 50px -18px rgba(0, 0, 0, 0.8), 0 0 60px -20px rgba(242, 195, 91, 0.45);
-  --glass: rgba(20, 32, 30, 0.6);
-  --glass-ink: #f6ead2;
   /* Cards are smoked glass over the lit backdrop. */
   --texture: none;
   --surface-filter: blur(14px);

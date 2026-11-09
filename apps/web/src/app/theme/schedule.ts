@@ -8,6 +8,10 @@ export type ThemeSchedule = { readonly dayStarts: number; readonly nightStarts: 
 // script that picks the theme before the first paint is built from it.
 export const themeSchedule: ThemeSchedule = { dayStarts: 6, nightStarts: 18 };
 
+// How long an open page takes to fade from one theme into the other, in
+// milliseconds. The page hands it to the stylesheet while it switches.
+export const themeFade = 1200;
+
 // The theme for a moment. It reads nothing but its arguments, so the page can
 // also run it as a standalone script before anything else loads.
 export function themeAt(date: Date, schedule: ThemeSchedule): Theme {

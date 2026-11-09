@@ -1,5 +1,6 @@
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
+import { themeFade } from './schedule';
 import { useDayNightTheme } from './useDayNightTheme';
 
 const root = document.documentElement;
@@ -11,7 +12,6 @@ function preferLessMotion(reduce: boolean) {
 beforeEach(() => {
   vi.useFakeTimers({ now: new Date(2026, 10, 7, 17, 59, 58) });
   root.dataset.theme = 'day';
-  root.style.setProperty('--theme-fade', '1.2s');
   preferLessMotion(false);
 });
 
@@ -29,8 +29,10 @@ it('fades into the night theme at 18:00 and settles after the fade', () => {
   act(() => vi.advanceTimersByTime(2000));
   expect(root.dataset.theme).toBe('night');
   expect(root.dataset.themeSwitching).toBe('');
-  act(() => vi.advanceTimersByTime(1200));
+  expect(root.style.getPropertyValue('--theme-fade')).toBe(`${themeFade}ms`);
+  act(() => vi.advanceTimersByTime(themeFade));
   expect(root.dataset.themeSwitching).toBeUndefined();
+  expect(root.style.getPropertyValue('--theme-fade')).toBe('');
 });
 
 it('switches at once for a child who asks for less motion', () => {

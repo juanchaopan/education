@@ -1,9 +1,9 @@
 /* A soft band tinted with its tone, the tone's icon beside the message, which
    slides in from above when it appears. The text stays in the body ink, so
-   every tone reads alike. */
+   every tone reads alike. The icon takes the tone itself, except where the
+   tone is too light to mark a light band, as the accent is. */
 .notice {
   --tone: var(--accent);
-  --tone-mark: var(--accent-ink);
   display: flex;
   align-items: flex-start;
   gap: var(--space-3);
@@ -14,17 +14,18 @@
   overflow-wrap: anywhere;
   animation: slide-in var(--lift) var(--ease-out) both;
 }
+.notice[data-tone='info'] {
+  --tone-mark: var(--accent-ink);
+}
 .notice[data-tone='success'] {
   --tone: var(--ok);
-  --tone-mark: var(--ok);
 }
 .notice[data-tone='error'] {
   --tone: var(--danger);
-  --tone-mark: var(--danger);
 }
 .icon {
   flex: none;
-  color: var(--tone-mark);
+  color: var(--tone-mark, var(--tone));
   font-size: 1.2em;
 }
 .body {
