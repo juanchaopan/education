@@ -36,6 +36,7 @@ export const glyphs = {
       <path d="M3.5 10h17M8 3v4M16 3v4" />
     </>
   ),
+  chart: <path d="M3.5 20.5h17M6.5 17v-5M11 17V7M15.5 17v-7M20 17V4.5" />,
   shield: (
     <>
       <path d="M12 21.5s7.5-3.6 7.5-9.5V5.5L12 2.8 4.5 5.5V12c0 5.9 7.5 9.5 7.5 9.5z" />
@@ -50,6 +51,7 @@ export const glyphs = {
       <path d="M5 15.5A1.5 1.5 0 0 1 3.5 14V5A1.5 1.5 0 0 1 5 3.5h9A1.5 1.5 0 0 1 15.5 5" />
     </>
   ),
+  plus: <path d="M12 5v14M5 12h14" />,
   home: <path d="M3.5 10.5 12 3.5l8.5 7V20a1 1 0 0 1-1 1H15v-6H9v6H4.5a1 1 0 0 1-1-1z" />,
   sprout: (
     <>

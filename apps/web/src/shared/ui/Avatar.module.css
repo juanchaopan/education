@@ -1,0 +1,21 @@
+/* A disc lit softly from above with a thin lower edge, like the brand's
+   mark. The initial is large, bold text on the disc's own colour. */
+.avatar {
+  --tone: var(--primary);
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  inline-size: 2.75rem;
+  block-size: 2.75rem;
+  border-radius: 50%;
+  color: var(--primary-ink);
+  background: linear-gradient(color-mix(in srgb, var(--tone) 88%, var(--surface)), var(--tone));
+  box-shadow: 0 3px 0 color-mix(in srgb, var(--tone) 60%, var(--ink));
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--text-lg);
+  line-height: 1;
+}
+.avatar[data-tone='second'] {
+  --tone: var(--accent-2);
+}
