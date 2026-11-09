@@ -30,6 +30,30 @@
 .input::placeholder {
   color: var(--ink-soft);
 }
+
+/* An input with an icon at its start leaves room for the icon, which lights
+   up with the input when it has focus. */
+.withIcon {
+  position: relative;
+  display: block;
+}
+.withIcon .input {
+  padding-inline-start: var(--space-8);
+}
+.icon {
+  position: absolute;
+  inset-inline-start: var(--space-4);
+  inset-block-start: 50%;
+  translate: 0 -50%;
+  color: var(--ink-soft);
+  font-size: 1.2em;
+  pointer-events: none;
+  transition: color var(--lift) var(--ease-out);
+}
+.withIcon:focus-within .icon {
+  color: var(--primary);
+}
+
 .emphasisLabel {
   color: var(--primary);
 }

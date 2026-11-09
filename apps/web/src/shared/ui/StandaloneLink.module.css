@@ -1,7 +1,9 @@
-/* A link on its own line is a control, so it gets a full touch target. */
+/* A link on its own line is a control, so it gets a full touch target, with
+   room between an icon and its words. */
 .link {
   display: inline-flex;
   align-items: center;
+  gap: var(--space-2);
   min-block-size: var(--touch-target);
   min-inline-size: var(--touch-target);
 }
