@@ -136,7 +136,7 @@ classDiagram
 | 画面外壳 `LessonStage`                            | `components/lesson-stage/`                   | 展示组件。全屏画框里的背景层（按幕取景）、光晕和暗角、片名卡和开始按钮、顶部片名条、重听按钮、字幕、讲课角色（说话时动，点它提问），中间放题目自己的 SVG 场景。                 |
 | 道具 `Prop`、影子 `DragGhost`                     | `components/lesson-stage/`                   | 可点、可拖、键盘可达的道具，发光圈、选中、拿起、进场动画；道具的样子由题目以 SVG 传入。                                                                                         |
 | 提示 `AttentionCue`、氛围 `Ambience`、`BoardText` | `components/lesson-stage/`                   | 「看这里」的飞行箭头、手指和脉冲三种样式；萤火虫、花瓣等点缀；黑板和标签文字。都遵守「减少动态效果」设置。                                                                      |
-| 题目页 `LessonPage`、`LessonPanels`               | `pages/`                                     | 由 `GardenBalanceLesson`、`GardenPanels` 推广而来：已登录时接草稿、按幕保存、最终作答、每幕提问和草稿提示；游客只看短片和登录提示。                                             |
+| 题目页 `LessonPage`、`LessonPanels`               | `pages/`                                     | 由 `GardenBalanceLesson`、`GardenPanels` 推广而来：已登录时接草稿、按幕保存、最终作答、每幕提问和草稿提示；游客只看短片和登录提示。`lessonPage(定义)` 为一道题构造它的页面。    |
 | 题目定义 `LessonDefinition`                       | `lessons/lesson-definition.ts`               | 一道题需要提供的全部内容，见下文。                                                                                                                                              |
 | 题目登记 `lessonRegistry`                         | `lessons/registry.ts`                        | 每道题一行：题目版本和按需加载的定义；应用外壳据此生成题目页，不再逐题手写。                                                                                                    |
 | 绘景库 `backdrops`、角色库 `teachers`             | `media/backdrops/`、`media/teachers/`        | 图片和带标签的清单，见「绘景库和角色库」。                                                                                                                                      |
@@ -146,35 +146,49 @@ classDiagram
 ### 一道题要写什么
 
 ```ts
-type LessonDefinition<State, Shot extends string, Line extends string, Move> = {
+type LessonDefinition<
+  State extends { shot: Shot | 'opening' },
+  Shot extends string,
+  Line extends string,
+  Move,
+  Piece extends string, // 能拿起的道具种类
+  Look extends object, // 道具拿起时的样子
+> = {
   problem: { id: string; version: number };
   title: string; // 片名卡和片名条上的题目
   theater: string; // 例如「菜园小剧场」
-  backdrop: BackdropId; // 从绘景库选
-  teacher: TeacherId; // 从角色库选
+  labels: { film: string; world: string }; // 读屏时短片和道具区的名字
+  backdrop: Backdrop; // 绘景库建好后（#134）是库里的 BackdropId
+  teacher: Teacher; // 角色库建好后（#134）是库里的 TeacherId
+  palette: StagePalette; // 从背景取的颜色
+  defs?: ReactNode; // 题目的 SVG 颜料和符号
+  ambience?: ReactNode; // 萤火虫、花瓣等点缀
   script: {
     lines: Record<Line, { text: string; clip: string }>;
-    shots: readonly Shot[];
+    shots: readonly [Shot, ...Shot[]];
     entryLines: Record<Shot, readonly Line[]>;
-    camera?: Partial<Record<Shot, Camera>>; // 每幕背景的取景
+    cameras?: Partial<Record<Shot, Camera>>; // 每幕背景的取景
   };
   story: {
     opening: State;
     arrive: (shot: Shot) => Reaction<State, Shot, Line>;
     respond: (state: State, move: Move) => Reaction<State, Shot, Line> | undefined;
-    savesProgress: (shot: Shot | 'opening') => boolean;
+    savesProgress: (shot: Shot) => boolean;
   };
-  props: StageProps<Move>; // 哪些道具能拿起、影子、放下和点按对应的操作
+  // 哪些道具能拿起、拿起时的影子、放下和点按对应的操作
+  props: StageProps<Move, Record<Piece, Look>> & { carried: (look: Look) => ReactNode };
   answer: {
-    shot: Shot;
+    shot: Shot; // 答对以后进入它的下一幕
     question: string;
     words: CountWords;
     choices: readonly number[];
     hints: readonly string[];
   };
-  Scene: ComponentType<{ state: State; handling: Handling; layout: Layout }>; // 题目自己的 SVG
+  Scene: ComponentType<{ state: State; handling: Handling }>; // 题目自己的 SVG
 };
 ```
+
+`lessonPage(定义)` 为一道题构造它的页面，页面对这道题自己的状态、幕名、台词、操作和道具做泛型，所以每道题的类型从定义一直检查到页面。登记表只读定义里不含函数的部分（版本、台词、幕、作答），用来做定义检查。全屏需要的画面布局由 #133 加进 `Scene` 的参数。
 
 题目文件夹的结构不变：`lessons/<题目>/` 放台词、分镜规则和定义，`components/<题目>/` 放道具画法和 `Scene`。页面、旁白、拖动、作答、提问、草稿都不再写在题目里。
 
@@ -242,9 +256,9 @@ type LessonDefinition<State, Shot extends string, Line extends string, Move> = {
 ## 测试策略
 
 - 重构步骤：菜园题现有的单元测试、e2e（`e2e/garden-balance.spec.ts`）和视觉基准是行为基准，必须原样通过；公共部件各自补单元测试和 Storybook story。
-- 定义检查：一个单元测试遍历登记表，检查每道题的每句台词都有录音、每幕都有进场台词、作答那一幕在幕序里、背景和角色在库里、幕名和题目插件的步骤一致。
+- 定义检查：一个单元测试遍历登记表，检查每道题的每句台词都有录音、每幕都有进场台词、作答那一幕在幕序里且后面还有一幕、题目版本在登记表、定义和题目插件里一致、幕名和题目插件的步骤一致、作答用到的提示都在插件里；绘景库建好后（#134）再查背景和角色在库里。
 - 放音检查（#129）：e2e 的共用工具按台词逐幕检查每句都播放到结束，在桌面 Chromium、手机模拟和 WebKit 上跑；登记表里的每道题都要接入。
-- 分层检查：`npm run arch` 增加规则，一道题的文件不能引用另一道题的文件。
+- 分层检查：`npm run arch` 增加规则，一道题的文件不能引用另一道题的文件，题目的代码只在打开时加载，网站的代码不引用题目插件。
 - 全屏和返回：e2e 覆盖从题库进入后返回原分类、直接打开链接后返回、开始短片时请求全屏（浏览器拒绝时页面照常）。
 - 绘景库：Storybook 里每张背景显示空地范围，供人工看图；视觉基准覆盖每张背景。
 
@@ -254,3 +268,4 @@ type LessonDefinition<State, Shot extends string, Line extends string, Move> = {
 - 每道题继续单独生成背景：每题都要生成，风格也不统一。
 - 只隐藏导航、不请求浏览器全屏：地址栏和浏览器按钮仍然占屏幕，孩子容易误点浏览器的后退。
 - 一次把彩铅和数轴的需求也做进公共部件：先只抽菜园已有、三个原型都用到的部分；两道题接入时缺什么再补，避免为猜测的需要做抽象。
+- 把所有题目的定义擦成同一个类型交给一个公共页面：要靠方法签名的双变性才能放进同一张表，页面里也查不到每道题自己的类型；按题构造页面没有这些问题。
