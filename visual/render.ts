@@ -1,9 +1,17 @@
 import type { Page } from '@playwright/test';
 
-// Every screenshot is taken at the same moment, so nothing that shows a date
-// or a time left changes between runs.
-export function fixClock(page: Page) {
-  return page.clock.setFixedTime(new Date('2026-11-07T10:00:00+08:00'));
+export type Theme = 'day' | 'night';
+
+// The moments screenshots are taken at: a morning for the day theme and an
+// evening for the night theme. Nothing that shows a date or a time left
+// changes between runs.
+const moments: Record<Theme, Date> = {
+  day: new Date('2026-11-07T10:00:00+08:00'),
+  night: new Date('2026-11-07T20:00:00+08:00'),
+};
+
+export function fixClock(page: Page, theme: Theme = 'day') {
+  return page.clock.setFixedTime(moments[theme]);
 }
 
 // Text is measured and drawn only after the fonts have loaded.

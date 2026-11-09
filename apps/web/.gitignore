@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Built from the source on every build and dev start (vite/title-font.ts)
+src/styles/generated
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

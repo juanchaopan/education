@@ -12,6 +12,7 @@ type Story = StoryObj<typeof meta>;
 export const Primary: Story = {};
 export const Secondary: Story = { args: { variant: 'secondary', children: '已有账号？去登录' } };
 export const Text: Story = { args: { variant: 'text', children: '取消' } };
+export const Danger: Story = { args: { variant: 'danger', children: '永久删除家庭' } };
 export const Disabled: Story = { args: { disabled: true, children: '正在打开你的空间…' } };
 export const Regular: Story = { args: { weight: 'regular', children: '再试一次' } };
 export const LongLabel: Story = {

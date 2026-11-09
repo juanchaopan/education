@@ -1,18 +1,59 @@
+/* LXGW WenKai (SIL Open Font License 1.1), cut down at build time to the
+   characters the site uses; see vite/title-font.ts. Text shows in the
+   fallback font until it loads, and stays there if it never does. */
+@font-face {
+  font-family: 'LXGW WenKai Subset';
+  src: url('./generated/title-font.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
 * {
   box-sizing: border-box;
 }
 body {
+  position: relative;
+  min-block-size: 100dvh;
   margin: 0;
-  background: var(--bg);
+  background-color: var(--bg);
   color: var(--ink);
-  font-family: 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', system-ui, sans-serif;
+  font-family: var(--font-body);
   line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+/* Each theme's backdrop on a layer of its own behind the whole page, however
+   long; the theme decides which layer shows. */
+body::before,
+body::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+body::before {
+  background: var(--backdrop-day);
+  opacity: var(--day-layer);
+}
+body::after {
+  background: var(--backdrop-night);
+  opacity: calc(1 - var(--day-layer));
+}
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.25;
 }
 a {
   color: inherit;
 }
 button,
-input {
+input,
+select,
+textarea {
   font: inherit;
 }
 a,
@@ -23,14 +64,25 @@ button {
   outline: 3px solid var(--primary);
   outline-offset: 4px;
 }
-main {
-  min-height: 65vh;
-}
 main:focus {
   outline: none;
 }
 ::selection {
   background: var(--accent-soft);
+}
+/* While the theme changes, every colour, border, shadow and backdrop fades
+   into the new theme together. */
+:root[data-theme-switching] *,
+:root[data-theme-switching] *::before,
+:root[data-theme-switching] *::after {
+  transition-property:
+    color, background-color, border-color, outline-color, box-shadow, fill, stroke;
+  transition-duration: var(--theme-fade);
+  transition-timing-function: ease;
+}
+:root[data-theme-switching] body::before,
+:root[data-theme-switching] body::after {
+  transition-property: opacity;
 }
 @media (prefers-reduced-motion: reduce) {
   *,

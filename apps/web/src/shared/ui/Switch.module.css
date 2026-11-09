@@ -1,0 +1,47 @@
+.switch {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-block-size: var(--touch-target);
+  font-weight: 700;
+  cursor: pointer;
+}
+/* The checkbox itself is drawn as a 46×28 track whose knob springs across
+   when it turns on. Off, the track takes the edge colour of the other
+   controls, so it stands out from the card behind it. */
+.track {
+  --track-width: 2.875rem;
+  --knob-size: 1.375rem;
+  --knob-inset: 0.1875rem;
+  appearance: none;
+  position: relative;
+  flex: none;
+  inline-size: var(--track-width);
+  block-size: 1.75rem;
+  margin: 0;
+  border-radius: var(--radius-pill);
+  background: var(--control-edge);
+  cursor: inherit;
+  transition: background-color var(--lift) ease;
+}
+.track::before {
+  content: '';
+  position: absolute;
+  inset-block-start: var(--knob-inset);
+  inset-inline-start: var(--knob-inset);
+  inline-size: var(--knob-size);
+  block-size: var(--knob-size);
+  border-radius: 50%;
+  background: var(--knob);
+  box-shadow: var(--knob-shadow);
+  transition: translate var(--lift) var(--ease-spring);
+}
+.track:checked {
+  background: var(--primary);
+}
+.track:checked::before {
+  translate: calc(var(--track-width) - var(--knob-size) - var(--knob-inset) * 2) 0;
+}
+.track:disabled {
+  opacity: 0.6;
+}

@@ -1,4 +1,5 @@
-/* A round button a finger can hit, larger than the smallest touch target. */
+/* A round card a finger can hit, larger than the smallest touch target. It
+   springs back from a press. */
 .button {
   display: inline-grid;
   place-items: center;
@@ -7,11 +8,15 @@
   padding: 0;
   border: 1px solid var(--line);
   border-radius: 50%;
-  color: var(--primary);
+  color: var(--ink);
   background: var(--surface);
   box-shadow: var(--shadow);
   font-size: var(--text-lg);
   cursor: pointer;
+  transition: scale var(--lift) var(--ease-spring);
+}
+.button:active:not(:disabled) {
+  scale: 0.9;
 }
 .button:disabled {
   opacity: 0.6;

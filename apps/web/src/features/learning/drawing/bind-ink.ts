@@ -11,6 +11,29 @@ function fitInkCanvas(context: CanvasRenderingContext2D) {
   context.fillStyle = context.strokeStyle = getComputedStyle(canvas).color;
 }
 
+// Paints the drawing again whenever the canvas changes size or its ink does.
+// The ink is the canvas's text colour, which the site's theme sets, so the
+// drawing is painted at once when the theme switches and once more when a
+// fading switch has settled. Everything stops when `signal` aborts.
+function watchRedraws(canvas: HTMLCanvasElement, redraw: () => void, signal: AbortSignal) {
+  const size = new ResizeObserver(redraw);
+  size.observe(canvas);
+  window.addEventListener('resize', redraw, { signal });
+  const theme = new MutationObserver(redraw);
+  theme.observe(document.documentElement, { attributeFilter: ['data-theme'] });
+  canvas.addEventListener(
+    'transitionend',
+    (event) => {
+      if (event.propertyName === 'color') redraw();
+    },
+    { signal },
+  );
+  signal.addEventListener('abort', () => {
+    size.disconnect();
+    theme.disconnect();
+  });
+}
+
 export function bindInk(
   canvas: HTMLCanvasElement,
   drawing: Drawing,
@@ -64,14 +87,11 @@ export function bindInk(
   canvas.addEventListener('pointerup', finish, options);
   canvas.addEventListener('pointercancel', finish, options);
   canvas.addEventListener('lostpointercapture', finish, options);
-  const observer = new ResizeObserver(redraw);
-  observer.observe(canvas);
-  window.addEventListener('resize', redraw, options);
+  watchRedraws(canvas, redraw, listeners.signal);
   redraw();
 
   return () => {
     listeners.abort();
-    observer.disconnect();
     if (active && canvas.hasPointerCapture(active.pointerId)) {
       canvas.releasePointerCapture(active.pointerId);
     }

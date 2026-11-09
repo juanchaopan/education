@@ -20,7 +20,7 @@ it('interrupts with an error and announces anything else in turn', () => {
 it('stays quiet when it is part of the page from the start', () => {
   render(<Notice live={false}>记住自己的 PIN</Notice>);
   expect(screen.queryByRole('status')).toBeNull();
-  expect(screen.getByText('记住自己的 PIN')).toHaveAttribute('data-tone', 'info');
+  expect(screen.getByText('记住自己的 PIN').closest('p')).toHaveAttribute('data-tone', 'info');
 });
 
 it('holds several paragraphs as a block', () => {
@@ -33,4 +33,18 @@ it('holds several paragraphs as a block', () => {
   const notice = screen.getByRole('status');
   expect(notice.tagName).toBe('DIV');
   expect(notice).toHaveTextContent('已受理请查收邮件');
+});
+
+it('marks each tone with its own icon, hidden from screen readers', () => {
+  render(
+    <>
+      <Notice tone="error">没能登录</Notice>
+      <Notice tone="success">已复制</Notice>
+    </>,
+  );
+  const drawings = [screen.getByRole('alert'), screen.getByRole('status')].map(
+    (notice) => notice.querySelector('[aria-hidden="true"] svg')?.innerHTML,
+  );
+  expect(drawings[0]).toBeTruthy();
+  expect(drawings[0]).not.toBe(drawings[1]);
 });

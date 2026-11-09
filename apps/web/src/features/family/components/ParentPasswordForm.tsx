@@ -26,11 +26,13 @@ function wording({
 // Confirms the parent password before a protected action. Fields the action
 // needs as well come before the password, and ready keeps the button disabled
 // until they are complete. An action that runs as soon as the password is
-// confirmed says so in its own hint and pending label.
+// confirmed says so in its own hint and pending label; one that cannot be
+// undone is `destructive`, and its button takes the danger look.
 export function ParentPasswordForm({
   password,
   pending = false,
   ready = true,
+  destructive = false,
   children,
   onChange,
   onSubmit,
@@ -39,6 +41,7 @@ export function ParentPasswordForm({
   password: string;
   pending?: boolean;
   ready?: boolean;
+  destructive?: boolean;
   children?: ReactNode;
   onChange: (value: string) => void;
   onSubmit: () => void;
@@ -59,7 +62,11 @@ export function ParentPasswordForm({
         onChange={(event) => onChange(event.target.value)}
         disabled={pending}
       />
-      <Button disabled={pending || !password || !ready} type="submit">
+      <Button
+        variant={destructive ? 'danger' : 'primary'}
+        disabled={pending || !password || !ready}
+        type="submit"
+      >
         {pending ? pendingLabel : submitLabel}
       </Button>
     </Form>

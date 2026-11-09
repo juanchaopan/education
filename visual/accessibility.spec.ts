@@ -114,7 +114,7 @@ eachPage('every control is big enough to tap', touch, async (page) => {
   expect(await smallTargets(page)).toEqual([]);
 });
 
-test('taps open the parent login and tick the child’s remember choice', async ({
+test('taps open the parent login and turn the child’s remember switch', async ({
   page,
 }, testInfo) => {
   test.skip(!touch(testInfo.project.name), 'checked in another viewport');
@@ -123,7 +123,7 @@ test('taps open the parent login and tick the child’s remember choice', async 
     await page.getByRole('button', { name: '已有账号？去登录' }).tap();
     await expect(page.getByLabel('登录邮箱')).toBeVisible();
     await page.getByRole('link', { name: '孩子空间' }).tap();
-    const remember = page.getByRole('checkbox', { name: '在这台设备上记住家庭码和昵称' });
+    const remember = page.getByRole('switch', { name: '在这台设备上记住家庭码和昵称' });
     const before = await remember.isChecked();
     await page.getByText('在这台设备上记住家庭码和昵称').tap();
     await expect(remember).toBeChecked({ checked: !before });

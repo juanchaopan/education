@@ -1,0 +1,43 @@
+.loading {
+  display: flex;
+  align-items: center;
+  min-block-size: var(--touch-target);
+}
+.dots {
+  display: inline-flex;
+  gap: var(--space-2);
+}
+/* One round of hops a second, in the primary colour and the two accents. */
+.dots i {
+  inline-size: var(--space-3);
+  block-size: var(--space-3);
+  border-radius: 50%;
+  background: var(--primary);
+  animation: hop 1s var(--ease-out) infinite;
+}
+.dots i:nth-child(2) {
+  background: var(--accent);
+  animation-delay: 0.15s;
+}
+.dots i:nth-child(3) {
+  background: var(--accent-2);
+  animation-delay: 0.3s;
+}
+@keyframes hop {
+  0%,
+  60%,
+  100% {
+    translate: 0 0;
+  }
+  30% {
+    translate: 0 calc(var(--space-2) * -1);
+  }
+}
+.label {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
