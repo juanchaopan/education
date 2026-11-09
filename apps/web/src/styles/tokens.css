@@ -1,25 +1,9 @@
-/* Design tokens. Components name a colour by its role, never by its hue, so a
-   theme can repaint the site by changing the values here alone. */
+/* Design tokens. Components name a colour by its role, never by its hue, so
+   the two themes repaint the site from this file alone. The themes change
+   only colours, textures, shadows and glows; spacing, type, radii and motion
+   are the same in both, so switching never moves anything on the page. */
 :root {
-  /* The page, the cards on it, and the warmer surface of tiles. */
-  --bg: #faf8f2;
-  --surface: #fffefa;
-  --surface-2: #f3e8d6;
-  /* Body text and secondary text. */
-  --ink: #243c37;
-  --ink-soft: #596c66;
-  /* Borders and dividers. */
-  --line: #dedfd4;
-  /* The main action: its face, its highlight and the text on it. */
-  --primary: #226451;
-  --primary-hi: #398271;
-  --primary-ink: #fffefa;
-  /* Highlights: the accent itself, the soft tint behind highlighted and
-     selected things, and a second accent. */
-  --accent: #e5b950;
-  --accent-soft: #e8f0e9;
-  --accent-2: #dd9276;
-  --shadow: 0 16px 40px #243c3710;
+  --space-1: 0.25rem;
   --space-2: 0.5rem;
   --space-3: 0.75rem;
   --space-4: 1rem;
@@ -31,12 +15,126 @@
   --text-base: 1.0625rem;
   --text-lg: 1.375rem;
   --text-xl: 1.75rem;
-  /* Corners: --radius for inputs, notices and small tiles, --radius-lg for
-     cards and panels, --radius-pill for fully round ends. */
-  --radius: 0.5rem;
-  --radius-lg: 1.5rem;
+  /* Inputs and small tiles, cards, and fully round ends. */
+  --radius: 1rem;
+  --radius-lg: 1.625rem;
   --radius-pill: 999px;
   /* The smallest area a child's finger can reliably hit. */
   --touch-target: 2.75rem;
+
+  /* Body text in the system's Chinese sans-serif. Titles, numbers and the
+     brand use the self-hosted LXGW WenKai, falling back to the system's
+     kaishu and then to the body font; layouts never depend on its widths. */
+  --font-body: 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', system-ui, sans-serif;
+  --font-display: 'LXGW WenKai Subset', 'KaiTi', 'STKaiti', 'Kaiti SC', var(--font-body);
+
+  /* Motion: a press, a lift or a hover, a page coming in step by step, a
+     spring for switches and bounces, and the fade between themes. The theme
+     fade stays in seconds: the page reads it to know when the fade ends. */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --press: 120ms;
+  --lift: 250ms;
+  --enter: 600ms;
+  --enter-step: 80ms;
+  --theme-fade: 1.2s;
+
+  /* The knob of a switch, light on either theme. */
+  --knob: #fffdf8;
+  --knob-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+
+  /* Fine paper grain, drawn as SVG noise rather than shipped as an image. */
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .42 0 0 0 0 .3 0 0 0 0 .16 0 0 0 .11 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  /* Both page backdrops: warm paper under a morning glow, and a dusky green
+     night lit warm gold from the left and pale violet from the right. The
+     page paints both and the theme decides which one shows, so a change of
+     theme cross-fades between them. */
+  --backdrop-day:
+    var(--grain), radial-gradient(75rem 31rem at 85% -10%, #ffe4b0, transparent 60%),
+    linear-gradient(#f6eedf, #efe4d0);
+  --backdrop-night:
+    radial-gradient(56rem 32rem at 8% -8%, rgba(242, 177, 76, 0.22), transparent 60%),
+    radial-gradient(50rem 31rem at 100% 0%, rgba(176, 108, 214, 0.18), transparent 60%),
+    linear-gradient(#172725, #0f1a19);
+}
+
+/* The handmade workbench, for daytime. It is also the theme before one has
+   been picked. */
+:root,
+:root[data-theme='day'] {
+  /* The page, the cards on it, and the softer surface of inputs and tiles. */
+  --bg: #f3eada;
+  --surface: #fffaf1;
+  --surface-2: #f6ecdb;
+  /* Body text and secondary text. */
+  --ink: #33281d;
+  --ink-soft: #735f4b;
+  /* Borders and dividers. */
+  --line: #e5d5bb;
+  /* The main action: its face, its highlight, its thick lower edge, the text
+     on it and the shadow it casts. */
+  --primary: #2f6e52;
+  --primary-hi: #3a7b5c;
+  --primary-edge: #1d4a36;
+  --primary-ink: #fff8ea;
+  --primary-shadow: 0 10px 20px -10px #1d4a36;
+  /* Highlights: the accent, its ink for marks on light surfaces, its soft
+     tint, and a second accent. */
+  --accent: #eba93a;
+  --accent-ink: #b97a12;
+  --accent-soft: #fbe7bf;
+  --accent-2: #d8714a;
+  /* An action that cannot be undone, an error, and a success. */
+  --danger: #b8492f;
+  --danger-edge: #84311e;
+  --danger-ink: #fffaf1;
+  --ok: #3d8a5a;
+  --shadow:
+    0 1px 0 rgba(255, 255, 255, 0.9) inset, 0 2px 3px rgba(92, 62, 28, 0.07),
+    0 14px 28px -14px rgba(92, 62, 28, 0.35);
+  --shadow-lift:
+    0 1px 0 #ffffff inset, 0 4px 6px rgba(92, 62, 28, 0.08),
+    0 24px 40px -16px rgba(92, 62, 28, 0.42);
+  /* Buttons and captions laid over a picture. */
+  --glass: rgba(255, 249, 238, 0.82);
+  --glass-ink: #33281d;
+  /* Cards are paper with the grain; the day backdrop is the one on show. */
+  --texture: var(--grain);
+  --surface-filter: none;
+  --day-layer: 1;
   color-scheme: light;
+}
+
+/* The twilight theatre, for the evening and the night. */
+:root[data-theme='night'] {
+  --bg: #13201e;
+  --surface: rgba(32, 50, 47, 0.78);
+  --surface-2: rgba(255, 240, 210, 0.06);
+  --ink: #f6ead2;
+  --ink-soft: #b7aa90;
+  --line: rgba(246, 222, 170, 0.16);
+  --primary: #f2c35b;
+  --primary-hi: #ffd77e;
+  --primary-edge: #a8791f;
+  --primary-ink: #2a1d08;
+  --primary-shadow: 0 10px 26px -8px rgba(242, 195, 91, 0.55);
+  --accent: #7fd3c2;
+  --accent-ink: #f2c35b;
+  --accent-soft: rgba(127, 211, 194, 0.16);
+  --accent-2: #d29af5;
+  --danger: #f0896e;
+  --danger-edge: #a9503a;
+  --danger-ink: #2a1d08;
+  --ok: #8fe0a8;
+  --shadow: 0 1px 0 rgba(255, 236, 196, 0.08) inset, 0 18px 40px -18px rgba(0, 0, 0, 0.7);
+  --shadow-lift:
+    0 1px 0 rgba(255, 236, 196, 0.12) inset, 0 0 0 1px rgba(242, 195, 91, 0.3),
+    0 26px 50px -18px rgba(0, 0, 0, 0.8), 0 0 60px -20px rgba(242, 195, 91, 0.45);
+  --glass: rgba(20, 32, 30, 0.6);
+  --glass-ink: #f6ead2;
+  /* Cards are smoked glass over the lit backdrop. */
+  --texture: none;
+  --surface-filter: blur(14px);
+  --day-layer: 0;
+  color-scheme: dark;
 }

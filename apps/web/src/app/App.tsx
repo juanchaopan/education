@@ -12,9 +12,11 @@ import { Page } from '../shared/ui/Page';
 import { StandaloneLink } from '../shared/ui/StandaloneLink';
 import { lessonPages } from './lesson-pages';
 import { ReleaseUpdate } from './release/ReleaseUpdate';
+import { useDayNightTheme } from './theme/useDayNightTheme';
 import styles from './App.module.css';
 
 export function App() {
+  useDayNightTheme();
   return (
     <div className={styles.shell}>
       <a className={styles.skip} href="#main">
