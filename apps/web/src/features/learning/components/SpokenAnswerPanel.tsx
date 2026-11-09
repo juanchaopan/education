@@ -4,9 +4,8 @@ import panel from './LessonPanel.module.css';
 import styles from './SpokenAnswerPanel.module.css';
 
 type Handlers = {
-  onSpeak: () => void;
-  onStop: () => void;
-  onCancel: () => void;
+  onListen: () => void;
+  onFinish: () => void;
   onStopWaiting: () => void;
   onConfirm: () => void;
   onChoose: (count: number) => void;
@@ -22,10 +21,14 @@ type Props = Handlers & {
   hint?: string;
   hintFailed?: boolean;
   canHint: boolean;
+  // Someone else in the lesson is speaking, so the microphone cannot open.
+  blocked: boolean;
 };
 
 function message(step: AnswerStep) {
   switch (step.kind) {
+    case 'waiting':
+      return '听完这句话，就可以说出答案了。';
     case 'confirm':
       return `我听到你说「${step.heard}」，是 ${step.count} 吗？`;
     case 'judging':
@@ -39,22 +42,17 @@ function message(step: AnswerStep) {
   }
 }
 
-function Actions({ step, ...on }: Handlers & { step: AnswerStep }) {
+function Actions({ step, blocked, ...on }: Handlers & { step: AnswerStep; blocked: boolean }) {
   switch (step.kind) {
     case 'listening':
-      return (
-        <>
-          <Button label="说完了" onClick={on.onStop} />
-          <Button label="不说了" onClick={on.onCancel} />
-        </>
-      );
+      return <Button label="说完了" onClick={on.onFinish} />;
     case 'hearing':
       return <Button label="不等了" onClick={on.onStopWaiting} />;
     case 'confirm':
       return (
         <>
           <Button label={`对，是 ${step.count}`} onClick={on.onConfirm} />
-          <Button label="不对，再说一次" onClick={on.onSpeak} />
+          <Button label="不对，再说一次" onClick={on.onListen} disabled={blocked} />
         </>
       );
     case 'failed':
@@ -62,14 +60,16 @@ function Actions({ step, ...on }: Handlers & { step: AnswerStep }) {
     case 'done':
       return <Button label="接着看" onClick={on.onContinue} />;
     case 'ask':
-      return <Button label="按一下，说出答案" onClick={on.onSpeak} />;
+      return <Button label="点这里再说" onClick={on.onListen} disabled={blocked} />;
     default:
       return null;
   }
 }
 
-// The final answer of a lesson, said out loud. The child confirms the number
-// that was heard before it counts; numbers to tap appear only when speech
+// The final answer of a lesson, said out loud: the microphone listens by
+// itself once the question has been told and stops when the child falls
+// quiet, or when the child says they are done. The child confirms the number
+// that was heard before it counts. Numbers to tap appear only when speech
 // cannot be used.
 export function SpokenAnswerPanel(props: Props) {
   const { question, step, choices, hint, hintFailed, canHint, ...on } = props;

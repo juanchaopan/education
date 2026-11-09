@@ -17,12 +17,12 @@ const meta = {
   component: SpokenAnswerPanel,
   args: {
     question: '一棵青菜和几根黄瓜一样重？',
-    step: answerStep({ status: 'idle' }, open, words),
+    step: answerStep({ status: 'idle' }, open, words, true),
     choices: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
     canHint: true,
-    onSpeak: () => {},
-    onStop: () => {},
-    onCancel: () => {},
+    blocked: false,
+    onListen: () => {},
+    onFinish: () => {},
     onStopWaiting: () => {},
     onConfirm: () => {},
     onChoose: () => {},
@@ -37,6 +37,9 @@ type Story = StoryObj<typeof meta>;
 export const Ready: Story = {};
 export const Listening: Story = {
   args: { step: answerStep({ status: 'recording' }, open, words) },
+};
+export const NothingHeard: Story = {
+  args: { step: answerStep({ status: 'unavailable', reason: 'quiet' }, open, words) },
 };
 export const ConfirmHeard: Story = {
   args: { step: answerStep({ status: 'review', text: '九根' }, open, words) },

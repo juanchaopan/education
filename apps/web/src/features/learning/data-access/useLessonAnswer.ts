@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { queryOptions, useMutation, useQuery } from '@tanstack/react-query';
 import type { AttemptReceipt } from '@education/contracts';
 import {
   AnswerConflictError,
@@ -28,6 +28,19 @@ type Submission = {
 
 const offline = '暂时连不上，请重试。';
 
+// The round of the problem the child is answering, read once while the answer
+// and the questions about it are on screen.
+export function answerRound(scope: LearningScope, enabled = true) {
+  return queryOptions({
+    queryKey: ['lesson-answer-round', scope],
+    queryFn: ({ signal }) => readAnswerRound(scope, signal),
+    retry: false,
+    staleTime: Infinity,
+    gcTime: 0,
+    enabled,
+  });
+}
+
 function judgementOf({ isPending, error, data, variables }: Submission): Judgement {
   if (isPending) return { status: 'judging' };
   if (error) return { status: 'failed', message: error.message };
@@ -42,13 +55,7 @@ function judgementOf({ isPending, error, data, variables }: Submission): Judgeme
 // is sent again once the round arrives. A round that changed elsewhere starts
 // over with a fresh round instead of repeating a refused attempt.
 export function useLessonAnswer(scope: LearningScope, hintIds: readonly string[]) {
-  const round = useQuery({
-    queryKey: ['lesson-answer-round', scope],
-    queryFn: ({ signal }) => readAnswerRound(scope, signal),
-    retry: false,
-    staleTime: Infinity,
-    gcTime: 0,
-  });
+  const round = useQuery(answerRound(scope));
   const submit = useMutation({ mutationFn: (attempt: Attempt) => attempt.submit() });
   const [hints, setHints] = useState<readonly string[]>([]);
   const hint = useMutation({

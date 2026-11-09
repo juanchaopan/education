@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import pg from 'pg';
 import { movesToTheAnswer, play } from './garden-film.js';
+import { holdWhile } from './hold.js';
 import { seedSignedInFamily } from './seeded-family.js';
 import { signInWithToken } from './session-cookie.js';
 
@@ -33,10 +34,12 @@ test('a child places the garden problem, resumes it and is judged on the counted
     await expect(page).toHaveURL(/\/problems\/garden-balance\/1$/);
     await page.getByRole('button', { name: /开始短片/ }).click();
 
-    // A question with no AI and no microphone sends the child back to the scene.
+    // A question with no AI and no microphone sends the child back to the
+    // scene. It is held to ask, until the microphone has answered.
     const question = page.getByRole('region', { name: '问问小兔' });
-    await question.getByRole('button', { name: '有问题？按一下问小兔' }).click();
-    await expect(question.getByRole('status')).toHaveText(/我们接着做题吧/);
+    await holdWhile(page, question.getByRole('button', { name: '有问题？按住问小兔' }), () =>
+      expect(question.getByRole('status')).toHaveText(/我们接着做题吧/),
+    );
 
     // From the first cabbage to the question of the count, every scene by hand.
     await play(movesToTheAnswer(page));
@@ -50,11 +53,11 @@ test('a child places the garden problem, resumes it and is judged on the counted
     const answer = page.getByRole('region', { name: '说出答案' });
     await expect(answer).toBeVisible();
 
-    // Without a microphone the answer is tapped. A wrong count is explained
-    // and the numbers stay; a hint makes the correct count a helped one.
-    await answer.getByRole('button', { name: '按一下，说出答案' }).click();
+    // Without a microphone the answer is tapped once the question is told.
+    // A wrong count is explained and the numbers stay; a hint makes the
+    // correct count a helped one.
     const numbers = answer.getByRole('group', { name: '点一个数字回答' });
-    await numbers.getByRole('button', { name: '6', exact: true }).click();
+    await numbers.getByRole('button', { name: '6', exact: true }).click({ timeout: 30_000 });
     await expect(answer.getByRole('status')).toHaveText(/6 是一开始苹果的个数/);
     await answer.getByRole('button', { name: '给我一个提示' }).click();
     await expect(answer.getByText('先看第一架秤：一棵青菜和几个苹果一样重？')).toBeVisible();

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLatest } from '../../../shared/lib/useLatest';
 import { useReloadReadiness } from '../../../shared/lib/reload-readiness';
-import { createChime } from './chime';
+import { createChime, type Chime } from './chime';
 import { tell, type FilmScene, type FilmState, type FilmStory, type Reaction } from './lesson-film';
 import type { NarrationFailure } from './narration';
 import { useNarration } from './useNarration';
@@ -16,7 +16,10 @@ type Options<Shot extends string> = {
 };
 
 type Voice = Readonly<{
+  // A line is sounding now.
   speaking: boolean;
+  // The scene's lines are still being told, the pauses between them included.
+  telling: boolean;
   paused: boolean;
   // Why the line on screen did not come out, while it waits to be heard again.
   failure?: NarrationFailure;
@@ -29,6 +32,8 @@ export type LessonFilm<State, Shot extends string, Move> = Voice &
   Readonly<{
     state: State;
     caption?: string;
+    // The lesson's tones and its audio context, for the parts beneath the film.
+    chime: Pick<Chime, 'play' | 'audio'>;
     // Starts the film at its first scene, or at a saved one.
     enter: (shot?: Shot) => void;
     act: (move: Move) => void;
@@ -36,9 +41,10 @@ export type LessonFilm<State, Shot extends string, Move> = Voice &
   }>;
 
 // What the child hears of the teacher, and can do with it.
-function voiceOf(narration: ReturnType<typeof useNarration>): Voice {
+function voiceOf(narration: ReturnType<typeof useNarration>, telling: boolean): Voice {
   return {
     speaking: narration.status === 'playing',
+    telling,
     paused: narration.status === 'paused',
     failure: narration.failure,
     replay: narration.replay,
@@ -109,13 +115,14 @@ export function useLessonFilm<
     );
   }
 
-  const voice = voiceOf(narration);
+  const voice = voiceOf(narration, telling);
   useReloadReadiness(telling && !voice.paused && !voice.failure ? 'playing' : 'ready');
 
   return {
     ...voice,
     state,
     caption,
+    chime,
     enter(shot = story.first) {
       chime.play(startTones);
       apply(story.arrive(shot));
