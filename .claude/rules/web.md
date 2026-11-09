@@ -38,6 +38,9 @@ src/
 - 展示组件（`components/`、`shared/ui/`）不能依赖 data-access、pages、app，也不能引用 TanStack Query、axios、SWR、Zustand、Redux 这类取数据和全局状态的库；可以用 `import type` 引用类型。
 - data-access 不依赖界面。
 - 功能之间不互相引用，几个功能共用的东西提到 `shared/`。shared 不依赖任何功能。
+- 一道题的文件（`features/learning/lessons/<题目>/`、`features/learning/components/<题目>/`）不引用另一道题的文件；几道题共用的部件放在 `components/lesson-stage/`、`interaction/` 和 `lessons/lesson-definition.ts`。
+- 题目以外的代码只能用动态 `import()` 引用题目的文件和公共题目页 `pages/LessonPage.tsx`，题库页因此不带题目的代码。
+- 网站的代码不引用题目插件 `@education/problems`，答案只在服务器上；只有测试为了检查题目定义可以读插件。
 - 不允许循环依赖。
 
 ## 组件写法

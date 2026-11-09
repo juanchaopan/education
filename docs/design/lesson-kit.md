@@ -110,7 +110,7 @@ classDiagram
   class teachers {
     +catalog
   }
-  class lessonRegistry {
+  class registry {
     +lessons
   }
   LessonPage --> LessonDefinition
@@ -124,7 +124,7 @@ classDiagram
   LessonStage --> teachers
   LessonDefinition --> backdrops
   LessonDefinition --> teachers
-  lessonRegistry --> LessonDefinition
+  registry --> LessonDefinition
 ```
 
 | 部件                                              | 位置（`apps/web/src/features/learning/` 下） | 职责                                                                                                                                                                            |
@@ -138,7 +138,7 @@ classDiagram
 | 提示 `AttentionCue`、氛围 `Ambience`、`BoardText` | `components/lesson-stage/`                   | 「看这里」的飞行箭头、手指和脉冲三种样式；萤火虫、花瓣等点缀；黑板和标签文字。都遵守「减少动态效果」设置。                                                                      |
 | 题目页 `LessonPage`、`LessonPanels`               | `pages/`                                     | 由 `GardenBalanceLesson`、`GardenPanels` 推广而来：已登录时接草稿、按幕保存、最终作答、每幕提问和草稿提示；游客只看短片和登录提示。`lessonPage(定义)` 为一道题构造它的页面。    |
 | 题目定义 `LessonDefinition`                       | `lessons/lesson-definition.ts`               | 一道题需要提供的全部内容，见下文。                                                                                                                                              |
-| 题目登记 `lessonRegistry`                         | `lessons/registry.ts`                        | 每道题一行：题目版本和按需加载的定义；应用外壳据此生成题目页，不再逐题手写。                                                                                                    |
+| 题目登记 `lessons`                                | `lessons/registry.ts`                        | 每道题一行：题目版本和按需加载的定义；应用外壳据此生成题目页，不再逐题手写。                                                                                                    |
 | 绘景库 `backdrops`、角色库 `teachers`             | `media/backdrops/`、`media/teachers/`        | 图片和带标签的清单，见「绘景库和角色库」。                                                                                                                                      |
 
 `libs/problems` 增加题目规则的辅助函数：整数答案的判定（整数判对错，其他判为无法判断）、每幕说明和词表的组装。题目插件照旧放在 `libs/problems/src/<题目>.ts`。
@@ -256,7 +256,7 @@ type LessonDefinition<
 ## 测试策略
 
 - 重构步骤：菜园题现有的单元测试、e2e（`e2e/garden-balance.spec.ts`）和视觉基准是行为基准，必须原样通过；公共部件各自补单元测试和 Storybook story。
-- 定义检查：一个单元测试遍历登记表，检查每道题的每句台词都有录音、每幕都有进场台词、作答那一幕在幕序里且后面还有一幕、题目版本在登记表、定义和题目插件里一致、幕名和题目插件的步骤一致、作答用到的提示都在插件里；绘景库建好后（#134）再查背景和角色在库里。
+- 定义检查：一个单元测试遍历登记表，检查每道题的每句台词都有录音、每幕都有进场台词、作答那一幕在幕序里且后面还有一幕、题目版本在登记表、定义和题目插件里一致、幕名和题目插件的步骤一致、作答用到的提示都在插件里，并且题库里的每个题目版本都有登记的题目；绘景库建好后（#134）再查背景和角色在库里。
 - 放音检查（#129）：e2e 的共用工具按台词逐幕检查每句都播放到结束，在桌面 Chromium、手机模拟和 WebKit 上跑；登记表里的每道题都要接入。
 - 分层检查：`npm run arch` 增加规则，一道题的文件不能引用另一道题的文件，题目的代码只在打开时加载，网站的代码不引用题目插件。
 - 全屏和返回：e2e 覆盖从题库进入后返回原分类、直接打开链接后返回、开始短片时请求全屏（浏览器拒绝时页面照常）。
