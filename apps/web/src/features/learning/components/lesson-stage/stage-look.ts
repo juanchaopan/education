@@ -51,13 +51,6 @@ export type StagePalette = Readonly<{
   boardInk: string;
 }>;
 
-// How the backdrop is framed in a scene: its zoom, and how far it moves across
-// and down, as a share of its own size.
-export type Camera = Readonly<{ zoom: number; x?: number; y?: number }>;
-
-// The painted picture behind the props and the part of it kept in view.
-export type Backdrop = Readonly<{ image: string; focus: string }>;
-
 // A rectangle and an ellipse in the stage's world.
 export type Box = Readonly<{ x: number; y: number; width: number; height: number }>;
 export type Ellipse = Readonly<{ cx: number; cy: number; rx: number; ry: number }>;
@@ -75,6 +68,32 @@ export function inside(box: Box, frame: Box) {
     box.y + box.height <= frame.y + frame.height
   );
 }
+
+// How the backdrop is framed in a scene: its zoom about the middle of the
+// world, and how far it moves across and down first, as a share of the
+// world's size. The props stay where they are.
+export type Camera = Readonly<{ zoom: number; x?: number; y?: number }>;
+
+// The framing of every scene that has none of its own. It overscans a
+// little, so the backdrop's edges never show while it settles in or glides
+// to the next scene.
+export const establishing: Camera = { zoom: 1.035 };
+
+// Where a box drawn on the backdrop shows in the world once the backdrop is
+// framed by a camera.
+export function framed(box: Box, { zoom, x = 0, y = 0 }: Camera): Box {
+  const middleX = world.x + world.width / 2;
+  const middleY = world.y + world.height / 2;
+  return {
+    x: middleX + zoom * (box.x - middleX + (x / 100) * world.width),
+    y: middleY + zoom * (box.y - middleY + (y / 100) * world.height),
+    width: zoom * box.width,
+    height: zoom * box.height,
+  };
+}
+
+// The painted picture behind the props and the part of it kept in view.
+export type Backdrop = Readonly<{ image: string; focus: string }>;
 
 // The character who tells the lesson: where it stands in the stage's world and
 // the shadow at its feet.
