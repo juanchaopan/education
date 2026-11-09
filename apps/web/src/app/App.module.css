@@ -27,12 +27,14 @@
   align-items: center;
 }
 
+/* The brand link is a full touch target even when only its mark shows. */
 .brand {
   justify-self: start;
   display: inline-flex;
   align-items: center;
   gap: var(--space-3);
   min-block-size: var(--touch-target);
+  min-inline-size: var(--touch-target);
   font-family: var(--font-display);
   font-size: var(--text-lg);
   font-weight: 700;
