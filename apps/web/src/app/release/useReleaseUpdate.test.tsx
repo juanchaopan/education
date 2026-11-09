@@ -20,7 +20,8 @@ const serving =
 const offline: Reply = () => Promise.reject(new TypeError('Failed to fetch'));
 
 type Part = { readiness: Readiness; save?: () => void };
-type Setup = { own?: string; serves?: string; part?: Part; store?: ReturnType<typeof memoryStore> };
+type Store = ReturnType<typeof memoryStore>;
+type Setup = { own?: string; serves?: string; part?: Part; store?: Store };
 
 function memoryStore() {
   const items = new Map<string, string>();
@@ -82,6 +83,18 @@ function setup({
 async function wait(ms: number) {
   await act(() => vi.advanceTimersByTimeAsync(ms));
   await act(() => vi.advanceTimersByTimeAsync(1));
+}
+
+// A page that reloaded once for the newer release, then the page that reload
+// brought in the same tab, while a cache still served the older page.
+async function reloadedOnce(store: Store) {
+  const before = setup({ serves: newer, store });
+  await wait(0);
+  expect(before.reload).toHaveBeenCalledOnce();
+  before.unmount();
+  const after = setup({ serves: newer, store });
+  await wait(0);
+  return after;
 }
 
 beforeEach(() => vi.useFakeTimers());
@@ -171,14 +184,7 @@ describe('useReleaseUpdate', () => {
   });
 
   it('offers another try instead of reloading again when the reload did not bring the release', async () => {
-    const store = memoryStore();
-    const before = setup({ serves: newer, store });
-    await wait(0);
-    expect(before.reload).toHaveBeenCalledOnce();
-    before.unmount();
-    // The tab reloaded, but a cache still served the older page.
-    const after = setup({ serves: newer, store });
-    await wait(0);
+    const after = await reloadedOnce(memoryStore());
     expect(after.result.current.phase).toBe('stuck');
     await wait(5 * minute);
     expect(after.reload).not.toHaveBeenCalled();
@@ -198,13 +204,7 @@ describe('useReleaseUpdate', () => {
   });
 
   it('still reloads once when the record cannot be written just then, and the next page stays', async () => {
-    const store = storeFullAfter(1);
-    const before = setup({ serves: newer, store });
-    await wait(0);
-    expect(before.reload).toHaveBeenCalledOnce();
-    before.unmount();
-    const after = setup({ serves: newer, store });
-    await wait(0);
+    const after = await reloadedOnce(storeFullAfter(1));
     expect(after.result.current.phase).toBe('stuck');
     expect(after.reload).not.toHaveBeenCalled();
   });
