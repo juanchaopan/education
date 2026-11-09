@@ -1,28 +1,20 @@
 import { expect, type Page } from '@playwright/test';
+import { builtAddress, sourceName } from './built-file.js';
 
 // What a lesson's player did with one of its recordings, by the address it
 // played from.
 type Heard = { clip: string; event: 'playing' | 'ended' | 'error' };
 type Reporting = Window & { reportNarration: (clip: string, event: Heard['event']) => void };
 
-// A build names a recording after its file with a hash added.
-const built = String.raw`(-[\w-]{8})?\.mp3$`;
-
 // The address of the built recording with this file name.
 export function recording(name: string) {
-  return new RegExp(`/${name}${built}`);
-}
-
-// A recording by its file name, without the hash a build adds to it.
-function fileName(clip: string) {
-  const name = new URL(clip).pathname.split('/').pop() ?? clip;
-  return name.replace(new RegExp(built), '');
+  return builtAddress(name, 'mp3');
 }
 
 // The player's events as `<recording> <event>`. A recording that pauses to
 // buffer reports playing again as it goes on; that is still one playing.
 function told(heard: readonly Heard[]) {
-  const said = heard.map(({ clip, event }) => `${fileName(clip)} ${event}`);
+  const said = heard.map(({ clip, event }) => `${sourceName(clip)} ${event}`);
   return said.filter((entry, index) => entry !== said[index - 1]);
 }
 
