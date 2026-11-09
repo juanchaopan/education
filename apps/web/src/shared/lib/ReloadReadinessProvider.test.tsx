@@ -41,7 +41,9 @@ describe('reload readiness', () => {
     expect(screen.getByRole('button')).toHaveTextContent('saving');
     rerender(<Screen parts={[{ readiness: 'saving' }, { readiness: 'unsaved' }]} />);
     expect(screen.getByRole('button')).toHaveTextContent('unsaved');
-    rerender(<Screen parts={[{ readiness: 'playing' }, { readiness: 'unsaved' }]} />);
+    rerender(<Screen parts={[{ readiness: 'showing' }, { readiness: 'unsaved' }]} />);
+    expect(screen.getByRole('button')).toHaveTextContent('showing');
+    rerender(<Screen parts={[{ readiness: 'showing' }, { readiness: 'playing' }]} />);
     expect(screen.getByRole('button')).toHaveTextContent('playing');
   });
 

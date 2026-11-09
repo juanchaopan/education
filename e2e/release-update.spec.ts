@@ -2,6 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 import pg from 'pg';
 import { gardenFilm, movesToTheAnswer } from './garden-film.js';
 import { listenToNarration } from './narration-check.js';
+import { signInRecentParent } from './recent-parent.js';
 import { checkNow, releaseName, releases, serveReleases } from './release.js';
 import { seedSignedInFamily } from './seeded-family.js';
 import { signInWithToken } from './session-cookie.js';
@@ -13,6 +14,7 @@ import { signInWithToken } from './session-cookie.js';
 const { older, newer } = releases;
 const lesson = '/problems/garden-balance/1';
 const updateWaits = /更新已准备好，保存后将自动更新/;
+const database = process.env.DATABASE_URL;
 
 type Narration = Awaited<ReturnType<typeof listenToNarration>>;
 
@@ -39,6 +41,15 @@ async function newReleaseWhileTheFilmPlays(page: Page) {
   site.deploy(newer);
   await checkNow(page, site);
   return { narration, site };
+}
+
+// The isolated database a signed-in test needs, and Chromium, the one browser
+// that sends the test servers' session cookie over http.
+function needsDatabase() {
+  test.skip(
+    ({ browserName }) => !database || browserName !== 'chromium',
+    'Isolated database required',
+  );
 }
 
 test.describe('a page outside a lesson', () => {
@@ -137,14 +148,9 @@ test.describe('a lesson page', () => {
   });
 });
 
-// A signed-in child's draft, which needs the isolated database. The test
-// servers answer over http, and only Chromium sends their session cookie.
+// A signed-in child's draft.
 test.describe('a signed-in child', () => {
-  const database = process.env.DATABASE_URL;
-  test.skip(
-    ({ browserName }) => !database || browserName !== 'chromium',
-    'Isolated database required',
-  );
+  needsDatabase();
 
   let pool: pg.Pool;
   let family: string;
@@ -231,5 +237,41 @@ test.describe('a signed-in child', () => {
     await expect(page.getByRole('button', { name: /接着上次的地方/ })).toBeVisible({
       timeout: 30_000,
     });
+  });
+});
+
+// A parent's new registration KEY, which is shown only once.
+test.describe('a parent', () => {
+  needsDatabase();
+
+  test('keeps a new registration KEY on screen until the parent closes it', async ({
+    page,
+    baseURL,
+  }) => {
+    const pool = new pg.Pool({ connectionString: database });
+    let family: string | undefined;
+    try {
+      family = (await signInRecentParent(page, baseURL!, pool)).family;
+      const site = await serveReleases(page, older);
+      await open(page, '/family');
+      await page.getByRole('button', { name: '生成注册 KEY', exact: true }).click();
+      const raw = page.getByLabel('本次生成的注册 KEY');
+      await expect(raw).toHaveText(/^[0-9A-HJKMNP-TV-Z]{4}(-[0-9A-HJKMNP-TV-Z]{4}){3}$/);
+
+      // A new release waits while the KEY is on screen, check after check.
+      site.deploy(newer);
+      await checkNow(page, site);
+      await checkNow(page, site);
+      expect(site.loads).toBe(1);
+      await expect(raw).toBeVisible();
+
+      // Closing the KEY lets the page take the new release.
+      await page.getByRole('button', { name: '刷新 KEY 状态', exact: true }).click();
+      await expect.poll(() => site.loads).toBe(2);
+      await expect(releaseName(page)).toHaveAttribute('content', newer);
+    } finally {
+      if (family) await pool.query('DELETE FROM families WHERE id=$1', [family]);
+      await pool.end();
+    }
   });
 });

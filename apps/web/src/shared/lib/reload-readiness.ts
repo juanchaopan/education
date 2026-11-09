@@ -2,9 +2,11 @@ import { createContext, useContext, useEffect, useId, useState } from 'react';
 import { useLatest } from './useLatest';
 
 // How one part of the page stands toward a full reload: nothing a reload
-// would lose, a lesson film a reload would cut off, work being saved, or work
-// a reload would lose until it is saved.
-export type Readiness = 'ready' | 'playing' | 'saving' | 'unsaved';
+// would lose; a lesson film a reload would cut off; something shown only
+// once, such as a new registration KEY, that a reload would take away and
+// that cannot be saved; work being saved; or work a reload would lose until
+// it is saved.
+export type Readiness = 'ready' | 'playing' | 'showing' | 'saving' | 'unsaved';
 
 export type ReadinessPart = Readonly<{ readiness: Readiness; save: () => void }>;
 export type ReadinessRegistry = Readonly<{
@@ -18,8 +20,9 @@ export const RegistryContext = createContext<ReadinessRegistry | undefined>(unde
 export const PartsContext = createContext<ReadonlyMap<string, ReadinessPart>>(new Map());
 
 // What keeps the page from reloading, the first that applies: a film is never
-// cut off, not even to save; unsaved work is saved; saving work is awaited.
-const holds: readonly Readiness[] = ['playing', 'unsaved', 'saving'];
+// cut off and what is shown once stays until it is gone, not even to save;
+// unsaved work is saved; saving work is awaited.
+const holds: readonly Readiness[] = ['playing', 'showing', 'unsaved', 'saving'];
 
 // Reports how this part of the page stands toward a reload for as long as it
 // is on the page, and how to save its unsaved work. Outside a provider the

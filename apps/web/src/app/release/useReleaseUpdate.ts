@@ -15,10 +15,10 @@ export function retryDelay(failures: number) {
 }
 
 // Where the page stands with the release the deployment serves: it is that
-// release; it waits for its film to finish or its work to be saved; its work
-// did not save, so it waits for a save to succeed; it is reloading; or it may
-// not reload on its own for that release, having done so once already, and
-// waits for the child to try again.
+// release; it waits for its film to finish, for what it shows only once to
+// go, or for its work to be saved; its work did not save, so it waits for a
+// save to succeed; it is reloading; or it may not reload on its own for that
+// release, having done so once already, and waits for the child to try again.
 export type UpdatePhase = 'current' | 'waiting' | 'held' | 'reloading' | 'stuck';
 
 type Standing = { own?: string; latest?: string; readiness: Readiness; tried: boolean };
@@ -78,13 +78,14 @@ type Options = { own?: string; guard?: ReloadGuard; reload?: () => void };
 const sessionGuard = createReloadGuard();
 
 // Brings an open page to the release the deployment serves. Once a newer
-// release is out, the page waits for its film to finish, its writes to
-// arrive and its work to be saved, saving unsaved work again after each
-// check, and then reloads fully, once for each release; signing in survives
-// the reload. The page's own release and the record of earlier reloads are
-// read as the page loads, so the reload this page starts never counts
-// against it. A tab that cannot keep the record never reloads on its own,
-// but a reload the child asks for always goes ahead.
+// release is out, the page waits for its film to finish, for what it shows
+// only once to go, for its writes to arrive and for its work to be saved,
+// saving unsaved work again after each check, and then reloads fully, once
+// for each release; signing in survives the reload. The page's own release
+// and the record of earlier reloads are read as the page loads, so the
+// reload this page starts never counts against it. A tab that cannot keep
+// the record never reloads on its own, but a reload the child asks for
+// always goes ahead.
 export function useReleaseUpdate({
   own: built,
   guard = sessionGuard,

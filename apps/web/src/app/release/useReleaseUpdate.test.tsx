@@ -220,6 +220,22 @@ describe('useReleaseUpdate', () => {
     expect(reload).toHaveBeenCalledOnce();
   });
 
+  it('waits, without saving or a notice, while something shown only once is on screen', async () => {
+    const save = vi.fn();
+    const { reload, result, rerender } = setup({
+      serves: newer,
+      part: { readiness: 'showing', save },
+    });
+    await wait(0);
+    await wait(minute);
+    expect(result.current.phase).toBe('waiting');
+    expect(save).not.toHaveBeenCalled();
+    expect(reload).not.toHaveBeenCalled();
+    rerender({ readiness: 'ready', save });
+    await wait(0);
+    expect(reload).toHaveBeenCalledOnce();
+  });
+
   it('waits for a playing film, then saves unsaved work, holding until it is saved', async () => {
     const save = vi.fn();
     const { reload, result, rerender } = setup({
