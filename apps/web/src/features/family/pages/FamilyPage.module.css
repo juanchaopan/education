@@ -1,0 +1,19 @@
+/* While the page asks who is signed in, the dots wait in the middle of the
+   screen, where the card is about to appear. */
+.waiting {
+  display: grid;
+  place-items: center;
+  min-block-size: 100dvh;
+}
+
+.space {
+  max-width: 75rem;
+  margin: auto;
+  padding: var(--space-4) var(--space-6) var(--space-10);
+}
+
+@media (max-width: 600px) {
+  .space {
+    padding: var(--space-3) var(--space-4) var(--space-8);
+  }
+}

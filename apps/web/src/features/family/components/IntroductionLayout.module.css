@@ -1,0 +1,20 @@
+.layout {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
+  gap: var(--space-8);
+  padding: var(--space-6) 0;
+  align-items: start;
+}
+.introduction {
+  padding: var(--space-5);
+  color: var(--ink-soft);
+}
+.introduction h2 {
+  color: var(--ink);
+  font-size: var(--text-xl);
+}
+@media (max-width: 600px) {
+  .card {
+    order: -1;
+  }
+}

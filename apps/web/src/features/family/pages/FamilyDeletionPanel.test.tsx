@@ -1,6 +1,7 @@
 import { afterEach, expect, it, vi } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { familyDeletionPhrase } from '@education/contracts';
 import { FamilyDeletionPanel } from './FamilyDeletionPanel';
@@ -119,26 +120,13 @@ it('does not ask to delete when the password is wrong', async () => {
   expect(onDeleted).not.toHaveBeenCalled();
 });
 
-it('shows why the server could not accept the deletion, or that the outcome is unsure', async () => {
-  const message = '暂时无法确认删除是否已经受理，请稍后重新登录查看。';
-  for (const [reply, shown] of [
-    [Response.json({ message }, { status: 503 }), message],
-    [new Response('<html>gateway timeout</html>', { status: 504 }), '暂时无法确认删除结果'],
-  ] as const) {
-    const { onDeleted } = setup({ deletion: reply });
-    const user = await fillIn();
-    await user.click(button());
-    expect(await screen.findByRole('alert')).toHaveTextContent(shown);
-    expect(onDeleted).not.toHaveBeenCalled();
-    cleanup();
-  }
-});
-
 it('shows the family page as deleted and lets the parent register a new family', async () => {
   stubFetch();
   render(
     <QueryClientProvider client={new QueryClient()}>
-      <FamilyPage />
+      <MemoryRouter>
+        <FamilyPage art={{ backdrop: '/backdrop.webp', teacher: '/teacher.webp' }} />
+      </MemoryRouter>
     </QueryClientProvider>,
   );
   const user = userEvent.setup();

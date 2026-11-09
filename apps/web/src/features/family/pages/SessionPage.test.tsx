@@ -11,6 +11,7 @@ const session = {
   access: 'verification-only',
   csrfToken: 'a'.repeat(43),
 };
+const art = { backdrop: '/backdrop.webp', teacher: '/teacher.webp' };
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
@@ -30,13 +31,15 @@ function setup(mode: 'success' | 'failure' | 'remembered' = 'success') {
       expect(options?.headers).toMatchObject({ 'X-CSRF-Token': session.csrfToken });
       return new Response(null, { status: 204 });
     }
+    if (url.endsWith('/verification'))
+      return Response.json({ enabled: true, status: 'not-sent', retryAfter: 0, canRetry: false });
     return Response.json({ enabled: true });
   });
   vi.stubGlobal('fetch', fetcher);
   render(
     <QueryClientProvider client={new QueryClient()}>
       <MemoryRouter>
-        <FamilyPage />
+        <FamilyPage art={art} />
       </MemoryRouter>
     </QueryClientProvider>,
   );
@@ -50,11 +53,13 @@ async function login() {
   await user.type(screen.getByLabelText('登录密码'), 'secret phrase');
   await user.click(screen.getByRole('button', { name: '登录' }));
 }
-it('shows real restricted status after login and clears the account on successful logout', async () => {
+it('shows only the verification step after an unverified login and clears the account on logout', async () => {
   setup();
   await login();
-  expect(await screen.findByRole('heading', { name: '我的家长账号' })).toBeVisible();
-  expect(screen.getByText(/邮箱待验证/)).toBeVisible();
+  expect(await screen.findByRole('heading', { name: '验证家长邮箱' })).toBeVisible();
+  expect(screen.getByText(session.email)).toBeVisible();
+  expect(screen.getByText('待验证', { exact: true })).toBeVisible();
+  expect(await screen.findByRole('button', { name: '发送验证邮件' })).toBeVisible();
   expect(screen.queryByLabelText('登录密码')).toBeNull();
   await userEvent.click(screen.getByRole('button', { name: '退出账号' }));
   expect(await screen.findByRole('heading', { name: '家长登录' })).toBeVisible();
@@ -62,7 +67,7 @@ it('shows real restricted status after login and clears the account on successfu
 });
 it('restores the server session without asking for a password', async () => {
   setup('remembered');
-  expect(await screen.findByRole('heading', { name: '我的家长账号' })).toBeVisible();
+  expect(await screen.findByRole('heading', { name: '验证家长邮箱' })).toBeVisible();
   expect(screen.queryByRole('button', { name: '登录' })).toBeNull();
 });
 it('keeps input on wrong credentials and never renders raw backend errors', async () => {

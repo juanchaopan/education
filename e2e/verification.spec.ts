@@ -52,7 +52,7 @@ test('authenticated family page reports provider acceptance without claiming ver
   await page.goto('/family');
   await page.getByRole('button', { name: '发送验证邮件', exact: true }).click();
   await expect(page.getByText(/邮件服务商已接受请求/)).toBeVisible();
-  await expect(page.getByText('邮箱待验证，仅可查看账号验证状态')).toBeVisible();
+  await expect(page.getByText('待验证', { exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: '重新发送（旧链接失效）' })).toBeDisabled();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
     true,

@@ -1,7 +1,9 @@
 import { useState } from 'react';
-import { StandaloneLink } from '../../../shared/ui/StandaloneLink';
 import { LoginForm } from '../components/LoginForm';
 import { useParentLogin } from '../data-access/useParentSession';
+
+// Signs the parent in. The password is cleared once it has been used, and a
+// failed attempt keeps what was typed so the parent can correct it.
 export function LoginPanel() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -19,17 +21,14 @@ export function LoginPanel() {
     );
   };
   return (
-    <>
-      <LoginForm
-        email={email}
-        password={password}
-        onEmailChange={setEmail}
-        onPasswordChange={setPassword}
-        onSubmit={submit}
-        pending={login.isPending}
-        error={login.error?.message}
-      />
-      <StandaloneLink to="/family/recover">忘记密码？通过邮箱找回</StandaloneLink>
-    </>
+    <LoginForm
+      email={email}
+      password={password}
+      onEmailChange={setEmail}
+      onPasswordChange={setPassword}
+      onSubmit={submit}
+      pending={login.isPending}
+      error={login.error?.message}
+    />
   );
 }

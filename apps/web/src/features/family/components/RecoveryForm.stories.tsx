@@ -1,7 +1,15 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import { Card } from '../../../shared/ui/Card';
 import { RecoveryForm } from './RecoveryForm';
 const meta = {
   component: RecoveryForm,
+  decorators: [
+    (Story) => (
+      <Card>
+        <Story />
+      </Card>
+    ),
+  ],
   args: { email: '', onEmailChange: () => {}, onSubmit: () => {} },
 } satisfies Meta<typeof RecoveryForm>;
 export default meta;

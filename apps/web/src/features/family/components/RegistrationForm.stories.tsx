@@ -1,9 +1,17 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import { Card } from '../../../shared/ui/Card';
 import { RegistrationForm } from './RegistrationForm';
 
 const meta = {
   title: '家长空间/注册',
   component: RegistrationForm,
+  decorators: [
+    (Story) => (
+      <Card>
+        <Story />
+      </Card>
+    ),
+  ],
   args: {
     email: '',
     password: '',
@@ -18,6 +26,9 @@ type Story = StoryObj<typeof meta>;
 export const Empty: Story = {};
 export const Filled: Story = {
   args: { email: 'parent@example.test', password: 'a private family phrase' },
+};
+export const TooShort: Story = {
+  args: { email: 'parent@example.test', password: 'short phrase' },
 };
 export const Pending: Story = { args: { ...Filled.args, pending: true } };
 export const Unavailable: Story = {

@@ -1,10 +1,16 @@
 import { useState } from 'react';
+import { Brand } from '../../../shared/ui/Brand';
 import { Button } from '../../../shared/ui/Button';
+import { Icon } from '../../../shared/ui/Icon';
 import { Loading } from '../../../shared/ui/Loading';
+import { Notice } from '../../../shared/ui/Notice';
 import { Page } from '../../../shared/ui/Page';
-import { AccountStatus } from '../components/AccountStatus';
+import { StandaloneLink } from '../../../shared/ui/StandaloneLink';
+import { AccountLayout, type AccountArt } from '../components/AccountLayout';
+import { AccountStatus, type AccountStatusProps } from '../components/AccountStatus';
 import { FamilyDeleted } from '../components/FamilyDeleted';
-import { useParentSession, useParentLogout } from '../data-access/useParentSession';
+import { ParentAddress } from '../components/ParentAddress';
+import { useParentLogout, useParentSession } from '../data-access/useParentSession';
 import { AiConsentPanel } from './AiConsentPanel';
 import { ChildAccessPanel } from './ChildAccessPanel';
 import { FamilyDeletionPanel } from './FamilyDeletionPanel';
@@ -15,77 +21,147 @@ import { ParentPracticePanel } from './ParentPracticePanel';
 import { RegistrationKeyPanel } from './RegistrationKeyPanel';
 import { RegistrationPanel } from './RegistrationPanel';
 import { VerificationPanel } from './VerificationPanel';
+import styles from './FamilyPage.module.css';
 
-export function FamilyPage() {
-  const [mode, setMode] = useState<'register' | 'login'>('register');
-  // A finished deletion signs the page out; this keeps saying so until the
-  // parent moves on to register a new family.
+type Mode = 'register' | 'login';
+
+// The parents' entrance. Signed out, it is the sign-up or the sign-in; signed
+// in before the email is verified, it is the verification step; verified, it
+// is the parent space. A finished deletion signs the page out and keeps
+// saying so until the parent moves on to register a new family.
+export function FamilyPage({ art }: { art: AccountArt }) {
+  const [mode, setMode] = useState<Mode>('register');
   const [deleted, setDeleted] = useState(false);
   const session = useParentSession();
   const logout = useParentLogout();
-  const leave = () => {
-    if (logout.isPending || !session.data) return;
-    logout.mutate(session.data.csrfToken, {
-      onSuccess: () => {
-        setMode('login');
-        logout.reset();
-      },
-    });
-  };
-  return (
-    <Page titleId="family-title" title="家长空间">
-      <p>陪伴每一次尝试，看见一点一滴的进步。</p>
-      {deleted ? (
+  if (deleted)
+    return (
+      <AccountLayout art={art} titleId="family-deleted-title" title="家庭已删除">
         <FamilyDeleted
           onRegister={() => {
             setDeleted(false);
             setMode('register');
           }}
         />
-      ) : session.isPending ? (
+      </AccountLayout>
+    );
+  if (session.isPending)
+    return (
+      <div className={styles.waiting}>
         <Loading label="正在确认登录状态…" />
-      ) : session.data ? (
+      </div>
+    );
+  if (!session.data)
+    return <SignedOut art={art} mode={mode} failed={session.isError} onMode={setMode} />;
+  const csrf = session.data.csrfToken;
+  const account: AccountStatusProps = {
+    session: session.data,
+    pending: logout.isPending,
+    error: logout.error?.message,
+    refreshing: session.isError,
+    onLogout: () => {
+      if (logout.isPending) return;
+      logout.mutate(csrf, {
+        onSuccess: () => {
+          setMode('login');
+          logout.reset();
+        },
+      });
+    },
+  };
+  if (session.data.access === 'verified')
+    return <ParentSpace {...account} onDeleted={() => setDeleted(true)} />;
+  return <Unverified art={art} {...account} />;
+}
+
+// Sign-up first, since most parents arrive here new; one button switches to
+// the sign-in and back. The switch stays the same button in the same place,
+// so it keeps the focus.
+function SignedOut({
+  art,
+  mode,
+  failed,
+  onMode,
+}: {
+  art: AccountArt;
+  mode: Mode;
+  failed: boolean;
+  onMode: (mode: Mode) => void;
+}) {
+  const login = mode === 'login';
+  return (
+    <AccountLayout
+      art={art}
+      titleId={login ? 'login-title' : 'registration-title'}
+      title={login ? '家长登录' : '创建家长账号'}
+      footer={
         <>
-          <AccountStatus
-            session={session.data}
-            pending={logout.isPending}
-            error={logout.error?.message}
-            refreshing={session.isError}
-            onLogout={leave}
-          />
-          {session.data.access === 'verified' && (
-            <FamilyManagement csrf={session.data.csrfToken} onDeleted={() => setDeleted(true)} />
+          {login && (
+            <StandaloneLink to="/family/recover">
+              <Icon name="lock" />
+              忘记密码
+            </StandaloneLink>
           )}
-          {!session.data.emailVerified && <VerificationPanel csrf={session.data.csrfToken} />}
+          <Button variant="text" onClick={() => onMode(login ? 'register' : 'login')}>
+            {login ? '还没有账号？去注册' : '已有账号？去登录'}
+          </Button>
+        </>
+      }
+    >
+      {failed && <Notice tone="error">暂时无法恢复登录状态，请稍后刷新或重新登录。</Notice>}
+      {login ? <LoginPanel /> : <RegistrationPanel />}
+    </AccountLayout>
+  );
+}
+
+// A parent signed in whose account is not verified yet sees only the
+// verification step and the way to sign out. Once the mail link is confirmed,
+// signing in again opens the parent space.
+function Unverified({ art, ...account }: AccountStatusProps & { art: AccountArt }) {
+  const { session, pending, error, refreshing, onLogout } = account;
+  return (
+    <AccountLayout
+      art={art}
+      titleId="verification-title"
+      title="验证家长邮箱"
+      footer={
+        <Button variant="text" disabled={pending} onClick={onLogout}>
+          <Icon name="logout" />
+          {pending ? '正在退出…' : '退出账号'}
+        </Button>
+      }
+    >
+      {refreshing && <Notice>暂时无法刷新账号状态，请稍后重试。</Notice>}
+      {error && <Notice tone="error">{error}</Notice>}
+      {session.emailVerified ? (
+        <>
+          <ParentAddress email={session.email} verified />
+          <p role="status">邮箱已验证，退出后重新登录即可。</p>
         </>
       ) : (
-        <>
-          {session.isError && <p role="status">暂时无法恢复登录状态，请稍后刷新或重新登录。</p>}
-          <Button
-            variant="secondary"
-            onClick={() => setMode(mode === 'register' ? 'login' : 'register')}
-          >
-            {mode === 'register' ? '已有账号？去登录' : '还没有账号？去注册'}
-          </Button>
-          {mode === 'register' ? <RegistrationPanel /> : <LoginPanel />}
-        </>
+        <VerificationPanel csrf={session.csrfToken} email={session.email} />
       )}
-    </Page>
+    </AccountLayout>
   );
 }
 
 // The panels of a verified parent. Most start over with each renewed session;
 // export and deletion renew the session themselves and keep their state across it.
-function FamilyManagement({ csrf, onDeleted }: { csrf: string; onDeleted: () => void }) {
+function ParentSpace({ onDeleted, ...account }: AccountStatusProps & { onDeleted: () => void }) {
+  const csrf = account.session.csrfToken;
   return (
-    <>
-      <LearningSummaryPanel key={`summary-${csrf}`} csrf={csrf} />
-      <ParentPracticePanel key={`practice-${csrf}`} csrf={csrf} />
-      <AiConsentPanel key={`ai-consent-${csrf}`} csrf={csrf} />
-      <RegistrationKeyPanel key={csrf} csrf={csrf} />
-      <ChildAccessPanel key={`children-${csrf}`} csrf={csrf} />
-      <FamilyExportPanel csrf={csrf} />
-      <FamilyDeletionPanel csrf={csrf} onDeleted={onDeleted} />
-    </>
+    <div className={styles.space}>
+      <Brand />
+      <Page titleId="family-title" title="家长空间">
+        <AccountStatus {...account} />
+        <LearningSummaryPanel key={`summary-${csrf}`} csrf={csrf} />
+        <ParentPracticePanel key={`practice-${csrf}`} csrf={csrf} />
+        <AiConsentPanel key={`ai-consent-${csrf}`} csrf={csrf} />
+        <RegistrationKeyPanel key={csrf} csrf={csrf} />
+        <ChildAccessPanel key={`children-${csrf}`} csrf={csrf} />
+        <FamilyExportPanel csrf={csrf} />
+        <FamilyDeletionPanel csrf={csrf} onDeleted={onDeleted} />
+      </Page>
+    </div>
   );
 }
