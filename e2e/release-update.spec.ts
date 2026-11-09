@@ -37,7 +37,7 @@ async function newReleaseWhileTheFilmPlays(page: Page) {
   await open(page, lesson);
   await startFilm(page, narration);
   site.deploy(newer);
-  await checkNow(page);
+  await checkNow(page, site);
   return { narration, site };
 }
 
@@ -46,10 +46,10 @@ test.describe('a page outside a lesson', () => {
     const site = await serveReleases(page, older);
     await open(page, '/');
     site.deploy(newer);
-    await checkNow(page);
+    await checkNow(page, site);
     await expect.poll(() => site.loads).toBe(2);
     await expect(releaseName(page)).toHaveAttribute('content', newer);
-    await checkNow(page);
+    await checkNow(page, site);
     expect(site.loads).toBe(2);
     await expect(page.getByRole('complementary', { name: '网站更新' })).toHaveCount(0);
   });
@@ -61,9 +61,9 @@ test.describe('a page outside a lesson', () => {
     const site = await serveReleases(page, older);
     await open(page, '/');
     await page.evaluate(() => Object.assign(window, { kept: true }));
-    await checkNow(page);
+    await checkNow(page, site);
     site.served = 'unreadable';
-    await checkNow(page);
+    await checkNow(page, site);
     // An unreadable reply is tried again a minute later; this one fails.
     site.served = 'fail';
     const failed = page.waitForEvent('requestfailed', (request) =>
@@ -82,11 +82,11 @@ test.describe('a page outside a lesson', () => {
     await open(page, '/');
     // The deployment rolls back, but the page that loads is still the newer one.
     site.served = older;
-    await checkNow(page);
+    await checkNow(page, site);
     await expect.poll(() => site.loads).toBe(2);
     const notice = page.getByRole('complementary', { name: '网站更新' });
     await expect(notice).toHaveText(/新版本还没准备好/);
-    await checkNow(page);
+    await checkNow(page, site);
     expect(site.loads).toBe(2);
 
     // Once the older page is served, another try brings it.
@@ -193,7 +193,7 @@ test.describe('a signed-in child', () => {
 
     // The new release waits for the film, then for the save that fails.
     site.deploy(newer);
-    await checkNow(page);
+    await checkNow(page, site);
     await narration.heard(takeTheCabbage!.says);
     const notice = page.getByRole('complementary', { name: '网站更新' });
     await expect(notice).toHaveText(updateWaits);
@@ -201,7 +201,7 @@ test.describe('a signed-in child', () => {
 
     // Once saves go through, the next check saves the draft and reloads.
     await page.unroute(saves);
-    await checkNow(page);
+    await checkNow(page, site);
     await expect.poll(() => site.loads).toBe(2);
     await expect(releaseName(page)).toHaveAttribute('content', newer);
     await expect(page.getByRole('button', { name: /接着上次的地方/ })).toBeVisible({

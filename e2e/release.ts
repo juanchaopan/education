@@ -1,4 +1,4 @@
-import type { Page, Request } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
 
 // Two releases of the site, named as a deployment's build names them.
 export const releases = { older: 'a'.repeat(40), newer: 'b'.repeat(40) };
@@ -16,12 +16,13 @@ function pagePath(url: URL) {
 // page load gets the page of release `page`, named in its meta tag as a
 // deployment's build names it, and the version file names release `served`.
 // The two differ when a cache still holds an older page. Loads are counted,
-// so a test can tell a reload from none.
+// so a test can tell a reload from none, and every answer to a check is kept.
 export async function serveReleases(page: Page, start: string) {
   const site = {
     page: start,
     served: start as Served,
     loads: 0,
+    answered: [] as Served[],
     // A deployment that serves this release, its page and its version file.
     deploy(release: string) {
       site.page = release;
@@ -41,29 +42,31 @@ export async function serveReleases(page: Page, start: string) {
       ),
     });
   });
-  await page.route('**/version.json', (route) => {
-    if (site.served === 'fail') return route.abort('internetdisconnected');
-    if (site.served === 'unreadable') return route.fulfill({ body: '<!doctype html>' });
-    return route.fulfill({ json: { revision: site.served } });
+  await page.route('**/version.json', async (route) => {
+    const served = site.served;
+    if (served === 'fail') await route.abort('internetdisconnected');
+    else if (served === 'unreadable') await route.fulfill({ body: '<!doctype html>' });
+    else await route.fulfill({ json: { revision: served } });
+    site.answered.push(served);
   });
   return site;
 }
 
-// Checks the deployment at once, as the page does when it gets focus, and
-// waits until the version file has answered or failed.
-export async function checkNow(page: Page) {
-  const settled = new Promise<void>((resolve) => {
-    const done = (request: Request) => {
-      if (!request.url().endsWith('/version.json')) return;
-      page.off('requestfinished', done);
-      page.off('requestfailed', done);
-      resolve();
-    };
-    page.on('requestfinished', done);
-    page.on('requestfailed', done);
-  });
-  await page.evaluate(() => window.dispatchEvent(new Event('focus')));
-  await settled;
+type Site = Awaited<ReturnType<typeof serveReleases>>;
+
+// Checks the deployment at once, as the page does when it gets focus, until
+// the page has seen what the deployment serves now. A check already on its
+// way may have been answered before the deployment moved, and the page joins
+// it instead of asking again, so the page is asked once more after it.
+export async function checkNow(page: Page, site: Site) {
+  await expect
+    .poll(async () => {
+      const before = site.answered.length;
+      await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+      await expect.poll(() => site.answered.length).toBeGreaterThan(before);
+      return site.answered.at(-1) === site.served;
+    })
+    .toBe(true);
 }
 
 // The meta tag that names the release of the page on screen.
