@@ -1,10 +1,11 @@
 .label {
   font-weight: 700;
 }
-/* Text inputs and lists share one tall, soft surface. They fill the width
-   they are given and may shrink below their content, so a long value or
-   option never pushes past a narrow screen. Focus draws them in the primary
-   colour with a soft ring, beside the keyboard focus outline. */
+/* Text inputs and lists share one tall, soft surface whose edge stands out
+   from the card behind it. They fill the width they are given and may shrink
+   below their content, so a long value or option never pushes past a narrow
+   screen. Focus draws them in the primary colour with a soft ring, beside the
+   keyboard focus outline. */
 .input,
 .select {
   width: 100%;
@@ -13,7 +14,7 @@
   padding: 0 var(--space-4);
   color: var(--ink);
   background: var(--surface-2);
-  border: 1.5px solid var(--line);
+  border: 1.5px solid var(--control-edge);
   border-radius: var(--radius);
   font: inherit;
   font-weight: 600;

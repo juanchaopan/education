@@ -7,7 +7,8 @@
   cursor: pointer;
 }
 /* The checkbox itself is drawn as a 46×28 track whose knob springs across
-   when it turns on. */
+   when it turns on. Off, the track takes the edge colour of the other
+   controls, so it stands out from the card behind it. */
 .track {
   --track-width: 2.875rem;
   --knob-size: 1.375rem;
@@ -19,7 +20,7 @@
   block-size: 1.75rem;
   margin: 0;
   border-radius: var(--radius-pill);
-  background: color-mix(in srgb, var(--ink-soft) 45%, var(--line));
+  background: var(--control-edge);
   cursor: inherit;
   transition: background-color var(--lift) ease;
 }

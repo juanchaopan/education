@@ -39,6 +39,9 @@
   --enter: 600ms;
   --enter-step: 80ms;
 
+  /* The edge of an input, a list or a switch that is off: dark enough to
+     stand 3:1 apart from the card behind it in either theme. */
+  --control-edge: color-mix(in srgb, var(--ink-soft) 70%, var(--line));
   /* The soft ring round a focused input, beside the keyboard focus outline. */
   --focus-ring: 0 0 0 5px color-mix(in srgb, var(--primary) 18%, transparent);
 
