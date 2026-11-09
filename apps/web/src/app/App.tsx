@@ -15,6 +15,9 @@ import { SiteLayout } from './SiteLayout';
 import { useDayNightTheme } from './theme/useDayNightTheme';
 import styles from './App.module.css';
 
+// Two layouts: the site's pages under its header, and a problem's page,
+// which fills the screen on its own with a back button in place of the
+// header. The update notice lies over both.
 export function App() {
   useDayNightTheme();
   return (
@@ -22,7 +25,6 @@ export function App() {
       <Routes>
         <Route element={<SiteLayout />}>
           <Route path="/" element={<LibraryPage />} />
-          <Route path="/problems/:id/:version?" element={<ProblemPage pages={lessonPages} />} />
           <Route path="/family" element={<FamilyPage />} />
           <Route path="/child" element={<ChildPage />} />
           <Route path="/join" element={<ChildRegistrationPage />} />
@@ -38,6 +40,7 @@ export function App() {
             }
           />
         </Route>
+        <Route path="/problems/:id/:version?" element={<ProblemPage pages={lessonPages} />} />
       </Routes>
       <ReleaseUpdate />
     </>

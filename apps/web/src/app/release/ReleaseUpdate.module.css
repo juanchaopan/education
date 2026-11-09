@@ -1,8 +1,10 @@
-/* Over the foot of every page, lessons included, without taking up its room. */
+/* Over the foot of every page, lessons included, without taking up its room,
+   and above a phone's home bar. */
 .dock {
   position: fixed;
-  inset-inline: var(--space-4);
-  inset-block-end: var(--space-4);
+  inset-inline: max(var(--space-4), env(safe-area-inset-left))
+    max(var(--space-4), env(safe-area-inset-right));
+  inset-block-end: calc(var(--space-4) + env(safe-area-inset-bottom));
   z-index: 10;
   display: flex;
   justify-content: center;

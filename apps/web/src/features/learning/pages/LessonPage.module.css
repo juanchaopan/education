@@ -1,5 +1,40 @@
+/* The film fills the screen above a strip for what goes with it: the answer,
+   the question to the teacher, the draft's state or the sign-in notice. The
+   lesson stretches over the whole frame; the strip takes no more than about
+   two fifths of the screen and scrolls on its own beyond that, so the film
+   always keeps most of it. */
 .lesson {
+  place-self: stretch;
   display: grid;
-  gap: var(--space-4);
-  margin-block-start: var(--space-4);
+  grid-template-rows: minmax(0, 1fr) auto;
+  min-block-size: 0;
+}
+
+.panels {
+  display: grid;
+  align-content: start;
+  gap: var(--space-3);
+  max-block-size: 40dvh;
+  padding: var(--space-3) var(--space-4);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* Before the film starts a signed-in child has nothing in the strip. */
+.panels:empty {
+  display: none;
+}
+
+/* A phone turned sideways is too short to share its height: the strip moves
+   to a column on the right, the full height of the screen. */
+@media (orientation: landscape) and (max-height: 500px) {
+  .lesson {
+    grid-template-rows: minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .panels {
+    inline-size: clamp(16rem, 38vw, 24rem);
+    max-block-size: none;
+  }
 }

@@ -3,17 +3,64 @@
 .stage {
   position: relative;
   isolation: isolate;
-  container-type: inline-size;
+  /* The stage fills the frame the page gives it, whatever its shape, and
+     measures it to fit the picture inside and to size its controls. */
+  container-type: size;
   inline-size: 100%;
-  aspect-ratio: 16 / 9;
-  /* The whole scene and its caption stay on screen on a wide, short window;
-     the props keep their proportions in the middle of the frame. */
-  max-block-size: 82dvh;
-  overflow: hidden;
-  border-radius: var(--radius-lg);
+  block-size: 100%;
+  /* Clipped, never scrolled: the blurred painting and an upright frame's
+     picture reach past its edges, and nothing may move them into view. */
+  overflow: clip;
   background: var(--stage-sky);
   color: var(--stage-text);
   font-weight: 600;
+}
+
+/* Around the picture, wherever the frame is a different shape from the
+   world, the same painting fills in, blurred and dimmed so it stays behind
+   the scene. It is blurred as a small copy scaled up eight times, which
+   costs a fraction of blurring it at full size; its edges lie outside the
+   stage. */
+.surround {
+  position: absolute;
+  inset-block-start: -4%;
+  inset-inline-start: -4%;
+  inline-size: 13.5%;
+  block-size: 13.5%;
+  transform: scale(8);
+  transform-origin: 0 0;
+  background-size: cover;
+  background-position: center;
+  filter: blur(var(--space-1)) brightness(0.72);
+  pointer-events: none;
+}
+
+/* The picture: the painting and the world together, in the world's shape
+   (`--world-width` by `--world-height`, set by the stage), centred and as
+   large as the frame allows while `--in-view` world units across still fit
+   its width. A wide frame sees the whole world. A frame taller than it is
+   wide sees the middle 910 units, so the props in the middle grow larger and
+   the sides of the world fall outside the stage. Nothing the scene draws
+   past the world's edge shows over the blurred painting around it. */
+.picture {
+  --in-view: var(--world-width);
+  --picture-width: min(
+    100cqw * var(--world-width) / var(--in-view),
+    100cqh * var(--world-width) / var(--world-height)
+  );
+  --picture-height: calc(var(--picture-width) * var(--world-height) / var(--world-width));
+  position: absolute;
+  inset-block-start: calc(50% - var(--picture-height) / 2);
+  inset-inline-start: calc(50% - var(--picture-width) / 2);
+  inline-size: var(--picture-width);
+  block-size: var(--picture-height);
+  overflow: clip;
+}
+
+@container (orientation: portrait) {
+  .picture {
+    --in-view: 910;
+  }
 }
 
 .backdrop,
@@ -58,6 +105,8 @@
   }
 }
 
+/* The shade along the top and the bottom of the whole stage, under the
+   title and the caption. */
 .vignette {
   z-index: 1;
   background:
@@ -151,20 +200,32 @@
   color: var(--stage-accent);
 }
 
+/* The series and the title, centred along the top, clear of the replay
+   button in the top right and of whatever the frame around the stage puts
+   in its corners, which it tells as `--frame-corner`. */
 .titleBar {
+  --clear: max(var(--frame-corner, 0px), var(--touch-target) + var(--space-4));
   position: absolute;
   z-index: 3;
   inset-block-start: var(--space-4);
-  inset-inline-start: var(--space-5);
+  inset-inline: calc(var(--clear) + var(--space-3));
   display: flex;
+  justify-content: center;
   gap: var(--space-2);
   align-items: center;
   font-size: var(--text-sm);
   color: var(--stage-title-bar);
   text-shadow: 0 2px 7px var(--stage-title-bar-shade);
+  white-space: nowrap;
+}
+
+.titleBar span {
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .titleBar i {
+  flex: none;
   display: block;
   inline-size: 5px;
   block-size: 5px;
@@ -288,16 +349,12 @@
   }
 }
 
-/* A phone in portrait gets a taller frame: the props sit in its middle, cropped
-   from the sides, with room above for the title line and below for the caption. */
-@media (max-width: 610px) {
-  .stage {
-    aspect-ratio: 3 / 4;
-  }
-
+/* On a stage as narrow as a phone the corners' controls and the caption sit
+   closer to the edge, in smaller type, leaving the scene as much room as
+   they can. */
+@container (max-width: 610px) {
   .titleBar {
     inset-block-start: var(--space-3);
-    inset-inline-start: var(--space-3);
     font-size: 0.6875rem;
   }
 

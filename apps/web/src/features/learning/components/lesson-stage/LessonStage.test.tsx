@@ -15,7 +15,6 @@ function stage(props: Partial<ComponentProps<typeof LessonStage>> = {}) {
       shot="first"
       caption={line}
       speaking={false}
-      narrow={false}
       entryLabel="开始短片"
       {...callbacks}
       {...props}

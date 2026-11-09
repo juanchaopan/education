@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { usePageReadiness } from '../../../shared/lib/reload-readiness';
+import { forgetFullscreen } from '../../../test/fake-fullscreen';
 import { fixtureLesson } from '../../../test/lesson-fixture';
 import { pageWrapper } from '../../../test/page-wrapper';
 import { lessonPage } from './LessonPage';
@@ -82,11 +83,6 @@ beforeEach(() => {
       }
     },
   );
-  vi.stubGlobal('matchMedia', () => ({
-    matches: false,
-    addEventListener() {},
-    removeEventListener() {},
-  }));
   vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined);
   vi.spyOn(HTMLMediaElement.prototype, 'pause').mockImplementation(() => {});
   vi.spyOn(HTMLMediaElement.prototype, 'load').mockImplementation(() => {});
@@ -98,6 +94,7 @@ afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
+  forgetFullscreen();
 });
 
 it('lets a visitor play the film without saving anything, and asks them to sign in', async () => {
@@ -110,6 +107,26 @@ it('lets a visitor play the film without saving anything, and asks them to sign 
   expect(caption()).toHaveTextContent('一共有几颗？');
   expect(screen.queryByRole('region', { name: '说出答案' })).not.toBeInTheDocument();
   expect(fetch.mock.calls.some(([path]) => path === draftPath)).toBe(false);
+});
+
+it('asks for the whole screen as the child starts the film', async () => {
+  serve(null);
+  const request = vi.fn().mockResolvedValue(undefined);
+  document.documentElement.requestFullscreen = request;
+  open();
+  await userEvent.click(await screen.findByRole('button', { name: /开始短片/ }));
+  expect(request).toHaveBeenCalledOnce();
+});
+
+it('starts the film all the same when the browser refuses the whole screen', async () => {
+  serve(null);
+  document.documentElement.requestFullscreen = vi
+    .fn()
+    .mockRejectedValue(new TypeError('Permissions check failed'));
+  open();
+  await userEvent.click(await screen.findByRole('button', { name: /开始短片/ }));
+  expect(caption()).toHaveTextContent('看看这颗小石子。');
+  expect(screen.queryByRole('alert')).not.toBeInTheDocument();
 });
 
 it('saves each scene a signed-in child reaches and asks about the scene on screen', async () => {

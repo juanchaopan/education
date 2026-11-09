@@ -1,6 +1,7 @@
 import { NavLink, Outlet } from 'react-router-dom';
 import { Icon } from '../shared/ui/Icon';
 import type { IconName } from '../shared/ui/icons';
+import { useScrollMemory } from './useScrollMemory';
 import styles from './SiteLayout.module.css';
 
 type Destination = { to: string; icon: IconName; label: string; end?: boolean };
@@ -26,8 +27,9 @@ function SiteLink({ to, icon, label, end, className }: Destination & { className
 }
 
 // The site's own pages: the header with the main navigation above the page
-// the route shows.
+// the route shows, which keeps its scroll position for the child coming back.
 export function SiteLayout() {
+  useScrollMemory();
   return (
     <div className={styles.shell}>
       <a className={styles.skip} href="#main">
