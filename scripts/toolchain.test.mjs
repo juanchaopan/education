@@ -108,6 +108,53 @@ test('presentation cannot import a runtime value from data-access', () =>
     assert.match(result.stderr, /presentational-no-data-access/);
   }));
 
+test("a lesson cannot import another lesson's files", () =>
+  fixture((directory, write) => {
+    write('src/features/learning/lessons/weigh/script.ts', 'export const lines = {};');
+    write(
+      'src/features/learning/components/count/scene.ts',
+      "export { lines } from '../../lessons/weigh/script.js';",
+    );
+    const result = architecture(directory, 'web');
+    assert.equal(result.status, 1, result.error?.message);
+    assert.match(result.stderr, /lessons-isolated/);
+  }));
+
+test("code outside a lesson cannot import the lesson's files statically", () =>
+  fixture((directory, write) => {
+    write('src/features/learning/lessons/weigh/definition.ts', 'export const lesson = {};');
+    write(
+      'src/app/lesson-pages.ts',
+      "export { lesson } from '../features/learning/lessons/weigh/definition.js';",
+    );
+    const result = architecture(directory, 'web');
+    assert.equal(result.status, 1, result.error?.message);
+    assert.match(result.stderr, /lessons-loaded-on-demand/);
+  }));
+
+test('code outside a lesson may load the lesson when it is opened', () =>
+  fixture((directory, write) => {
+    write('src/features/learning/lessons/weigh/definition.ts', 'export const lesson = {};');
+    write(
+      'src/app/lesson-pages.ts',
+      "export const load = () => import('../features/learning/lessons/weigh/definition.js');",
+    );
+    const result = architecture(directory, 'web');
+    assert.equal(result.status, 0, result.stdout + result.stderr);
+    assert.match(result.stdout, /2 个模块/);
+  }));
+
+test('web code cannot import the problem plugins', () =>
+  fixture((directory, write) => {
+    write(
+      'src/features/learning/pages/answers.ts',
+      "export { problemRegistry } from '@education/problems/server';",
+    );
+    const result = architecture(directory, 'web');
+    assert.equal(result.status, 1, result.error?.message);
+    assert.match(result.stderr, /no-problem-plugins-in-browser/);
+  }));
+
 test('JavaScript still rejects undefined variables', () =>
   fixture((_directory, write) => {
     const result = lint(write('invalid.mjs', 'export const value = missingValue;'));
