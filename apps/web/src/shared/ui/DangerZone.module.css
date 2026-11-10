@@ -1,3 +1,5 @@
+/* What it holds is spaced evenly, whether one form or a sentence and a
+   button. */
 .zone {
   display: grid;
   gap: var(--space-3);

@@ -17,44 +17,19 @@
   padding: 0;
   list-style: none;
 }
-/* Each problem on a soft tile, its counts in small tiles of their own. */
+/* Each problem on a soft tile: its title and version, then its counts. */
 .problem {
   padding: var(--space-4);
   border-radius: var(--radius);
   background: var(--surface-2);
 }
-.problem h3,
-.version {
+.problem h3 {
   margin: 0;
 }
 .version {
+  margin: 0 0 var(--space-3);
   color: var(--ink-soft);
   font-size: var(--text-sm);
-}
-.stats {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(6.5rem, 1fr));
-  gap: var(--space-2);
-  margin: var(--space-3) 0 0;
-}
-.stat {
-  display: flex;
-  flex-direction: column-reverse;
-  justify-content: flex-end;
-  padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius);
-  background: var(--surface);
-}
-.stat dt {
-  color: var(--ink-soft);
-  font-size: var(--text-sm);
-  font-weight: 700;
-}
-.stat dd {
-  margin: 0;
-  font-family: var(--font-display);
-  font-size: var(--text-lg);
-  font-weight: 700;
 }
 .review {
   margin-bottom: 0;

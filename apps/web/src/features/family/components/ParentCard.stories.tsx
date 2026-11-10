@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Button } from '../../../shared/ui/Button';
-import { DangerZone } from './DangerZone';
+import { DangerZone } from '../../../shared/ui/DangerZone';
 import { ParentCard } from './ParentCard';
 
 const meta = {

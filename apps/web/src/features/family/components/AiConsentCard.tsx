@@ -115,9 +115,9 @@ function PolicyCard({
     <div role="group" aria-labelledby={label} className={styles.policy}>
       <div className={styles.heading}>
         <h3 id={label}>{title}</h3>
-        <p role="status" className={styles.state}>
-          <StatusBadge tone={state === 'granted' ? 'ok' : 'wait'}>{states[state]}</StatusBadge>
-        </p>
+        <StatusBadge tone={state === 'granted' ? 'ok' : 'wait'} live>
+          {states[state]}
+        </StatusBadge>
       </div>
       <Hint>
         {policy.provider} · 政策版本 {policyVersion}

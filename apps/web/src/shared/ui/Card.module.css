@@ -8,6 +8,9 @@
   border-radius: var(--radius-lg);
   backdrop-filter: var(--surface-filter);
 }
+.card[data-tone='danger'] {
+  border-color: color-mix(in srgb, var(--danger) 45%, var(--line));
+}
 .raised {
   overflow-wrap: anywhere;
   box-shadow: var(--shadow);

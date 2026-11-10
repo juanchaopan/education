@@ -35,11 +35,9 @@ function KeyState({ info }: { info: RegistrationKeyInfo | null }) {
   if (!info) return <p role="status">还没有注册 KEY</p>;
   return (
     <p className={styles.state}>
-      <span role="status">
-        <StatusBadge tone={info.status === 'active' ? 'ok' : 'wait'}>
-          {labels[info.status]}
-        </StatusBadge>
-      </span>
+      <StatusBadge tone={info.status === 'active' ? 'ok' : 'wait'} live>
+        {labels[info.status]}
+      </StatusBadge>
       <span>
         有效期至{' '}
         <time dateTime={info.expiresAt}>{new Date(info.expiresAt).toLocaleString('zh-CN')}</time>

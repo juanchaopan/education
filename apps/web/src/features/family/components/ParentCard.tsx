@@ -8,7 +8,8 @@ type Props = {
   titleId: string;
   icon: IconName;
   title: string;
-  // One round control at the right of the title, such as a "+".
+  // A control at the end of the title row, such as a round "+" or a text
+  // button that reads the card's state again.
   action?: ReactNode;
   // A card whose action cannot be undone is edged and titled in the danger
   // colour, so it stands apart from every other card.
@@ -20,8 +21,8 @@ type Props = {
 // with them, then the card's content.
 export function ParentCard({ titleId, icon, title, action, tone, children }: Props) {
   return (
-    <Card aria-labelledby={titleId} className={styles.card} data-tone={tone}>
-      <div className={styles.header}>
+    <Card aria-labelledby={titleId} tone={tone} className={styles.card}>
+      <div className={styles.header} data-tone={tone}>
         <h2 id={titleId} className={styles.title}>
           <Icon name={icon} className={styles.icon} />
           {title}

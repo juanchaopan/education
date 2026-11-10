@@ -1,9 +1,9 @@
 import type { ChildAccess } from '@education/contracts';
 import { Actions } from '../../../shared/ui/Actions';
 import { Button } from '../../../shared/ui/Button';
+import { DangerZone } from '../../../shared/ui/DangerZone';
 import { Form } from '../../../shared/ui/Form';
 import { TextField } from '../../../shared/ui/TextField';
-import { DangerZone } from './DangerZone';
 
 type Props = {
   child: ChildAccess;

@@ -1,9 +1,6 @@
 .card {
   padding: var(--space-5);
 }
-.card[data-tone='danger'] {
-  border-color: color-mix(in srgb, var(--danger) 45%, var(--line));
-}
 .header {
   display: flex;
   align-items: center;
@@ -22,7 +19,7 @@
 .icon {
   color: var(--accent-ink);
 }
-.card[data-tone='danger'] .title,
-.card[data-tone='danger'] .icon {
+.header[data-tone='danger'] .title,
+.header[data-tone='danger'] .icon {
   color: var(--danger);
 }

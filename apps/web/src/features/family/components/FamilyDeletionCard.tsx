@@ -1,7 +1,7 @@
 import { familyDeletionPhrase, familyDeletionScope } from '@education/contracts';
+import { DangerZone } from '../../../shared/ui/DangerZone';
 import { Notice } from '../../../shared/ui/Notice';
 import { TextField } from '../../../shared/ui/TextField';
-import { DangerZone } from './DangerZone';
 import { ParentCard } from './ParentCard';
 import { ParentPasswordForm } from './ParentPasswordForm';
 import { ScopeList } from './ScopeList';
