@@ -125,11 +125,11 @@ export function lessonTeacher({ id, place, ground }: TeacherRole): Teacher {
 }
 
 // The lesson's film as the stage draws it: the library pictures it picks, each
-// scene in its own framing.
+// scene in its own framing, and the part of the world its props take up.
 export function stageLook(
   lesson: Looks & Readonly<{ script: Pick<Script<string, string>, 'cameras'> }>,
 ): StageLook {
-  const { title, theater, labels, palette, script } = lesson;
+  const { title, theater, labels, palette, script, staging } = lesson;
   const { image, focus } = backdrops[lesson.backdrop];
   return {
     label: labels.film,
@@ -139,6 +139,7 @@ export function stageLook(
     backdrop: { image, focus },
     cameras: script.cameras,
     teacher: lessonTeacher(lesson.teacher),
+    staging,
     palette,
   };
 }

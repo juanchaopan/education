@@ -1,15 +1,18 @@
 import type { ReactNode } from 'react';
 import styles from './StoryFrame.module.css';
 
+// The shapes of frame a lesson page gives the stage: a wide screen, a tablet
+// held upright, and a phone held upright.
+export type FrameShape = 'wide' | 'upright' | 'phone';
+
 // The stage fills whatever frame the lesson page gives it. In the stories it
-// gets a frame of the shape it most often has: a wide screen, or a phone held
-// upright, which sees the middle of the world.
+// gets a frame of one of the shapes it most often has.
 export function StoryFrame({
-  upright = false,
+  shape = 'wide',
   children,
 }: {
-  upright?: boolean;
+  shape?: FrameShape;
   children: ReactNode;
 }) {
-  return <div className={upright ? styles.upright : styles.wide}>{children}</div>;
+  return <div className={styles[shape]}>{children}</div>;
 }

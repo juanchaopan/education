@@ -121,6 +121,9 @@ export type StageLook = Readonly<{
   // The framing of the scenes that do not keep the establishing one.
   cameras?: Readonly<Partial<Record<string, Camera>>>;
   teacher: Teacher;
+  // The part of the world the lesson's props take up in every scene, which
+  // an upright frame fits to its width.
+  staging: Box;
   palette: StagePalette;
 }>;
 
@@ -131,6 +134,17 @@ export function paletteStyle(palette: StagePalette) {
   return Object.fromEntries(
     Object.entries(palette).map(([name, value]) => [propertyName(name), value]),
   ) as CSSProperties;
+}
+
+// The props' part of the world as `--staging-*` numbers, which the stage's
+// layout reads.
+export function stagingStyle({ x, y, width, height }: Box) {
+  return {
+    '--staging-x': x,
+    '--staging-y': y,
+    '--staging-width': width,
+    '--staging-height': height,
+  } as CSSProperties;
 }
 
 // Starts a stage part's animation `seconds` late, through its `--delay`; a

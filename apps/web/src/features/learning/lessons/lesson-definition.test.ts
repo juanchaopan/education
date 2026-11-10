@@ -21,7 +21,7 @@ describe('lesson definitions', () => {
     expect(story.arrive('count').say).toEqual(['ask']);
   });
 
-  it('give the stage the title, names, library pictures, palette and framing', () => {
+  it('give the stage the title, names, library pictures, palette, framing and staging', () => {
     const cameras = { count: { zoom: 1.2 } };
     const { image, focus } = backdrops['garden-morning'];
     expect(stageLook({ ...fixtureLesson, script: { ...script, cameras } })).toEqual({
@@ -31,6 +31,7 @@ describe('lesson definitions', () => {
       theater: '示例小剧场',
       backdrop: { image, focus },
       teacher: lessonTeacher(fixtureLesson.teacher),
+      staging: fixtureLesson.staging,
       palette: fixtureLesson.palette,
       cameras,
     });

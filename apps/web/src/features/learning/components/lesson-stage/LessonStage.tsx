@@ -1,17 +1,11 @@
-import {
-  useMemo,
-  type CSSProperties,
-  type KeyboardEvent,
-  type MouseEvent,
-  type ReactNode,
-  type Ref,
-} from 'react';
+import { useMemo, type KeyboardEvent, type MouseEvent, type ReactNode, type Ref } from 'react';
 import { classNames } from '../../../../shared/lib/class-names';
 import { Icon } from '../../../../shared/ui/Icon';
 import { activationAt, type Activation } from '../../interaction/stage-activation';
 import {
   establishing,
   paletteStyle,
+  stagingStyle,
   world,
   type Camera,
   type StageLook,
@@ -43,28 +37,24 @@ type Props = {
   children?: ReactNode;
 };
 
-// The picture takes its shape from the world every lesson draws on, so the
-// painting and the props always share one size.
-const worldShape = {
-  '--world-width': world.width,
-  '--world-height': world.height,
-} as CSSProperties;
-
 const framing = ({ zoom, x = 0, y = 0 }: Camera) => `scale(${zoom}) translate(${x}%, ${y}%)`;
 
 const painting = ({ image }: StageLook['backdrop']) => `url("${image}")`;
 
-function Backdrop({ look, shot }: { look: StageLook; shot: string }) {
+function Painting({ look, shot }: { look: StageLook; shot: string }) {
   const camera = look.cameras?.[shot] ?? establishing;
   return (
-    <div
-      className={styles.backdrop}
-      style={{
-        backgroundImage: painting(look.backdrop),
-        backgroundPosition: look.backdrop.focus,
-        transform: framing(camera),
-      }}
-    />
+    <div className={styles.painting}>
+      <div
+        className={styles.backdrop}
+        style={{
+          backgroundImage: painting(look.backdrop),
+          backgroundPosition: look.backdrop.focus,
+          transform: framing(camera),
+        }}
+      />
+      <div className={styles.light} />
+    </div>
   );
 }
 
@@ -125,14 +115,19 @@ function TeacherFigure({ teacher }: { teacher: Teacher }) {
 // lesson's own props as vector art in front, the teacher and its caption. The
 // title card opens it; afterwards the title bar runs along the top and the
 // replay button stays in the top right. The stage fills whatever frame it is
-// given: the backdrop and the world share one picture, so the props always
-// stand where the painting expects them, as large as the frame allows, and
-// the painting, softly blurred, fills the rest. The stage reports which prop
-// or place the child chose; the page decides what that does.
+// given. A wide frame is filled by the backdrop and the world as one
+// picture, so the props stand where the painting expects them. An upright
+// frame is filled by the painting alone, and the props, without the teacher,
+// are fitted to its width. The stage reports which prop or place the child
+// chose; the page decides what that does.
 export function LessonStage(props: Props) {
   const { look, shot, caption, speaking, failure, worldRef, onActivate } = props;
-  // The stage redraws on every step of a drag; its palette stays the same.
-  const palette = useMemo(() => paletteStyle(look.palette), [look.palette]);
+  // The stage redraws on every step of a drag; its palette and layout stay
+  // the same.
+  const layout = useMemo(
+    () => ({ ...paletteStyle(look.palette), ...stagingStyle(look.staging) }),
+    [look.palette, look.staging],
+  );
   const opening = shot === 'opening';
   const choose = (event: MouseEvent | KeyboardEvent) => {
     const target = activationAt(event.target);
@@ -141,36 +136,37 @@ export function LessonStage(props: Props) {
   return (
     <section
       className={classNames(styles.stage, speaking && styles.speaking)}
-      style={palette}
+      style={layout}
       data-shot={shot}
       data-narration-failure={failure}
       aria-label={look.label}
     >
-      <div className={styles.surround} style={{ backgroundImage: painting(look.backdrop) }} />
-      <div className={styles.picture} style={worldShape}>
-        <Backdrop look={look} shot={shot} />
-        <div className={styles.light} />
-        <svg
-          ref={worldRef}
-          className={styles.world}
-          viewBox={`${world.x} ${world.y} ${world.width} ${world.height}`}
-          role="group"
-          aria-label={look.worldLabel}
-          onClick={choose}
-          onKeyDown={(event) => {
-            if (event.key !== 'Enter' && event.key !== ' ') return;
-            event.preventDefault();
-            choose(event);
-          }}
-        >
-          {props.defs}
-          {props.ambience}
-          <g key={shot} className={styles.scene}>
-            {!opening && <TeacherFigure teacher={look.teacher} />}
-            {props.children}
-          </g>
-          {props.ghost}
-        </svg>
+      <div className={styles.canvas}>
+        <div className={styles.surround} style={{ backgroundImage: painting(look.backdrop) }} />
+        <Painting look={look} shot={shot} />
+        <div className={styles.picture}>
+          <svg
+            ref={worldRef}
+            className={styles.world}
+            viewBox={`${world.x} ${world.y} ${world.width} ${world.height}`}
+            role="group"
+            aria-label={look.worldLabel}
+            onClick={choose}
+            onKeyDown={(event) => {
+              if (event.key !== 'Enter' && event.key !== ' ') return;
+              event.preventDefault();
+              choose(event);
+            }}
+          >
+            {props.defs}
+            {props.ambience}
+            <g key={shot} className={styles.scene}>
+              {!opening && <TeacherFigure teacher={look.teacher} />}
+              {props.children}
+            </g>
+            {props.ghost}
+          </svg>
+        </div>
       </div>
       <div className={styles.vignette} />
       {opening ? (

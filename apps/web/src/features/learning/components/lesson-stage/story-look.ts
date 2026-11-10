@@ -52,6 +52,8 @@ export const storyLook: StageLook = {
     ground: { cx: 230, cy: 446, rx: 64, ry: 11 },
     face: { x: 0.155, y: 0.3, size: 0.69 },
   },
+  // The table the stories set in the clearing, with what stands on it.
+  staging: { x: 380, y: 320, width: 520, height: 200 },
   palette: {
     sky: 'linear-gradient(#3e5f86, #2b3a3c)',
     text: light,
