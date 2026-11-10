@@ -16,6 +16,8 @@ type Handlers = {
 };
 
 type Props = Handlers & {
+  // What the count answers, which the teacher has asked out loud.
+  question: string;
   step: AnswerStep;
   // The unit the count is said in, such as 根.
   unit?: string;
@@ -56,6 +58,7 @@ function Choices({ choices, onChoose }: Pick<Props, 'choices' | 'onChoose'>) {
           key={count}
           art={<span className={styles.number}>{count}</span>}
           label={String(count)}
+          size="small"
           onClick={() => onChoose(count)}
         />
       ))}
@@ -122,11 +125,10 @@ function Content({ step, unit, choices, blocked, level, ...on }: Props) {
         <Dewdrop icon="replay" tone="honey" size="large" label="再交一次" onClick={on.onRetry} />
       );
     case 'ask':
-      return (
-        <>
-          <SayAgain label="再说一次" blocked={blocked} onListen={on.onListen} />
-          {step.choices && <Choices choices={choices} onChoose={on.onChoose} />}
-        </>
+      return step.choices ? (
+        <Choices choices={choices} onChoose={on.onChoose} />
+      ) : (
+        <SayAgain label="再说一次" blocked={blocked} onListen={on.onListen} />
       );
     case 'done':
       return (
@@ -144,13 +146,15 @@ function Content({ step, unit, choices, blocked, level, ...on }: Props) {
 // a stop drop while the microphone listens by itself, then "我听到 9 根" with
 // a green drop to agree and a honey one to say it again. A number that could
 // not be heard is said again from the honey drop; once speech has proved
-// unusable, numbers to tap sit beside it. A correct count ends in a star and
-// a drop that carries the film on. What the teacher says about each step is
-// the teacher's subtitle; the capsule shows only what the child does.
+// unusable, numbers to tap take its place. A correct count ends in a star
+// and a drop that carries the film on. What the teacher says about each step
+// is the teacher's subtitle; the capsule shows only what the child does, and
+// tells screen readers the question it answers.
 export function AnswerCapsule(props: Props) {
   if (props.step.kind === 'waiting') return null;
   return (
     <section className={styles.capsule} aria-label="说出答案">
+      <Spoken>{props.question}</Spoken>
       <Content {...props} />
     </section>
   );

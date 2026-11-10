@@ -10,6 +10,14 @@ it('shows the newest words any source said', () => {
   expect(subtitle.newest()).toEqual({ source: 'narration', text: '一个苹果换三根黄瓜。' });
 });
 
+it('makes the same words the newest again when they are brought back', () => {
+  const subtitle = createSubtitle();
+  subtitle.say('narration', { text: '碰一碰这个苹果。', again: 0 });
+  subtitle.say('question', { text: '数一数右盘有几组黄瓜。' });
+  subtitle.say('narration', { text: '碰一碰这个苹果。', again: 1 });
+  expect(subtitle.newest()).toMatchObject({ source: 'narration', text: '碰一碰这个苹果。' });
+});
+
 it('goes back to the words before once the newest source falls quiet', () => {
   const subtitle = createSubtitle();
   subtitle.say('narration', { text: '碰一碰这个苹果。' });

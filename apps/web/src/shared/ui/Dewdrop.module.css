@@ -42,16 +42,19 @@
     filter var(--press) var(--ease-out);
 }
 
+/* Each size never drops below what a finger can hit, and grows with the
+   picture it is laid into, measured on the picture's shorter side, so a
+   large screen keeps the drops in proportion with its painting. */
 .small {
-  --size: var(--touch-target);
+  --size: max(var(--touch-target), 4.5cqmin);
 }
 
 .regular {
-  --size: calc(var(--touch-target) + var(--space-2));
+  --size: max(var(--touch-target) + var(--space-2), 6.5cqmin);
 }
 
 .large {
-  --size: calc(var(--touch-target) * 1.75);
+  --size: max(var(--touch-target) * 1.75, 9.5cqmin);
 }
 
 .ok {

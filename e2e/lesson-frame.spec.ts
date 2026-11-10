@@ -109,40 +109,33 @@ for (const [name, browser] of Object.entries(refusals))
     expect(errors).toEqual([]);
   });
 
-// Phones upright and sideways, a tablet and a computer.
+// Phones upright and sideways, tablets upright and sideways and a computer.
 const screens = {
   'a phone held upright': { width: 390, height: 844 },
   'a phone held sideways': { width: 844, height: 390 },
-  'a tablet': { width: 820, height: 1180 },
+  'a tablet held upright': { width: 820, height: 1180 },
+  'a tablet held sideways': { width: 1180, height: 820 },
   'a computer': { width: 1440, height: 900 },
 };
 
 for (const [name, size] of Object.entries(screens))
-  test(`fills ${name} with the film and keeps the back button in reach`, async ({
+  test(`fills ${name} with the film, its controls laid into the picture`, async ({
     page,
   }, testInfo) => {
     test.skip(testInfo.project.name !== 'desktop', 'every screen is set here');
     await page.setViewportSize(size);
     await page.goto(lesson);
-    const { film } = gardenFilm(page);
-    await expect(page.getByRole('button', { name: /开始短片/ })).toBeVisible({ timeout: 30_000 });
-    const stage = (await film.boundingBox())!;
-    const notice = (await page.getByRole('link', { name: '去孩子空间登录' }).boundingBox())!;
-    expect(stage.y).toBe(0);
-    expect(stage.x).toBe(0);
-    if (size.height <= 500) {
-      // Sideways the panels take a column to the right of the film.
-      expect(stage.height).toBe(size.height);
-      expect(notice.x).toBeGreaterThanOrEqual(stage.width);
-    } else {
-      expect(stage.width).toBe(size.width);
-      expect(notice.y).toBeGreaterThanOrEqual(stage.height);
-      expect(stage.height).toBeGreaterThanOrEqual(size.height * 0.6);
-    }
-    expect(await page.evaluate(() => document.documentElement.scrollHeight)).toBe(size.height);
-    await expect(back(page)).toBeInViewport();
+    const start = page.getByRole('button', { name: /开始短片/ });
+    await expect(start).toBeVisible({ timeout: 30_000 });
     await page.keyboard.press('Tab');
     await expect(back(page)).toBeFocused();
+    await start.click();
+    const { film } = gardenFilm(page);
+    expect(await film.boundingBox()).toEqual({ x: 0, y: 0, ...size });
+    await expect(film.getByRole('link', { name: '去孩子空间登录' })).toBeInViewport();
+    await expect(film.getByRole('button', { name: '重听这一句' })).toBeInViewport();
+    expect(await page.evaluate(() => document.documentElement.scrollHeight)).toBe(size.height);
+    await expect(back(page)).toBeInViewport();
   });
 
 // A server that holds each answer on its way until the test lets it through.

@@ -2,20 +2,22 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ComponentProps } from 'react';
 import { expect, it, vi } from 'vitest';
-import { LessonStage } from './LessonStage';
+import { LessonStage, StagePlace } from './LessonStage';
 import { storyLook } from './story-look';
 
-const line = '我们先看看桌子上有什么。';
-
 function stage(props: Partial<ComponentProps<typeof LessonStage>> = {}) {
-  const callbacks = { onEnter: vi.fn(), onReplay: vi.fn(), onActivate: vi.fn() };
+  const callbacks = { onEnter: vi.fn(), onActivate: vi.fn() };
   render(
     <LessonStage
       look={storyLook}
       shot="first"
-      caption={line}
       speaking={false}
       entryLabel="开始短片"
+      controls={
+        <StagePlace at="tools">
+          <button type="button">重听这一句</button>
+        </StagePlace>
+      }
       {...callbacks}
       {...props}
     >
@@ -26,8 +28,8 @@ function stage(props: Partial<ComponentProps<typeof LessonStage>> = {}) {
   return { ...callbacks, film: screen.getByRole('region', { name: storyLook.label }) };
 }
 
-it('opens on the title card, whose button starts the film', async () => {
-  const { onEnter } = stage({ shot: 'opening', caption: undefined });
+it('opens on the title card, whose button starts the film, with no controls yet', async () => {
+  const { onEnter } = stage({ shot: 'opening' });
   expect(screen.getByRole('heading', { name: storyLook.title })).toBeVisible();
   expect(screen.getByText(`小小探索家 · ${storyLook.theater}`)).toBeVisible();
   expect(screen.queryByRole('button', { name: '重听这一句' })).not.toBeInTheDocument();
@@ -36,29 +38,18 @@ it('opens on the title card, whose button starts the film', async () => {
 });
 
 it('cannot be started before the film is ready', () => {
-  stage({ shot: 'opening', caption: undefined, entryLabel: '正在准备声音…', onEnter: undefined });
+  stage({ shot: 'opening', entryLabel: '正在准备声音…', onEnter: undefined });
   expect(screen.getByRole('button', { name: /正在准备声音/ })).toBeDisabled();
 });
 
-it('offers the line again in a small note while all is well', async () => {
-  const { onReplay, film } = stage();
-  expect(screen.getByRole('status')).toHaveTextContent(line);
-  await userEvent.click(screen.getByRole('button', { name: '重听这一句' }));
-  expect(onReplay).toHaveBeenCalledOnce();
-  expect(film).not.toHaveAttribute('data-narration-failure');
+it('lays the controls into the picture once the film has started', () => {
+  const { film } = stage();
+  expect(film).toContainElement(screen.getByRole('button', { name: '重听这一句' }));
+  expect(screen.queryByRole('heading')).not.toBeInTheDocument();
 });
 
-it('offers the line again while it is being said', async () => {
-  const { onReplay } = stage({ speaking: true });
-  await userEvent.click(screen.getByRole('button', { name: '重听这一句' }));
-  expect(onReplay).toHaveBeenCalledOnce();
-});
-
-it('keeps the caption and asks in words to hear a line that did not come out', async () => {
-  const { onReplay, film } = stage({ failure: 'refused' });
-  expect(screen.getByRole('status')).toHaveTextContent(line);
-  await userEvent.click(screen.getByRole('button', { name: '再听一次' }));
-  expect(onReplay).toHaveBeenCalledOnce();
+it('marks a line that did not come out on the film', () => {
+  const { film } = stage({ failure: 'refused' });
   expect(film).toHaveAttribute('data-narration-failure', 'refused');
 });
 

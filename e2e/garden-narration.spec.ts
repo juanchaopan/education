@@ -57,7 +57,7 @@ test('a line that does not come out holds the scene until the child hears it aga
   await page.getByRole('button', { name: /开始短片/ }).click({ timeout: 30_000 });
 
   // The line that says the scale is level does not play: the scene waits on
-  // it, however long, with its caption and 再听一次.
+  // it, however long, with its caption and the honey replay drop.
   await page.route(recording('balanced'), (route) =>
     route.request().resourceType() === 'media' ? route.abort() : route.continue(),
   );
@@ -104,7 +104,7 @@ test('a signed-in child hears every line of the film to its end', async ({
     const answer = page.getByRole('region', { name: '说出答案' });
     const numbers = answer.getByRole('group', { name: '点一个数字回答' });
     await numbers.getByRole('button', { name: '9', exact: true }).click({ timeout: 30_000 });
-    await expect(answer.getByRole('status')).toHaveText(/答对了/);
+    await expect(gardenFilm(page).caption).toHaveText(/答对了/);
     await answer.getByRole('button', { name: '接着看' }).click();
     await narration.heard(['change']);
     await play(movesInTheVariation(page), ({ says }) => narration.heard(says));

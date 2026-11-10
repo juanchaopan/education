@@ -13,7 +13,6 @@ function stage() {
       shot="first"
       speaking={false}
       entryLabel="开始短片"
-      onReplay={() => {}}
       onActivate={onActivate}
       ghost={
         <DragGhost x={300} y={200}>

@@ -7,14 +7,22 @@ export type WordsSource = 'narration' | 'answer' | 'hint' | 'question';
 // What a source says: words, the teacher thinking about a reply, or words
 // that are said but not shown, like a narrated line with captions off. Hidden
 // words still count as the newest, so an older reply does not come back.
-export type Words = Readonly<{ text?: string; thinking?: boolean; hidden?: boolean }>;
+// `again` counts how often the same words were brought back, as when the
+// child hears a line again, which makes them the newest once more.
+export type Words = Readonly<{
+  text?: string;
+  thinking?: boolean;
+  hidden?: boolean;
+  again?: number;
+}>;
 export type Said = Readonly<{ source: WordsSource }> & Words;
+
+const parts = ['text', 'thinking', 'hidden', 'again'] as const;
 
 const saysSomething = (words?: Words): words is Words =>
   !!words && (!!words.text || !!words.thinking);
 
-const same = (one?: Words, other?: Words) =>
-  one?.text === other?.text && one?.thinking === other?.thinking && one?.hidden === other?.hidden;
+const same = (one?: Words, other?: Words) => parts.every((part) => one?.[part] === other?.[part]);
 
 export function createSubtitle() {
   // The sources with something to say, the one that spoke last at the end.
