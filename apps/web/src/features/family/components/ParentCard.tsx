@@ -22,7 +22,7 @@ type Props = {
 export function ParentCard({ titleId, icon, title, action, tone, children }: Props) {
   return (
     <Card aria-labelledby={titleId} tone={tone} className={styles.card}>
-      <div className={styles.header} data-tone={tone}>
+      <div className={styles.header}>
         <h2 id={titleId} className={styles.title}>
           <Icon name={icon} className={styles.icon} />
           {title}

@@ -1,8 +1,11 @@
 .card {
   padding: var(--space-5);
 }
+/* The title and its action share a row; on a narrow card the action moves
+   under the title rather than squeezing it. */
 .header {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
@@ -19,7 +22,7 @@
 .icon {
   color: var(--accent-ink);
 }
-.header[data-tone='danger'] .title,
-.header[data-tone='danger'] .icon {
+.card[data-tone='danger'] .title,
+.card[data-tone='danger'] .icon {
   color: var(--danger);
 }

@@ -33,15 +33,18 @@ const labels = { active: '待使用', expired: '已过期', revoked: '已撤销'
 // settled; any other leaves the parent to make a new one when needed.
 function KeyState({ info }: { info: RegistrationKeyInfo | null }) {
   if (!info) return <p role="status">还没有注册 KEY</p>;
+  const active = info.status === 'active';
   return (
     <p className={styles.state}>
-      <StatusBadge tone={info.status === 'active' ? 'ok' : 'wait'} live>
+      <StatusBadge tone={active ? 'ok' : 'wait'} live>
         {labels[info.status]}
       </StatusBadge>
-      <span>
-        有效期至{' '}
-        <time dateTime={info.expiresAt}>{new Date(info.expiresAt).toLocaleString('zh-CN')}</time>
-      </span>
+      {active && (
+        <span>
+          有效期至{' '}
+          <time dateTime={info.expiresAt}>{new Date(info.expiresAt).toLocaleString('zh-CN')}</time>
+        </span>
+      )}
     </p>
   );
 }
