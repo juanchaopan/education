@@ -16,7 +16,7 @@ test('parent types the phrase, confirms the password and deletes the family', as
   let family: string | undefined;
   try {
     family = (await signInRecentParent(page, baseURL!, pool)).family;
-    await page.goto('/family');
+    await page.goto('/family/privacy#family-deletion-title');
     const panel = page.getByRole('region', { name: '删除家庭' });
     await expect(panel.getByText('草稿和绘图笔迹')).toBeVisible();
     const remove = panel.getByRole('button', { name: '永久删除家庭' });

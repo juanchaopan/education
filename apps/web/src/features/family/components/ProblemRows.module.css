@@ -1,0 +1,41 @@
+.rows {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+/* Rows are parted by a dashed line, like the cut edge of paper. */
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+}
+.row + .row {
+  border-top: 1px dashed var(--line);
+}
+.tile {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  inline-size: 3.5rem;
+  block-size: 2.75rem;
+  border-radius: var(--radius);
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  font-size: var(--text-lg);
+}
+.text {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+.title {
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.detail {
+  color: var(--ink-soft);
+  font-size: var(--text-sm);
+  overflow-wrap: anywhere;
+}

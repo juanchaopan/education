@@ -26,10 +26,20 @@ export async function submitParentLogin(page: Page, { email, password }: Passwor
   await page.getByRole('button', { name: '登录', exact: true }).click();
 }
 
-// Opens the parent space signed out, switches to login and signs in.
+// Opens the parent space signed out, switches to login and signs in, which
+// lands on the overview.
 export async function signInWithPassword(page: Page, parent: PasswordParent) {
   await page.goto('/family');
   await page.getByRole('button', { name: '已有账号？去登录' }).click();
   await submitParentLogin(page, parent);
-  await expect(page.getByRole('heading', { name: '我的家长账号' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '总览', level: 1 })).toBeVisible();
+}
+
+// Opens one part of the signed-in parent space from its navigation.
+export async function openParentPart(page: Page, part: string) {
+  await page
+    .getByRole('navigation', { name: '家长空间' })
+    .getByRole('link', { name: part, exact: true })
+    .click();
+  await expect(page.getByRole('heading', { name: part, level: 1 })).toBeVisible();
 }

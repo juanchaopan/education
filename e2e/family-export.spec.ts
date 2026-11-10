@@ -14,6 +14,7 @@ test('parent confirms the password and downloads only their family’s data', as
     const parent = await signInRecentParent(page, baseURL!, pool);
     family = parent.family;
     await page.goto('/family');
+    await page.getByRole('link', { name: '导出家庭数据' }).click();
     const panel = page.getByRole('region', { name: '导出家庭数据' });
     await expect(panel.getByText('密码和 PIN 的哈希')).toBeVisible();
     await panel.getByLabel('导出前输入家长密码').fill('any password');

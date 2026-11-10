@@ -1,6 +1,7 @@
 import { expect, type Page } from '@playwright/test';
 import type { ProblemSummary } from '@education/contracts';
 import { longCatalog, serveApi, signedOutApi, unverifiedParentApi, type Api } from './api';
+import { emptyParentSpaceApi, parentSpaceApi } from './parent-space';
 import { fixClock, waitForFonts, type Theme } from './render';
 
 // One page in one state: where to open it, how the API answers, the heading
@@ -83,6 +84,20 @@ const dayStates: PageState[] = [
     last: '邮件服务商已接受请求，请查看收件箱和垃圾箱。',
     api: unverifiedParentApi,
   },
+  {
+    name: 'family-overview',
+    path: '/family',
+    ready: '总览',
+    last: '测试用的第三道题',
+    api: parentSpaceApi,
+  },
+  {
+    name: 'family-overview-empty',
+    path: '/family',
+    ready: '还没有孩子',
+    last: '暂未启用',
+    api: emptyParentSpaceApi,
+  },
   { name: 'child-signed-out', path: '/child', ready: '孩子登录' },
   { name: 'child-registration', path: '/join', ready: '加入我的家庭' },
   { name: 'parent-recovery', path: '/family/recover', ready: '找回家长密码' },
@@ -92,12 +107,13 @@ const dayStates: PageState[] = [
 ];
 
 // The key pages are also seen in the night theme: the catalogue, the child's
-// and the parent's sign-in, a lesson's title card and the page for a path
-// that leads nowhere.
+// and the parent's sign-in, the parent space's overview, a lesson's title
+// card and the page for a path that leads nowhere.
 const nightPages = [
   'explore-empty',
   'child-signed-out',
   'family-signed-out',
+  'family-overview',
   'lesson-title-card',
   'not-found',
 ];

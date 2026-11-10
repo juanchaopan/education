@@ -36,6 +36,7 @@ test('verified parent generates, refreshes, reauthenticates, replaces and revoke
     await page.getByLabel('登录邮箱').fill(email);
     await page.getByLabel('登录密码').fill(password);
     await page.getByRole('button', { name: '登录', exact: true }).click();
+    // The overview shows the family code with its copy button.
     await expect(page.getByLabel('家庭码', { exact: true })).toHaveText(
       familyCode.match(/.{4}/g)!.join('-'),
     );
@@ -47,11 +48,14 @@ test('verified parent generates, refreshes, reauthenticates, replaces and revoke
     await page.context().grantPermissions([], { origin });
     await page.getByRole('button', { name: '复制家庭码', exact: true }).click();
     await expect(
-      page.getByText('暂时无法自动复制，请长按或选中上面的家庭码复制。', { exact: true }),
+      page.getByText('暂时无法自动复制，请长按或选中家庭码复制。', { exact: true }),
     ).toBeVisible();
     await expect(page.getByText('已复制家庭码。', { exact: true })).toHaveCount(0);
     await expect(page.getByLabel('家庭码', { exact: true })).toHaveText(displayedCode);
 
+    // Inviting a child opens the KEY on the children's page.
+    await page.getByRole('link', { name: '邀请孩子' }).click();
+    await expect(page.getByRole('heading', { name: '孩子', level: 1 })).toBeVisible();
     await page.getByRole('button', { name: '生成注册 KEY', exact: true }).click();
     const raw = page.getByLabel('本次生成的注册 KEY');
     await expect(raw).toHaveText(/^[0-9A-HJKMNP-TV-Z]{4}(-[0-9A-HJKMNP-TV-Z]{4}){3}$/);

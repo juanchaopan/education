@@ -1,6 +1,9 @@
 import { useState } from 'react';
-import { FamilyCodeCard, type FamilyCodeCardProps } from '../components/FamilyCodeCard';
-export function FamilyCodePanel(props: Omit<FamilyCodeCardProps, 'onCopy' | 'notice'>) {
+import { FamilyCodeChip, type FamilyCodeChipProps } from '../components/FamilyCodeChip';
+
+// The family code chip with its copy. A browser that will not copy for the
+// page leaves the parent to select the code by hand, and says so.
+export function FamilyCodePanel(props: Omit<FamilyCodeChipProps, 'onCopy' | 'notice'>) {
   const [notice, setNotice] = useState('');
   const copy = async () => {
     if (!props.code) return;
@@ -8,11 +11,11 @@ export function FamilyCodePanel(props: Omit<FamilyCodeCardProps, 'onCopy' | 'not
       await navigator.clipboard.writeText(props.code);
       setNotice('已复制家庭码。');
     } catch {
-      setNotice('暂时无法自动复制，请长按或选中上面的家庭码复制。');
+      setNotice('暂时无法自动复制，请长按或选中家庭码复制。');
     }
   };
   return (
-    <FamilyCodeCard
+    <FamilyCodeChip
       {...props}
       notice={notice}
       onCopy={() => {

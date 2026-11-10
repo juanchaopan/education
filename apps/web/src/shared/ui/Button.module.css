@@ -22,6 +22,11 @@
   opacity: 0.6;
   cursor: default;
 }
+/* A link that looks like a button keeps the button's plain label. */
+.link {
+  text-decoration: none;
+  white-space: nowrap;
+}
 
 /* Primary and danger buttons are like a piece of clay: lit from above, with a
    thick lower edge in their `--edge-colour` and an optional cast shadow. They

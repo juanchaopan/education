@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { learningSummaryPageSize } from '@education/contracts';
 import { Actions } from '../../../shared/ui/Actions';
 import { Button } from '../../../shared/ui/Button';
@@ -10,6 +11,9 @@ import { useFamilyChildren } from '../data-access/useChildAccess';
 import { useLearningSummary } from '../data-access/useLearningSummary';
 import styles from '../components/LearningSummary.module.css';
 
+// One child's learning record at a time, a page of problems at a time. An
+// address that names a child after "?child=", as a child's card on the
+// overview links, opens on that child's record.
 export function LearningSummaryPanel({ csrf }: { csrf: string }) {
   return (
     <Panel titleId="learning-summary-title" title="学习摘要">
@@ -20,7 +24,8 @@ export function LearningSummaryPanel({ csrf }: { csrf: string }) {
 
 function LearningSummaryBody({ csrf }: { csrf: string }) {
   const family = useFamilyChildren(csrf);
-  const [selection, select] = useState({ childId: '', offset: 0 });
+  const [search] = useSearchParams();
+  const [selection, select] = useState({ childId: search.get('child') ?? '', offset: 0 });
   if (family.isPending) return <Loading label="正在加载孩子列表…" />;
   if (family.isError)
     return (

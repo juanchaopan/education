@@ -239,7 +239,8 @@ test.describe('a signed-in child', () => {
   });
 });
 
-// A parent's new registration KEY, which is shown only once.
+// A parent's new registration KEY, which is shown only once, on the
+// children's page of the parent space.
 test.describe('a parent', () => {
   needsIsolatedDatabase();
 
@@ -252,7 +253,7 @@ test.describe('a parent', () => {
     try {
       family = (await signInRecentParent(page, baseURL!, pool)).family;
       const site = await serveReleases(page, older);
-      await open(page, '/family');
+      await open(page, '/family/children');
       await page.getByRole('button', { name: '生成注册 KEY', exact: true }).click();
       const raw = page.getByLabel('本次生成的注册 KEY');
       await expect(raw).toHaveText(/^[0-9A-HJKMNP-TV-Z]{4}(-[0-9A-HJKMNP-TV-Z]{4}){3}$/);

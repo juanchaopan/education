@@ -14,9 +14,9 @@ test.afterAll(async () => {
   }
 });
 for (const verified of [false, true]) {
-  // A verified parent lands in the parent space; one who has not verified the
-  // email yet sees only the verification step.
-  const signedIn = verified ? '我的家长账号' : '验证家长邮箱';
+  // A verified parent lands on the overview of the parent space; one who has
+  // not verified the email yet sees only the verification step.
+  const signedIn = verified ? '总览' : '验证家长邮箱';
   test(`parent login, refresh, browser recovery and logout (verified=${verified})`, async ({
     page,
     browser,
@@ -45,14 +45,15 @@ for (const verified of [false, true]) {
     await page.getByLabel('登录密码').fill(password);
     await page.screenshot({ path: testInfo.outputPath('parent-login.png'), fullPage: true });
     await page.getByRole('button', { name: '登录', exact: true }).click();
-    await expect(page.getByRole('heading', { name: signedIn })).toBeVisible();
-    await expect(page.getByText(verified ? '已验证' : '待验证', { exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { name: signedIn, level: 1 })).toBeVisible();
+    await expect(page.getByText(email, { exact: true })).toBeAttached();
+    if (!verified) await expect(page.getByText('待验证', { exact: true })).toBeVisible();
     const cookies = await page.context().cookies();
     const cookie = cookies.find((value) => value.name === '__Host-education_session')!;
     expect(cookie).toMatchObject({ httpOnly: true, secure: true, sameSite: 'Lax', path: '/' });
     expect(cookie.expires).toBeGreaterThan(Date.now() / 1000);
     await page.reload();
-    await expect(page.getByRole('heading', { name: signedIn })).toBeVisible();
+    await expect(page.getByRole('heading', { name: signedIn, level: 1 })).toBeVisible();
     await page.screenshot({ path: testInfo.outputPath('account-status.png'), fullPage: true });
     expect(
       await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
@@ -62,13 +63,13 @@ for (const verified of [false, true]) {
     try {
       const restored = await context.newPage();
       await restored.goto(new URL('/family', page.url()).href);
-      await expect(restored.getByRole('heading', { name: signedIn })).toBeVisible();
+      await expect(restored.getByRole('heading', { name: signedIn, level: 1 })).toBeVisible();
       await restored.getByRole('button', { name: '退出账号' }).click();
       await expect(restored.getByRole('heading', { name: '家长登录' })).toBeVisible();
       // The first context still carries the revoked cookie; the server must reject it.
       await page.reload();
       await expect(page.getByRole('heading', { name: '创建家长账号' })).toBeVisible();
-      await expect(page.getByRole('heading', { name: signedIn })).toHaveCount(0);
+      await expect(page.getByRole('heading', { name: signedIn, level: 1 })).toHaveCount(0);
     } finally {
       await context.close();
     }

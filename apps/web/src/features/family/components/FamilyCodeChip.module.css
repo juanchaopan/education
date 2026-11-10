@@ -1,0 +1,36 @@
+.code {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-3);
+}
+
+/* A pill on the page's surface; the copy button sits inside its right end. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: 0;
+  padding: var(--space-1) var(--space-1) var(--space-1) var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+.icon {
+  color: var(--ink-soft);
+  font-size: 1.2em;
+}
+.value {
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.notice {
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: var(--text-sm);
+}

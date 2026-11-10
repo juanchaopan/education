@@ -136,7 +136,7 @@ it('shows why the server could not accept the deletion, or that the outcome is u
 
 it('shows the family page as deleted and lets the parent register a new family', async () => {
   stubFetch();
-  renderFamilyPage();
+  renderFamilyPage('/family/privacy');
   const user = userEvent.setup();
   await user.type(await screen.findByLabelText(phraseLabel), familyDeletionPhrase);
   await user.type(screen.getByLabelText(passwordLabel), 'parent-password');

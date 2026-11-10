@@ -9,7 +9,7 @@ afterEach(() => {
 });
 const password = 'a private phrase for this family';
 
-function setup(response: () => Promise<Response>) {
+function setup(response: () => Promise<Response>, path?: string) {
   const fetcher = vi
     .fn()
     .mockImplementation((_url: string, options?: RequestInit) =>
@@ -20,7 +20,7 @@ function setup(response: () => Promise<Response>) {
           : Promise.resolve(Response.json({ enabled: true })),
     );
   vi.stubGlobal('fetch', fetcher);
-  renderFamilyPage();
+  renderFamilyPage(path);
   return fetcher;
 }
 
@@ -41,6 +41,12 @@ it('opens on the sign-up with its privacy note and counts the password towards i
   expect(screen.getByLabelText('设置密码')).toHaveAccessibleDescription(
     '可以是一句话 · 还差 10 个字符',
   );
+});
+
+it('asks a signed-out parent to sign in at any address of the parent space', async () => {
+  setup(() => new Promise(() => {}), '/family/privacy');
+  expect(await screen.findByRole('heading', { name: '创建家长账号' })).toBeVisible();
+  expect(screen.queryByRole('heading', { name: '隐私与数据' })).toBeNull();
 });
 
 it('shows an honest pending-verification receipt without claiming mail was sent', async () => {

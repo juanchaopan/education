@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Value } from '@sinclair/typebox/value';
 import { PracticePage, type AssignPractice } from '@education/contracts';
 import { sessionRequest } from './session-request';
@@ -6,8 +6,10 @@ import { sessionRequest } from './session-request';
 export const practiceQueryKey = ['practice'];
 const parentPath = (id: string) => `parents/children/${encodeURIComponent(id)}/practice`;
 
-export function usePractice(csrf: string, offset: number, childId?: string) {
-  return useQuery({
+// One page of practice: a child's own when no child is named, otherwise the
+// named child's as the parent sees it.
+function practicePage(csrf: string, offset: number, childId?: string) {
+  return {
     queryKey: [...practiceQueryKey, csrf, childId ?? 'self', offset],
     gcTime: 0,
     retry: false,
@@ -26,15 +28,26 @@ export function usePractice(csrf: string, offset: number, childId?: string) {
       if (!Value.Check(PracticePage, data)) throw new Error(message);
       return data;
     },
-  });
+  };
 }
 
-export function useAssignPractice(csrf: string, childId: string) {
+export function usePractice(csrf: string, offset: number, childId?: string) {
+  return useQuery(practicePage(csrf, offset, childId));
+}
+
+// The first page of practice of each named child, one query per child.
+export function useChildrenPractice(csrf: string, childIds: readonly string[]) {
+  return useQueries({ queries: childIds.map((childId) => practicePage(csrf, 0, childId)) });
+}
+
+export type PracticeAssignment = { childId: string; problem: AssignPractice };
+
+export function useAssignPractice(csrf: string) {
   const client = useQueryClient();
   return useMutation({
     gcTime: 0,
     retry: false,
-    mutationFn: async (problem: AssignPractice) => {
+    mutationFn: async ({ childId, problem }: PracticeAssignment) => {
       const message = '暂时无法确认安排结果，可以重试。';
       const response = await sessionRequest(parentPath(childId), problem, csrf).catch(() => {
         throw new Error(message);
@@ -45,6 +58,7 @@ export function useAssignPractice(csrf: string, childId: string) {
       }
       if (response.status !== 204) throw new Error(message);
     },
-    onSuccess: () => client.invalidateQueries({ queryKey: [...practiceQueryKey, csrf, childId] }),
+    onSuccess: (_, { childId }) =>
+      client.invalidateQueries({ queryKey: [...practiceQueryKey, csrf, childId] }),
   });
 }
