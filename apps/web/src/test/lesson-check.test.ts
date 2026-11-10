@@ -67,9 +67,9 @@ describe('the lesson definition check', () => {
   it('lets a lesson pick only backdrops and teachers in the library', () => {
     // @ts-expect-error moon-base is not in the backdrop library
     const backdrop: BackdropId = 'moon-base';
-    // @ts-expect-error owl is not in the teacher library
-    const teacher: TeacherRole['id'] = 'owl';
-    expect([backdrop in backdrops, teacher]).toEqual([false, 'owl']);
+    // @ts-expect-error unicorn is not in the teacher library
+    const teacher: TeacherRole['id'] = 'unicorn';
+    expect([backdrop in backdrops, teacher]).toEqual([false, 'unicorn']);
   });
 
   it('finds scenes and plugin steps that do not match', () => {
