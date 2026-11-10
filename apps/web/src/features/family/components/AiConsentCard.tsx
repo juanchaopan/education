@@ -6,6 +6,7 @@ import { Loading } from '../../../shared/ui/Loading';
 import { Notice } from '../../../shared/ui/Notice';
 import { ParentCard } from './ParentCard';
 import { ParentPasswordForm } from './ParentPasswordForm';
+import { StatusBadge } from './StatusBadge';
 import styles from './AiConsentCard.module.css';
 
 type Policy = AiConsentView['policies'][number];
@@ -96,6 +97,8 @@ export function AiConsentCard(props: Props) {
   );
 }
 
+// One service: its consent as a badge, settled only once granted, then what
+// it is sent and kept for, and the buttons that change the consent.
 function PolicyCard({
   policy,
   disabled,
@@ -112,8 +115,8 @@ function PolicyCard({
     <div role="group" aria-labelledby={label} className={styles.policy}>
       <div className={styles.heading}>
         <h3 id={label}>{title}</h3>
-        <p role="status" className={styles.state} data-state={state}>
-          <strong>{states[state]}</strong>
+        <p role="status" className={styles.state}>
+          <StatusBadge tone={state === 'granted' ? 'ok' : 'wait'}>{states[state]}</StatusBadge>
         </p>
       </div>
       <Hint>

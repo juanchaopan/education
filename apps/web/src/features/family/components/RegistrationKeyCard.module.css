@@ -5,17 +5,6 @@
   gap: var(--space-2) var(--space-3);
   color: var(--ink-soft);
 }
-.badge {
-  padding: 0 var(--space-3);
-  border-radius: var(--radius-pill);
-  background: var(--surface-2);
-  color: var(--ink);
-  font-size: var(--text-sm);
-  font-weight: 700;
-}
-.badge[data-status='active'] {
-  background: color-mix(in srgb, var(--ok) 18%, var(--surface));
-}
 
 /* The new KEY on a lit tile, in the title font and spaced for reading out. */
 .secret {

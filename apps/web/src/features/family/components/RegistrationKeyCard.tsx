@@ -7,6 +7,7 @@ import { Loading } from '../../../shared/ui/Loading';
 import { Notice } from '../../../shared/ui/Notice';
 import { ParentCard } from './ParentCard';
 import { ParentPasswordForm } from './ParentPasswordForm';
+import { StatusBadge } from './StatusBadge';
 import styles from './RegistrationKeyCard.module.css';
 
 export type RegistrationKeyCardProps = {
@@ -28,13 +29,16 @@ export type RegistrationKeyCardProps = {
 const labels = { active: '待使用', expired: '已过期', revoked: '已撤销', used: '已使用' };
 
 // Where the family's KEY stands: a badge for its state and, while it can
-// still be used, until when.
+// still be used, until when. Only a KEY a child can still use reads as
+// settled; any other leaves the parent to make a new one when needed.
 function KeyState({ info }: { info: RegistrationKeyInfo | null }) {
   if (!info) return <p role="status">还没有注册 KEY</p>;
   return (
     <p className={styles.state}>
-      <span role="status" className={styles.badge} data-status={info.status}>
-        {labels[info.status]}
+      <span role="status">
+        <StatusBadge tone={info.status === 'active' ? 'ok' : 'wait'}>
+          {labels[info.status]}
+        </StatusBadge>
       </span>
       <span>
         有效期至{' '}
