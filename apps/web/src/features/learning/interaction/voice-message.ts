@@ -50,7 +50,7 @@ const reasons: Record<RecorderFailure | AiHelpFallback, string> = {
   denied: '没有拿到麦克风权限。',
   interrupted: '录音中断了，这段没有保存。',
   empty: '这次没有录到声音。',
-  short: '还没录上就松开了。按住按钮，看到「正在听」再说话，说完再松开。',
+  short: '还没录上就松开了。按住话筒，等声音条动起来再说话，说完再松开。',
   quiet: '没有听到你说话。',
 };
 

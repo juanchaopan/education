@@ -1,4 +1,11 @@
-import { useMemo, type KeyboardEvent, type MouseEvent, type ReactNode, type Ref } from 'react';
+import {
+  useMemo,
+  type CSSProperties,
+  type KeyboardEvent,
+  type MouseEvent,
+  type ReactNode,
+  type Ref,
+} from 'react';
 import { classNames } from '../../../../shared/lib/class-names';
 import { Icon } from '../../../../shared/ui/Icon';
 import { activationAt, type Activation } from '../../interaction/stage-activation';
@@ -17,7 +24,7 @@ type Props = {
   look: StageLook;
   // The scene on screen; `opening` is the title card.
   shot: string;
-  caption?: string;
+  // The teacher is saying a line, which its figure shows.
   speaking: boolean;
   // Why the line on screen did not come out, while it waits to be heard again.
   failure?: string;
@@ -29,13 +36,34 @@ type Props = {
   ambience?: ReactNode;
   // The prop under the child's finger while it is dragged.
   ghost?: ReactNode;
+  // The controls laid into the picture once the film has started, each in a
+  // `StagePlace`.
+  controls?: ReactNode;
+  // How much of the bottom of the screen an on-screen keyboard covers, which
+  // the controls move above.
+  keyboard?: number;
   // Starts the film; while it is missing the film is not ready to start yet.
   onEnter?: () => void;
-  onReplay: () => void;
   onActivate: (target: Activation) => void;
   // The lesson's own scene, drawn on the 1200×675 world.
   children?: ReactNode;
 };
+
+// Where a control sits in the picture: the tools in the top corner, a notice
+// under them, the teacher's subtitle, the answer, the hint, the question box,
+// the microphone, and the bottom corner where the microphone would be.
+export type Place =
+  'tools' | 'notice' | 'subtitle' | 'answer' | 'hint' | 'question' | 'microphone' | 'corner';
+
+// One control laid into the picture, at its place. The stage arranges the
+// places for the shape of its frame.
+export function StagePlace({ at, children }: { at: Place; children: ReactNode }) {
+  return (
+    <div className={styles.place} data-at={at}>
+      {children}
+    </div>
+  );
+}
 
 const framing = ({ zoom, x = 0, y = 0 }: Camera) => `scale(${zoom}) translate(${x}%, ${y}%)`;
 
@@ -58,8 +86,7 @@ function Painting({ look, shot }: { look: StageLook; shot: string }) {
   );
 }
 
-type TitleProps = Pick<StageLook, 'title' | 'theater'>;
-type EntryProps = TitleProps & Pick<Props, 'entryLabel' | 'onEnter'>;
+type EntryProps = Pick<StageLook, 'title' | 'theater'> & Pick<Props, 'entryLabel' | 'onEnter'>;
 
 function TitleCard({ title, theater, entryLabel, onEnter }: EntryProps) {
   return (
@@ -73,35 +100,6 @@ function TitleCard({ title, theater, entryLabel, onEnter }: EntryProps) {
   );
 }
 
-function TitleBar({ title, theater }: TitleProps) {
-  return (
-    <div className={styles.titleBar} aria-hidden="true">
-      <span>{theater}</span>
-      <i />
-      <span>{title}</span>
-    </div>
-  );
-}
-
-type ReplayProps = Pick<Props, 'onReplay' | 'speaking'> & { again: boolean };
-
-// Hearing the line again: a small button with the replay icon while all is
-// well, and one that says so in words while a line that did not come out
-// waits for the child.
-function ReplayButton({ again, speaking, onReplay }: ReplayProps) {
-  return (
-    <button
-      type="button"
-      className={classNames(styles.replay, speaking && styles.playing, again && styles.again)}
-      aria-label={again ? undefined : '重听这一句'}
-      onClick={onReplay}
-    >
-      <Icon name="replay" />
-      {again && ' 再听一次'}
-    </button>
-  );
-}
-
 function TeacherFigure({ teacher }: { teacher: Teacher }) {
   return (
     <>
@@ -111,17 +109,29 @@ function TeacherFigure({ teacher }: { teacher: Teacher }) {
   );
 }
 
-// A lesson as a short film: a painted backdrop framed for each scene, the
-// lesson's own props as vector art in front, the teacher and its caption. The
-// title card opens it; afterwards the title bar runs along the top and the
-// replay button stays in the top right. The stage fills whatever frame it is
-// given. A wide frame is filled by the backdrop and the world as one
-// picture, so the props stand where the painting expects them. An upright
-// frame is filled by the painting alone, and the props, without the teacher,
-// are fitted to its width. The stage reports which prop or place the child
-// chose; the page decides what that does.
+function Controls({ keyboard = 0, children }: { keyboard?: number; children: ReactNode }) {
+  return (
+    <div
+      className={styles.controls}
+      style={{ '--keyboard': `${keyboard}px` } as CSSProperties}
+      data-keyboard={keyboard > 0 || undefined}
+    >
+      {children}
+    </div>
+  );
+}
+
+// A lesson as a short film that fills the screen: a painted backdrop framed
+// for each scene, the lesson's own props as vector art in front, and the
+// teacher. The title card opens it; afterwards the controls are laid into the
+// picture's edges, with no strip of their own. A wide frame is filled by the
+// backdrop and the world as one picture, so the props stand where the
+// painting expects them. An upright frame is filled by the painting alone,
+// and the props, without the teacher, are fitted to its width. The stage
+// reports which prop or place the child chose; the page decides what that
+// does.
 export function LessonStage(props: Props) {
-  const { look, shot, caption, speaking, failure, worldRef, onActivate } = props;
+  const { look, shot, speaking, failure, worldRef, onActivate } = props;
   // The stage redraws on every step of a drag; its palette and layout stay
   // the same.
   const layout = useMemo(
@@ -177,23 +187,8 @@ export function LessonStage(props: Props) {
           onEnter={props.onEnter}
         />
       ) : (
-        <>
-          <TitleBar title={look.title} theater={look.theater} />
-          <ReplayButton
-            again={failure !== undefined}
-            speaking={speaking}
-            onReplay={props.onReplay}
-          />
-        </>
+        <Controls keyboard={props.keyboard}>{props.controls}</Controls>
       )}
-      <p
-        className={styles.caption}
-        data-speaker={look.teacher.name}
-        role="status"
-        hidden={!caption}
-      >
-        {caption}
-      </p>
     </section>
   );
 }

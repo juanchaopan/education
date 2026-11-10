@@ -56,10 +56,12 @@ function open(csrf?: string) {
   );
 }
 
-// What the teacher is saying in the film.
-const caption = () =>
-  within(screen.getByRole('region', { name: '示例互动短片' })).getByRole('status');
+const film = () => screen.getByRole('region', { name: '示例互动短片' });
+// What the teacher is saying, in its subtitle in the picture.
+const subtitle = () => within(film()).getByRole('region', { name: '小兔的话' });
+const caption = () => within(subtitle()).getByRole('status');
 const readiness = () => screen.getByRole('status', { name: '刷新' });
+const start = async (name: RegExp) => userEvent.click(await screen.findByRole('button', { name }));
 
 // The lesson's one player, made by the page, which a test plays to its end.
 let players: HTMLAudioElement[] = [];
@@ -95,14 +97,16 @@ afterEach(() => {
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
   forgetFullscreen();
+  localStorage.clear();
 });
 
 it('lets a visitor play the film without saving anything, and asks them to sign in', async () => {
   const fetch = serve(null);
   open();
-  await userEvent.click(await screen.findByRole('button', { name: /开始短片/ }));
+  await start(/开始短片/);
   expect(caption()).toHaveTextContent('看看这颗小石子。');
-  expect(screen.getByRole('link', { name: '去孩子空间登录' })).toBeInTheDocument();
+  expect(within(film()).getByRole('link', { name: '去孩子空间登录' })).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: '按住问小兔' })).not.toBeInTheDocument();
   await userEvent.click(screen.getByRole('button', { name: '小石子' }));
   expect(caption()).toHaveTextContent('一共有几颗？');
   expect(screen.queryByRole('region', { name: '说出答案' })).not.toBeInTheDocument();
@@ -114,7 +118,7 @@ it('asks for the whole screen as the child starts the film', async () => {
   const request = vi.fn().mockResolvedValue(undefined);
   document.documentElement.requestFullscreen = request;
   open();
-  await userEvent.click(await screen.findByRole('button', { name: /开始短片/ }));
+  await start(/开始短片/);
   expect(request).toHaveBeenCalledOnce();
 });
 
@@ -124,56 +128,79 @@ it('starts the film all the same when the browser refuses the whole screen', asy
     .fn()
     .mockRejectedValue(new TypeError('Permissions check failed'));
   open();
-  await userEvent.click(await screen.findByRole('button', { name: /开始短片/ }));
+  await start(/开始短片/);
   expect(caption()).toHaveTextContent('看看这颗小石子。');
   expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+});
+
+it('lays every control into the picture, with no strip of its own', async () => {
+  serve(null);
+  open('token');
+  await start(/开始短片/);
+  const picture = film();
+  for (const name of ['重听这一句', '字幕', '声音', '按住问小兔'])
+    expect(picture).toContainElement(screen.getByRole('button', { name }));
+  expect(picture).toContainElement(screen.getByRole('complementary', { name: '学习草稿' }));
 });
 
 it('saves each scene a signed-in child reaches and asks about the scene on screen', async () => {
   const fetch = serve(null);
   open('token');
-  await userEvent.click(await screen.findByRole('button', { name: /开始短片/ }));
-  expect(screen.getByRole('region', { name: '问问小兔' })).toBeInTheDocument();
-  expect(screen.getByRole('complementary', { name: '学习草稿' })).toBeInTheDocument();
+  await start(/开始短片/);
+  expect(screen.getByRole('button', { name: '按住问小兔' })).toBeInTheDocument();
   await userEvent.click(screen.getByRole('button', { name: '小石子' }));
-  expect(await screen.findByRole('region', { name: '说出答案' })).toHaveTextContent(
-    '一共有几颗小石子？',
-  );
-  await waitFor(() => expect(savedSteps(fetch)).toEqual(['look', 'count']));
-});
-
-it('resumes a signed-in child in the answer scene, where the child can also ask', async () => {
-  serve(savedAt('count'));
-  open('token');
-  await userEvent.click(await screen.findByRole('button', { name: /接着上次的地方/ }));
   expect(caption()).toHaveTextContent('一共有几颗？');
-  expect(screen.getByRole('region', { name: '说出答案' })).toBeInTheDocument();
-  expect(screen.getByRole('region', { name: '问问小兔' })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: '给我一个提示，还有 1 个' })).toBeInTheDocument();
+  await waitFor(() => expect(savedSteps(fetch)).toEqual(['look', 'count']));
 });
 
 it('listens for the answer by itself once the question is heard, and offers numbers without a microphone', async () => {
   serve(savedAt('count'));
   open('token');
-  await userEvent.click(await screen.findByRole('button', { name: /接着上次的地方/ }));
-  const answer = screen.getByRole('region', { name: '说出答案' });
-  expect(within(answer).getByRole('status')).toHaveTextContent('听完这句话，就可以说出答案了。');
-  expect(within(answer).queryByRole('button')).toBeNull();
+  await start(/接着上次的地方/);
+  expect(caption()).toHaveTextContent('一共有几颗？');
+  expect(screen.queryByRole('region', { name: '说出答案' })).not.toBeInTheDocument();
   await hearLineToEnd();
-  expect(await within(answer).findByRole('group', { name: '点一个数字回答' })).toBeInTheDocument();
-  expect(within(answer).getByRole('status')).toHaveTextContent('这台设备现在不能录音。');
+  const answer = await screen.findByRole('region', { name: '说出答案' });
+  expect(within(answer).getByRole('group', { name: '点一个数字回答' })).toBeInTheDocument();
+  expect(caption()).toHaveTextContent('这台设备现在不能录音。');
+});
+
+it('hides the narrated lines while the captions are off, and keeps that on the device', async () => {
+  serve(null);
+  open();
+  await start(/开始短片/);
+  await userEvent.click(screen.getByRole('button', { name: '字幕', pressed: true }));
+  expect(caption()).toBeEmptyDOMElement();
+  cleanup();
+  open();
+  await start(/开始短片/);
+  expect(screen.getByRole('button', { name: '字幕', pressed: false })).toBeInTheDocument();
+  expect(caption()).toBeEmptyDOMElement();
+});
+
+it('plays the lines without sound once the sound is off, with the captions on', async () => {
+  serve(null);
+  open();
+  await start(/开始短片/);
+  await userEvent.click(screen.getByRole('button', { name: '字幕', pressed: true }));
+  await userEvent.click(screen.getByRole('button', { name: '声音', pressed: true }));
+  expect(players[0]!.muted).toBe(true);
+  expect(screen.getByRole('button', { name: '字幕', pressed: true })).toBeDisabled();
+  expect(caption()).toHaveTextContent('看看这颗小石子。');
 });
 
 it('starts over at the first scene when the saved step is not a later scene', async () => {
   serve(savedAt('somewhere-else'));
   open('token');
-  await userEvent.click(await screen.findByRole('button', { name: /开始短片/ }));
+  await start(/开始短片/);
   expect(caption()).toHaveTextContent('看看这颗小石子。');
 });
 
 it('holds a reload while the film plays, and then while the place reached is unsaved', async () => {
   serve(null, { savingFails: true });
   open('token');
-  await userEvent.click(await screen.findByRole('button', { name: /开始短片/ }));
+  await start(/开始短片/);
   expect(readiness()).toHaveTextContent('playing');
   await waitFor(() =>
     expect(screen.getByRole('complementary', { name: '学习草稿' })).toHaveTextContent('还没同步'),
@@ -186,7 +213,7 @@ it('holds a reload while the film plays, and then while the place reached is uns
 it('lets a reload go ahead once a visitor has heard the line to its end', async () => {
   serve(null);
   open();
-  await userEvent.click(await screen.findByRole('button', { name: /开始短片/ }));
+  await start(/开始短片/);
   expect(readiness()).toHaveTextContent('playing');
   await hearLineToEnd();
   await waitFor(() => expect(readiness()).toHaveTextContent('ready'));

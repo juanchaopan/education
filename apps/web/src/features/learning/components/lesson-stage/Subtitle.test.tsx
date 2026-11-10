@@ -5,15 +5,18 @@ import { storyLook } from './story-look';
 import { Subtitle } from './Subtitle';
 
 const { teacher } = storyLook;
+const subtitle = () => screen.getByRole('region', { name: '小猫头鹰的话' });
 
 it("tells the teacher's words with the teacher's name", () => {
   render(<Subtitle teacher={teacher} text="我们先看看桌子上有什么。" />);
   expect(screen.getByRole('status')).toHaveTextContent('小猫头鹰：我们先看看桌子上有什么。');
+  expect(subtitle()).not.toHaveAttribute('data-quiet');
 });
 
-it('shows nothing while the teacher has nothing to say', () => {
-  const { container } = render(<Subtitle teacher={teacher} />);
-  expect(container).toBeEmptyDOMElement();
+it('fades out but stays in place while the teacher has nothing to say', () => {
+  render(<Subtitle teacher={teacher} />);
+  expect(subtitle()).toHaveAttribute('data-quiet');
+  expect(screen.getByRole('status')).toBeEmptyDOMElement();
 });
 
 it('carries a paused narration on from the mark on the portrait', async () => {

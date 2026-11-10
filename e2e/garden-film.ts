@@ -12,6 +12,8 @@ async function drag(page: Page, source: Locator, target: Locator) {
   await page.mouse.up();
 }
 
+// The film and the things a child touches in it, and what the rabbit says,
+// in its subtitle in the picture.
 export function gardenFilm(page: Page) {
   const film = page.getByRole('region', { name: '菜园天平互动短片' });
   return {
@@ -20,7 +22,7 @@ export function gardenFilm(page: Page) {
     apples: film.getByRole('button', { name: '苹果' }),
     cabbage: film.getByRole('button', { name: '青菜' }).first(),
     replace: film.getByRole('button', { name: '把这个苹果换成黄瓜' }),
-    caption: film.getByRole('status'),
+    caption: film.getByRole('region', { name: '小兔的话' }).getByRole('status'),
   };
 }
 

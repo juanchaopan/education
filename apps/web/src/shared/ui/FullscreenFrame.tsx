@@ -15,8 +15,7 @@ const waitingNote = '正在保存，好了就返回';
 // fills the frame, clear of a phone's notch and rounded corners, under a glass
 // back button fixed in the top left, which is also the first thing the
 // keyboard reaches. While the page waits to leave, the button says so beside
-// it. The frame tells what it holds, as `--frame-corner`, how far in from the
-// edge the button reaches, so nothing else is drawn under it.
+// it.
 export function FullscreenFrame({ waiting, onBack, children }: Props) {
   return (
     <main className={styles.frame}>

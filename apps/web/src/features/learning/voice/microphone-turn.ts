@@ -30,6 +30,8 @@ export function createMicrophoneTurn() {
     },
     // Whether someone other than `owner` keeps the microphone from them.
     blocks: (owner: symbol) => !!holder && holder.owner !== owner && !holder.yieldTurn,
+    // Whether the child is holding the microphone to speak.
+    held: () => !!holder && !holder.yieldTurn,
     subscribe(listener: () => void) {
       listeners.add(listener);
       return () => void listeners.delete(listener);

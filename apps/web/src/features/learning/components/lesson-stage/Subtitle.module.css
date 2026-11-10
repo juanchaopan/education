@@ -8,11 +8,18 @@
   max-inline-size: 100%;
   padding: var(--space-2) var(--space-4) var(--space-2) var(--space-2);
   border: 1px solid var(--dew-pane-edge);
-  border-radius: var(--radius-pill);
+  border-radius: calc(var(--radius-lg) * 1.6);
   color: var(--dew-ink);
   background: var(--dew-pane);
   backdrop-filter: var(--glass-filter);
   box-shadow: var(--dew-pane-shadow);
+  transition: opacity var(--lift) var(--ease-out);
+}
+
+/* Nothing to say: the pane fades out where it is and takes no taps. */
+.subtitle[data-quiet] {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .words {

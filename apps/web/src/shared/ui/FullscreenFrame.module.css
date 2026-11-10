@@ -1,10 +1,6 @@
 /* Exactly the visible screen, however the browser's own bars come and go,
    with the parts a notch or a rounded corner hides left out. */
 .frame {
-  /* Where the back button sits, and how far in it reaches, from the edge of
-     what the frame holds. */
-  --back-inset: var(--space-3);
-  --frame-corner: calc(var(--back-inset) + var(--touch-target) + var(--space-2));
   position: relative;
   display: grid;
   grid-template: minmax(0, 1fr) / minmax(0, 1fr);
@@ -30,8 +26,8 @@
 .back {
   position: absolute;
   z-index: 5;
-  inset-block-start: calc(env(safe-area-inset-top) + var(--back-inset));
-  inset-inline-start: calc(env(safe-area-inset-left) + var(--back-inset));
+  inset-block-start: calc(env(safe-area-inset-top) + var(--space-3));
+  inset-inline-start: calc(env(safe-area-inset-left) + var(--space-3));
   display: flex;
   flex-direction: column;
   align-items: flex-start;
