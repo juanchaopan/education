@@ -13,3 +13,6 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Rabbit: Story = {};
+export const Squirrel: Story = { args: { teacher: teachers.squirrel } };
+export const Raccoon: Story = { args: { teacher: teachers.raccoon } };
+export const Owl: Story = { args: { teacher: teachers.owl } };
