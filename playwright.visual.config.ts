@@ -30,7 +30,11 @@ export default defineConfig({
   updateSnapshots: 'none',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
+  // The same code gives the same screenshots, so a test that passes only on
+  // its retry fails the run in CI; the retry shows whether it failed once or
+  // every time.
   retries: process.env.CI ? 1 : 0,
+  failOnFlakyTests: !!process.env.CI,
   reporter: process.env.CI ? [['github'], ['list']] : 'list',
   use: {
     locale: 'zh-CN',
