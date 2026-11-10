@@ -50,6 +50,7 @@ export const storyLook: StageLook = {
     image: teacher,
     place: { x: 150, y: 220, width: 160, height: 224 },
     ground: { cx: 230, cy: 446, rx: 64, ry: 11 },
+    face: { x: 0.155, y: 0.3, size: 0.69 },
   },
   palette: {
     sky: 'linear-gradient(#3e5f86, #2b3a3c)',

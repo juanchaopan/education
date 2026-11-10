@@ -1,0 +1,62 @@
+/* The portrait and the words beside it, on a pane of smoked glass that keeps
+   them readable on any painting. Long words scroll inside the pane, which
+   never grows past three lines. */
+.subtitle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  max-inline-size: 100%;
+  padding: var(--space-2) var(--space-4) var(--space-2) var(--space-2);
+  border: 1px solid var(--dew-pane-edge);
+  border-radius: var(--radius-pill);
+  color: var(--dew-ink);
+  background: var(--dew-pane);
+  backdrop-filter: var(--glass-filter);
+  box-shadow: 0 0.5em 1.4em var(--dew-shadow);
+}
+
+.words {
+  max-block-size: calc(3 * 1.5em);
+  margin: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-radius: var(--radius);
+  font-family: var(--font-display);
+  font-size: var(--subtitle-size, var(--text-lg));
+  font-weight: 700;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+/* Reached from the keyboard to scroll long words, the words show the same
+   warm ring as the drops. */
+.words:focus-visible {
+  outline: 3px solid var(--dew-focus);
+  outline-offset: 2px;
+}
+
+/* The play mark sits on the portrait's lower right, over its rim. */
+.mark {
+  position: absolute;
+  inset-block-end: calc(var(--space-3) * -1);
+  inset-inline-end: calc(var(--space-3) * -1);
+}
+
+.held {
+  position: absolute;
+  inset-block-end: calc(var(--space-1) * -1);
+  inset-inline-end: calc(var(--space-1) * -1);
+  display: grid;
+  place-items: center;
+  inline-size: 1.6em;
+  block-size: 1.6em;
+  border: 1.5px solid var(--dew-rim);
+  border-radius: 50%;
+  color: var(--dew-gold-ink);
+  background: var(--dew-gold);
+  font-size: var(--text-sm);
+}
+
+.thinking {
+  margin-inline-start: 0.4em;
+}

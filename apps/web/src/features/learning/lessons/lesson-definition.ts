@@ -120,8 +120,8 @@ export function filmStory<
 // The lesson's teacher as the stage draws it: the library character, standing
 // where the lesson puts it.
 export function lessonTeacher({ id, place, ground }: TeacherRole): Teacher {
-  const { name, image } = teachers[id];
-  return { name, image, place, ground };
+  const { name, image, face } = teachers[id];
+  return { name, image, place, ground, face };
 }
 
 // The lesson's film as the stage draws it: the library pictures it picks, each

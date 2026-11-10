@@ -95,9 +95,19 @@ export function framed(box: Box, { zoom, x = 0, y = 0 }: Camera): Box {
 // The painted picture behind the props and the part of it kept in view.
 export type Backdrop = Readonly<{ image: string; focus: string }>;
 
-// The character who tells the lesson: where it stands in the stage's world and
-// the shadow at its feet.
-export type Teacher = Readonly<{ name: string; image: string; place: Box; ground: Ellipse }>;
+// The square round a character's face in its picture, for a round portrait:
+// its left and top edges and its side, each as a share of the picture's width.
+export type Face = Readonly<{ x: number; y: number; size: number }>;
+
+// The character who tells the lesson: where it stands in the stage's world,
+// the shadow at its feet, and where its face is in its picture.
+export type Teacher = Readonly<{
+  name: string;
+  image: string;
+  place: Box;
+  ground: Ellipse;
+  face: Face;
+}>;
 
 // Everything about a lesson's stage that stays the same while it plays.
 export type StageLook = Readonly<{

@@ -1,0 +1,26 @@
+/* A round portrait, as large as a microphone drop, with a soft light behind
+   the face so it reads on any painting. */
+.avatar {
+  position: relative;
+  display: inline-block;
+  flex: none;
+  inline-size: var(--avatar-size, calc(var(--touch-target) * 1.45));
+  aspect-ratio: 1;
+}
+
+.frame {
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+  overflow: hidden;
+  border: 2px solid var(--dew-rim);
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 40%, var(--dew-paper), var(--dew-gold));
+  box-shadow: 0 0.4em 1em var(--dew-shadow);
+}
+
+.frame img {
+  display: block;
+  max-inline-size: none;
+  block-size: auto;
+}

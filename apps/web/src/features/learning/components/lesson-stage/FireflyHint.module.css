@@ -1,0 +1,37 @@
+.fireflies {
+  inline-size: 1.9em;
+  block-size: 1.9em;
+  overflow: visible;
+}
+
+.glow {
+  fill: color-mix(in srgb, var(--dew-gold) 60%, transparent);
+}
+
+.wing {
+  fill: color-mix(in srgb, var(--dew-paper) 80%, transparent);
+}
+
+.body {
+  fill: var(--dew-gold);
+}
+
+/* Each firefly drifts and glows on its own beat. */
+.firefly {
+  animation: drift 2.6s ease-in-out infinite alternate;
+}
+
+.firefly:nth-child(2) {
+  animation-delay: -0.9s;
+}
+
+.firefly:nth-child(3) {
+  animation-delay: -1.7s;
+}
+
+@keyframes drift {
+  to {
+    translate: 0.6px -0.9px;
+    opacity: 0.75;
+  }
+}

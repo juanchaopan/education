@@ -1,0 +1,25 @@
+.tools {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.replay {
+  display: inline-grid;
+  border-radius: 50%;
+}
+
+/* A soft light round the replay drop while the teacher speaks. */
+.playing {
+  box-shadow: 0 0 0 var(--space-1) color-mix(in srgb, var(--dew-gold) 45%, transparent);
+}
+
+/* A line that did not come out calls for a tap until it is heard again. */
+.call {
+  animation: call 1.6s ease-in-out infinite;
+}
+
+@keyframes call {
+  50% {
+    box-shadow: 0 0 0 var(--space-2) color-mix(in srgb, var(--dew-gold) 40%, transparent);
+  }
+}

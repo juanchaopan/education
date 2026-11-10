@@ -36,11 +36,12 @@ describe('lesson definitions', () => {
     });
   });
 
-  it('cast the library teacher where the lesson puts it', () => {
+  it('cast the library teacher where the lesson puts it, its face for its portrait', () => {
     const { place, ground } = fixtureLesson.teacher;
     expect(lessonTeacher(fixtureLesson.teacher)).toEqual({
       name: '小兔',
       image: teachers.rabbit.image,
+      face: teachers.rabbit.face,
       place,
       ground,
     });
