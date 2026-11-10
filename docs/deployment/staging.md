@@ -14,7 +14,7 @@
 | 告警          | 本仓库带 `staging-alert` 标签的 GitHub issue，见 [运行日志与告警](#运行日志与告警)                    |
 | 当前测试地址  | <https://education-access-spike.hyp.app/>                                                             |
 
-Vercel 测试项目关闭默认登录保护，让不携带平台登录 cookie 的候选版本冒烟可以执行；这是公开的测试站，不接收儿童学习资料。验证邮件使用独立配置的 Gmail 凭据，配置与验收见 [家长验证邮件](mail.md)；没有 AI 凭据，家长页的外部 AI 授权逐项显示“暂未启用”。自管账号的服务端会话与权限不受此设置替代。
+Vercel 测试项目关闭默认登录保护，让不携带平台登录 cookie 的候选版本冒烟可以执行；这是公开的测试站，不接收儿童学习资料。验证邮件使用独立配置的 Gmail 凭据，配置与验收见 [家长验证邮件](mail.md)；付费 AI 按 [付费 AI](#付费-ai) 配置，没有配置时家长页的外部 AI 授权逐项显示“暂未启用”。自管账号的服务端会话与权限不受此设置替代。
 
 ## 一次性配置
 
@@ -32,6 +32,7 @@ Vercel 测试项目关闭默认登录保护，让不携带平台登录 cookie �
 | `STAGING_PIN_PEPPER`              | 儿童 PIN 的服务器密钥，见下文 #24                                |
 | `STAGING_DATABASE_CA_CERT`        | 留空；只有供应商证书不由公共 CA 签发时才填 PEM 根证书全文        |
 | `STAGING_DELETION_LEDGER_CA_CERT` | 同上，对应删除清单库                                             |
+| `STAGING_OPENAI_API_KEY`          | 可选，staging 专用的 OpenAI 项目密钥，见 [付费 AI](#付费-ai)     |
 
 5. 在 [Actions variables](https://github.com/juanchaopan/education/settings/variables/actions) 设置 Repository variable **`STAGING_DATABASE_HOST`**：应用库连接串里 `@` 之后、`/` 之前的主机名，形如 `ep-…-xxxxxxxx.ap-southeast-1.aws.neon.tech`，不带端口和数据库名。它必须是只服务这个数据库的直连主机，不能是多个数据库共用的连接池主机，否则同一主机上的其他数据库也能通过检查。它没有默认值。Vercel project/team ID 与域名已有工作流默认值；更换资源时用同名 Repository variables 覆盖 `STAGING_VERCEL_PROJECT_ID`、`STAGING_VERCEL_TEAM_ID`、`STAGING_ORIGIN`。不能将这些变量指向生产。GitHub App 没有读取/设置 Actions secrets 的权限，必须由维护者配置。
 6. 资源和上述秘密准备好后，设置 Repository variable **`STAGING_ENABLED=true`**。之后每次 main 的 `ci` 成功会自动触发；首次可在 Actions → staging → Run workflow 运行。首次手动触发时，如当前 main 尚无 CI，会先显式派发完整 CI；staging 准备任务会有界等待 CI 成功，再在同一次运行中继续发布，不依赖递归完成回调。不能部署任意分支或跳过 CI。变量未启用时，工作流只写明“未尝试部署”，不是部署成功。
@@ -39,6 +40,25 @@ Vercel 测试项目关闭默认登录保护，让不携带平台登录 cookie �
 8. 告警不需要另外的秘密，工作流用自带的 `GITHUB_TOKEN` 开关 issue。新告警指派给 Repository variable `STAGING_ALERT_ASSIGNEE` 写的 GitHub 用户名；没有设置时指派给仓库所有者，仓库属于组织时必须设置。GitHub Actions 机器人开的 issue 只通知 Watch 设为 All Activity 的人，被指派则在默认设置下就会通知。维护者在 GitHub 通知设置里开启邮件或 GitHub 应用通知；邮件发往通知设置里选的邮箱，不一定是 Git 提交用的邮箱。
 
 staging 只有合成账号。换数据库时不迁移旧数据，新库在第一次发布时完成迁移；维护者重新注册测试家长和孩子。
+
+## 付费 AI
+
+小兔的解题提示和孩子的语音转写在 staging 上默认关闭。要打开时，在 Actions 的 secrets 和 variables 里配置：
+
+| 名称                                    | 类型              | 内容                                                                 |
+| --------------------------------------- | ----------------- | -------------------------------------------------------------------- |
+| `STAGING_OPENAI_API_KEY`                | Repository secret | staging 专用的 OpenAI 项目密钥；在 OpenAI 后台给这个项目设好用量上限 |
+| `STAGING_OPENAI_TUTORING_ELIGIBLE`      | variable          | `true` 时打开解题提示                                                |
+| `STAGING_OPENAI_TRANSCRIPTION_ELIGIBLE` | variable          | `true` 时打开语音转写                                                |
+| `STAGING_AI_MONTHLY_BUDGET_USD`         | variable          | 每月计入预算的上限，单位美元；配置了密钥时必须设置                   |
+
+发布流程（`scripts/staging-ai-env.mjs`）把它们作为 `OPENAI_API_KEY`、`OPENAI_TUTORING_ELIGIBLE`、`OPENAI_TRANSCRIPTION_ELIGIBLE`、`AI_MONTHLY_BUDGET_USD` 交给 Vercel 运行时，先按 API 自己的配置规则检查：
+
+- 没有密钥时不传任何 AI 设置，不发请求、不产生费用。
+- 有密钥却没有月度上限、开关不是 `true` 或 `false`、金额格式不对时，发布不创建候选。
+- 没有标为 `true` 的服务保持关闭。
+
+设置改了以后要再发布一次才生效：Actions → staging → Run workflow。资格开关表示部署者确认这项服务可以处理孩子的数据，见 README；staging 是公开的测试站，只用合成账号和编出来的问题测试。家长还要在家长空间分别授权两项服务，孩子的请求才会发出。用量和告警见 [AI 用量](#ai-用量)。
 
 ## 数据库连接检查
 
@@ -135,6 +155,8 @@ Vercel 支持 PR 预览，Neon Free 每个项目也能建少量数据库分支�
 ## 撤回
 
 关闭 `STAGING_ENABLED` 可停止后续自动部署、备份、维护和告警探测。将 staging alias 恢复至已记录的上一可用 deployment，并核对 `/version.json`。不要仅 revert Git 就宣称已回滚线上；不要删除 Neon 项目或执行全库清理来撤回应用。初始旧探针为 `dpl_4HWHQJKv6nUYfwR6zfAP5nvVoL4G`，它不是正式账号应用；staging 有持久数据后，应选择兼容同一数据库的应用版本。
+
+只停掉 staging 的付费 AI 时，删除 `STAGING_OPENAI_API_KEY` 或把两个资格开关改成 `false`，再发布一次；在 OpenAI 后台吊销这个密钥则立即生效。
 
 官方来源及日期、实际验证和未完成项见 [#20 证据](../evidence/20/README.md)。
 
