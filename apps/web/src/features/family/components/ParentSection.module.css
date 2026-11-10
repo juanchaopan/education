@@ -25,26 +25,8 @@
   gap: var(--space-3);
 }
 
-/* The cards stack at an even spacing, each one rising into place in turn. */
+/* The cards stack at an even spacing. */
 .cards {
   display: grid;
   gap: var(--space-5);
-}
-.cards > * {
-  animation: rise var(--enter) var(--ease-out) both;
-}
-.cards > :nth-child(2) {
-  animation-delay: var(--enter-step);
-}
-.cards > :nth-child(3) {
-  animation-delay: calc(var(--enter-step) * 2);
-}
-.cards > :nth-child(n + 4) {
-  animation-delay: calc(var(--enter-step) * 3);
-}
-@keyframes rise {
-  from {
-    opacity: 0;
-    translate: 0 var(--space-4);
-  }
 }

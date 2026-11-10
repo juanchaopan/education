@@ -96,7 +96,7 @@ it('shows each child with totals from their record, never mixing hints into fini
   expect(await within(planned).findByText('第三道')).toBeVisible();
   expect(screen.getByRole('link', { name: '邀请孩子' })).toHaveAttribute(
     'href',
-    '/family/children#invite',
+    '/family/children#registration-key-title',
   );
 });
 
@@ -124,7 +124,7 @@ it('invites a family without children to add one, and still offers its settings'
   expect(await screen.findByRole('heading', { name: '还没有孩子' })).toBeVisible();
   expect(screen.getByRole('link', { name: '删除家庭' })).toHaveAttribute(
     'href',
-    '/family/privacy#family-deletion',
+    '/family/privacy#family-deletion-title',
   );
 });
 

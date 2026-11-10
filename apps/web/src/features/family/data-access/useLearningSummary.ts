@@ -39,7 +39,6 @@ export function useLearningSummary(csrf: string, childId: string, offset: number
 const pagesRead = 10;
 
 export type ChildRecord = {
-  childId: string;
   problems: ProblemLearningSummary[];
   complete: boolean;
 };
@@ -49,18 +48,21 @@ async function readRecord(childId: string): Promise<ChildRecord> {
   for (let page = 0; page < pagesRead; page++) {
     const summary = await readSummary(childId, page * learningSummaryPageSize);
     problems.push(...summary.problems);
-    if (!summary.hasMore) return { childId, problems, complete: true };
+    if (!summary.hasMore) return { problems, complete: true };
   }
-  return { childId, problems, complete: false };
+  return { problems, complete: false };
 }
 
-// The whole record of each child, one query per child.
+// The whole record of each child, one query per child. A whole record takes
+// several pages to read, so it is not read again each time the window comes
+// back into focus; the overview reads it afresh whenever it opens.
 export function useChildRecords(csrf: string, childIds: readonly string[]) {
   return useQueries({
     queries: childIds.map((childId) => ({
       queryKey: [key, 'record', csrf, childId],
       retry: false,
       gcTime: 0,
+      refetchOnWindowFocus: false,
       queryFn: () => readRecord(childId),
     })),
   });

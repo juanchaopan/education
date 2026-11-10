@@ -1,26 +1,12 @@
-import type { AiConsentView } from '@education/contracts';
 import { expect, it } from 'vitest';
+import { consentPolicy, consentView, type ConsentPolicy } from '../../../test/consent-policy';
 import { consentBadge } from './consent-badge';
 
-type Policy = AiConsentView['policies'][number];
 const policy = (
-  state: Policy['state'],
-  availability: Policy['availability'] = 'ready',
-): Policy => ({
-  scope: 'openai-tutoring',
-  policyVersion: 1,
-  title: 'AI 解题提示',
-  provider: 'OpenAI',
-  inputs: '',
-  purpose: '',
-  appRetention: '',
-  providerRetention: '',
-  revision: null,
-  state,
-  availability,
-});
-const badge = (...policies: Policy[]) =>
-  consentBadge({ reauthenticationRequired: false, tutoringBudget: 'unset', policies }).text;
+  state: ConsentPolicy['state'],
+  availability: ConsentPolicy['availability'] = 'ready',
+) => consentPolicy({ state, availability });
+const badge = (...policies: ConsentPolicy[]) => consentBadge(consentView(...policies)).text;
 
 it('says nothing is sent while no service is switched on, whatever was granted', () => {
   expect(badge(policy('granted', 'unavailable'), policy('granted', 'unavailable'))).toBe(

@@ -1,13 +1,7 @@
-/* One card of rows, each row the whole width of the card and a full touch
-   target. */
+/* The rows sit close to the card's edge; each row is the whole width of the
+   card and a full touch target. */
 .settings {
   padding: var(--space-2);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-lg);
-  background-color: var(--surface);
-  background-image: var(--texture);
-  box-shadow: var(--shadow);
-  backdrop-filter: var(--surface-filter);
 }
 .list {
   margin: 0;
@@ -40,16 +34,6 @@
 }
 .label {
   flex: 1;
-}
-.badge {
-  padding: 0 var(--space-3);
-  border-radius: var(--radius-pill);
-  background: var(--accent-soft);
-  color: var(--ink);
-  font-size: var(--text-sm);
-}
-.badge[data-tone='ok'] {
-  background: color-mix(in srgb, var(--ok) 18%, var(--surface));
 }
 .chevron {
   color: var(--ink-soft);

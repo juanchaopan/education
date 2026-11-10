@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import { Avatar } from '../../../shared/ui/Avatar';
 import { Button } from '../../../shared/ui/Button';
 import { Card } from '../../../shared/ui/Card';
@@ -16,7 +17,6 @@ export type LearningTotals = {
 };
 
 type Props = {
-  childId: string;
   nickname: string;
   // The child's place in the family's list, which picks the avatar's colour.
   place: number;
@@ -29,8 +29,8 @@ type Props = {
 // One child at a glance: how many problems they have tried, how many times
 // they finished one on their own and how many after a hint. Finishing after
 // a hint is never counted as finishing alone.
-export function ChildDigest({ childId, nickname, place, totals, loading, failed, onRetry }: Props) {
-  const titleId = `child-digest-${childId}`;
+export function ChildDigest({ nickname, place, totals, loading, failed, onRetry }: Props) {
+  const titleId = useId();
   return (
     <Card aria-labelledby={titleId} className={styles.card}>
       <h2 id={titleId} className={styles.name}>

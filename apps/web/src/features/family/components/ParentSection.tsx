@@ -14,7 +14,7 @@ type Props = {
 // actions it leads with, and its cards.
 export function ParentSection({ titleId, title, actions, children }: Props) {
   return (
-    <section aria-labelledby={titleId} className={styles.section}>
+    <section aria-labelledby={titleId}>
       <header className={styles.header}>
         <div>
           <p className={styles.space}>家长空间</p>

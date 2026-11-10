@@ -18,13 +18,3 @@
   min-width: 0;
   overflow-wrap: anywhere;
 }
-.badge {
-  padding: 0 var(--space-3);
-  border-radius: var(--radius-pill);
-  background: var(--accent-soft);
-  color: var(--ink);
-  font-size: var(--text-sm);
-}
-.badge[data-verified='true'] {
-  background: color-mix(in srgb, var(--ok) 18%, var(--surface));
-}

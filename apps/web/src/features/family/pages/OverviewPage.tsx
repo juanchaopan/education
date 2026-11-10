@@ -13,7 +13,7 @@ import { useChildRecords, type ChildRecord } from '../data-access/useLearningSum
 import { useChildrenPractice } from '../data-access/usePractice';
 import { useRegistrationKey } from '../data-access/useRegistrationKey';
 import { FamilyCodePanel } from './FamilyCodePanel';
-import { AssignedPractice, ReviewIdeas } from './OverviewPractice';
+import { AssignedPractice, ReviewIdeas, type ChildActivity } from './OverviewPractice';
 import styles from './OverviewPage.module.css';
 
 // The first page of the parent space: the family code and the way to invite a
@@ -33,7 +33,7 @@ export function OverviewPage({ csrf }: { csrf: string }) {
             loading={registration.isPending}
             failed={registration.isError}
           />
-          <LinkButton to="/family/children#invite">
+          <LinkButton to="/family/children#registration-key-title">
             <Icon name="key" />
             邀请孩子
           </LinkButton>
@@ -69,33 +69,35 @@ function totalsOf({ problems, complete }: ChildRecord): LearningTotals {
 }
 
 // Each child's card, then what is worth practising again beside what is
-// already planned. Every child's record and practice are read side by side.
+// already planned. Every child's record and practice are read side by side,
+// and each child is kept together with its own record and practice.
 function FamilyActivity({ csrf, family }: { csrf: string; family: readonly ChildAccess[] }) {
   const ids = family.map(({ id }) => id);
   const records = useChildRecords(csrf, ids);
   const practice = useChildrenPractice(csrf, ids);
+  const activity: ChildActivity[] = family.map((child, place) => ({
+    child,
+    record: records[place]!,
+    practice: practice[place]!,
+  }));
   return (
     <>
       <div className={styles.children}>
-        {family.map((child, place) => {
-          const record = records[place]!;
-          return (
-            <ChildDigest
-              key={child.id}
-              childId={child.id}
-              nickname={child.nickname}
-              place={place}
-              totals={record.data && totalsOf(record.data)}
-              loading={record.isPending}
-              failed={record.isError}
-              onRetry={() => void record.refetch()}
-            />
-          );
-        })}
+        {activity.map(({ child, record }, place) => (
+          <ChildDigest
+            key={child.id}
+            nickname={child.nickname}
+            place={place}
+            totals={record.data && totalsOf(record.data)}
+            loading={record.isPending}
+            failed={record.isError}
+            onRetry={() => void record.refetch()}
+          />
+        ))}
       </div>
       <div className={styles.pair}>
-        <ReviewIdeas csrf={csrf} family={family} records={records} practice={practice} />
-        <AssignedPractice family={family} practice={practice} />
+        <ReviewIdeas csrf={csrf} activity={activity} />
+        <AssignedPractice activity={activity} />
       </div>
     </>
   );
