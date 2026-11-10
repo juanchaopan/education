@@ -1,6 +1,13 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { alertLabel, checkStaging, githubIssues, runAlerts, syncAlert } from './staging-alert.mjs';
+import {
+  alertLabel,
+  checkStaging,
+  githubIssues,
+  measurementLine,
+  runAlerts,
+  syncAlert,
+} from './staging-alert.mjs';
 
 const origin = 'https://staging.example';
 const release = 'a'.repeat(40);
@@ -44,6 +51,7 @@ test('a database that stays unavailable, a missing revision or no answer is unhe
   );
   assert.equal(closed.healthy, false);
   assert.equal(closed.problems.length, 2);
+  assert.match(closed.problems[0], /returned HTTP 503/);
   assert.equal(closed.measurements.filter(({ path }) => path === '/health/ready').length, 5);
 
   const unreachable = await checkStaging(
@@ -55,6 +63,34 @@ test('a database that stays unavailable, a missing revision or no answer is unhe
   );
   assert.equal(unreachable.healthy, false);
   assert.match(unreachable.problems.join('\n'), /fetch failed/);
+});
+
+test('staging that never answers in time is reported as timing out, not as an error status', async () => {
+  const timeout = new DOMException('The operation was aborted due to timeout', 'TimeoutError');
+  const result = await checkStaging(
+    origin,
+    site({ '/health/ready': timeout, '/version.json': timeout }),
+  );
+  assert.equal(result.healthy, false);
+  assert.deepEqual(result.problems, [
+    '就绪检查失败：Staging was not ready after 5 attempts: 5 timed out after 5000 ms',
+    '版本文件读取失败：The operation was aborted due to timeout',
+  ]);
+  assert.deepEqual(
+    result.measurements.map(({ path, status }) => [path, status]),
+    [...Array(5).fill(['/health/ready', 'timeout']), ['/version.json', 'timeout']],
+  );
+});
+
+test('an alert lists each request by what came back, or that nothing did, and its time', () => {
+  assert.equal(
+    measurementLine({ path: '/health/ready', status: 'timeout', ms: 5003 }),
+    '/health/ready：超时，没有回答，5003 ms',
+  );
+  assert.equal(
+    measurementLine({ path: '/version.json', status: 200, ms: 87 }),
+    '/version.json：HTTP 200，87 ms',
+  );
 });
 
 const job = (name, conclusion, steps) => ({ name, conclusion, steps });
@@ -93,6 +129,23 @@ test('a skipped job says nothing, so a pull request run cannot close a release a
     ],
   );
   assert.deepEqual(runAlerts('staging-backup', 'success', [job('backup', 'skipped')]), []);
+});
+
+test('the job reporting its own run is still running and says nothing about itself', () => {
+  assert.deepEqual(
+    outcomes(
+      runAlerts('staging', 'failure', [
+        job('prepare', 'success'),
+        job('deploy', 'failure'),
+        job('alerts / report', null),
+      ]),
+    ),
+    [
+      ['staging/prepare', false],
+      ['staging/deploy', true],
+      ['staging', false],
+    ],
+  );
 });
 
 test('a run that never started alerts the whole workflow', () => {

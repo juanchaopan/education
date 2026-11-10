@@ -109,3 +109,21 @@ jobs:
         run: >-
           test "$APP" = success && test "$VISUAL" = success && test "$DUPLICATION" = success &&
           test "$ACCOUNTS" = success
+  # Main's CI, started by a push or a dispatch, hands its run to staging once
+  # every check passed. The run that completes is often one the auto-merge
+  # bot's token started, and its completion starts no workflow_run; a dispatch
+  # is the one event that token can start. Staging reads the `ci` job of this
+  # run, which has passed by then, so this job stays outside the gate, and it
+  # releases the commit only while it is still the head of main.
+  release-staging:
+    needs: ci
+    if: vars.STAGING_ENABLED == 'true' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: write
+    steps:
+      - name: Dispatch the staging release of this run
+        run: gh workflow run staging.yml --repo "$GITHUB_REPOSITORY" --ref main -f ci_run="$GITHUB_RUN_ID"
+        env:
+          GH_TOKEN: ${{ github.token }}

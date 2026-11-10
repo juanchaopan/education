@@ -16,8 +16,7 @@ export async function checkStaging(origin, { fetcher = fetch, wait } = {}) {
     problems.push(`就绪检查失败：${error.message}`);
   }
   try {
-    const response = await timedGet(fetcher, origin, '/version.json', measurements);
-    const body = response.status === 200 ? await response.json() : await response.arrayBuffer();
+    const { body } = await timedGet(fetcher, origin, '/version.json', measurements);
     if (!releaseRevision.test(body?.revision ?? '')) problems.push('版本文件没有有效的发布版本号');
   } catch (error) {
     problems.push(`版本文件读取失败：${error.message}`);
@@ -25,17 +24,25 @@ export async function checkStaging(origin, { fetcher = fetch, wait } = {}) {
   return { healthy: problems.length === 0, measurements, problems };
 }
 
+// One probe request as an alert lists it: what came back, or that nothing
+// came back in time, and how long it took.
+export function measurementLine({ path, status, ms }) {
+  const answer = status === 'timeout' ? '超时，没有回答' : `HTTP ${status}`;
+  return `${path}：${answer}，${ms} ms`;
+}
+
 function failedStep({ name, steps = [] }) {
   const step = steps.find((candidate) => failed.has(candidate.conclusion));
   return step ? `${name} → ${step.name}` : name;
 }
 
-// What a completed staging workflow run says, one alert source per job: a job
-// that failed raises its alert and a job that succeeded clears its own, so a
+// What a staging workflow run says, one alert source per job: a job that
+// failed raises its alert and a job that succeeded clears its own, so a
 // failure in one job is closed only by that job working again. A job that was
 // skipped, such as the release job of a run started by a pull request, says
-// nothing. A run that failed before any job started is an alert of the whole
-// workflow, cleared by the next run in which a job succeeds.
+// nothing, and so does a job still running, such as the job that reports the
+// run it belongs to. A run that failed before any job started is an alert of
+// the whole workflow, cleared by the next run in which a job succeeds.
 export function runAlerts(workflow, conclusion, jobs) {
   const alerts = jobs.flatMap((job) => {
     const source = `${workflow}/${job.name}`;
