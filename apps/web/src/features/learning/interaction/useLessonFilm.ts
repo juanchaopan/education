@@ -13,6 +13,8 @@ type Options<Shot extends string> = {
   // Hears of every scene the child reaches, as it is reached.
   onArrive?: (shot: Shot) => void;
   createAudio?: () => HTMLAudioElement;
+  // The lesson's sound is off: the lines and tones play without it.
+  muted?: boolean;
 };
 
 type Voice = Readonly<{
@@ -56,7 +58,7 @@ function voiceOf(narration: ReturnType<typeof useNarration>, telling: boolean): 
 // The film's tones, and its runs of lines: each new run tells whether it is
 // still the one on screen. Leaving the lesson ends the run on screen and
 // closes the tones.
-function useFilmRuns() {
+function useFilmRuns(muted: boolean) {
   const [chime] = useState(() => createChime());
   const runs = useRef(0);
   useEffect(() => {
@@ -66,6 +68,7 @@ function useFilmRuns() {
       chime.close();
     };
   }, [chime]);
+  useEffect(() => chime.mute(muted), [chime, muted]);
   const [begin] = useState(() => () => {
     const run = ++runs.current;
     return () => runs.current === run;
@@ -87,13 +90,13 @@ export function useLessonFilm<
   Move,
 >(
   story: FilmStory<State, Shot, Line, Move>,
-  { onArrive = () => {}, createAudio }: Options<Shot> = {},
+  { onArrive = () => {}, createAudio, muted = false }: Options<Shot> = {},
 ): LessonFilm<State, Shot, Move> {
   const [state, setState] = useState<State>(story.opening);
   const [caption, setCaption] = useState<string>();
   const [telling, setTelling] = useState(false);
-  const narration = useNarration(state.shot, createAudio);
-  const { chime, begin } = useFilmRuns();
+  const narration = useNarration(state.shot, createAudio, muted);
+  const { chime, begin } = useFilmRuns(muted);
   const shown = useRef<FilmScene<Shot>>('opening');
   const arrived = useLatest(onArrive);
 
