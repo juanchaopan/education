@@ -1,8 +1,12 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import { inCard } from './story-card';
 import { VerificationNotice } from './VerificationNotice';
+
 const meta = {
   component: VerificationNotice,
+  decorators: [inCard],
   args: {
+    email: 'parent@example.test',
     onSend: () => {},
     onRefresh: () => {},
     status: { enabled: true, status: 'not-sent', retryAfter: 0, canRetry: false },
@@ -26,5 +30,11 @@ export const Unknown: Story = {
 export const Expired: Story = {
   args: { status: { enabled: true, status: 'expired', retryAfter: 0, canRetry: false } },
 };
+export const Verified: Story = {
+  args: { status: { enabled: true, status: 'verified', retryAfter: 0, canRetry: false } },
+};
 export const Loading: Story = { args: { loading: true, status: undefined } };
 export const Error: Story = { args: { error: '连接中断，请先刷新状态并检查收件箱。' } };
+export const LongEmail: Story = {
+  args: { email: 'a-long-synthetic-family-email-address-for-layout@example.test' },
+};

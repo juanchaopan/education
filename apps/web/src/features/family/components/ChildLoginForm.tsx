@@ -5,7 +5,7 @@ import { Icon } from '../../../shared/ui/Icon';
 import { Notice } from '../../../shared/ui/Notice';
 import { Switch } from '../../../shared/ui/Switch';
 import { TextField } from '../../../shared/ui/TextField';
-import { AccountLayout } from './AccountLayout';
+import { IntroductionLayout } from './IntroductionLayout';
 
 export type ChildLoginFields = { familyCode: string; nickname: string; pin: string };
 export type ChildLoginFormProps = ChildLoginFields & {
@@ -19,7 +19,7 @@ export type ChildLoginFormProps = ChildLoginFields & {
 
 export function ChildLoginForm(props: ChildLoginFormProps) {
   return (
-    <AccountLayout
+    <IntroductionLayout
       titleId="child-login-title"
       title="孩子登录"
       introduction={
@@ -33,7 +33,7 @@ export function ChildLoginForm(props: ChildLoginFormProps) {
       }
     >
       <ChildLoginFields {...props} />
-    </AccountLayout>
+    </IntroductionLayout>
   );
 }
 

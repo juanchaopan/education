@@ -1,0 +1,30 @@
+/* A long address wraps rather than pushing the card wider. */
+.account {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  font-weight: 700;
+}
+.mail {
+  color: var(--ink-soft);
+  font-size: 1.2em;
+}
+.address {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.badge {
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-pill);
+  background: var(--accent-soft);
+  color: var(--ink);
+  font-size: var(--text-sm);
+}
+.badge[data-verified='true'] {
+  background: color-mix(in srgb, var(--ok) 18%, var(--surface));
+}

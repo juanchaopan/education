@@ -1,20 +1,106 @@
+/* The scene and the card share the screen's height side by side. */
 .layout {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
-  gap: var(--space-8);
-  padding: var(--space-6) 0;
-  align-items: start;
+  grid-template-columns: 1fr 1fr;
+  min-block-size: 100dvh;
 }
-.introduction {
-  padding: var(--space-5);
-  color: var(--ink-soft);
+
+/* The backdrop fills its half and fades into the page towards the card, so
+   the two halves read as one place. */
+.scene {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
 }
-.introduction h2 {
-  color: var(--ink);
+.scene::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to right, transparent 55%, var(--bg));
+}
+.backdrop {
+  position: absolute;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+}
+
+/* The character stands on the table in the scene and breathes a little. The
+   breathing layer carries no filter, so the page stays cheap to draw while
+   it waits. */
+.teacher {
+  position: absolute;
+  z-index: 1;
+  inset-inline-start: 50%;
+  inset-block-end: 6%;
+  block-size: 58%;
+  translate: -50% 0;
+  transform-origin: 50% 100%;
+  animation: breathe 4s ease-in-out infinite;
+}
+@keyframes breathe {
+  50% {
+    scale: 1.015 0.985;
+  }
+}
+
+.side {
+  display: grid;
+  place-items: center;
+  padding: var(--space-8) var(--space-6);
+}
+.card {
+  inline-size: 100%;
+  max-inline-size: 28rem;
+}
+.title {
+  margin: var(--space-4) 0 var(--space-5);
   font-size: var(--text-xl);
 }
-@media (max-width: 600px) {
-  .card {
-    order: -1;
+.body > :first-child {
+  margin-top: 0;
+}
+.body > :last-child {
+  margin-bottom: 0;
+}
+
+/* The ways on from the page, spread across the foot of the card. */
+.footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-2) var(--space-4);
+  margin-top: var(--space-5);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--line);
+  color: var(--primary);
+  font-weight: 700;
+}
+
+/* A phone or a tablet in portrait: the scene above, the card pulled up over
+   its lower edge, which now fades downwards into the page. */
+@media (max-width: 56rem) {
+  .layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+  }
+  .scene {
+    block-size: 42dvh;
+    min-block-size: 15rem;
+  }
+  .scene::after {
+    background: linear-gradient(transparent 55%, var(--bg));
+  }
+  .teacher {
+    inset-block-end: 14%;
+    block-size: 72%;
+  }
+  .side {
+    position: relative;
+    align-items: start;
+    margin-top: calc(var(--space-10) * -1);
+    padding: 0 var(--space-4) var(--space-8);
   }
 }

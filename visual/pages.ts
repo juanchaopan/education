@@ -1,16 +1,19 @@
 import { expect, type Page } from '@playwright/test';
 import type { ProblemSummary } from '@education/contracts';
-import { longCatalog, serveApi, signedOutApi, type Api } from './api';
+import { longCatalog, serveApi, signedOutApi, unverifiedParentApi, type Api } from './api';
 import { fixClock, waitForFonts, type Theme } from './render';
 
 // One page in one state: where to open it, how the API answers, the heading
 // that shows it has finished rendering that state, a button that must also be
-// ready to press, and the theme it is seen in (the day theme unless named).
+// ready to press, and the theme it is seen in (the day theme unless named). A
+// page that fills in after its heading names the text it shows last, once
+// everything has arrived.
 export type PageState = {
   name: string;
   path: string;
   ready: string;
   pressable?: string;
+  last?: string;
   api?: Api;
   theme?: Theme;
 };
@@ -73,6 +76,13 @@ const dayStates: PageState[] = [
     ready: '创建家长账号',
     api: { 'GET /api/v1/registration-status': { status: 200, json: { enabled: false } } },
   },
+  {
+    name: 'family-unverified',
+    path: '/family',
+    ready: '验证家长邮箱',
+    last: '邮件服务商已接受请求，请查看收件箱和垃圾箱。',
+    api: unverifiedParentApi,
+  },
   { name: 'child-signed-out', path: '/child', ready: '孩子登录' },
   { name: 'child-registration', path: '/join', ready: '加入我的家庭' },
   { name: 'parent-recovery', path: '/family/recover', ready: '找回家长密码' },
@@ -97,8 +107,9 @@ const nightStates = dayStates
 
 export const pageStates = [...dayStates, ...nightStates];
 
-// Opens a page state with a fixed clock and API, and waits until it and its
-// fonts have rendered. Returns the API requests the state did not plan for.
+// Opens a page state with a fixed clock and API, and waits until it, the
+// pictures it loads straight away and its fonts have rendered. Returns the
+// API requests the state did not plan for.
 export async function openPageState(page: Page, state: PageState) {
   await fixClock(page, state.theme);
   const unexpected = await serveApi(page, { ...signedOutApi, ...state.api });
@@ -108,7 +119,11 @@ export async function openPageState(page: Page, state: PageState) {
     await expect(page.getByRole('button', { name: state.pressable })).toBeEnabled({
       timeout: 30_000,
     });
+  if (state.last) await expect(page.getByText(state.last, { exact: true })).toBeVisible();
   await expect(page.locator('html')).toHaveAttribute('data-theme', state.theme ?? 'day');
+  await page.waitForFunction(() =>
+    [...document.images].every((image) => image.complete || image.loading === 'lazy'),
+  );
   await waitForFonts(page);
   return unexpected;
 }

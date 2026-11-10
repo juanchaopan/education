@@ -1,10 +1,15 @@
+import type { ParentSession } from '@education/contracts';
 import { VerificationNotice } from '../components/VerificationNotice';
-import { useVerification, useSendVerification } from '../data-access/useVerification';
-export function VerificationPanel({ csrf }: { csrf: string }) {
-  const status = useVerification(csrf);
-  const send = useSendVerification(csrf);
+import { useSendVerification, useVerification } from '../data-access/useVerification';
+
+// Where the verification mail stands for the signed-in parent, and sending it.
+export function VerificationPanel({ session }: { session: ParentSession }) {
+  const status = useVerification(session.csrfToken);
+  const send = useSendVerification(session.csrfToken);
   return (
     <VerificationNotice
+      email={session.email}
+      verified={session.emailVerified}
       status={status.data}
       loading={status.isPending}
       pending={send.isPending}

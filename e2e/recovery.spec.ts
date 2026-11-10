@@ -14,7 +14,7 @@ test('login links to recovery and identical receipts preserve privacy with expli
   });
   await page.goto('/family');
   await page.getByRole('button', { name: '已有账号？去登录' }).click();
-  await page.getByRole('link', { name: '忘记密码？通过邮箱找回' }).click();
+  await page.getByRole('link', { name: '忘记密码' }).click();
   await page.getByLabel('注册邮箱', { exact: true }).fill('parent@example.test');
   await page.getByRole('button', { name: '发送恢复邮件', exact: true }).click();
   await expect(page.getByRole('status')).toContainText('如果该邮箱已注册');

@@ -31,36 +31,8 @@
   align-items: center;
 }
 
-/* The brand link is a full touch target even when only its mark shows. */
 .brand {
   justify-self: start;
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-3);
-  min-block-size: var(--touch-target);
-  min-inline-size: var(--touch-target);
-  font-family: var(--font-display);
-  font-size: var(--text-lg);
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  white-space: nowrap;
-  text-decoration: none;
-}
-
-/* The brand's mark: a sprout on a rounded block of the primary colour, with
-   the same thick lower edge as the primary button. */
-.mark {
-  display: inline-grid;
-  place-items: center;
-  inline-size: 2.5rem;
-  block-size: 2.5rem;
-  border-radius: var(--radius);
-  color: var(--primary-ink);
-  background: radial-gradient(circle at 30% 25%, var(--primary-hi), var(--primary) 70%);
-  box-shadow:
-    0 3px 0 var(--primary-edge),
-    var(--primary-shadow);
-  font-size: var(--text-lg);
 }
 
 .tabs {
@@ -140,41 +112,6 @@
     clip-path: inset(50%);
     white-space: nowrap;
   }
-}
-
-/* Each part of a page rises into place one after another. */
-.main > * {
-  animation: rise var(--enter) var(--ease-out) both;
-}
-.main > :nth-child(2) {
-  animation-delay: var(--enter-step);
-}
-.main > :nth-child(3) {
-  animation-delay: calc(var(--enter-step) * 2);
-}
-.main > :nth-child(n + 4) {
-  animation-delay: calc(var(--enter-step) * 3);
-}
-
-@keyframes rise {
-  from {
-    opacity: 0;
-    translate: 0 var(--space-4);
-  }
-}
-
-.skip {
-  position: absolute;
-  left: -10000px;
-}
-.skip:focus {
-  left: var(--space-4);
-  top: var(--space-2);
-  padding: var(--space-3) var(--space-4);
-  border-radius: var(--radius);
-  background: var(--surface);
-  box-shadow: var(--shadow);
-  z-index: 10;
 }
 
 @media (max-width: 600px) {

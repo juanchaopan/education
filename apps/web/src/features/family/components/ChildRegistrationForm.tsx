@@ -4,7 +4,7 @@ import { Hint } from '../../../shared/ui/Hint';
 import { Icon } from '../../../shared/ui/Icon';
 import { Notice } from '../../../shared/ui/Notice';
 import { TextField } from '../../../shared/ui/TextField';
-import { AccountLayout } from './AccountLayout';
+import { IntroductionLayout } from './IntroductionLayout';
 
 export type ChildRegistrationFormProps = {
   registrationKey: string;
@@ -18,7 +18,7 @@ export type ChildRegistrationFormProps = {
 
 export function ChildRegistrationForm(props: ChildRegistrationFormProps) {
   return (
-    <AccountLayout
+    <IntroductionLayout
       titleId="child-form-title"
       title="加入我的家庭"
       introduction={
@@ -31,7 +31,7 @@ export function ChildRegistrationForm(props: ChildRegistrationFormProps) {
       }
     >
       <ChildRegistrationFields {...props} />
-    </AccountLayout>
+    </IntroductionLayout>
   );
 }
 

@@ -3,8 +3,8 @@ import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { familyDeletionPhrase } from '@education/contracts';
+import { renderFamilyPage } from '../../../test/family-page';
 import { FamilyDeletionPanel } from './FamilyDeletionPanel';
-import { FamilyPage } from './FamilyPage';
 
 const before = 'a'.repeat(43);
 const renewed = 'b'.repeat(43);
@@ -136,11 +136,7 @@ it('shows why the server could not accept the deletion, or that the outcome is u
 
 it('shows the family page as deleted and lets the parent register a new family', async () => {
   stubFetch();
-  render(
-    <QueryClientProvider client={new QueryClient()}>
-      <FamilyPage />
-    </QueryClientProvider>,
-  );
+  renderFamilyPage();
   const user = userEvent.setup();
   await user.type(await screen.findByLabelText(phraseLabel), familyDeletionPhrase);
   await user.type(screen.getByLabelText(passwordLabel), 'parent-password');

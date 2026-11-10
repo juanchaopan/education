@@ -1,9 +1,8 @@
 import { Button } from '../../../shared/ui/Button';
 import { Form } from '../../../shared/ui/Form';
-import { Hint } from '../../../shared/ui/Hint';
+import { MoreInfo } from '../../../shared/ui/MoreInfo';
 import { Notice } from '../../../shared/ui/Notice';
 import { TextField } from '../../../shared/ui/TextField';
-import { AccountLayout } from './AccountLayout';
 
 export type LoginFormProps = {
   email: string;
@@ -15,23 +14,15 @@ export type LoginFormProps = {
   onSubmit: () => void;
 };
 
+// The parent's sign-in. The field names let a password manager fill it in.
 export function LoginForm(props: LoginFormProps) {
   return (
-    <AccountLayout
-      titleId="login-title"
-      title="家长登录"
-      introduction={
-        <>
-          <h2>欢迎回来，继续陪伴探索</h2>
-          <p>可使用浏览器的密码管理器记住密码。网站不会保存您的明文密码。</p>
-          <p>公共设备使用结束后，请退出账号。</p>
-        </>
-      }
-    >
+    <>
       <Form onSubmit={props.onSubmit} aria-busy={props.pending}>
         <TextField
           id="login-email"
           label="登录邮箱"
+          icon="mail"
           name="username"
           type="email"
           autoComplete="username"
@@ -44,6 +35,7 @@ export function LoginForm(props: LoginFormProps) {
         <TextField
           id="login-password"
           label="登录密码"
+          icon="lock"
           name="password"
           type="password"
           autoComplete="current-password"
@@ -54,10 +46,10 @@ export function LoginForm(props: LoginFormProps) {
         />
         {props.error && <Notice tone="error">{props.error}</Notice>}
         <Button type="submit" disabled={props.pending}>
-          {props.pending ? '正在登录，请稍等…' : '登录'}
+          {props.pending ? '正在登录…' : '登录'}
         </Button>
-        <Hint>账号和学习进度不会因登录状态到期而删除。</Hint>
       </Form>
-    </AccountLayout>
+      <MoreInfo label="用公共设备登录">公共设备使用结束后，请退出账号。</MoreInfo>
+    </>
   );
 }

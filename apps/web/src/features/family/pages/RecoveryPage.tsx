@@ -1,9 +1,13 @@
 import { useState } from 'react';
 import type { RecoveryRequest } from '@education/contracts';
-import { StandaloneLink } from '../../../shared/ui/StandaloneLink';
+import { AccountLayout, type AccountArt } from '../components/AccountLayout';
+import { BackToFamily } from '../components/BackToFamily';
 import { RecoveryForm } from '../components/RecoveryForm';
 import { useRecoveryRequest } from '../data-access/useRecovery';
-export function RecoveryPage() {
+
+// Requests a recovery mail. The address is the only thing kept between
+// attempts; each result is cleared from the request as soon as it is shown.
+export function RecoveryPage({ art }: { art: AccountArt }) {
   const [email, setEmail] = useState('');
   const [received, setReceived] = useState(false);
   const [error, setError] = useState('');
@@ -26,7 +30,12 @@ export function RecoveryPage() {
     );
   };
   return (
-    <>
+    <AccountLayout
+      art={art}
+      titleId="recovery-title"
+      title="找回家长密码"
+      footer={<BackToFamily />}
+    >
       <RecoveryForm
         email={email}
         received={received}
@@ -39,7 +48,6 @@ export function RecoveryPage() {
         }}
         onSubmit={submit}
       />
-      <StandaloneLink to="/family">返回家长空间</StandaloneLink>
-    </>
+    </AccountLayout>
   );
 }

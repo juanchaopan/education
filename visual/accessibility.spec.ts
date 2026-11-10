@@ -114,6 +114,8 @@ eachPage('every control is big enough to tap', touch, async (page) => {
   expect(await smallTargets(page)).toEqual([]);
 });
 
+// The parent's sign-in has no site header, so the child's sign-in is reached
+// through the brand, which leads home.
 test('taps open the parent login and turn the child’s remember switch', async ({
   page,
 }, testInfo) => {
@@ -122,6 +124,7 @@ test('taps open the parent login and turn the child’s remember switch', async 
   await checkPageState(page, signedOut, async () => {
     await page.getByRole('button', { name: '已有账号？去登录' }).tap();
     await expect(page.getByLabel('登录邮箱')).toBeVisible();
+    await page.getByRole('link', { name: '小小探索家首页' }).tap();
     await page.getByRole('link', { name: '孩子空间' }).tap();
     const remember = page.getByRole('switch', { name: '在这台设备上记住家庭码和昵称' });
     const before = await remember.isChecked();

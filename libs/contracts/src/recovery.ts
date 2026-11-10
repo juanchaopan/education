@@ -1,4 +1,5 @@
 import { Type, type Static } from '@sinclair/typebox';
+import { ParentPassword } from './registration.js';
 export const RecoveryRequest = Type.Object(
   {
     email: Type.String({ minLength: 3, maxLength: 254 }),
@@ -10,7 +11,7 @@ export type RecoveryRequest = Static<typeof RecoveryRequest>;
 export const PasswordReset = Type.Object(
   {
     token: Type.String({ pattern: '^[A-Za-z0-9_-]{43}$' }),
-    password: Type.String({ minLength: 15, maxLength: 128 }),
+    password: ParentPassword,
   },
   { additionalProperties: false },
 );

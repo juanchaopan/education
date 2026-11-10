@@ -1,0 +1,51 @@
+.more {
+  color: var(--ink-soft);
+  font-size: var(--text-sm);
+}
+
+/* The "?" and its few words are one control, a full touch target, without
+   the browser's own triangle. */
+.summary {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-block-size: var(--touch-target);
+  padding-inline-end: var(--space-2);
+  border-radius: var(--radius-pill);
+  font-weight: 700;
+  list-style: none;
+  cursor: pointer;
+}
+.summary::-webkit-details-marker {
+  display: none;
+}
+.summary:hover,
+.more[open] > .summary {
+  color: var(--ink);
+}
+
+.icon {
+  font-size: 1.3em;
+  color: var(--accent-ink);
+}
+
+.body {
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  line-height: 1.7;
+  animation: unfold var(--lift) var(--ease-out) both;
+}
+.body > :first-child {
+  margin-top: 0;
+}
+.body > :last-child {
+  margin-bottom: 0;
+}
+
+@keyframes unfold {
+  from {
+    opacity: 0;
+    translate: 0 calc(var(--space-1) * -1);
+  }
+}

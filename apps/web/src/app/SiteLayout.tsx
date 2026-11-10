@@ -1,6 +1,8 @@
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
+import { Brand } from '../shared/ui/Brand';
 import { Icon } from '../shared/ui/Icon';
 import type { IconName } from '../shared/ui/icons';
+import { Frame } from './Frame';
 import { useScrollMemory } from './useScrollMemory';
 import styles from './SiteLayout.module.css';
 
@@ -31,17 +33,9 @@ function SiteLink({ to, icon, label, end, className }: Destination & { className
 export function SiteLayout() {
   useScrollMemory();
   return (
-    <div className={styles.shell}>
-      <a className={styles.skip} href="#main">
-        跳到主要内容
-      </a>
+    <Frame className={styles.shell}>
       <header className={styles.header}>
-        <NavLink to="/" className={styles.brand} aria-label="小小探索家首页">
-          <span className={styles.mark}>
-            <Icon name="sprout" />
-          </span>
-          <span className={styles.brandName}>小小探索家</span>
-        </NavLink>
+        <Brand className={styles.brand} nameClassName={styles.brandName} />
         <nav aria-label="主导航" className={styles.nav}>
           <ul className={styles.tabs}>
             {childPlaces.map((place) => (
@@ -53,9 +47,6 @@ export function SiteLayout() {
           <SiteLink {...parentSpace} className={styles.parent} />
         </nav>
       </header>
-      <main id="main" tabIndex={-1} className={styles.main}>
-        <Outlet />
-      </main>
-    </div>
+    </Frame>
   );
 }

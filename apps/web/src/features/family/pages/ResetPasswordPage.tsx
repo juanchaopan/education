@@ -1,25 +1,24 @@
-import { useEffect, useState } from 'react';
-import { passwordIssue } from '@education/contracts';
-import { Page } from '../../../shared/ui/Page';
+import { useState } from 'react';
+import { PasswordReset, passwordIssue } from '@education/contracts';
+import { Icon } from '../../../shared/ui/Icon';
+import { Notice } from '../../../shared/ui/Notice';
 import { StandaloneLink } from '../../../shared/ui/StandaloneLink';
+import { AccountLayout, type AccountArt } from '../components/AccountLayout';
+import { BackToFamily } from '../components/BackToFamily';
 import { PasswordResetForm } from '../components/PasswordResetForm';
+import { readLinkToken, useForgetLinkToken } from '../data-access/link-token';
 import { usePasswordReset } from '../data-access/useRecovery';
 
-function takeToken() {
-  const value = new URLSearchParams(window.location.hash.slice(1)).get('token') ?? '';
-  return /^[A-Za-z0-9_-]{43}$/.test(value) ? value : '';
-}
-
-export function ResetPasswordPage() {
-  const [token, setToken] = useState(takeToken);
+// Sets a new password from the recovery mail's link. Opening the link changes
+// nothing; only the parent's own submit does.
+export function ResetPasswordPage({ art }: { art: AccountArt }) {
+  const [token, setToken] = useState(() => readLinkToken(PasswordReset.properties.token));
   const [password, setPassword] = useState('');
   const [confirmation, setConfirmation] = useState('');
   const [done, setDone] = useState(false);
   const [error, setError] = useState('');
   const reset = usePasswordReset();
-  useEffect(() => {
-    window.history.replaceState(window.history.state, '', window.location.pathname);
-  }, []);
+  useForgetLinkToken();
   const submit = () => {
     if (reset.isPending || !token) return;
     const issue = passwordIssue(password);
@@ -45,35 +44,40 @@ export function ResetPasswordPage() {
       },
     );
   };
-  return (
+  const footer = (
     <>
-      {done ? (
-        <Page titleId="reset-done-title" title="密码已更新">
-          <p role="status">旧登录状态已失效。请返回家长空间，用新密码登录。</p>
-        </Page>
-      ) : token ? (
-        <PasswordResetForm
-          password={password}
-          confirmation={confirmation}
-          pending={reset.isPending}
-          error={error}
-          onPasswordChange={setPassword}
-          onConfirmationChange={setConfirmation}
-          onSubmit={submit}
-        />
-      ) : (
-        <Page titleId="reset-link-title" title="请从恢复邮件打开">
-          <p role="status">
-            没有有效的恢复链接。刷新后需要从邮件重新打开，打开页面本身不会修改密码。
-          </p>
-        </Page>
-      )}
       {!done && (
-        <p>
-          <StandaloneLink to="/family/recover">重新申请恢复邮件</StandaloneLink>
-        </p>
+        <StandaloneLink to="/family/recover">
+          <Icon name="mail" />
+          重新申请恢复邮件
+        </StandaloneLink>
       )}
-      <StandaloneLink to="/family">返回家长空间</StandaloneLink>
+      <BackToFamily />
     </>
+  );
+  if (done)
+    return (
+      <AccountLayout art={art} titleId="reset-done-title" title="密码已更新" footer={footer}>
+        <Notice tone="success">旧登录状态已失效，请用新密码登录。</Notice>
+      </AccountLayout>
+    );
+  if (!token)
+    return (
+      <AccountLayout art={art} titleId="reset-link-title" title="请从恢复邮件打开" footer={footer}>
+        <p role="status">没有有效的恢复链接。请从邮件重新打开，刷新页面后也需要重新打开。</p>
+      </AccountLayout>
+    );
+  return (
+    <AccountLayout art={art} titleId="reset-title" title="设置新的家长密码" footer={footer}>
+      <PasswordResetForm
+        password={password}
+        confirmation={confirmation}
+        pending={reset.isPending}
+        error={error}
+        onPasswordChange={setPassword}
+        onConfirmationChange={setConfirmation}
+        onSubmit={submit}
+      />
+    </AccountLayout>
   );
 }
