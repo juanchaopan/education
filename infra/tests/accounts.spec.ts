@@ -142,8 +142,9 @@ test('register on A, log in on B, refresh on A, rotate and revoke across instanc
     (cookie) => cookie.name === '__Host-education_session',
   )!;
   expect(oldCookie).toMatchObject({ secure: true, httpOnly: true, sameSite: 'Lax', path: '/' });
+  // A parent who has not verified the email yet sees only the verification step.
   await page.goto('/family');
-  await expect(page.getByRole('heading', { name: '我的家长账号' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '验证家长邮箱' })).toBeVisible();
   await page.reload();
   await expect(page.getByText(email, { exact: true })).toBeVisible();
   const rotated = await context.request.post(`${origin}/api/v1/parents/login`, {
