@@ -1,23 +1,36 @@
 name: staging
+# The auto-merge bot pushes merges with GITHUB_TOKEN, which starts no
+# workflow, and a run it dispatches starts no workflow_run when it completes.
+# Dispatches are the exception, so each step of the release hands over by one:
+# a completed pull request check starts main's CI, and main's CI dispatches
+# this workflow with its run once every check passed. No run waits for CI.
 on:
+  # Checks of main release through their own dispatch, and merge queue checks
+  # belong to no pull request head.
   workflow_run:
     workflows: [ci, ai-review, commits]
     types: [completed]
+    branches-ignore: [main, 'gh-readonly-queue/**']
   workflow_dispatch:
+    inputs:
+      ci_run:
+        description: 留空则发布当前 main（它的 CI 没有通过时先派发 CI）；main 的 CI 通过后自动填入它的运行编号
+        type: string
+        default: ''
 permissions:
   contents: read
   actions: read
-concurrency:
-  group: education-staging
-  cancel-in-progress: false
 jobs:
   configuration:
     if: vars.STAGING_ENABLED != 'true'
     runs-on: ubuntu-latest
     steps:
       - run: echo 'Staging is not enabled. Configure the dedicated project and credentials described in docs/deployment/staging.md; no deployment was attempted.' >> "$GITHUB_STEP_SUMMARY"
+  # Not queued: GitHub keeps only the newest waiting run of a group, and a
+  # dropped pull request check could be the one that sees its merge. Checks
+  # completing together may each start CI; main's CI keeps only the newest.
   prepare:
-    timeout-minutes: 15
+    timeout-minutes: 5
     permissions:
       contents: read
       actions: write
@@ -40,17 +53,24 @@ jobs:
         uses: actions/github-script@v9
         with:
           script: |
-            const { prepareMainRelease } = await import(`${process.env.GITHUB_WORKSPACE}/scripts/staging-trigger.mjs`);
-            const result = await prepareMainRelease({
+            const { selectMainRelease } = await import(`${process.env.GITHUB_WORKSPACE}/scripts/staging-trigger.mjs`);
+            const result = await selectMainRelease({
               api: github.rest, ...context.repo, eventName: context.eventName, payload: context.payload,
               wait: ms => new Promise(resolve => setTimeout(resolve, ms)),
             });
             core.setOutput('sha', result.sha ?? '');
             core.setOutput('ready', String(result.ready));
-            await core.summary.addRaw(`Staging gate: ${result.reason}; no release until exact-main CI passes.\n`).write();
+            const outcome = result.ready ? `releasing ${result.sha}` : 'this run releases nothing';
+            await core.summary.addRaw(`Staging gate: ${result.reason}; ${outcome}.\n`).write();
   deploy:
     needs: prepare
     if: needs.prepare.outputs.ready == 'true'
+    # One release at a time. GitHub keeps only the newest waiting release, so
+    # an older commit never replaces a newer one; runs that release nothing
+    # never queue here.
+    concurrency:
+      group: education-staging
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     timeout-minutes: 20
     environment: staging
@@ -94,3 +114,27 @@ jobs:
           OPENAI_TUTORING_ELIGIBLE: ${{ vars.STAGING_OPENAI_TUTORING_ELIGIBLE || 'false' }}
           OPENAI_TRANSCRIPTION_ELIGIBLE: ${{ vars.STAGING_OPENAI_TRANSCRIPTION_ELIGIBLE || 'false' }}
           AI_MONTHLY_BUDGET_USD: ${{ vars.STAGING_AI_MONTHLY_BUDGET_USD }}
+  # A release that main's CI dispatched completes without starting
+  # staging-alerts, so a run reports its own jobs: every run with a release
+  # and every run whose prepare job failed. A run that only handled a pull
+  # request check leaves the alerts to the next release. Reports run one at a
+  # time per kind, so two runs never open the same alert twice, and a waiting
+  # release report is replaced only by a newer release report.
+  alerts:
+    needs: [prepare, deploy]
+    if: >-
+      ${{ !cancelled() && vars.STAGING_ENABLED == 'true' &&
+      (needs.prepare.result == 'failure' || needs.deploy.result != 'skipped') }}
+    concurrency:
+      group: staging-report-${{ needs.deploy.result == 'skipped' && 'prepare' || 'release' }}
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      actions: read
+      issues: write
+    uses: ./.github/workflows/staging-alert-report.yml
+    with:
+      workflow: ${{ github.workflow }}
+      conclusion: ${{ contains(needs.*.result, 'failure') && 'failure' || 'success' }}
+      run-id: ${{ github.run_id }}
+      run-url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}

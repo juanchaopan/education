@@ -1,0 +1,50 @@
+name: staging-alert-report
+# Opens or closes the staging alerts for the jobs of one workflow run. The
+# staging workflow reports each of its own runs from a last job, and
+# staging-alerts reports completed runs of the other staging workflows and
+# staging runs that never started. The script needs only Node's built-in
+# fetch, so the runner's own Node runs it from a checkout of the scripts
+# folder. New alerts are assigned to STAGING_ALERT_ASSIGNEE, or else to the
+# repository owner.
+on:
+  workflow_call:
+    inputs:
+      workflow:
+        description: Name of the workflow whose run is reported
+        type: string
+        required: true
+      conclusion:
+        description: Conclusion of that run, read only when it has no jobs
+        type: string
+        required: true
+      run-id:
+        type: string
+        required: true
+      run-url:
+        type: string
+        required: true
+permissions:
+  contents: read
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          persist-credentials: false
+          sparse-checkout: scripts
+      - name: Open or close the alerts for the run
+        run: node scripts/staging-alerts.mjs workflow
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          ALERT_ASSIGNEE: ${{ vars.STAGING_ALERT_ASSIGNEE }}
+          WORKFLOW_NAME: ${{ inputs.workflow }}
+          WORKFLOW_CONCLUSION: ${{ inputs.conclusion }}
+          WORKFLOW_RUN_ID: ${{ inputs.run-id }}
+          WORKFLOW_RUN_URL: ${{ inputs.run-url }}
