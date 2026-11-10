@@ -1,5 +1,4 @@
 import type { ButtonHTMLAttributes } from 'react';
-import { classNames } from '../lib/class-names';
 import { Icon } from './Icon';
 import type { IconName } from './icons';
 import styles from './IconButton.module.css';
@@ -11,18 +10,13 @@ type Props = Omit<
   icon: IconName;
   // A button with only an icon still needs a name for screen readers.
   label: string;
-  // Frosted glass in place of a card, for a button laid over a picture.
-  glass?: boolean;
 };
 
-export function IconButton({ icon, label, glass = false, ...button }: Props) {
+// A round card with only an icon, for the site's pages. A button laid into a
+// lesson's painting is a `Dewdrop` instead.
+export function IconButton({ icon, label, ...button }: Props) {
   return (
-    <button
-      {...button}
-      type="button"
-      aria-label={label}
-      className={classNames(styles.button, glass && styles.glass)}
-    >
+    <button {...button} type="button" aria-label={label} className={styles.button}>
       <Icon name={icon} />
     </button>
   );
