@@ -1,7 +1,13 @@
 import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
 import { expectAccessible } from './accessibility';
-import { fixClock, waitForFonts, type Theme } from './render';
+import {
+  expectScreenshot,
+  fixClock,
+  holdStill,
+  waitForPicturesAndFonts,
+  type Theme,
+} from './render';
 
 // Every story of the built Storybook: the component states (normal, empty,
 // loading, failed, long text, hearing a cue again) a page can show.
@@ -54,18 +60,19 @@ test('the feedback and night states are all in Storybook', () => {
 // Opens a story in a theme, checks it against its baseline and runs axe on it.
 async function checkStory(page: Page, story: Entry, theme: Theme) {
   await fixClock(page, theme);
+  await holdStill(page);
   await page.goto(
     `/iframe.html?id=${encodeURIComponent(story.id)}&viewMode=story&globals=theme:${theme}`,
   );
   const root = page.locator('#storybook-root');
   await expect(root.locator('> *').first()).toBeVisible();
   await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
-  await waitForFonts(page);
+  await waitForPicturesAndFonts(page);
   if (feedbackStates.has(story.id))
     await expect(
       root.locator('[role="status"], [role="alert"]').filter({ hasText: /\S/ }).first(),
     ).toBeVisible();
-  await expect(root).toHaveScreenshot(`${story.id}${theme === 'night' ? '--night' : ''}.png`);
+  await expectScreenshot(page, `${story.id}${theme === 'night' ? '--night' : ''}.png`, root);
   await expectAccessible(page, '#storybook-root');
 }
 

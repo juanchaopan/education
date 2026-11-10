@@ -36,12 +36,17 @@ export default defineConfig({
     locale: 'zh-CN',
     timezoneId: 'Asia/Shanghai',
     trace: 'retain-on-failure',
+    // Text is smoothed in grey everywhere. Chromium otherwise smooths text in
+    // colour (subpixel) only where it sits on an opaque layer, which depends
+    // on how the page happens to be split into layers when it is painted.
+    launchOptions: { args: ['--disable-lcd-text'] },
   },
   expect: {
+    // How a screenshot comes to depend on the page alone: visual/render.ts.
     // A lesson scene paints a large picture with many shadowed props, which
-    // the image's software renderer draws slowly; a screenshot may take a few
-    // seconds, and a new baseline needs two identical ones in a row.
-    toHaveScreenshot: { animations: 'disabled', caret: 'hide', maxDiffPixels: 20, timeout: 20_000 },
+    // the image's software renderer draws slowly; a screenshot may take a
+    // few seconds, and a new baseline needs two identical ones in a row.
+    toHaveScreenshot: { caret: 'hide', maxDiffPixels: 20, timeout: 20_000 },
   },
   projects: viewports.flatMap(({ name, device }) => {
     const use = { ...device, defaultBrowserType: 'chromium' as const, deviceScaleFactor: 1 };
