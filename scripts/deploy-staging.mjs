@@ -1,3 +1,4 @@
+import { stagingAiEnv } from './staging-ai-env.mjs';
 import { stagingMailEnv } from './staging-mail-env.mjs';
 import { stagingDatabases } from './staging-database-env.mjs';
 import { execFileSync } from 'node:child_process';
@@ -46,6 +47,7 @@ async function deploy() {
   const teamId = required('STAGING_VERCEL_TEAM_ID');
   const runtimeEnv = {
     ...stagingMailEnv(process.env, required('STAGING_ORIGIN')),
+    ...stagingAiEnv(process.env),
     ...databases.runtimeEnv,
     AUTH_RATE_LIMIT_KEY: required('AUTH_RATE_LIMIT_KEY'),
     PIN_PEPPER: required('PIN_PEPPER'),
