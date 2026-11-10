@@ -68,9 +68,10 @@ test('a child places the garden problem, resumes it and is judged on the counted
     const caption = page.getByRole('region', { name: '菜园天平互动短片' }).getByRole('status');
     await expect(caption).toHaveText(/现在换个条件/);
 
-    // The parent sees the helped answer and the wrong count, apart.
+    // The parent sees the helped answer and the wrong count, apart, in the
+    // learning part of the parent space.
     await signInWithToken(page, baseURL!, parent);
-    await page.goto('/family');
+    await page.goto('/family/learning');
     const summary = page.locator('section[aria-labelledby=learning-summary-title]');
     await summary.getByLabel('选择孩子').selectOption({ label: '小鹿' });
     const problem = summary.getByRole('listitem').filter({ hasText: '一棵青菜有多重' });

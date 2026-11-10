@@ -57,17 +57,19 @@ test('parent can switch children and see the evidence for a review suggestion', 
         sameSite: 'Lax',
       },
     ]);
-    // The overview adds up each child's record without counting hints as
-    // finishing alone.
+    // The overview adds up each child's record without counting a finish
+    // after a hint as finishing alone: one problem, none alone, one after a
+    // hint. The fixture problem is not in the catalogue, so it cannot be
+    // planned and is not offered for another try.
     await page.goto('/family');
     const deer = page.getByRole('region', { name: '小鹿' });
-    await expect(deer.getByText('次提示后完成')).toBeVisible();
-    await expect(page.getByRole('region', { name: '值得再练' })).toContainText('小鹿 · 答错 2 次');
-    await page.goto('/family/learning');
+    await expect(deer.getByRole('definition')).toHaveText(['1', '0', '1']);
+    await expect(page.getByRole('region', { name: '值得再练' })).toContainText('暂时没有。');
+    // The child's card opens that child's record.
+    await deer.getByRole('link', { name: '看学习记录' }).click();
     const panel = page.getByRole('region', { name: '学习摘要' });
     const select = panel.getByLabel('选择孩子');
-    await expect(select).toHaveValue('');
-    await select.selectOption({ label: '小鹿' });
+    await expect(select).toHaveValue(learner);
     await expect(panel.getByRole('heading', { name: 'pattern-practice' })).toBeVisible();
     await expect(panel.getByText('优先复习', { exact: true })).toBeVisible();
     await expect(panel.getByText(/这个版本确认答错 2 次/)).toBeVisible();
