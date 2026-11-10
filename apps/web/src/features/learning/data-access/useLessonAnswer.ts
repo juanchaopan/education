@@ -94,6 +94,8 @@ export function useLessonAnswer(scope: LearningScope, hintIds: readonly string[]
     },
     hint: hints.at(-1),
     hintFailed: hint.isError,
+    // How many of the authored hints the child has still to receive.
+    hintsLeft: hintIds.length - hints.length,
     canHint: round.isSuccess && !hint.isPending && next !== undefined,
     askHint() {
       if (next && round.data && !hint.isPending)

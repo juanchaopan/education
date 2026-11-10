@@ -14,8 +14,11 @@ export type Recording = { audio: Blob; format: TranscriptionFormat };
 // How a recording is ended: by the child letting go of the button, or, when
 // the microphone listens on its own, by the child falling quiet after speaking.
 export type RecordingMode = 'hold' | 'listen';
+// How loud the microphone is while it records, from 0 to about 1.
+export type Loudness = () => number;
 type Events = {
-  onStart(): void;
+  // `level` reads the microphone while it records, where it can be measured.
+  onStart(level?: Loudness): void;
   onStop(recording: Recording): void;
   onFail(reason: RecorderFailure): void;
 };
@@ -99,23 +102,14 @@ function createRecorder({ stream, Recorder, choice }: Microphone) {
 
 // Ends a listening recording once the child has spoken and fallen quiet, or
 // when nobody speaks. Returns how to stop listening.
-function listenFor(
-  host: RecorderHost,
-  stream: MediaStream,
-  now: () => number,
-  end: (how: Ending) => void,
-) {
-  const meter = host.meter?.(stream);
+function listenFor(meter: Meter | undefined, now: () => number, end: (how: Ending) => void) {
   if (!meter) return () => {};
   const heard = createListening(now());
   const timer = setInterval(() => {
     const result = heard(meter.level(), now());
     if (result !== 'listening') end(result === 'spoken' ? 'keep' : 'quiet');
   }, listenEveryMs);
-  return () => {
-    clearInterval(timer);
-    meter.close();
-  };
+  return () => clearInterval(timer);
 }
 
 function outcome(
@@ -139,7 +133,8 @@ function outcome(
 // child may have left before saying anything. A recorder error loses it. The
 // first of these decides the outcome, and the microphone is released as soon
 // as it happens. Returns nothing, with the microphone released, when the
-// browser refuses to record in the chosen format.
+// browser refuses to record in the chosen format; otherwise how to end it and
+// how loud the microphone is, where it can be measured.
 function record(
   host: RecorderHost,
   microphone: Microphone,
@@ -156,6 +151,7 @@ function record(
   const listeners = new AbortController();
   const startedAt = now();
   const leaving: Ending = mode === 'hold' ? 'keep' : 'interrupted';
+  const meter = host.meter?.(microphone.stream);
   let ending: Ending | undefined;
   let length = 0;
   const end = (how: Ending) => {
@@ -164,12 +160,13 @@ function record(
     length = now() - startedAt;
     clearTimeout(timer);
     stopListening();
+    meter?.close();
     listeners.abort();
     if (recorder.state !== 'inactive') recorder.stop();
     release(microphone.stream);
   };
   const timer = setTimeout(() => end('keep'), transcriptionMaxSeconds * 1000);
-  const stopListening = mode === 'listen' ? listenFor(host, microphone.stream, now, end) : () => {};
+  const stopListening = mode === 'listen' ? listenFor(meter, now, end) : () => {};
   recorder.ondataavailable = (event) => {
     if (event.data.size) chunks.push(event.data);
   };
@@ -191,7 +188,7 @@ function record(
     end('unsupported');
     return;
   }
-  return { end };
+  return { end, level: meter && (() => (ending ? 0 : meter.level())) };
 }
 
 // One short recording at a time, started by the child or by a page that has
@@ -229,7 +226,7 @@ export function createVoiceRecorder(events: Events, host: RecorderHost = browser
       }
       if (typeof microphone === 'string') return events.onFail(microphone);
       session = record(host, microphone, mode, report);
-      if (session) events.onStart();
+      if (session) events.onStart(session.level);
       else events.onFail('unsupported');
     },
     stop() {

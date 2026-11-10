@@ -19,7 +19,7 @@ function setup(microphone = fakeMicrophone(), mode: RecordingMode = 'hold', turn
 
 async function recordAndRelease(result: ReturnType<typeof setup>['result']) {
   await act(async () => void result.current.start());
-  expect(result.current.state).toEqual({ status: 'recording' });
+  expect(result.current.state.status).toBe('recording');
   act(() => result.current.release());
 }
 
@@ -41,6 +41,19 @@ it('records while held, proposes the heard text for correction and confirms only
   act(() => void (confirmed = result.current.confirm()));
   expect(confirmed).toBe('每份是四。');
   expect(result.current.state).toEqual({ status: 'idle' });
+});
+
+it('tells how loud the child is while the button is held, and stops measuring on letting go', async () => {
+  vi.mocked(requestTranscription).mockReturnValue(new Promise(() => {}));
+  const { result, sound } = setup();
+  await act(async () => void result.current.start());
+  const { state } = result.current;
+  const level = state.status === 'recording' ? state.level : undefined;
+  sound.level = 0.08;
+  expect(level?.()).toBe(0.08);
+  act(() => result.current.release());
+  expect(sound.closed).toBe(true);
+  expect(level?.()).toBe(0);
 });
 
 it('shows recognition under way as soon as the child lets go', async () => {
@@ -116,7 +129,7 @@ it('lets one speaker at a time use the lesson’s microphone', async () => {
   const held = setup(fakeMicrophone(), 'hold', turn);
   const other = setup(fakeMicrophone(), 'hold', turn);
   await act(async () => void listening.result.current.start());
-  expect(listening.result.current.state).toEqual({ status: 'recording' });
+  expect(listening.result.current.state.status).toBe('recording');
   expect(held.result.current.blocked).toBe(false);
 
   await act(async () => void held.result.current.start());

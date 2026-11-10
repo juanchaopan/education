@@ -3,6 +3,7 @@ import { usesMicrophone, type MicrophoneTurn } from '../voice/microphone-turn';
 import {
   browserHost,
   createVoiceRecorder,
+  type Loudness,
   type RecorderFailure,
   type RecorderHost,
   type RecordingMode,
@@ -11,8 +12,11 @@ import { createAiHelpRequest } from './ai-help-request';
 import type { LearningScope } from './learning-request';
 import { requestTranscription } from './transcription-request';
 
+// A recording under way carries how loud the microphone is, where it can be
+// measured, for a meter that moves with the child's voice.
 export type VoiceState =
-  | { status: 'idle' | 'starting' | 'recording' | 'transcribing' | 'guidance' | 'unheard' }
+  | { status: 'idle' | 'starting' | 'transcribing' | 'guidance' | 'unheard' }
+  | { status: 'recording'; level?: Loudness }
   | { status: 'review'; text: string }
   | { status: 'unavailable'; reason: RecorderFailure }
   | { status: 'fallback'; reason: AiHelpFallback };
@@ -20,8 +24,8 @@ export type VoiceState =
 type RequestState = TranscriptionResult | { status: 'pending' | 'guidance' };
 type Target = { scope: LearningScope; stepId: string };
 type Transcriptions = ReturnType<typeof createAiHelpRequest<TranscriptionResult>>;
-// `audio` is the lesson's audio context, which a listening microphone is
-// measured on; `host` stands in for the browser's microphone.
+// `audio` is the lesson's audio context, which the microphone is measured
+// on; `host` stands in for the browser's microphone.
 export type VoiceOptions = {
   host?: RecorderHost;
   turn?: MicrophoneTurn;
@@ -50,7 +54,7 @@ function transcribingRecorder(
 ) {
   return createVoiceRecorder(
     {
-      onStart: () => set({ status: 'recording' }),
+      onStart: (level) => set({ status: 'recording', level }),
       onFail: (reason) => set({ status: 'unavailable', reason }),
       onStop(recording) {
         const step = target();
