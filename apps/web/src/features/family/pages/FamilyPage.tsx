@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { preload } from 'react-dom';
 import type { ParentSession } from '@education/contracts';
 import { Navigate, Route, Routes } from 'react-router-dom';
-import { useScrollToHash } from '../../../shared/lib/useScrollToHash';
+import { useArrivalScroll } from '../../../shared/lib/useArrivalScroll';
 import { Button } from '../../../shared/ui/Button';
 import { Icon } from '../../../shared/ui/Icon';
 import { Loading } from '../../../shared/ui/Loading';
@@ -163,8 +163,8 @@ function Unverified({
 
 // The verified parent's space: the overview at /family and a page for each
 // part of it. An address under /family that names no part leads back to the
-// overview. A link that names a card after a "#", as the overview's links
-// do, brings that card into view.
+// overview. Each part opens at its top, or at the card its address names
+// after a "#", as the overview's links do.
 function ParentSpace({
   session,
   leaving,
@@ -173,7 +173,7 @@ function ParentSpace({
   onLogout,
   onDeleted,
 }: Account & { onDeleted: () => void }) {
-  useScrollToHash();
+  useArrivalScroll();
   const csrf = session.csrfToken;
   return (
     <ParentShell email={session.email} leaving={leaving} onLogout={onLogout}>

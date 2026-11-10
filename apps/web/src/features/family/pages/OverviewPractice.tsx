@@ -31,7 +31,8 @@ const sameProblem = (problem: { id: string; version: number }, id: string, versi
 // Problems a child answered wrongly and has not yet finished alone, as the
 // learning summary marks them, each with a button to plan it as practice. A
 // problem the practice already holds, or that was just planned, says so
-// instead; the practice is read again after each plan.
+// instead; the practice is read again after each plan. A record that could
+// not be read is said to have failed rather than to hold nothing.
 export function ReviewIdeas({
   csrf,
   activity,
@@ -74,26 +75,39 @@ export function ReviewIdeas({
     ),
   );
   const reading = activity.some(({ record }) => record.isPending);
+  const failed = activity.some(({ record }) => record.isError);
   return (
     <ParentCard titleId="review-ideas-title" icon="bulb" title="值得再练">
       <Hint>答错过、还没有独立完成的题。</Hint>
       {reading && <Loading label="正在读取学习记录…" />}
-      {!reading && !rows.length && <p>暂时没有。</p>}
+      {failed && <Notice tone="error">有的学习记录没有读出来，请刷新页面。</Notice>}
+      {!reading && !failed && !rows.length && <p>暂时没有。</p>}
       <ProblemRows icon="bulb" rows={rows} />
       {assign.isError && <Notice tone="error">{assign.error.message}</Notice>}
     </ParentCard>
   );
 }
 
-// The practice planned for each child, the first few of them.
-export function AssignedPractice({ activity }: { activity: readonly ChildActivity[] }) {
-  const rows: ProblemRow[] = activity.flatMap(({ child, practice }) =>
+// Each child's planned problems as rows, taken in turn one child at a time,
+// so the first few shown include every child's practice rather than all of
+// one child's.
+function plannedInTurn(activity: readonly ChildActivity[]): ProblemRow[] {
+  const lists = activity.map(({ child, practice }) =>
     (practice.data?.problems ?? []).map(({ id, version, title }) => ({
       key: `${child.id}/${problemPath(id, version)}`,
       title: title ?? '这道题暂时不可用',
       detail: child.nickname,
     })),
   );
+  const longest = Math.max(0, ...lists.map((list) => list.length));
+  return Array.from({ length: longest }, (_, turn) =>
+    lists.flatMap((list) => list.slice(turn, turn + 1)),
+  ).flat();
+}
+
+// The practice planned for the children, the first few of them.
+export function AssignedPractice({ activity }: { activity: readonly ChildActivity[] }) {
+  const rows = plannedInTurn(activity);
   const reading = activity.some(({ practice }) => practice.isPending);
   const failed = activity.some(({ practice }) => practice.isError);
   return (

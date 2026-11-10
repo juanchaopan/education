@@ -1,4 +1,3 @@
-import { useId } from 'react';
 import { Avatar } from '../../../shared/ui/Avatar';
 import { Button } from '../../../shared/ui/Button';
 import { Card } from '../../../shared/ui/Card';
@@ -17,20 +16,23 @@ export type LearningTotals = {
 };
 
 type Props = {
+  childId: string;
   nickname: string;
   // The child's place in the family's list, which picks the avatar's colour.
   place: number;
   totals?: LearningTotals;
+  // The record is being read, the first time or again after a failure.
   loading?: boolean;
   failed?: boolean;
   onRetry: () => void;
 };
 
 // One child at a glance: how many problems they have tried, how many times
-// they finished one on their own and how many after a hint. Finishing after
-// a hint is never counted as finishing alone.
-export function ChildDigest({ nickname, place, totals, loading, failed, onRetry }: Props) {
-  const titleId = useId();
+// they finished one on their own and how many after a hint, with the way to
+// this child's full record. Finishing after a hint is never counted as
+// finishing alone.
+export function ChildDigest({ childId, nickname, place, totals, loading, failed, onRetry }: Props) {
+  const titleId = `child-digest-${childId}`;
   return (
     <Card aria-labelledby={titleId} className={styles.card}>
       <h2 id={titleId} className={styles.name}>
@@ -47,7 +49,7 @@ export function ChildDigest({ nickname, place, totals, loading, failed, onRetry 
         </p>
       )}
       {totals && <Totals totals={totals} />}
-      <StandaloneLink to="/family/learning">
+      <StandaloneLink to={`/family/learning?child=${encodeURIComponent(childId)}`}>
         <Icon name="chart" />
         看学习记录
       </StandaloneLink>

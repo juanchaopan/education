@@ -70,7 +70,8 @@ function totalsOf({ problems, complete }: ChildRecord): LearningTotals {
 
 // Each child's card, then what is worth practising again beside what is
 // already planned. Every child's record and practice are read side by side,
-// and each child is kept together with its own record and practice.
+// and each child is kept together with its own record and practice. A record
+// read again after a failure shows as being read until it arrives.
 function FamilyActivity({ csrf, family }: { csrf: string; family: readonly ChildAccess[] }) {
   const ids = family.map(({ id }) => id);
   const records = useChildRecords(csrf, ids);
@@ -86,11 +87,12 @@ function FamilyActivity({ csrf, family }: { csrf: string; family: readonly Child
         {activity.map(({ child, record }, place) => (
           <ChildDigest
             key={child.id}
+            childId={child.id}
             nickname={child.nickname}
             place={place}
             totals={record.data && totalsOf(record.data)}
-            loading={record.isPending}
-            failed={record.isError}
+            loading={record.isFetching && !record.data}
+            failed={record.isError && !record.isFetching}
             onRetry={() => void record.refetch()}
           />
         ))}

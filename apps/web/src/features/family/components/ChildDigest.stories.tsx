@@ -13,6 +13,7 @@ const meta = {
     ),
   ],
   args: {
+    childId: '11111111-1111-4111-8111-111111111111',
     nickname: '小米',
     place: 0,
     totals: { problems: 5, independent: 3, assisted: 2, complete: true },

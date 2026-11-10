@@ -1,10 +1,13 @@
 /* A sidebar beside the content, which takes the rest of the width. The
    sidebar's panel is drawn down the whole first column, however long the
-   content, and the sidebar itself stays in view on top of it. */
+   content, and the sidebar itself stays in view on top of it. The whole
+   frame keeps clear of a phone's notch or rounded corners when the phone is
+   turned sideways. */
 .shell {
   display: grid;
   grid-template-columns: 15.5rem minmax(0, 1fr);
   min-block-size: 100dvh;
+  padding-inline: env(safe-area-inset-left) env(safe-area-inset-right);
 }
 .shell::before {
   content: '';
@@ -139,7 +142,8 @@
   .nav {
     position: fixed;
     z-index: 5;
-    inset-inline: var(--space-3);
+    inset-inline: max(var(--space-3), env(safe-area-inset-left))
+      max(var(--space-3), env(safe-area-inset-right));
     inset-block-end: calc(var(--space-3) + env(safe-area-inset-bottom));
     padding: var(--space-1);
     border: 1px solid var(--line);
