@@ -19,6 +19,17 @@ type Story = StoryObj<typeof meta>;
 
 export const Raised: Story = {};
 export const Flat: Story = { args: { flat: true } };
+export const Danger: Story = {
+  args: {
+    tone: 'danger',
+    children: (
+      <>
+        <h2 id="story-card-title">删除家庭</h2>
+        <p>删除后无法恢复。</p>
+      </>
+    ),
+  },
+};
 export const LongText: Story = {
   args: {
     children: (

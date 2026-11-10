@@ -1,7 +1,7 @@
 import { familyExportScope } from '@education/contracts';
 import { Loading } from '../../../shared/ui/Loading';
 import { Notice } from '../../../shared/ui/Notice';
-import { Panel } from './Panel';
+import { ParentCard } from './ParentCard';
 import { ParentPasswordForm } from './ParentPasswordForm';
 import { ScopeList } from './ScopeList';
 
@@ -15,11 +15,12 @@ type Props = {
   onExport: () => void;
 };
 
-// The password field and its button are named for the export, so they stay
-// distinct from the other password confirmations on the parent page.
+// What the file holds and leaves out is said before the password is asked
+// for. The password field and its button are named for the export, so they
+// stay distinct from the other password confirmations on the same page.
 export function FamilyExportCard(props: Props) {
   return (
-    <Panel titleId="family-export-title" title="导出家庭数据">
+    <ParentCard titleId="family-export-title" icon="download" title="导出家庭数据">
       <p>
         把本家庭的数据保存成一个 JSON
         文件，可以用文本编辑器打开。文件在下载时生成，服务器不保留副本。
@@ -28,9 +29,9 @@ export function FamilyExportCard(props: Props) {
       <ScopeList title="文件不包含" items={familyExportScope.excludes} />
       {props.preparing && <Loading label="正在准备导出文件…" />}
       {props.saved && (
-        <p role="status">
+        <Notice tone="success">
           已下载 {props.saved}。文件里有孩子的学习记录，请妥善保管，不要随意转发。
-        </p>
+        </Notice>
       )}
       {props.error && <Notice tone="error">{props.error}</Notice>}
       <ParentPasswordForm
@@ -43,6 +44,6 @@ export function FamilyExportCard(props: Props) {
         onChange={props.onPassword}
         onSubmit={props.onExport}
       />
-    </Panel>
+    </ParentCard>
   );
 }

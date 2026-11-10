@@ -1,11 +1,13 @@
 import type { ChildAccess, FamilyChildren } from '@education/contracts';
-import { Actions } from '../../../shared/ui/Actions';
+import { Avatar } from '../../../shared/ui/Avatar';
 import { Button } from '../../../shared/ui/Button';
+import { Icon } from '../../../shared/ui/Icon';
 import { Loading } from '../../../shared/ui/Loading';
 import { Notice } from '../../../shared/ui/Notice';
 import { ChildPinResetForm } from './ChildPinResetForm';
-import { Panel } from './Panel';
+import { ParentCard } from './ParentCard';
 import { ParentPasswordForm } from './ParentPasswordForm';
+import styles from './ChildAccessCard.module.css';
 
 export type ChildAccessCardProps = {
   status?: FamilyChildren;
@@ -27,21 +29,26 @@ export type ChildAccessCardProps = {
   onRefresh: () => void;
 };
 
+// The family's children, each with the way to give them a new PIN. Resetting
+// is a second step that says what it signs out before it is confirmed.
 export function ChildAccessCard(props: ChildAccessCardProps) {
   const { loading, pending } = props;
   return (
-    <Panel titleId="child-access-title" title="孩子登录管理">
-      <p>孩子忘记 PIN 或需要退出旧设备时，可以在这里重新设置。</p>
+    <ParentCard
+      titleId="child-access-title"
+      icon="users"
+      title="孩子登录管理"
+      action={
+        <Button variant="text" disabled={loading || pending} onClick={props.onRefresh}>
+          刷新孩子状态
+        </Button>
+      }
+    >
       {loading && <Loading label="正在确认孩子状态…" />}
       <AccessContent {...props} />
       {props.error && <Notice tone="error">{props.error}</Notice>}
       {props.notice && <Notice tone="success">{props.notice}</Notice>}
-      <Actions>
-        <Button disabled={loading || pending} onClick={props.onRefresh}>
-          刷新孩子状态
-        </Button>
-      </Actions>
-    </Panel>
+    </ParentCard>
   );
 }
 
@@ -49,7 +56,7 @@ function AccessContent(props: ChildAccessCardProps) {
   const { status, loading, pending, selected } = props;
   if (!status || loading) return null;
   if (!status.children.length)
-    return <p role="status">还没有关联的孩子。先生成注册 KEY，再让孩子完成注册。</p>;
+    return <p role="status">还没有关联的孩子。生成注册 KEY，邀请孩子加入家庭。</p>;
   if (status.reauthenticationRequired)
     return (
       <>
@@ -62,7 +69,7 @@ function AccessContent(props: ChildAccessCardProps) {
           onChange={props.onPassword}
           onSubmit={props.onConfirm}
         />
-        <ChildChoices {...props} disabled />
+        <ChildRows {...props} disabled />
       </>
     );
   if (selected)
@@ -78,17 +85,24 @@ function AccessContent(props: ChildAccessCardProps) {
         onCancel={props.onCancel}
       />
     );
-  return <ChildChoices {...props} disabled={pending} />;
+  return <ChildRows {...props} disabled={pending} />;
 }
 
-function ChildChoices(props: ChildAccessCardProps & { disabled: boolean }) {
+function ChildRows(props: ChildAccessCardProps & { disabled: boolean }) {
   return (
-    <ul>
-      {props.status?.children.map((child) => (
-        <li key={child.id}>
-          <p>{child.nickname}</p>
-          <Button disabled={props.disabled} onClick={() => props.onSelect(child)}>
-            为{child.nickname}重置 PIN
+    <ul className={styles.children}>
+      {props.status?.children.map((child, place) => (
+        <li key={child.id} className={styles.child}>
+          <Avatar name={child.nickname} place={place} />
+          <span className={styles.nickname}>{child.nickname}</span>
+          <Button
+            variant="secondary"
+            aria-label={`为${child.nickname}重置 PIN`}
+            disabled={props.disabled}
+            onClick={() => props.onSelect(child)}
+          >
+            <Icon name="lock" />
+            重置 PIN
           </Button>
         </li>
       ))}

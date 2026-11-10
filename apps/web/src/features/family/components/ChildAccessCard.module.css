@@ -1,0 +1,22 @@
+.children {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+/* Each child on a row: the avatar, the nickname, and the reset at the end. */
+.child {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+}
+.child + .child {
+  border-top: 1px dashed var(--line);
+}
+.nickname {
+  flex: 1;
+  min-width: 0;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}

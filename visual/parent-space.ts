@@ -15,6 +15,10 @@ const xiaomi = '11111111-1111-4111-8111-111111111111';
 const lele = '22222222-2222-4222-8222-222222222222';
 const ok = <T>(json: T) => ({ status: 200, json });
 
+// The child whose learning record has problems in it, for opening the
+// learning part on that record.
+export const recordedChild = xiaomi;
+
 const session: ParentSession = {
   role: 'parent',
   email: 'a-long-synthetic-family-email-address@example.test',

@@ -1,7 +1,8 @@
 import { familyDeletionPhrase, familyDeletionScope } from '@education/contracts';
+import { DangerZone } from '../../../shared/ui/DangerZone';
 import { Notice } from '../../../shared/ui/Notice';
 import { TextField } from '../../../shared/ui/TextField';
-import { Panel } from './Panel';
+import { ParentCard } from './ParentCard';
 import { ParentPasswordForm } from './ParentPasswordForm';
 import { ScopeList } from './ScopeList';
 
@@ -16,12 +17,12 @@ type Props = {
   onDelete: () => void;
 };
 
-// Deleting cannot be undone, so the card says what goes and what stays before
-// asking for anything, the button stays disabled until the parent has typed
-// the phrase exactly, and it takes the danger look.
+// Deleting cannot be undone, so the card is drawn in the danger colours, says
+// what goes and what stays before asking for anything, and keeps its button
+// disabled until the parent has typed the phrase exactly.
 export function FamilyDeletionCard(props: Props) {
   return (
-    <Panel titleId="family-deletion-title" title="删除家庭">
+    <ParentCard titleId="family-deletion-title" icon="trash" title="删除家庭" tone="danger">
       <p>
         删除后无法恢复，所有设备上的家长和孩子都会立即退出登录。需要保留学习记录的，请先导出家庭数据。
       </p>
@@ -33,30 +34,32 @@ export function FamilyDeletionCard(props: Props) {
         </Notice>
       )}
       {props.error && <Notice tone="error">{props.error}</Notice>}
-      <ParentPasswordForm
-        id="deletion-parent-password"
-        label="删除前输入家长密码"
-        hint="输入确认短语和家长密码后，家庭会立即被永久删除。"
-        submitLabel="永久删除家庭"
-        pendingLabel="正在删除…"
-        password={props.password}
-        pending={props.pending}
-        ready={props.phrase === familyDeletionPhrase}
-        destructive
-        onChange={props.onPassword}
-        onSubmit={props.onDelete}
-      >
-        <TextField
-          id="deletion-phrase"
-          label={`输入“${familyDeletionPhrase}”确认`}
-          autoComplete="off"
-          maxLength={32}
-          required
-          value={props.phrase}
-          onChange={(event) => props.onPhrase(event.target.value)}
-          disabled={props.pending}
-        />
-      </ParentPasswordForm>
-    </Panel>
+      <DangerZone>
+        <ParentPasswordForm
+          id="deletion-parent-password"
+          label="删除前输入家长密码"
+          hint="输入确认短语和家长密码后，家庭会立即被永久删除。"
+          submitLabel="永久删除家庭"
+          pendingLabel="正在删除…"
+          password={props.password}
+          pending={props.pending}
+          ready={props.phrase === familyDeletionPhrase}
+          destructive
+          onChange={props.onPassword}
+          onSubmit={props.onDelete}
+        >
+          <TextField
+            id="deletion-phrase"
+            label={`输入“${familyDeletionPhrase}”确认`}
+            autoComplete="off"
+            maxLength={32}
+            required
+            value={props.phrase}
+            onChange={(event) => props.onPhrase(event.target.value)}
+            disabled={props.pending}
+          />
+        </ParentPasswordForm>
+      </DangerZone>
+    </ParentCard>
   );
 }

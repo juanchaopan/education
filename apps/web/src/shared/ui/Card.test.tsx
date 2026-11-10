@@ -23,3 +23,14 @@ it('lies flat or raised and keeps the caller placement class', () => {
   expect(raised.className).toContain('placed');
   expect(raised.className).not.toBe(flat.className);
 });
+
+it('carries the danger tone only when asked', () => {
+  render(
+    <>
+      <Card aria-label="ordinary" />
+      <Card aria-label="danger" tone="danger" />
+    </>,
+  );
+  expect(screen.getByRole('region', { name: 'ordinary' })).not.toHaveAttribute('data-tone');
+  expect(screen.getByRole('region', { name: 'danger' })).toHaveAttribute('data-tone', 'danger');
+});

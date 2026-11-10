@@ -4,6 +4,7 @@ import { Card } from '../../../shared/ui/Card';
 import { Icon } from '../../../shared/ui/Icon';
 import { Loading } from '../../../shared/ui/Loading';
 import { StandaloneLink } from '../../../shared/ui/StandaloneLink';
+import { StatTiles } from './StatTiles';
 import styles from './ChildDigest.module.css';
 
 // A child's record added up over every problem they have tried. A record
@@ -60,22 +61,14 @@ export function ChildDigest({ childId, nickname, place, totals, loading, failed,
 function Totals({ totals }: { totals: LearningTotals }) {
   if (!totals.problems) return <p className={styles.empty}>还没有学习记录。</p>;
   const more = totals.complete ? '' : '+';
-  const tiles = [
-    ['道题', totals.problems],
-    ['次独立完成', totals.independent],
-    ['次提示后完成', totals.assisted],
-  ] as const;
   return (
-    <dl className={styles.tiles}>
-      {tiles.map(([label, count]) => (
-        <div key={label} className={styles.tile}>
-          <dt className={styles.label}>{label}</dt>
-          <dd className={styles.count}>
-            {count}
-            {more}
-          </dd>
-        </div>
-      ))}
-    </dl>
+    <StatTiles
+      size="large"
+      tiles={[
+        ['道题', `${totals.problems}${more}`],
+        ['次独立完成', `${totals.independent}${more}`],
+        ['次提示后完成', `${totals.assisted}${more}`],
+      ]}
+    />
   );
 }
