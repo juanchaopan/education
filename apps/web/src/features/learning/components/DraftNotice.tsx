@@ -1,7 +1,6 @@
-import { Button } from '../../../shared/ui/Button';
 import type { IconName } from '../../../shared/ui/icons';
 import type { DraftStatus } from '../data-access/useLessonDraft';
-import { StageNotice } from './lesson-stage/StageNotice';
+import { NoticeButton, StageNotice } from './lesson-stage/StageNotice';
 
 const copy: Record<DraftStatus, string> = {
   loading: '正在找上次的草稿…',
@@ -44,26 +43,26 @@ function Actions({ status, hasDraft, hasRemote, ...on }: Omit<Props, 'message'>)
   return (
     <>
       {status === 'load-failed' && (
-        <Button variant="secondary" onClick={on.onReload}>
+        <NoticeButton quiet onClick={on.onReload}>
           再找一次
-        </Button>
+        </NoticeButton>
       )}
       {status === 'unsynced' && (
-        <Button variant="secondary" onClick={on.onSave}>
+        <NoticeButton quiet onClick={on.onSave}>
           保存这份草稿
-        </Button>
+        </NoticeButton>
       )}
       {hasDraft && (status === 'saved' || status === 'unsynced') && (
-        <Button variant="secondary" onClick={on.onDiscard}>
+        <NoticeButton quiet onClick={on.onDiscard}>
           放弃这份草稿
-        </Button>
+        </NoticeButton>
       )}
       {status === 'conflict' && (
         <>
-          <Button onClick={() => on.onChoose('keep')}>保留这次编辑</Button>
-          <Button variant="secondary" onClick={() => on.onChoose('remote')}>
+          <NoticeButton onClick={() => on.onChoose('keep')}>保留这次编辑</NoticeButton>
+          <NoticeButton quiet onClick={() => on.onChoose('remote')}>
             {hasRemote ? '继续已保存的草稿' : '从头开始'}
-          </Button>
+          </NoticeButton>
         </>
       )}
     </>
