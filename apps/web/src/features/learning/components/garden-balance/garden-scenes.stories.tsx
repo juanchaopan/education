@@ -9,20 +9,21 @@ import { backdrops } from '../../media/backdrops/backdrops';
 import { ClearingOutline } from '../lesson-stage/ClearingOutline';
 import { LessonStage } from '../lesson-stage/LessonStage';
 import { establishing, framed } from '../lesson-stage/stage-look';
-import { StoryFrame } from '../lesson-stage/StoryFrame';
+import { StoryFrame, type FrameShape } from '../lesson-stage/StoryFrame';
 import { GardenScene } from './garden-scenes';
 
 type FilmArgs = Omit<ComponentProps<typeof LessonStage>, 'look' | 'shot' | 'children'> & {
   state: GardenState;
   handling: Handling;
+  frame?: FrameShape;
 };
 
 const look = stageLook(gardenLesson);
 
 // The garden scenes on the lesson stage, as the lesson page shows them.
-function GardenFilm({ state, handling, ...stage }: FilmArgs) {
+function GardenFilm({ state, handling, frame, ...stage }: FilmArgs) {
   return (
-    <StoryFrame>
+    <StoryFrame shape={frame}>
       <LessonStage
         {...stage}
         look={look}
@@ -75,6 +76,10 @@ export const CountTheCucumbers: Story = {
 export const TwoEachInstead: Story = {
   args: { state: arrive('end').state, caption: lines.changeDone.text },
 };
+// A phone held upright: the painting fills it, and the scale spans its width.
+export const OnAnUprightPhone: Story = {
+  args: { state: arrive('answer').state, caption: lines.bridgeDone.text, frame: 'phone' },
+};
 
 // The backdrop's clearing and the part of the world the props take up, over
 // the scene whose apple side sinks lowest, so a person can see that the props
@@ -82,8 +87,8 @@ export const TwoEachInstead: Story = {
 // clearing is outlined where that framing shows it.
 export const PropsInTheClearing: Story = {
   args: { state: arrive('apples').state },
-  render: ({ state, handling, ...stage }) => (
-    <StoryFrame>
+  render: ({ state, handling, frame, ...stage }) => (
+    <StoryFrame shape={frame}>
       <LessonStage
         {...stage}
         look={{ ...look, cameras: undefined }}

@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { LessonStage } from './LessonStage';
-import { StoryFrame } from './StoryFrame';
+import { StoryFrame, type FrameShape } from './StoryFrame';
 import { storyLook } from './story-look';
 
 // A plain table in the backdrop's clearing stands in for a lesson's scene.
@@ -22,7 +22,7 @@ const meta = {
   component: LessonStage,
   decorators: [
     (Story, { parameters }) => (
-      <StoryFrame upright={parameters.upright === true}>
+      <StoryFrame shape={(parameters.frame as FrameShape | undefined) ?? 'wide'}>
         <Story />
       </StoryFrame>
     ),
@@ -50,8 +50,9 @@ export const Playing: Story = {};
 export const Speaking: Story = { args: { speaking: true } };
 export const CloserFraming: Story = { args: { shot: 'closer' } };
 export const LineDidNotPlay: Story = { args: { failure: 'refused' } };
-// A frame held upright sees the middle of the world, larger.
-export const NarrowFrame: Story = { parameters: { upright: true } };
+// An upright frame is filled by the painting, and the props span its width.
+export const NarrowFrame: Story = { parameters: { frame: 'upright' } };
+export const PhoneFrame: Story = { parameters: { frame: 'phone' } };
 export const LongCaption: Story = {
   args: {
     caption: '桌子上有两个圆圆的东西，一个是黄色的，一个是红色的，我们一起数一数它们一共有几个吧。',

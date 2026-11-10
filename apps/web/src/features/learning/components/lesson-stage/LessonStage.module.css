@@ -1,6 +1,11 @@
 /* The colours come from the lesson's palette as `--stage-*` properties set on
-   the stage itself; spacing, type and radii come from the site's tokens. */
+   the stage itself, and the props' part of the world as `--staging-*`
+   numbers; spacing, type and radii come from the site's tokens. */
 .stage {
+  /* What an upright frame keeps clear for the controls along its top and
+     its bottom, so the props never sit under them. */
+  --reserve-top: 9.5rem;
+  --reserve-bottom: 12rem;
   position: relative;
   isolation: isolate;
   /* The stage fills the frame the page gives it, whatever its shape, and
@@ -8,12 +13,70 @@
   container-type: size;
   inline-size: 100%;
   block-size: 100%;
-  /* Clipped, never scrolled: the blurred painting and an upright frame's
-     picture reach past its edges, and nothing may move them into view. */
+  /* Clipped, never scrolled: the painting and the world reach past its
+     edges, and nothing may move them into view. */
   overflow: clip;
   background: var(--stage-sky);
   color: var(--stage-text);
   font-weight: 600;
+}
+
+/* Where the painting and the world lie, in pixels of the frame, from
+   `--unit`, the size of one world unit.
+
+   A wide frame sees the painting and the world as one picture, as large as
+   covers the frame, so long as the middle 910 units of the world stay in
+   view across it and no more than a tenth of its height is cut off; past
+   that the blurred painting fills in round it. */
+.canvas {
+  --unit: min(max(100cqw / 1200, 100cqh / 675), 100cqw / 910, 100cqh / 607.5);
+  --world-width: calc(1200 * var(--unit));
+  --world-height: calc(675 * var(--unit));
+  --world-left: calc(50cqw - var(--world-width) / 2);
+  --world-top: calc(50cqh - var(--world-height) / 2);
+  --painting-width: var(--world-width);
+  --painting-height: var(--world-height);
+  --painting-left: var(--world-left);
+  --painting-top: var(--world-top);
+  position: absolute;
+  inset: 0;
+}
+
+/* An upright frame is filled by the painting alone, as tall as the frame
+   and moved across so the middle of the props lies in the middle of the
+   frame, as far as its edges allow. The world is scaled so the props span
+   the frame's width, never larger than the painting is drawn, and moved
+   down so the props' middle lies on the same line of the painting, unless
+   that would put them under the controls. */
+@container (orientation: portrait) {
+  .canvas {
+    --paint: calc(100cqh / 675);
+    --unit: min(100cqw / (var(--staging-width) * 1.08), var(--paint));
+    --centre: calc(var(--staging-x) + var(--staging-width) / 2);
+    --middle: calc(var(--staging-y) + var(--staging-height) / 2);
+    --half: calc(var(--staging-height) / 2 * var(--unit));
+    --line: clamp(
+      var(--reserve-top) + var(--half),
+      var(--middle) * var(--paint),
+      100cqh - var(--reserve-bottom) - var(--half)
+    );
+    --world-left: calc(50cqw - var(--centre) * var(--unit));
+    --world-top: calc(var(--line) - var(--middle) * var(--unit));
+    --painting-width: calc(1200 * var(--paint));
+    --painting-height: 100cqh;
+    --painting-left: clamp(
+      100cqw - var(--painting-width),
+      50cqw - var(--centre) * var(--paint),
+      0px
+    );
+    --painting-top: 0px;
+  }
+
+  /* The teacher is seen in the portrait beside its subtitles instead. */
+  .teacher,
+  .ground {
+    display: none;
+  }
 }
 
 /* Around the picture, wherever the frame is a different shape from the
@@ -35,32 +98,27 @@
   pointer-events: none;
 }
 
-/* The picture: the painting and the world together, in the world's shape
-   (`--world-width` by `--world-height`, set by the stage), centred and as
-   large as the frame allows while `--in-view` world units across still fit
-   its width. A wide frame sees the whole world. A frame taller than it is
-   wide sees the middle 910 units, so the props in the middle grow larger and
-   the sides of the world fall outside the stage. Nothing the scene draws
-   past the world's edge shows over the blurred painting around it. */
+.painting,
 .picture {
-  --in-view: var(--world-width);
-  --picture-width: min(
-    100cqw * var(--world-width) / var(--in-view),
-    100cqh * var(--world-width) / var(--world-height)
-  );
-  --picture-height: calc(var(--picture-width) * var(--world-height) / var(--world-width));
   position: absolute;
-  inset-block-start: calc(50% - var(--picture-height) / 2);
-  inset-inline-start: calc(50% - var(--picture-width) / 2);
-  inline-size: var(--picture-width);
-  block-size: var(--picture-height);
   overflow: clip;
 }
 
-@container (orientation: portrait) {
-  .picture {
-    --in-view: 910;
-  }
+.painting {
+  inset-block-start: var(--painting-top);
+  inset-inline-start: var(--painting-left);
+  inline-size: var(--painting-width);
+  block-size: var(--painting-height);
+  pointer-events: none;
+}
+
+/* Nothing the scene draws past the world's edge shows over the blurred
+   painting around it. */
+.picture {
+  inset-block-start: var(--world-top);
+  inset-inline-start: var(--world-left);
+  inline-size: var(--world-width);
+  block-size: var(--world-height);
 }
 
 .backdrop,
