@@ -1,5 +1,4 @@
 export {
-  ParentPassword,
   ParentRegistration,
   RegistrationReceipt,
   parentPasswordLength,

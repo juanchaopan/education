@@ -9,6 +9,9 @@ import { ParentAddress } from './ParentAddress';
 
 export type VerificationNoticeProps = {
   email: string;
+  // The session already knows the address is verified, as after the mail
+  // link was confirmed in another tab.
+  verified?: boolean;
   status?: VerificationStatus;
   loading?: boolean;
   pending?: boolean;
@@ -35,14 +38,23 @@ const states: Record<VerificationStatus['status'], string> = {
 };
 
 // The verification step of a parent who has signed up: whose address it is,
-// where its mail stands, and the one action that moves it on.
+// where its mail stands, and the one action that moves it on. Reading the
+// status again is always on offer, so a status that failed to load can be
+// asked for once more.
 export function VerificationNotice(props: VerificationNoticeProps) {
+  const verified = !!props.verified || props.status?.status === 'verified';
   return (
     <>
-      <ParentAddress email={props.email} verified={props.status?.status === 'verified'} />
+      <ParentAddress email={props.email} verified={verified} />
       {props.loading && <Loading label="正在查看发送状态…" />}
       {props.status && <MailState {...props} status={props.status} />}
       {props.error && <Notice tone="error">{props.error}</Notice>}
+      <Actions>
+        {props.status?.enabled && <SendButtons {...props} status={props.status} />}
+        <Button variant="text" disabled={props.pending || props.loading} onClick={props.onRefresh}>
+          刷新发送状态
+        </Button>
+      </Actions>
       <MoreInfo label="邮件规则">
         链接 24 小时有效。打开邮件里的链接后，还要在页面上确认才算验证。重新发送会让旧链接失效。
       </MoreInfo>
@@ -50,41 +62,34 @@ export function VerificationNotice(props: VerificationNoticeProps) {
   );
 }
 
-function MailState(props: MailProps) {
-  const { status } = props;
+function MailState({ status }: MailProps) {
   if (!status.enabled) return <p role="status">验证邮件服务尚未开放，请稍后再来。</p>;
   const cooling = status.status !== 'verified' && status.retryAfter > 0;
   return (
     <>
       <p role="status">{states[status.status]}</p>
       {cooling && <Hint>约 {status.retryAfter} 秒后可以再发，到时请刷新状态。</Hint>}
-      <MailActions {...props} />
     </>
   );
 }
 
 // Sending a first mail, sending a new one that retires the old link, or
 // retrying the same mail when the service turned it away for now. A verified
-// address needs none of them, only a fresh look at its status.
-function MailActions({ status, pending, loading, onSend, onRefresh }: MailProps) {
-  const open = status.status !== 'verified';
+// address needs none of them.
+function SendButtons({ status, pending, onSend }: MailProps) {
+  if (status.status === 'verified') return null;
   const first = status.status === 'not-sent';
   const waiting = !!pending || status.status === 'sending' || status.retryAfter > 0;
   return (
-    <Actions>
-      {open && (
-        <Button disabled={waiting} onClick={() => onSend(first ? 'send' : 'resend')}>
-          {pending ? '正在发送…' : first ? '发送验证邮件' : '重新发送（旧链接失效）'}
-        </Button>
-      )}
-      {open && status.canRetry && (
+    <>
+      <Button disabled={waiting} onClick={() => onSend(first ? 'send' : 'resend')}>
+        {pending ? '正在发送…' : first ? '发送验证邮件' : '重新发送（旧链接失效）'}
+      </Button>
+      {status.canRetry && (
         <Button variant="secondary" disabled={waiting} onClick={() => onSend('retry')}>
           安全重试这次发送
         </Button>
       )}
-      <Button variant="text" disabled={pending || loading} onClick={onRefresh}>
-        刷新发送状态
-      </Button>
-    </Actions>
+    </>
   );
 }

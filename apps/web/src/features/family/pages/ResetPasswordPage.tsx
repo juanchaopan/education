@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { passwordIssue } from '@education/contracts';
+import { PasswordReset, passwordIssue } from '@education/contracts';
 import { Icon } from '../../../shared/ui/Icon';
 import { Notice } from '../../../shared/ui/Notice';
 import { StandaloneLink } from '../../../shared/ui/StandaloneLink';
@@ -12,7 +12,7 @@ import { usePasswordReset } from '../data-access/useRecovery';
 // Sets a new password from the recovery mail's link. Opening the link changes
 // nothing; only the parent's own submit does.
 export function ResetPasswordPage({ art }: { art: AccountArt }) {
-  const [token, setToken] = useState(readLinkToken);
+  const [token, setToken] = useState(() => readLinkToken(PasswordReset.properties.token));
   const [password, setPassword] = useState('');
   const [confirmation, setConfirmation] = useState('');
   const [done, setDone] = useState(false);

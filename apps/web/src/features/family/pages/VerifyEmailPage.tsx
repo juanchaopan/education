@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { VerificationToken } from '@education/contracts';
 import { Button } from '../../../shared/ui/Button';
 import { Notice } from '../../../shared/ui/Notice';
 import { AccountLayout, type AccountArt } from '../components/AccountLayout';
@@ -9,7 +10,7 @@ import { useConfirmVerification } from '../data-access/useVerification';
 // Confirms a parent's email from the verification mail's link. Opening the
 // link verifies nothing; the parent confirms it is their own sign-up first.
 export function VerifyEmailPage({ art }: { art: AccountArt }) {
-  const [token, setToken] = useState(readLinkToken);
+  const [token, setToken] = useState(() => readLinkToken(VerificationToken.properties.token));
   const confirm = useConfirmVerification();
   useForgetLinkToken();
   const submit = () => {

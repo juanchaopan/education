@@ -29,14 +29,16 @@ type Mode = 'register' | 'login';
 // The parents' entrance. Signed out, it is the sign-up or the sign-in; signed
 // in before the email is verified, it is the verification step; verified, it
 // is the parent space. A finished deletion signs the page out and keeps
-// saying so until the parent moves on to register a new family. The scene's
-// backdrop starts loading while the page still asks who is signed in.
+// saying so until the parent moves on to register a new family. Until the
+// page knows the parent is verified, the scene's backdrop is fetched early,
+// while the page still asks who is signed in.
 export function FamilyPage({ art }: { art: AccountArt }) {
   const [mode, setMode] = useState<Mode>('register');
   const [deleted, setDeleted] = useState(false);
   const session = useParentSession();
   const logout = useParentLogout();
-  preload(art.backdrop, { as: 'image', fetchPriority: 'high' });
+  if (session.data?.access !== 'verified')
+    preload(art.backdrop, { as: 'image', fetchPriority: 'high' });
   if (deleted)
     return (
       <AccountLayout art={art} titleId="family-deleted-title" title="家庭已删除">
@@ -79,7 +81,8 @@ export function FamilyPage({ art }: { art: AccountArt }) {
 
 // Sign-up first, since most parents arrive here new; one button switches to
 // the sign-in and back. The switch stays the same button in the same place,
-// so it keeps the focus.
+// so it keeps the focus. A session that could not be read is said once, in
+// turn with the form, since the parent can still sign in.
 function SignedOut({
   art,
   mode,
@@ -111,7 +114,7 @@ function SignedOut({
         </>
       }
     >
-      {failed && <Notice tone="error">暂时无法恢复登录状态，请稍后刷新或重新登录。</Notice>}
+      {failed && <Notice>暂时无法恢复登录状态，请稍后刷新或重新登录。</Notice>}
       {login ? <LoginPanel /> : <RegistrationPanel />}
     </AccountLayout>
   );
@@ -141,7 +144,7 @@ function Unverified({
       }
     >
       <AccountNotices refreshing={refreshing} error={error} />
-      <VerificationPanel csrf={session.csrfToken} email={session.email} />
+      <VerificationPanel session={session} />
     </AccountLayout>
   );
 }

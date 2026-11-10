@@ -46,3 +46,31 @@ it('offers no sending once the address is verified', () => {
   expect(screen.queryByRole('button', { name: '重新发送（旧链接失效）' })).toBeNull();
   expect(screen.getByRole('button', { name: '刷新发送状态' })).toBeEnabled();
 });
+
+it('lets the parent read the status again when it could not be read', async () => {
+  const onRefresh = vi.fn();
+  render(
+    <VerificationNotice
+      email={props.email}
+      onSend={vi.fn()}
+      onRefresh={onRefresh}
+      error="暂时无法查看发送状态，请重试。"
+    />,
+  );
+  expect(screen.getByRole('alert')).toHaveTextContent('暂时无法查看发送状态');
+  await userEvent.click(screen.getByRole('button', { name: '刷新发送状态' }));
+  expect(onRefresh).toHaveBeenCalledOnce();
+});
+
+it('badges an address the session already knows is verified while its mail status loads', () => {
+  render(
+    <VerificationNotice
+      email={props.email}
+      verified
+      loading
+      onSend={vi.fn()}
+      onRefresh={vi.fn()}
+    />,
+  );
+  expect(screen.getByText('已验证')).toBeVisible();
+});

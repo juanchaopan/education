@@ -1,8 +1,9 @@
 import { Type, type Static } from '@sinclair/typebox';
 
-// How long a parent's password may be, in characters as a person counts
-// them: an emoji or a Chinese character is one. Sign-up and password reset
-// share the rule, and the web pages count a password being typed the same way.
+// How long a parent's password may be, counted in Unicode code points: a
+// Chinese character or a single emoji is one, an emoji joined from several
+// is several. Sign-up and password reset share the rule, and the web pages
+// count a password being typed the same way.
 export const parentPasswordLength = { shortest: 15, longest: 128 } as const;
 export const passwordCharacters = (password: string) => Array.from(password).length;
 
