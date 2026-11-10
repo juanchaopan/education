@@ -1,7 +1,7 @@
 import { expect, type Page } from '@playwright/test';
 import type { ProblemSummary } from '@education/contracts';
 import { longCatalog, serveApi, signedOutApi, unverifiedParentApi, type Api } from './api';
-import { emptyParentSpaceApi, parentSpaceApi } from './parent-space';
+import { emptyParentSpaceApi, parentSpaceApi, recordedChild } from './parent-space';
 import { fixClock, waitForFonts, type Theme } from './render';
 
 // One page in one state: where to open it, how the API answers, the heading
@@ -97,6 +97,34 @@ const dayStates: PageState[] = [
     ready: '还没有孩子',
     last: '暂未启用',
     api: emptyParentSpaceApi,
+  },
+  {
+    name: 'family-children',
+    path: '/family/children',
+    ready: '孩子登录管理',
+    last: '一个很长很长的昵称乐乐',
+    api: parentSpaceApi,
+  },
+  {
+    name: 'family-practice',
+    path: '/family/practice',
+    ready: '安排练习',
+    last: '为哪位孩子安排',
+    api: parentSpaceApi,
+  },
+  {
+    name: 'family-learning',
+    path: `/family/learning?child=${recordedChild}`,
+    ready: '学习摘要',
+    last: '测试用的第二道题',
+    api: parentSpaceApi,
+  },
+  {
+    name: 'family-privacy',
+    path: '/family/privacy',
+    ready: '外部 AI 授权',
+    last: '语音转写',
+    api: parentSpaceApi,
   },
   { name: 'child-signed-out', path: '/child', ready: '孩子登录' },
   { name: 'child-registration', path: '/join', ready: '加入我的家庭' },
