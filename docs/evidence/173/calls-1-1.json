@@ -1,0 +1,41 @@
+{
+  "model": "gpt-6-luna",
+  "ranAt": "2026-11-10T05:31:42.400Z",
+  "results": [
+    {
+      "question": 1,
+      "scene": "leaves",
+      "variant": "demo",
+      "order": 1,
+      "status": "ready",
+      "headersMs": 1772.5222999999996,
+      "inputTokens": 665,
+      "outputTokens": 54,
+      "costUsd": 0.000110125,
+      "raw": "{\"status\":\"uncertain\",\"instruction\":\"请问你是想知道要拖哪一棵青菜吗？\",\"confidence\":0.99,\"injection\":false,\"highlight\":null,\"demo\":null}",
+      "elapsedMs": 2688.5009999999997,
+      "feedbackStatus": "uncertain",
+      "instruction": "请问你是想知道要拖哪一棵青菜吗？",
+      "confidence": 0.99,
+      "injection": false,
+      "demo": null
+    },
+    {
+      "question": 1,
+      "scene": "leaves",
+      "variant": "baseline",
+      "order": 2,
+      "status": "ready",
+      "headersMs": 442.08740000000034,
+      "inputTokens": 406,
+      "outputTokens": 46,
+      "costUsd": 0.00007375,
+      "raw": "{\"status\":\"uncertain\",\"instruction\":\"你想确认要把哪一样拖进篮子吗？\",\"confidence\":0.99,\"injection\":false,\"highlight\":null}",
+      "elapsedMs": 1166.1076999999996,
+      "feedbackStatus": "uncertain",
+      "instruction": "你想确认要把哪一样拖进篮子吗？",
+      "confidence": 0.99,
+      "injection": false
+    }
+  ]
+}

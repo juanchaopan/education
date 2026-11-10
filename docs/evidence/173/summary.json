@@ -1,0 +1,448 @@
+{
+  "demo": {
+    "calls": 30,
+    "ready": 29,
+    "elapsedMs": {
+      "n": 29,
+      "p50": 1541,
+      "p95": 2074,
+      "max": 2689
+    },
+    "headersMs": {
+      "n": 30,
+      "p50": 481,
+      "p95": 823,
+      "max": 1773
+    },
+    "meanInputTokens": 657,
+    "meanOutputTokens": 59,
+    "meanCostUsd": 0.00011182083333333335,
+    "totalCostUsd": 0.0033546250000000004
+  },
+  "baseline": {
+    "calls": 30,
+    "ready": 30,
+    "elapsedMs": {
+      "n": 30,
+      "p50": 1312,
+      "p95": 1887,
+      "max": 2329
+    },
+    "headersMs": {
+      "n": 30,
+      "p50": 484,
+      "p95": 712,
+      "max": 747
+    },
+    "meanInputTokens": 404,
+    "meanOutputTokens": 53,
+    "meanCostUsd": 0.00007699583333333333,
+    "totalCostUsd": 0.002309875
+  },
+  "pairedDelayMs": {
+    "n": 29,
+    "p50": 177,
+    "p95": 770,
+    "max": 1522
+  },
+  "keyAccuracy": {
+    "matches": 22,
+    "of": 30
+  },
+  "rows": [
+    {
+      "id": 1,
+      "scene": "leaves",
+      "kind": "题内",
+      "text": "我要拖哪个呀？",
+      "accept": ["show-drag-cabbage", "glow-cabbages"],
+      "demoStatus": "ready",
+      "chosen": null,
+      "matchesKey": false,
+      "demoReply": "请问你是想知道要拖哪一棵青菜吗？",
+      "baselineReply": "你想确认要把哪一样拖进篮子吗？"
+    },
+    {
+      "id": 2,
+      "scene": "leaves",
+      "kind": "题内",
+      "text": "篮子在哪里？",
+      "accept": ["glow-basket"],
+      "demoStatus": "ready",
+      "chosen": "glow-basket",
+      "matchesKey": true,
+      "demoReply": "看天平旁边的篮子，先找找它在哪里吧。",
+      "baselineReply": "你指的是题目里的哪个位置？"
+    },
+    {
+      "id": 3,
+      "scene": "leaves",
+      "kind": "题内",
+      "text": "为什么天平是平平的？",
+      "accept": ["point-level"],
+      "demoStatus": "ready",
+      "chosen": "point-level",
+      "matchesKey": true,
+      "demoReply": "看天平横梁，两边一样重时它就是平的；想想两棵青菜和六个苹果有什么关系。",
+      "baselineReply": "你还没说明原因，想一想左盘两棵青菜和右盘六个苹果有什么关系？"
+    },
+    {
+      "id": 4,
+      "scene": "leaves",
+      "kind": "跑题",
+      "text": "小兔你喜欢吃胡萝卜吗？",
+      "accept": [null],
+      "demoStatus": "ready",
+      "chosen": "show-drag-cabbage",
+      "matchesKey": false,
+      "demoReply": "请把左盘的一棵青菜拖进旁边的篮子，看看天平会怎样。",
+      "baselineReply": "请把一棵青菜拖进旁边的篮子，看看天平会怎样变化。"
+    },
+    {
+      "id": 5,
+      "scene": "apples",
+      "kind": "题内",
+      "text": "为什么苹果那边掉下去了？",
+      "accept": ["glow-low-side", "replay-halve"],
+      "demoStatus": "ready",
+      "chosen": "glow-low-side",
+      "matchesKey": true,
+      "demoReply": "看右盘沉下去的苹果那边，想想哪边更重。",
+      "baselineReply": "想想苹果比青菜重还是轻，再说说哪边会下沉。"
+    },
+    {
+      "id": 6,
+      "scene": "apples",
+      "kind": "题内",
+      "text": "苹果要拿到哪里去？",
+      "accept": ["show-drag-apple"],
+      "demoStatus": "ready",
+      "chosen": "show-drag-apple",
+      "matchesKey": true,
+      "demoReply": "你是问要把苹果拿到哪里吗？",
+      "baselineReply": "你是想问拿走的苹果放在哪里吗？"
+    },
+    {
+      "id": 7,
+      "scene": "apples",
+      "kind": "题内",
+      "text": "要拿到什么时候才停呀？",
+      "accept": ["point-middle"],
+      "demoStatus": "ready",
+      "chosen": "point-middle",
+      "matchesKey": true,
+      "demoReply": "天平什么时候算平衡？你觉得要看到什么变化才停？",
+      "baselineReply": "现在左盘一棵青菜、右盘六个苹果；你觉得拿到几颗苹果时天平会平衡？"
+    },
+    {
+      "id": 8,
+      "scene": "apples",
+      "kind": "听不清",
+      "text": "嗯……那个……就是那个",
+      "accept": [null],
+      "demoStatus": "ready",
+      "chosen": null,
+      "matchesKey": true,
+      "demoReply": "你想说哪一步？请告诉我你打算怎么做。",
+      "baselineReply": "你说的“那个”是指什么？请再说清楚一点。"
+    },
+    {
+      "id": 9,
+      "scene": "exchange",
+      "kind": "题内",
+      "text": "我要点哪里？",
+      "accept": ["show-tap-apple", "glow-apple"],
+      "demoStatus": "fallback:unavailable",
+      "matchesKey": false,
+      "baselineReply": "请告诉我天平上出现了几根黄瓜，好吗？"
+    },
+    {
+      "id": 10,
+      "scene": "exchange",
+      "kind": "题内",
+      "text": "为什么那边什么都没有？",
+      "accept": ["glow-empty-pan"],
+      "demoStatus": "ready",
+      "chosen": "glow-empty-pan",
+      "matchesKey": true,
+      "demoReply": "你说的是天平哪一边？",
+      "baselineReply": "你提到“那边什么都没有”，请说说天平两边各有什么。"
+    },
+    {
+      "id": 11,
+      "scene": "exchange",
+      "kind": "题内",
+      "text": "天平怎么歪了？",
+      "accept": ["point-tilt"],
+      "demoStatus": "ready",
+      "chosen": null,
+      "matchesKey": false,
+      "demoReply": "你说的是哪一边歪了？",
+      "baselineReply": "你还没说出苹果和几根黄瓜一样重；再想想天平变平时两边各有什么？"
+    },
+    {
+      "id": 12,
+      "scene": "exchange",
+      "kind": "跑题",
+      "text": "小兔你几岁了？",
+      "accept": [null],
+      "demoStatus": "ready",
+      "chosen": null,
+      "matchesKey": true,
+      "demoReply": "你是想问小兔的年龄，还是想继续看苹果和黄瓜的天平？",
+      "baselineReply": "你写的是问小兔的年龄，请说出一个苹果和几根黄瓜一样重。"
+    },
+    {
+      "id": 13,
+      "scene": "bridge",
+      "kind": "题内",
+      "text": "我忘了一个苹果换几根黄瓜了",
+      "accept": ["replay-apple-cucumbers"],
+      "demoStatus": "ready",
+      "chosen": "replay-apple-cucumbers",
+      "matchesKey": true,
+      "demoReply": "你忘了每个苹果换几根黄瓜；请看重播后告诉我。",
+      "baselineReply": "你还记得一个苹果换几根黄瓜吗？"
+    },
+    {
+      "id": 14,
+      "scene": "bridge",
+      "kind": "题内",
+      "text": "下一个换哪个？",
+      "accept": ["glow-next-apple"],
+      "demoStatus": "ready",
+      "chosen": "glow-next-apple",
+      "matchesKey": true,
+      "demoReply": "换最右边还没换的苹果，试着把它换成一组黄瓜。",
+      "baselineReply": "你想先换左盘的青菜，还是右盘的苹果？"
+    },
+    {
+      "id": 15,
+      "scene": "bridge",
+      "kind": "题内",
+      "text": "换了以后天平会不会歪呀？",
+      "accept": ["point-still-level"],
+      "demoStatus": "ready",
+      "chosen": "point-still-level",
+      "matchesKey": true,
+      "demoReply": "看横梁，跟着演示看看换完一组黄瓜后天平是不是还平着。",
+      "baselineReply": "天平不会歪；请接着说说每次换苹果后为什么还能保持平衡。"
+    },
+    {
+      "id": 16,
+      "scene": "bridge",
+      "kind": "题内",
+      "text": "为什么一棵青菜和三个苹果一样重？",
+      "accept": ["replay-cabbage-apples"],
+      "demoStatus": "ready",
+      "chosen": "replay-cabbage-apples",
+      "matchesKey": true,
+      "demoReply": "看动画重播一棵青菜和三个苹果的称量，想想它们为什么一样重。",
+      "baselineReply": "题意已说明它们一样重；试着想想每换一个苹果，黄瓜要怎样才保持天平平衡。"
+    },
+    {
+      "id": 17,
+      "scene": "answer",
+      "kind": "要答案",
+      "text": "你直接告诉我答案吧",
+      "accept": [null, "glow-groups", "glow-one-group"],
+      "demoStatus": "ready",
+      "chosen": "glow-groups",
+      "matchesKey": true,
+      "demoReply": "看看右盘的三组黄瓜，每组三根；数数一共几根，再说说看。",
+      "baselineReply": "你这句话还没说出重量关系，请先想想一棵青菜等于几根黄瓜重。",
+      "leakFlag": {
+        "demo": false,
+        "baseline": false
+      }
+    },
+    {
+      "id": 18,
+      "scene": "answer",
+      "kind": "题内",
+      "text": "一组有几根黄瓜？",
+      "accept": ["glow-one-group"],
+      "demoStatus": "ready",
+      "chosen": null,
+      "matchesKey": false,
+      "demoReply": "你想问每组有几根，还是青菜和几根黄瓜一样重？",
+      "baselineReply": "请根据题目找出三组黄瓜共有几根，再说说一棵青菜相当于几根黄瓜。",
+      "leakFlag": {
+        "demo": false,
+        "baseline": false
+      }
+    },
+    {
+      "id": 19,
+      "scene": "answer",
+      "kind": "题内",
+      "text": "一共有几组黄瓜呀？",
+      "accept": ["glow-groups"],
+      "demoStatus": "ready",
+      "chosen": "glow-groups",
+      "matchesKey": true,
+      "demoReply": "看右盘，每组三根黄瓜，数数一共有几组，再说说答案。",
+      "baselineReply": "题目已说右盘有三组黄瓜，请想想三组一共几根，再说出青菜的重量。",
+      "leakFlag": {
+        "demo": false,
+        "baseline": false
+      }
+    },
+    {
+      "id": 20,
+      "scene": "answer",
+      "kind": "题内",
+      "text": "是不是三根？",
+      "accept": ["glow-groups", "glow-one-group"],
+      "demoStatus": "ready",
+      "chosen": "glow-groups",
+      "matchesKey": true,
+      "demoReply": "看看右盘的三组黄瓜各有三根，想想一棵青菜一共和几根黄瓜一样重。",
+      "baselineReply": "再看右盘三组、每组三根黄瓜，想想一棵青菜和几根黄瓜一样重？",
+      "leakFlag": {
+        "demo": false,
+        "baseline": false
+      }
+    },
+    {
+      "id": 21,
+      "scene": "answer",
+      "kind": "题内",
+      "text": "为什么黄瓜和青菜一样重？",
+      "accept": ["point-level", "replay-cabbage-apples", "replay-apple-cucumbers"],
+      "demoStatus": "ready",
+      "chosen": "glow-groups",
+      "matchesKey": false,
+      "demoReply": "看“青菜和黄瓜一样重”的称量，想想右盘三组黄瓜共几根，再说答案。",
+      "baselineReply": "题目已说明右盘三组黄瓜和一棵青菜一样重，想想一组有几根黄瓜。",
+      "leakFlag": {
+        "demo": false,
+        "baseline": false
+      }
+    },
+    {
+      "id": 22,
+      "scene": "answer",
+      "kind": "题内",
+      "text": "太多了我数不清",
+      "accept": ["glow-groups", "glow-one-group"],
+      "demoStatus": "ready",
+      "chosen": "glow-groups",
+      "matchesKey": true,
+      "demoReply": "先圈出右盘的每一组黄瓜，再数一数有几组。",
+      "baselineReply": "先数右盘三组黄瓜，每组三根，再想想一棵青菜相当于几根黄瓜。",
+      "leakFlag": {
+        "demo": false,
+        "baseline": false
+      }
+    },
+    {
+      "id": 23,
+      "scene": "answer",
+      "kind": "要答案",
+      "text": "答案是九对不对？",
+      "accept": [null],
+      "demoStatus": "ready",
+      "chosen": "glow-groups",
+      "matchesKey": false,
+      "demoReply": "你把三组各三根合起来了，下一步数数一共有几根黄瓜。",
+      "baselineReply": "对，右盘有3组、每组3根黄瓜；想想一棵青菜相当于几根黄瓜。",
+      "leakFlag": {
+        "demo": false,
+        "baseline": true
+      }
+    },
+    {
+      "id": 24,
+      "scene": "answer",
+      "kind": "要答案",
+      "text": "你帮我数一数吧",
+      "accept": [null, "glow-groups"],
+      "demoStatus": "ready",
+      "chosen": "glow-groups",
+      "matchesKey": true,
+      "demoReply": "看右盘的三组黄瓜，数数每组有几根，再说一共几根。",
+      "baselineReply": "请先算出右盘一共有多少根黄瓜，再想想一棵青菜有几根黄瓜重。",
+      "leakFlag": {
+        "demo": false,
+        "baseline": false
+      }
+    },
+    {
+      "id": 25,
+      "scene": "answer",
+      "kind": "跑题",
+      "text": "外面下雨了",
+      "accept": [null],
+      "demoStatus": "ready",
+      "chosen": null,
+      "matchesKey": true,
+      "demoReply": "你说外面下雨了；请告诉我这道题里青菜和黄瓜的关系。",
+      "baselineReply": "你写的是天气，请告诉我这道题里青菜和黄瓜的关系。",
+      "leakFlag": {
+        "demo": false,
+        "baseline": false
+      }
+    },
+    {
+      "id": 26,
+      "scene": "variation",
+      "kind": "题内",
+      "text": "现在一个苹果换几根？",
+      "accept": ["glow-spare"],
+      "demoStatus": "ready",
+      "chosen": "glow-spare",
+      "matchesKey": true,
+      "demoReply": "你想问的是这一步的条件吗？",
+      "baselineReply": "你觉得现在一个苹果能换几根黄瓜？"
+    },
+    {
+      "id": 27,
+      "scene": "variation",
+      "kind": "题内",
+      "text": "刚才是怎么换的？我忘了",
+      "accept": ["replay-bridge"],
+      "demoStatus": "ready",
+      "chosen": "replay-bridge",
+      "matchesKey": true,
+      "demoReply": "你是忘了刚才的换法吗？",
+      "baselineReply": "先回想每个苹果能换几根黄瓜，再猜有几组和一共几根。"
+    },
+    {
+      "id": 28,
+      "scene": "variation",
+      "kind": "听不清",
+      "text": "啊？什么？",
+      "accept": [null],
+      "demoStatus": "ready",
+      "chosen": null,
+      "matchesKey": true,
+      "demoReply": "你是没听懂题目，还是想让我再说一遍？",
+      "baselineReply": "你卡在哪一点：每个苹果换两根黄瓜，还是三个苹果？"
+    },
+    {
+      "id": 29,
+      "scene": "end",
+      "kind": "题内",
+      "text": "什么变了呀？",
+      "accept": ["compare-before"],
+      "demoStatus": "ready",
+      "chosen": null,
+      "matchesKey": false,
+      "demoReply": "你问的是哪一部分变了呢？",
+      "baselineReply": "想想每组有几根黄瓜，再说说它和原来的每组有什么不同。"
+    },
+    {
+      "id": 30,
+      "scene": "end",
+      "kind": "跑题",
+      "text": "我想回家了",
+      "accept": [null],
+      "demoStatus": "ready",
+      "chosen": null,
+      "matchesKey": true,
+      "demoReply": "你想回家了，是想先休息一下吗？",
+      "baselineReply": "你能说说换成黄瓜后，组数和每组根数分别是多少吗？"
+    }
+  ]
+}
