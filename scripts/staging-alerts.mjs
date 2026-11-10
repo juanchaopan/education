@@ -1,5 +1,11 @@
 import { appendFile } from 'node:fs/promises';
-import { checkStaging, githubIssues, runAlerts, syncAlert } from './staging-alert.mjs';
+import {
+  checkStaging,
+  githubIssues,
+  measurementLine,
+  runAlerts,
+  syncAlert,
+} from './staging-alert.mjs';
 
 // A reserved name that never resolves (RFC 6761), so a drill fails the real
 // probe without touching staging.
@@ -33,7 +39,7 @@ async function health() {
   const details = [
     ...(drill ? [`告警演练：探测 ${drillOrigin}，这个保留域名必然无法解析`] : []),
     ...problems,
-    ...measurements.map(({ path, status, ms }) => `${path}：HTTP ${status}，${ms} ms`),
+    ...measurements.map(measurementLine),
   ];
   const result = await syncAlert(issues, { source: 'health', failing: !healthy, details, runUrl });
   await summarize([
