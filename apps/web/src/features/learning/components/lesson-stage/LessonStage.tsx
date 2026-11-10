@@ -9,7 +9,14 @@ import {
 import { classNames } from '../../../../shared/lib/class-names';
 import { Icon } from '../../../../shared/ui/Icon';
 import { activationAt, type Activation } from '../../interaction/stage-activation';
-import { paletteStyle, type Camera, type StageLook, type Teacher } from './stage-look';
+import {
+  establishing,
+  paletteStyle,
+  world,
+  type Camera,
+  type StageLook,
+  type Teacher,
+} from './stage-look';
 import styles from './LessonStage.module.css';
 
 type Props = {
@@ -36,17 +43,13 @@ type Props = {
   children?: ReactNode;
 };
 
-// The world every lesson draws on. The picture takes its shape from it, so
-// the painting and the props always share one size.
-const world = { width: 1200, height: 675 };
+// The picture takes its shape from the world every lesson draws on, so the
+// painting and the props always share one size.
 const worldShape = {
   '--world-width': world.width,
   '--world-height': world.height,
 } as CSSProperties;
 
-// The establishing framing overscans a little, so the backdrop's edges never
-// show while it settles in or glides to the next scene.
-const establishing: Camera = { zoom: 1.035 };
 const framing = ({ zoom, x = 0, y = 0 }: Camera) => `scale(${zoom}) translate(${x}%, ${y}%)`;
 
 const painting = ({ image }: StageLook['backdrop']) => `url("${image}")`;
@@ -150,7 +153,7 @@ export function LessonStage(props: Props) {
         <svg
           ref={worldRef}
           className={styles.world}
-          viewBox={`0 0 ${world.width} ${world.height}`}
+          viewBox={`${world.x} ${world.y} ${world.width} ${world.height}`}
           role="group"
           aria-label={look.worldLabel}
           onClick={choose}

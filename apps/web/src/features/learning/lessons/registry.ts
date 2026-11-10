@@ -1,14 +1,26 @@
 import type { ComponentType } from 'react';
+import type { Box } from '../components/lesson-stage/stage-look';
 import type { FilmState } from '../interaction/lesson-film';
-import type { LessonAnswer, LessonDefinition, ProblemVersion, Script } from './lesson-definition';
+import type { BackdropId } from '../media/backdrops/backdrops';
+import type {
+  LessonAnswer,
+  LessonDefinition,
+  ProblemVersion,
+  Script,
+  TeacherRole,
+} from './lesson-definition';
 
 // What the checks read of a lesson's definition: its version, its lines,
-// scenes and entry lines, and its answer scene and hints. Every lesson's
-// definition is one, whatever its own types.
+// scenes, entry lines and each scene's framing, its answer scene and hints,
+// the library backdrop and teacher it picks, and where its props stand.
+// Every lesson's definition is one, whatever its own types.
 export type LessonOutline = Readonly<{
   problem: ProblemVersion;
-  script: Pick<Script<string, string>, 'lines' | 'shots' | 'entryLines'>;
+  script: Pick<Script<string, string>, 'lines' | 'shots' | 'entryLines' | 'cameras'>;
   answer: Pick<LessonAnswer<string>, 'shot' | 'hints'>;
+  backdrop: BackdropId;
+  teacher: Pick<TeacherRole, 'id'>;
+  staging: Box;
 }>;
 
 // A maintained problem version, its lesson's definition and the lesson's

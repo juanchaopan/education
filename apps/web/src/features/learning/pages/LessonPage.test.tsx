@@ -133,7 +133,7 @@ it('saves each scene a signed-in child reaches and asks about the scene on scree
   const fetch = serve(null);
   open('token');
   await userEvent.click(await screen.findByRole('button', { name: /开始短片/ }));
-  expect(screen.getByRole('region', { name: '问问小猫头鹰' })).toBeInTheDocument();
+  expect(screen.getByRole('region', { name: '问问小兔' })).toBeInTheDocument();
   expect(screen.getByRole('complementary', { name: '学习草稿' })).toBeInTheDocument();
   await userEvent.click(screen.getByRole('button', { name: '小石子' }));
   expect(await screen.findByRole('region', { name: '说出答案' })).toHaveTextContent(
@@ -148,7 +148,7 @@ it('resumes a signed-in child in the answer scene, where the child can also ask'
   await userEvent.click(await screen.findByRole('button', { name: /接着上次的地方/ }));
   expect(caption()).toHaveTextContent('一共有几颗？');
   expect(screen.getByRole('region', { name: '说出答案' })).toBeInTheDocument();
-  expect(screen.getByRole('region', { name: '问问小猫头鹰' })).toBeInTheDocument();
+  expect(screen.getByRole('region', { name: '问问小兔' })).toBeInTheDocument();
 });
 
 it('listens for the answer by itself once the question is heard, and offers numbers without a microphone', async () => {

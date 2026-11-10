@@ -1,0 +1,55 @@
+.sheet {
+  display: grid;
+  gap: var(--space-4);
+  max-inline-size: 60rem;
+  margin: 0;
+  color: var(--ink);
+}
+
+/* The picture fills a 16:9 frame exactly as it fills a lesson's world, so
+   the clearing's outline sits where the lesson's props would. */
+.frame {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: var(--radius);
+  background-size: cover;
+}
+
+.frame svg {
+  position: absolute;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+}
+
+.portrait {
+  justify-self: start;
+  block-size: 18rem;
+  inline-size: auto;
+  padding: var(--space-4);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+
+.tags {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: var(--text-sm);
+}
+
+.tags div {
+  display: grid;
+  grid-template-columns: 6em 1fr;
+  gap: var(--space-3);
+}
+
+.tags dt {
+  color: var(--ink-soft);
+}
+
+.tags dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}

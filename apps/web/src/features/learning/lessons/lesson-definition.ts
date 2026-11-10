@@ -1,7 +1,8 @@
 import type { ComponentType, ReactNode } from 'react';
 import type {
-  Backdrop,
+  Box,
   Camera,
+  Ellipse,
   StageLook,
   StagePalette,
   Teacher,
@@ -10,6 +11,8 @@ import type { FilmLine, FilmState, FilmStory, Reaction } from '../interaction/le
 import type { CountWords } from '../interaction/spoken-answer';
 import type { Handling } from '../interaction/stage-activation';
 import type { StageProps } from '../interaction/useStageDrag';
+import { backdrops, type BackdropId } from '../media/backdrops/backdrops';
+import { teachers, type TeacherId } from '../media/teachers/teachers';
 
 // The problem version a lesson teaches, as the catalog lists it.
 export type ProblemVersion = Readonly<{ id: string; version: number }>;
@@ -53,16 +56,22 @@ export type LessonAnswer<Shot extends string> = Readonly<{
 
 export type SceneProps<State> = { state: State; handling: Handling };
 
+// The library teacher who tells a lesson, where it stands in the lesson's
+// world and the shadow at its feet.
+export type TeacherRole = Readonly<{ id: TeacherId; place: Box; ground: Ellipse }>;
+
 // How a lesson's film looks: its title and series, for example 菜园小剧场, the
-// names a screen reader gives the film and the props inside it, its backdrop,
-// teacher and palette, and the lesson's paints and symbols and what drifts
-// over its scenes.
+// names a screen reader gives the film and the props inside it, the library
+// backdrop and teacher it picks, the part of the world its props take up in
+// every scene, which lies in the backdrop's clearing, its palette, and the
+// lesson's paints and symbols and what drifts over its scenes.
 type Looks = Readonly<{
   title: string;
   theater: string;
   labels: Readonly<{ film: string; world: string }>;
-  backdrop: Backdrop;
-  teacher: Teacher;
+  backdrop: BackdropId;
+  teacher: TeacherRole;
+  staging: Box;
   palette: StagePalette;
   defs?: ReactNode;
   ambience?: ReactNode;
@@ -108,19 +117,28 @@ export function filmStory<
   };
 }
 
-// The lesson's film as the stage draws it, each scene in its own framing.
+// The lesson's teacher as the stage draws it: the library character, standing
+// where the lesson puts it.
+export function lessonTeacher({ id, place, ground }: TeacherRole): Teacher {
+  const { name, image } = teachers[id];
+  return { name, image, place, ground };
+}
+
+// The lesson's film as the stage draws it: the library pictures it picks, each
+// scene in its own framing.
 export function stageLook(
   lesson: Looks & Readonly<{ script: Pick<Script<string, string>, 'cameras'> }>,
 ): StageLook {
-  const { title, theater, labels, backdrop, teacher, palette, script } = lesson;
+  const { title, theater, labels, palette, script } = lesson;
+  const { image, focus } = backdrops[lesson.backdrop];
   return {
     label: labels.film,
     worldLabel: labels.world,
     title,
     theater,
-    backdrop,
+    backdrop: { image, focus },
     cameras: script.cameras,
-    teacher,
+    teacher: lessonTeacher(lesson.teacher),
     palette,
   };
 }

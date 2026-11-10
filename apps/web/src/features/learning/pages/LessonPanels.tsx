@@ -9,11 +9,10 @@ import { createMicrophoneTurn } from '../voice/microphone-turn';
 import { SceneQuestions } from './SceneQuestions';
 import { SpokenFinalAnswer } from './SpokenFinalAnswer';
 
-// What the panels read of a lesson: who teaches it, its script and its
-// final count.
+// What the panels read of a lesson: its script and its final count.
 type PanelLesson<Shot extends string> = Pick<
   LessonDefinition<FilmState<Shot>, Shot, string, unknown, string, object>,
-  'teacher' | 'script' | 'answer'
+  'script' | 'answer'
 >;
 
 // What the panels need from the playing film: the scene on screen, a way to
@@ -26,6 +25,8 @@ type PanelFilm<Shot extends string> = Pick<
 
 type Props<Shot extends string> = {
   lesson: PanelLesson<Shot>;
+  // The name of the teacher a question is asked of.
+  teacher: string;
   scope: LearningScope;
   film: PanelFilm<Shot>;
   draft: ReturnType<typeof useLessonDraft>;
@@ -37,7 +38,13 @@ type Props<Shot extends string> = {
 // draft's state. The answer and the questions share the lesson's one
 // microphone. A correct answer ends the saved work, so its draft is
 // discarded, and the film plays on from the scene after the answer.
-export function LessonPanels<Shot extends string>({ lesson, scope, film, draft }: Props<Shot>) {
+export function LessonPanels<Shot extends string>({
+  lesson,
+  teacher,
+  scope,
+  film,
+  draft,
+}: Props<Shot>) {
   const [turn] = useState(createMicrophoneTurn);
   const { shot } = film.state;
   if (shot === 'opening') return null;
@@ -62,7 +69,7 @@ export function LessonPanels<Shot extends string>({ lesson, scope, film, draft }
       )}
       <SceneQuestions
         scope={scope}
-        teacher={lesson.teacher.name}
+        teacher={teacher}
         stepId={shot}
         answerStep={answer.shot}
         guidance={guidance(script, shot)}

@@ -132,13 +132,21 @@ export function lessonPage<
         onArrive={(shot) => {
           if (story.savesProgress(shot)) void draft.saveAs({ stepId: shot, drawing: [] });
         }}
-        panels={(film) => <LessonPanels lesson={lesson} scope={scope} film={film} draft={draft} />}
+        panels={(film) => (
+          <LessonPanels
+            lesson={lesson}
+            teacher={look.teacher.name}
+            scope={scope}
+            film={film}
+            draft={draft}
+          />
+        )}
       />
     );
   }
 
   return function LessonPage({ csrf }) {
-    if (!csrf) return <Body panels={() => <LessonSignInNotice teacher={lesson.teacher.name} />} />;
+    if (!csrf) return <Body panels={() => <LessonSignInNotice teacher={look.teacher.name} />} />;
     return <SignedIn scope={{ ...lesson.problem, csrf }} />;
   };
 }
