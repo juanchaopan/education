@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import { MemoryRouter } from 'react-router-dom';
 import { fn } from 'storybook/test';
 import { AiConsentCard } from './AiConsentCard';
 
@@ -21,6 +22,13 @@ const awaitingPassword = {
 } as const;
 const meta = {
   component: AiConsentCard,
+  decorators: [
+    (Story) => (
+      <MemoryRouter>
+        <Story />
+      </MemoryRouter>
+    ),
+  ],
   args: {
     loading: false,
     pending: false,

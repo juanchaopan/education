@@ -4,6 +4,7 @@ import { Button } from '../../../shared/ui/Button';
 import { Hint } from '../../../shared/ui/Hint';
 import { Loading } from '../../../shared/ui/Loading';
 import { Notice } from '../../../shared/ui/Notice';
+import { StandaloneLink } from '../../../shared/ui/StandaloneLink';
 import { ParentCard } from './ParentCard';
 import { ParentPasswordForm } from './ParentPasswordForm';
 import { StatusBadge } from './StatusBadge';
@@ -43,6 +44,10 @@ const budgets: Record<AiConsentView['tutoringBudget'], string> = {
   limited: 'AI 解题提示的可用额度不足，可继续使用题目引导。',
 };
 
+// The provider's own data policy, a page outside the site that the router
+// opens as an ordinary link.
+const providerPolicy = 'https://developers.openai.com/api/docs/guides/your-data';
+
 // The family's consent to each outside AI service. Everything a parent must
 // know to decide stays on the card: what each service is sent, what for, how
 // the app and the provider keep it, what withdrawing does, and the
@@ -67,11 +72,7 @@ export function AiConsentCard(props: Props) {
           {budgets[view.tutoringBudget]}
         </p>
       )}
-      <p>
-        <a href="https://developers.openai.com/api/docs/guides/your-data">
-          查看 OpenAI 的数据保留说明
-        </a>
-      </p>
+      <StandaloneLink to={providerPolicy}>查看 OpenAI 的数据保留说明</StandaloneLink>
       {props.loading && <Loading label="正在确认授权状态…" />}
       {props.error && <Notice tone="error">{props.error}</Notice>}
       {view?.policies.map((policy) => (
