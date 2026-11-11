@@ -1,0 +1,10 @@
+{
+  "engine": "edge-tts",
+  "edge-tts": {
+    "name": "zh-CN-XiaoxiaoNeural",
+    "rate": "-14%",
+    "pitch": "+5Hz",
+    "package": "edge-tts==7.3.1",
+    "python": "3.12"
+  }
+}
