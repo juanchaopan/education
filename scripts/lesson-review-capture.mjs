@@ -2,6 +2,12 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 
+// Records a lesson as a child plays it in Chromium: the picture through the
+// DevTools screencast and the page's own sound (narration and Web Audio
+// chimes) through a MediaRecorder on the page, never the microphone. The
+// two are put together into an MP4 with FFmpeg, beside a timeline of every
+// media event with the recording it came from.
+
 function captureAudio() {
   const NativeAudio = window.Audio;
   const context = new window.AudioContext();
@@ -19,9 +25,9 @@ function captureAudio() {
   window.Audio = function (...args) {
     const audio = new NativeAudio(...args);
     context.createMediaElementSource(audio).connect(context.destination);
-    for (const name of ['playing', 'ended', 'pause']) {
+    for (const name of ['playing', 'ended', 'pause', 'error']) {
       audio.addEventListener(name, () =>
-        events.push({ name, at: clock(), time: audio.currentTime }),
+        events.push({ name, at: clock(), time: audio.currentTime, src: audio.currentSrc }),
       );
     }
     return audio;
@@ -63,6 +69,7 @@ function captureAudio() {
   };
 }
 
+// Routes the page's sound into the recording; call before the page loads.
 export async function prepareLessonCapture(page) {
   await page.addInitScript(captureAudio);
 }
@@ -83,6 +90,8 @@ async function startScreencast(page) {
   return { session, frames };
 }
 
+// The frames of the recorded interval, and a 25 fps playlist that shows each
+// frame until the next one arrived.
 async function writeFrames(dir, frames, began, end) {
   frames.sort((a, b) => a.at - b.at);
   const first = Math.max(
@@ -111,33 +120,13 @@ function muxLesson(dir, audioOffset) {
   const ffmpeg = spawnSync(
     'ffmpeg',
     [
-      '-hide_banner',
-      '-loglevel',
-      'error',
-      '-y',
-      '-safe',
-      '0',
-      '-f',
-      'concat',
-      '-i',
-      'frames.ffconcat',
-      '-i',
-      'browser-audio.webm',
-      '-af',
-      'adelay=' + audioOffset + ':all=1,apad',
-      '-vf',
-      'fps=25,scale=trunc(iw/2)*2:trunc(ih/2)*2',
-      '-c:v',
-      'libx264',
-      '-preset',
-      'ultrafast',
-      '-pix_fmt',
-      'yuv420p',
-      '-c:a',
-      'aac',
-      '-movflags',
-      '+faststart',
-      '-shortest',
+      ...['-hide_banner', '-loglevel', 'error', '-y'],
+      ...['-safe', '0', '-f', 'concat', '-i', 'frames.ffconcat'],
+      ...['-i', 'browser-audio.webm'],
+      ...['-af', 'adelay=' + audioOffset + ':all=1,apad'],
+      ...['-vf', 'fps=25,scale=trunc(iw/2)*2:trunc(ih/2)*2'],
+      ...['-c:v', 'libx264', '-preset', 'ultrafast', '-pix_fmt', 'yuv420p'],
+      ...['-c:a', 'aac', '-movflags', '+faststart', '-shortest'],
       video,
     ],
     { cwd: dir, encoding: 'utf8' },
@@ -146,6 +135,9 @@ function muxLesson(dir, audioOffset) {
   return video;
 }
 
+// Records the page while `interact` plays the lesson, and writes the MP4 and
+// the timeline into `outputDirectory`. A failure while playing still leaves
+// the recording up to that moment, then is thrown.
 export async function recordLesson(page, outputDirectory, interact) {
   const dir = resolve(outputDirectory);
   await mkdir(dir, { recursive: true });

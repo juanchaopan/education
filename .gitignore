@@ -27,3 +27,6 @@ coverage/
 playwright-report/
 test-results/
 *.tsbuildinfo
+
+# 题目的审查录屏（npm run lesson:review），留在本机给人看，不提交
+review-recordings/
