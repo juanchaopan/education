@@ -34,10 +34,14 @@ function serve(saved: SavedDraft | null, { savingFails = false } = {}) {
   return fetch;
 }
 
+// The scenes the page has asked the server to save, in order.
 const savedSteps = (fetch: ReturnType<typeof serve>) =>
   fetch.mock.calls
     .filter(([path, init]) => path === draftPath && init?.body)
     .map(([, init]) => JSON.parse(String(init!.body)).content.stepId);
+
+// Lets every reply already sent reach the page.
+const repliesLand = () => act(() => new Promise((landed) => setTimeout(landed, 0)));
 
 // How the page stands toward a reload, as the update check reads it.
 function PageReadiness() {
@@ -60,6 +64,8 @@ const film = () => screen.getByRole('region', { name: '示例互动短片' });
 // What the teacher is saying, in its subtitle in the picture.
 const subtitle = () => within(film()).getByRole('region', { name: '小兔的话' });
 const caption = () => within(subtitle()).getByRole('status');
+// The draft's notice in the picture, once it shows.
+const draftNotice = () => screen.findByRole('complementary', { name: '学习草稿' });
 const readiness = () => screen.getByRole('status', { name: '刷新' });
 const start = async (name: RegExp) => userEvent.click(await screen.findByRole('button', { name }));
 
@@ -133,14 +139,16 @@ it('starts the film all the same when the browser refuses the whole screen', asy
   expect(screen.queryByRole('alert')).not.toBeInTheDocument();
 });
 
-it('lays every control into the picture, with no strip of its own', async () => {
+it('lays every control into the picture, and says for a moment that the scene is saved', async () => {
   serve(null);
   open('token');
   await start(/开始短片/);
   const picture = film();
   for (const name of ['重听这一句', '字幕', '声音', '按住问小兔'])
     expect(picture).toContainElement(screen.getByRole('button', { name }));
-  expect(picture).toContainElement(screen.getByRole('complementary', { name: '学习草稿' }));
+  const notice = await draftNotice();
+  expect(picture).toContainElement(notice);
+  expect(notice).toHaveTextContent('已保存');
 });
 
 it('saves each scene a signed-in child reaches and asks about the scene on screen', async () => {
@@ -152,6 +160,21 @@ it('saves each scene a signed-in child reaches and asks about the scene on scree
   expect(caption()).toHaveTextContent('一共有几颗？');
   expect(screen.getByRole('button', { name: '给我一个提示，还有 1 个' })).toBeInTheDocument();
   await waitFor(() => expect(savedSteps(fetch)).toEqual(['look', 'count']));
+});
+
+it('tells the child the lesson picked up where they left it, and starts over when asked', async () => {
+  const fetch = serve(savedAt('count'));
+  open('token');
+  await start(/接着上次的地方/);
+  const notice = await draftNotice();
+  expect(notice).toHaveTextContent('从上次的地方继续');
+  // The scene picked up is saved again before the child chooses.
+  await waitFor(() => expect(savedSteps(fetch)).toEqual(['count']));
+  await repliesLand();
+  await userEvent.click(within(notice).getByRole('button', { name: '从头做' }));
+  expect(caption()).toHaveTextContent('看看这颗小石子。');
+  expect(screen.queryByText('从上次的地方继续')).not.toBeInTheDocument();
+  await waitFor(() => expect(savedSteps(fetch)).toEqual(['count', 'look']));
 });
 
 it('listens for the answer by itself once the question is heard, and offers numbers without a microphone', async () => {
@@ -197,14 +220,12 @@ it('starts over at the first scene when the saved step is not a later scene', as
   expect(caption()).toHaveTextContent('看看这颗小石子。');
 });
 
-it('holds a reload while the film plays, and then while the place reached is unsaved', async () => {
+it('keeps the notice while the place reached is unsaved, and holds a reload until then', async () => {
   serve(null, { savingFails: true });
   open('token');
   await start(/开始短片/);
   expect(readiness()).toHaveTextContent('playing');
-  await waitFor(() =>
-    expect(screen.getByRole('complementary', { name: '学习草稿' })).toHaveTextContent('还没同步'),
-  );
+  expect(await draftNotice()).toHaveTextContent('还没同步');
   expect(readiness()).toHaveTextContent('playing');
   await hearLineToEnd();
   await waitFor(() => expect(readiness()).toHaveTextContent('unsaved'));

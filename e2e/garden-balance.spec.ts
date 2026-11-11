@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import pg from 'pg';
+import { draftSaved } from './draft-save.js';
 import { gardenFilm, movesToTheAnswer, play } from './garden-film.js';
 import { holdWhile } from './hold.js';
 import { seedSignedInFamily } from './seeded-family.js';
@@ -42,14 +43,19 @@ test('a child places the garden problem, resumes it and is judged on the counted
     );
 
     // From the first cabbage to the question of the count, every scene by hand.
+    const answerSaved = draftSaved(page, 'answer');
     await play(movesToTheAnswer(page));
     await expect(page.getByRole('region', { name: '说出答案' })).toBeVisible({ timeout: 30_000 });
     await page.screenshot({ path: info.outputPath('answer-scene.png') });
 
-    // The scene reached is saved: coming back resumes at the question.
-    await expect(page.getByRole('complementary', { name: '学习草稿' })).toHaveText(/草稿已保存/);
+    // The scene reached is saved: coming back resumes at the question, and
+    // the draft notice says so for a moment.
+    await answerSaved;
     await page.reload();
     await page.getByRole('button', { name: /接着上次的地方/ }).click();
+    await expect(film.getByRole('complementary', { name: '学习草稿' })).toHaveText(
+      /从上次的地方继续/,
+    );
     const answer = page.getByRole('region', { name: '说出答案' });
 
     // Without a microphone the answer is tapped once the question is told.

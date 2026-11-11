@@ -14,8 +14,13 @@ type Recordings = ReturnType<typeof useLessonRecordings>;
 
 // Where the film starts: a saved scene to resume, or, while the child's saved
 // place is still being looked up, nowhere yet, so a quick tap cannot start
-// over and overwrite it.
-export type Start<Shot> = { resume?: Shot; finding?: boolean };
+// over and overwrite it; and what the page does once the child picks up a
+// saved scene.
+export type Start<Shot> = {
+  resume?: Shot;
+  finding?: boolean;
+  onResume?: (shot: Shot) => void;
+};
 
 // The title card's button: it starts the film once the saved place is known
 // and every recording has arrived, and fetches the recordings again when they
@@ -24,7 +29,7 @@ export type Start<Shot> = { resume?: Shot; finding?: boolean };
 // had the tap it needs to start.
 function entry<Shot extends string>(
   recordings: Recordings,
-  { resume, finding }: Start<Shot>,
+  { resume, finding, onResume }: Start<Shot>,
   enter: (shot?: Shot) => void,
   fullscreen: () => void,
 ) {
@@ -36,6 +41,7 @@ function entry<Shot extends string>(
     label: resume ? '接着上次的地方' : '开始短片',
     onEnter: () => {
       enter(resume);
+      if (resume) onResume?.(resume);
       fullscreen();
     },
   };

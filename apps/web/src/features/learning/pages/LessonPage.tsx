@@ -39,11 +39,13 @@ export function lessonPage<
   const { script, story } = lesson;
   const look = stageLook(lesson);
   const tale = filmStory(script, story);
-  const first = { stepId: script.shots[0], drawing: [] };
+  const firstScene = script.shots[0];
+  const first = { stepId: firstScene, drawing: [] };
   const Screen = lessonScreen(lesson, look);
   // What the controls in the picture share: the playing film, the teacher's
   // subtitle and the lesson's one microphone.
-  type Lesson = { film: LessonFilm<State, Shot, Move>; subtitle: Subtitle; turn: MicrophoneTurn };
+  type Film = LessonFilm<State, Shot, Move>;
+  type Lesson = { film: Film; subtitle: Subtitle; turn: MicrophoneTurn };
   type BodyProps = {
     start?: Start<Shot>;
     onArrive?: (shot: Shot) => void;
@@ -83,14 +85,25 @@ export function lessonPage<
 
   // A signed-in child's lesson: each scene reached that is work in progress
   // is saved, so coming back resumes at its start, and the answer, the
-  // questions and the draft all belong to this child.
+  // questions and the draft all belong to this child. Starting over from a
+  // resumed scene plays the first scene, which saves over the place picked
+  // up when it is work in progress; otherwise the draft is dropped.
   function SignedIn({ scope }: { scope: LearningScope }) {
     const draft = useLessonDraft(scope, first);
+    const [picked, setPicked] = useState<{ shot: Shot }>();
     const saved = draft.status === 'saved' ? draft.content.stepId : undefined;
     const resume = saved === undefined ? undefined : resumed(script, saved);
+    function startOver(film: Film) {
+      film.go(firstScene);
+      if (!story.savesProgress(firstScene)) void draft.discard();
+    }
     return (
       <Body
-        start={{ resume, finding: draft.status === 'loading' }}
+        start={{
+          resume,
+          finding: draft.status === 'loading',
+          onResume: (shot) => setPicked({ shot }),
+        }}
         onArrive={(shot) => {
           if (story.savesProgress(shot)) void draft.saveAs({ stepId: shot, drawing: [] });
         }}
@@ -103,6 +116,8 @@ export function lessonPage<
             turn={turn}
             subtitle={subtitle}
             draft={draft}
+            resumed={picked}
+            onRestart={() => startOver(film)}
           />
         )}
       />

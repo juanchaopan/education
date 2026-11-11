@@ -54,10 +54,12 @@ it('keeps ink on failure, retries it, and restores the acknowledged step on retu
   });
   expect(result.current.status).toBe('unsynced');
   expect(result.current.content).toEqual(edit);
+  expect(result.current.saves).toBe(0);
   await act(async () => {
     await result.current.save();
   });
   expect(result.current.status).toBe('saved');
+  expect(result.current.saves).toBe(1);
   expect(JSON.parse(fetch.mock.calls[2]![1].body)).toEqual({
     action: 'save',
     revision: null,
@@ -66,6 +68,7 @@ it('keeps ink on failure, retries it, and restores the acknowledged step on retu
   unmount();
   const reopened = setup(fetch).result;
   await waitFor(() => expect(reopened.current.content).toEqual(edit));
+  expect(reopened.current.saves).toBe(0);
 });
 
 it('keeps edits during a conflict until an explicit choice and rebases only after that choice', async () => {
@@ -92,6 +95,7 @@ it('keeps edits during a conflict until an explicit choice and rebases only afte
     await result.current.save();
   });
   expect(JSON.parse(fetch.mock.calls[2]![1].body).revision).toBe(remote.revision);
+  expect(result.current.saves).toBe(1);
 });
 
 it('can use the remote version, and does not show the previous account’s draft after identity changes', async () => {
@@ -149,6 +153,7 @@ it('records and saves a step reached in one call, on top of the saved revision',
     .mockResolvedValueOnce(reply({ ...remote, content: reached }));
   const { result } = setup(fetch);
   await waitFor(() => expect(result.current.status).toBe('saved'));
+  expect(result.current.saves).toBe(0);
   await act(async () => {
     await result.current.saveAs(reached);
   });
@@ -159,6 +164,7 @@ it('records and saves a step reached in one call, on top of the saved revision',
   });
   expect(result.current.content).toEqual(reached);
   expect(result.current.status).toBe('saved');
+  expect(result.current.saves).toBe(1);
 });
 
 it('tells the page an edit a reload would lose, and saves it when the page asks', async () => {
@@ -209,6 +215,7 @@ it('sends a discard that failed again as a discard when the page asks, never as 
     revision: remote.revision,
   });
   expect(result.current.draft.status).toBe('clean');
+  expect(result.current.draft.saves).toBe(0);
 });
 
 it('tells the page an edit kept through a conflict is unsaved until the child chooses', async () => {

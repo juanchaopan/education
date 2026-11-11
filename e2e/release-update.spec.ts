@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import pg from 'pg';
+import { draftSaved } from './draft-save.js';
 import { gardenFilm, movesToTheAnswer } from './garden-film.js';
 import { listenToNarration } from './narration-check.js';
 import { signInRecentParent } from './recent-parent.js';
@@ -173,10 +174,11 @@ test.describe('a signed-in child', () => {
     const narration = await listenToNarration(page);
     const site = await serveReleases(page, older);
     await open(page, lesson);
+    const saved = draftSaved(page);
     await startFilm(page, narration);
     await narration.heard(['hello', 'clue', 'question']);
+    await saved;
     const draft = page.getByRole('complementary', { name: '学习草稿' });
-    await expect(draft).toHaveText(/草稿已保存/);
     return { narration, site, draft };
   }
 
