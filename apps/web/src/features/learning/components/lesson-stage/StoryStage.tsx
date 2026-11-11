@@ -4,7 +4,7 @@ import { StoryFrame } from './StoryFrame';
 import { storyLook } from './story-look';
 
 // The stories of the parts drawn on a lesson stage show each part on the
-// stories' own stage, in its palette, without a caption over the scene.
+// stories' own stage, in its palette, without controls over the scene.
 export function StoryStage({ children }: { children: ReactNode }) {
   return (
     <StoryFrame>
@@ -13,7 +13,6 @@ export function StoryStage({ children }: { children: ReactNode }) {
         shot="first"
         speaking={false}
         entryLabel="开始短片"
-        onReplay={() => {}}
         onActivate={() => {}}
       >
         {children}

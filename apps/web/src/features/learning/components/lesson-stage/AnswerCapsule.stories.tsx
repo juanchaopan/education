@@ -7,6 +7,7 @@ const meta = {
   component: AnswerCapsule,
   decorators: [onStoryPainting],
   args: {
+    question: '一棵青菜和几根黄瓜一样重？',
     step: { kind: 'confirm', heard: '九根', count: 9 },
     unit: '根',
     choices: [6, 7, 8, 9, 10, 12],

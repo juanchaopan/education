@@ -177,17 +177,20 @@ function childControls(
 // on screen an earlier step's cue stops and is forgotten. Hearing a cue again
 // restarts it in place, or replays the last one once it has ended. A recording
 // that does not come out is reported, stays for the child to hear again, and
-// is noted in the console with its kind.
+// is noted in the console with its kind. With the sound off the player plays
+// on muted, so every line still ends when it would and the film moves on.
 export function createNarration({
   createAudio = () => new Audio(),
   onStatus = () => {},
 }: Options = {}) {
   const playing: Playing = {};
   let player: HTMLAudioElement | undefined;
+  let muted = false;
 
   function begin(clip: Clip) {
     return new Promise<CueResult>((resolve) => {
-      const audio = (player ??= createAudio());
+      player ??= Object.assign(createAudio(), { muted });
+      const audio = player;
       const cue = createCue(audio, {
         onFail(failure) {
           console.warn('Narration did not play', { clip: clip.source, failure });
@@ -219,6 +222,11 @@ export function createNarration({
       if (playing.last?.step !== step) playing.last = undefined;
       if (playing.active && playing.active.step !== step) stopActive();
       if (!playing.active) onStatus(idleStatus(playing.last));
+    },
+    // Turns the teacher's voice off or on, for this line and every later one.
+    mute(silent: boolean) {
+      muted = silent;
+      if (player) player.muted = silent;
     },
     // Leaving the lesson: whatever was still being said stops.
     close() {

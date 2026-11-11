@@ -8,8 +8,8 @@ type Heard = Readonly<{ status: NarrationStatus; failure?: NarrationFailure }>;
 // for the new step keeps playing. Hiding the page pauses the cue until the
 // child continues, and closing the lesson stops it. While a recording does not
 // come out, its kind is known as the failure. A report that changes nothing
-// leaves the lesson as it is drawn.
-export function useNarration(stepId: string, createAudio?: () => HTMLAudioElement) {
+// leaves the lesson as it is drawn. `muted` plays the lines without sound.
+export function useNarration(stepId: string, createAudio?: () => HTMLAudioElement, muted = false) {
   const [heard, setHeard] = useState<Heard>({ status: 'silent' });
   const [narration] = useState(() =>
     createNarration({
@@ -33,6 +33,7 @@ export function useNarration(stepId: string, createAudio?: () => HTMLAudioElemen
   }, [narration]);
 
   useEffect(() => narration.keep(stepId), [narration, stepId]);
+  useEffect(() => narration.mute(muted), [narration, muted]);
 
   return { ...narration, ...heard };
 }

@@ -3,6 +3,8 @@ import type { CSSProperties } from 'react';
 // The colours a lesson's stage is painted in, taken from its backdrop. Each one
 // becomes a `--stage-<name>` custom property on the stage, so every part drawn
 // on it shares the lesson's palette while the site's tokens keep the spacing.
+// The controls laid into the picture are the same glass on every lesson, so
+// they take their colours from the site's dew tokens instead.
 export type StagePalette = Readonly<{
   // Behind the backdrop while its picture loads.
   sky: string;
@@ -20,19 +22,6 @@ export type StagePalette = Readonly<{
   buttonHover: string;
   buttonEdge: string;
   buttonShadow: string;
-  titleBar: string;
-  titleBarShade: string;
-  titleBarDot: string;
-  replay: string;
-  replayEdge: string;
-  replayPlaying: string;
-  // The ring that calls for a tap on a line waiting to be heard again.
-  replayCall: string;
-  caption: string;
-  captionEdge: string;
-  captionShadow: string;
-  captionText: string;
-  speaker: string;
   teacherShadow: string;
   teacherGround: string;
   // The outline round the prop or place that moves next, and its brighter
@@ -121,6 +110,9 @@ export type StageLook = Readonly<{
   // The framing of the scenes that do not keep the establishing one.
   cameras?: Readonly<Partial<Record<string, Camera>>>;
   teacher: Teacher;
+  // The part of the world the lesson's props take up in every scene, which
+  // an upright frame fits to its width.
+  staging: Box;
   palette: StagePalette;
 }>;
 
@@ -131,6 +123,17 @@ export function paletteStyle(palette: StagePalette) {
   return Object.fromEntries(
     Object.entries(palette).map(([name, value]) => [propertyName(name), value]),
   ) as CSSProperties;
+}
+
+// The props' part of the world as `--staging-*` numbers, which the stage's
+// layout reads.
+export function stagingStyle({ x, y, width, height }: Box) {
+  return {
+    '--staging-x': x,
+    '--staging-y': y,
+    '--staging-width': width,
+    '--staging-height': height,
+  } as CSSProperties;
 }
 
 // Starts a stage part's animation `seconds` late, through its `--delay`; a

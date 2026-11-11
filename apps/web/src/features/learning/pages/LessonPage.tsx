@@ -1,48 +1,26 @@
-import type { ComponentType, ReactNode } from 'react';
-import { useFullscreen } from '../../../shared/lib/useFullscreen';
-import { LessonStage } from '../components/lesson-stage/LessonStage';
-import { DragGhost } from '../components/lesson-stage/Prop';
+import { useState, type ComponentType, type ReactNode } from 'react';
+import { StagePlace } from '../components/lesson-stage/LessonStage';
 import type { LearningScope } from '../data-access/learning-request';
 import { useLessonDraft } from '../data-access/useLessonDraft';
+import { useLessonPreferences } from '../data-access/useLessonPreferences';
 import { useLessonRecordings } from '../data-access/useLessonRecordings';
 import type { FilmState } from '../interaction/lesson-film';
+import { createSubtitle, type Subtitle } from '../interaction/subtitle';
 import { useLessonFilm, type LessonFilm } from '../interaction/useLessonFilm';
-import { useStageDrag } from '../interaction/useStageDrag';
 import { filmStory, resumed, stageLook, type LessonDefinition } from '../lessons/lesson-definition';
+import { createMicrophoneTurn, type MicrophoneTurn } from '../voice/microphone-turn';
+import { FilmControls } from './FilmControls';
 import { LessonPanels } from './LessonPanels';
 import { LessonSignInNotice } from './LessonSignInNotice';
+import { lessonScreen, type Start } from './lesson-screen';
 import styles from './LessonPage.module.css';
 
-type Recordings = ReturnType<typeof useLessonRecordings>;
-
-// Where the film starts: a saved scene to resume, or, while the child's saved
-// place is still being looked up, nowhere yet, so a quick tap cannot start
-// over and overwrite it.
-type Start<Shot> = { resume?: Shot; finding?: boolean };
-
-// The title card's button: it starts the film once the saved place is known
-// and every recording has arrived, and fetches the recordings again when they
-// did not all arrive. Starting the film also asks for the whole screen in the
-// same tap, the only time a browser grants it, once the teacher's voice has
-// had the tap it needs to start.
-function entry<Shot extends string>(
-  recordings: Recordings,
-  { resume, finding }: Start<Shot>,
-  enter: (shot?: Shot) => void,
-  fullscreen: () => void,
-) {
-  if (finding) return { label: '正在找上次的地方…' };
-  if (recordings.preparation === 'preparing') return { label: '正在准备声音…' };
-  if (recordings.preparation === 'failed')
-    return { label: '声音没下载好，点这里再试', onEnter: recordings.retry };
-  return {
-    label: resume ? '接着上次的地方' : '开始短片',
-    onEnter: () => {
-      enter(resume);
-      fullscreen();
-    },
-  };
-}
+// The sign-in notice a visitor sees where a child's microphone would be.
+const visitorControls = () => (
+  <StagePlace at="corner">
+    <LessonSignInNotice />
+  </StagePlace>
+);
 
 // One problem's lesson page, built once for its own definition, so the page
 // holds the lesson to its own state, scenes, lines, moves and props. Anyone
@@ -58,87 +36,88 @@ export function lessonPage<
 >(
   lesson: LessonDefinition<State, Shot, Line, Move, Piece, Look>,
 ): ComponentType<{ csrf?: string }> {
-  const { script, story, props, Scene } = lesson;
+  const { script, story } = lesson;
   const look = stageLook(lesson);
   const tale = filmStory(script, story);
-  const first = { stepId: script.shots[0], drawing: [] };
+  const firstScene = script.shots[0];
+  const first = { stepId: firstScene, drawing: [] };
+  const Screen = lessonScreen(lesson, look);
+  // What the controls in the picture share: the playing film, the teacher's
+  // subtitle and the lesson's one microphone.
   type Film = LessonFilm<State, Shot, Move>;
-  type ScreenProps = { film: Film; recordings: Recordings; start: Start<Shot> };
+  type Lesson = { film: Film; subtitle: Subtitle; turn: MicrophoneTurn };
   type BodyProps = {
     start?: Start<Shot>;
     onArrive?: (shot: Shot) => void;
-    panels: (film: Film) => ReactNode;
+    controls: (lesson: Lesson) => ReactNode;
   };
 
-  // The film and the props the child moves. A drag changes only this part of
-  // the page, never the panels beside it. The film holds the whole screen
-  // from its start until it leaves the page.
-  function Screen({ film, recordings, start }: ScreenProps) {
-    const drag = useStageDrag(film, props);
-    const fullscreen = useFullscreen();
-    const { label, onEnter } = entry(recordings, start, film.enter, fullscreen);
-    const { state } = film;
-    const { ghost } = drag;
-    return (
-      <LessonStage
-        look={look}
-        shot={state.shot}
-        caption={state.shot === 'opening' ? undefined : film.caption}
-        speaking={film.speaking}
-        failure={film.failure}
-        entryLabel={label}
-        worldRef={drag.world}
-        defs={lesson.defs}
-        ambience={lesson.ambience}
-        ghost={
-          ghost && (
-            <DragGhost x={ghost.x} y={ghost.y}>
-              {props.carried(ghost)}
-            </DragGhost>
-          )
-        }
-        onEnter={onEnter}
-        onReplay={film.replay}
-        onActivate={drag.activate}
-      >
-        <Scene state={state} handling={drag.handling} />
-      </LessonStage>
-    );
-  }
-
-  // The playing film filling the screen, with whatever goes with it in a
-  // strip of its own, its recordings fetched as the page opens.
-  function Body({ start = {}, onArrive, panels }: BodyProps) {
+  // The playing film filling the screen, its recordings fetched as the page
+  // opens, its sound and captions as the child chose them on this device, and
+  // the controls every lesson has beside the page's own.
+  function Body({ start = {}, onArrive, controls }: BodyProps) {
     const recordings = useLessonRecordings(script.lines);
-    const film = useLessonFilm(tale, { onArrive });
+    const preferences = useLessonPreferences();
+    const film = useLessonFilm(tale, { onArrive, muted: !preferences.sound });
+    const [subtitle] = useState(createSubtitle);
+    const [turn] = useState(createMicrophoneTurn);
     return (
       <div className={styles.lesson}>
-        <Screen film={film} recordings={recordings} start={start} />
-        <div className={styles.panels}>{panels(film)}</div>
+        <Screen
+          film={film}
+          recordings={recordings}
+          start={start}
+          controls={
+            <FilmControls
+              film={film}
+              subtitle={subtitle}
+              turn={turn}
+              preferences={preferences}
+              teacher={look.teacher}
+            >
+              {controls({ film, subtitle, turn })}
+            </FilmControls>
+          }
+        />
       </div>
     );
   }
 
   // A signed-in child's lesson: each scene reached that is work in progress
   // is saved, so coming back resumes at its start, and the answer, the
-  // questions and the draft all belong to this child.
+  // questions and the draft all belong to this child. Starting over from a
+  // resumed scene plays the first scene, which saves over the place picked
+  // up when it is work in progress; otherwise the draft is dropped.
   function SignedIn({ scope }: { scope: LearningScope }) {
     const draft = useLessonDraft(scope, first);
+    const [picked, setPicked] = useState<{ shot: Shot }>();
     const saved = draft.status === 'saved' ? draft.content.stepId : undefined;
     const resume = saved === undefined ? undefined : resumed(script, saved);
+    function startOver(film: Film) {
+      film.go(firstScene);
+      if (!story.savesProgress(firstScene)) void draft.discard();
+    }
     return (
       <Body
-        start={{ resume, finding: draft.status === 'loading' }}
+        start={{
+          resume,
+          finding: draft.status === 'loading',
+          onResume: (shot) => setPicked({ shot }),
+        }}
         onArrive={(shot) => {
           if (story.savesProgress(shot)) void draft.saveAs({ stepId: shot, drawing: [] });
         }}
-        panels={(film) => (
+        controls={({ film, subtitle, turn }) => (
           <LessonPanels
             lesson={lesson}
             teacher={look.teacher.name}
             scope={scope}
             film={film}
+            turn={turn}
+            subtitle={subtitle}
             draft={draft}
+            resumed={picked}
+            onRestart={() => startOver(film)}
           />
         )}
       />
@@ -146,7 +125,7 @@ export function lessonPage<
   }
 
   return function LessonPage({ csrf }) {
-    if (!csrf) return <Body panels={() => <LessonSignInNotice teacher={look.teacher.name} />} />;
+    if (!csrf) return <Body controls={visitorControls} />;
     return <SignedIn scope={{ ...lesson.problem, csrf }} />;
   };
 }

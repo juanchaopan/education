@@ -50,7 +50,7 @@
 
 题目不写自己的页面：`lessonPage` 按这道题的定义构造公共的 `LessonPage`，它和 `LessonPanels` 一起接起短片、旁白、拖动、草稿、作答和提问，每道题的类型从定义一直检查到页面。`lessons/registry.test.ts` 逐题检查登记表：每句台词都有录音，每幕都有进场台词，作答那一幕在幕序里且后面还有一幕，题目版本在登记表、定义和题目插件里一致，幕名和插件的步骤一致，作答用到的提示都在插件里，按每一幕的取景道具所占的范围都在所选背景的空地里。背景和讲课角色的 id 只能是库里有的，写错时类型检查不通过。`npm run arch` 保证一道题不引用另一道题的文件、题目的代码只在打开时加载、网站的代码不引用题目插件。
 
-几道题共用的部分在 `features/learning` 里：旁白排队、重听和打断（`useNarration`）、对象拖动（`bindObjectDrag`）、提示音（`createChime`）、语音提示文字（`voiceMessage`）、说出的数（`spokenNumber`）、按住说话的按钮（`HoldToTalkButton`）、一课共用的麦克风（`createMicrophoneTurn`）、自动听并确认最终答案（`SpokenFinalAnswer`）、每一幕的提问（`SceneQuestions`）、没登录时的提示（`LessonSignInNotice`）和草稿（`useLessonDraft`）。背景和角色这类绘景图由 OpenAI 的图像生成制作，放进绘景和角色库；孩子能操作的数学对象写成 SVG。
+几道题共用的部分在 `features/learning` 里：旁白排队、重听和打断（`useNarration`）、对象拖动（`bindObjectDrag`）、提示音（`createChime`）、语音提示文字（`voiceMessage`）、说出的数（`spokenNumber`）、画面里的控件（按住提问的话筒 `AskMicrophone`、字幕、作答胶囊、萤火虫提示和提示条，见 [课堂公共部件与绘景库](lesson-kit.md#题目页的画面和控件)）、一课共用的麦克风（`createMicrophoneTurn`）、自动听并确认最终答案（`SpokenFinalAnswer`）、每一幕的提问（`SceneQuestions`）、没登录时的提示（`LessonSignInNotice`）和草稿（`useLessonDraft`）。背景和角色这类绘景图由 OpenAI 的图像生成制作，放进绘景和角色库；孩子能操作的数学对象写成 SVG。
 
 ## 开发流程
 

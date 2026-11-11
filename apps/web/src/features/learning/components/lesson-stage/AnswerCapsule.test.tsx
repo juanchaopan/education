@@ -15,7 +15,14 @@ function capsule(step: AnswerStep, blocked = false) {
     onContinue: vi.fn(),
   };
   const view = render(
-    <AnswerCapsule step={step} unit="根" choices={[8, 9]} blocked={blocked} {...on} />,
+    <AnswerCapsule
+      question="一共有几根黄瓜？"
+      step={step}
+      unit="根"
+      choices={[8, 9]}
+      blocked={blocked}
+      {...on}
+    />,
   );
   return { ...on, ...view };
 }
@@ -31,10 +38,10 @@ it('stops listening when the child says they are done', async () => {
   expect(on.onFinish).toHaveBeenCalledOnce();
 });
 
-it('shows the count it heard, to agree with or say again', async () => {
+it('shows the count it heard, to agree with or say again, under the question it answers', async () => {
   const on = capsule({ kind: 'confirm', heard: '九根', count: 9 });
   const answer = screen.getByRole('region', { name: '说出答案' });
-  expect(answer).toHaveTextContent('我听到9根');
+  expect(answer).toHaveTextContent('一共有几根黄瓜？我听到9根');
   await userEvent.click(screen.getByRole('button', { name: '对，是 9' }));
   await userEvent.click(screen.getByRole('button', { name: '重说' }));
   expect(on.onConfirm).toHaveBeenCalledOnce();

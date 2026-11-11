@@ -1,5 +1,5 @@
 /* A pill of smoked glass holding the answer's drops, as wide as what it
-   holds and wrapping onto a second row when the numbers to tap need it. */
+   holds. */
 .capsule {
   display: flex;
   flex-wrap: wrap;
@@ -50,9 +50,11 @@
   font-size: 0.55em;
 }
 
+/* The numbers to tap, six to a row at most, so even a long row of them
+   stays a small block at the bottom of a phone. */
 .choices {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(6, auto);
   justify-content: center;
   gap: var(--space-2);
 }

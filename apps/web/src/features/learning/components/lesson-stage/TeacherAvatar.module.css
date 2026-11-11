@@ -1,10 +1,11 @@
-/* A round portrait, as large as a microphone drop, with a soft light behind
-   the face so it reads on any painting. */
+/* A round portrait, as large as a microphone drop and growing with the
+   picture it is laid into, with a soft light behind the face so it reads on
+   any painting. */
 .avatar {
   position: relative;
   display: inline-block;
   flex: none;
-  inline-size: var(--avatar-size, calc(var(--touch-target) * 1.45));
+  inline-size: max(var(--touch-target) * 1.45, 8cqmin);
   aspect-ratio: 1;
 }
 

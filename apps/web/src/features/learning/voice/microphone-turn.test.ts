@@ -28,3 +28,14 @@ it('takes the microphone from a page listening on its own, which is told to stop
   expect(turn.blocks(listening)).toBe(true);
   expect(turn.take(listening, stop)).toBe(false);
 });
+
+it('tells when the child is holding the microphone, not when a page listens on its own', () => {
+  const turn = createMicrophoneTurn();
+  const [listening, held] = [Symbol('listening'), Symbol('held')];
+  turn.take(listening, () => turn.give(listening));
+  expect(turn.held()).toBe(false);
+  turn.take(held);
+  expect(turn.held()).toBe(true);
+  turn.give(held);
+  expect(turn.held()).toBe(false);
+});

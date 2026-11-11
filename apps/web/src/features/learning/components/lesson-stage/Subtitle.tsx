@@ -20,38 +20,50 @@ type Props = {
   onResume?: () => void;
 };
 
+function Mark({ narration, teacher, onResume }: Omit<Props, 'text' | 'thinking'>) {
+  if (narration === 'paused')
+    return (
+      <span className={styles.mark}>
+        <Dewdrop
+          icon="play"
+          tone="honey"
+          size="small"
+          label={`接着听${teacher.name}讲`}
+          onClick={onResume}
+        />
+      </span>
+    );
+  if (narration === 'held')
+    return (
+      <span className={styles.held} aria-hidden="true">
+        <Icon name="pause" />
+      </span>
+    );
+  return null;
+}
+
 // What the teacher says, as a film's subtitle beside the teacher's round
 // portrait: the lines it narrates and every reply, one at a time, the newest
 // in place of the last. A paused narration is carried on from the play mark
 // on the portrait; while the child speaks the mark only shows it is held.
 // Screen readers hear each new line with the teacher's name before it, once.
-// Long words scroll inside the subtitle, so while it has words it takes the
-// keyboard's focus too and can be scrolled with the arrow keys.
+// With nothing to say the subtitle fades out but stays in place, so screen
+// readers keep hearing its next words. Long words scroll inside the
+// subtitle, so while it has words it takes the keyboard's focus too and can
+// be scrolled with the arrow keys.
 export function Subtitle({ teacher, text, thinking = false, narration, onResume }: Props) {
   const saying = !!text || thinking;
-  if (!saying && !narration) return null;
   return (
-    <div className={styles.subtitle}>
+    <section
+      className={styles.subtitle}
+      aria-label={`${teacher.name}的话`}
+      data-quiet={(!saying && !narration) || undefined}
+    >
       <TeacherAvatar teacher={teacher}>
-        {narration === 'paused' && (
-          <span className={styles.mark}>
-            <Dewdrop
-              icon="play"
-              tone="honey"
-              size="small"
-              label={`接着听${teacher.name}讲`}
-              onClick={onResume}
-            />
-          </span>
-        )}
-        {narration === 'held' && (
-          <span className={styles.held} aria-hidden="true">
-            <Icon name="pause" />
-          </span>
-        )}
+        <Mark narration={narration} teacher={teacher} onResume={onResume} />
       </TeacherAvatar>
       <p className={styles.words} role="status" tabIndex={saying ? 0 : undefined}>
-        <Spoken>{teacher.name}：</Spoken>
+        {saying && <Spoken>{teacher.name}：</Spoken>}
         {text}
         {thinking && (
           <span className={styles.thinking}>
@@ -59,6 +71,6 @@ export function Subtitle({ teacher, text, thinking = false, narration, onResume 
           </span>
         )}
       </p>
-    </div>
+    </section>
   );
 }

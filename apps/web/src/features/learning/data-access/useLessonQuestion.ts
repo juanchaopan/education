@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import type { LearningScope } from './learning-request';
 import { useQuestionHelp } from './useQuestionHelp';
 import { useTeachingFeedback } from './useTeachingFeedback';
@@ -15,7 +15,8 @@ type Options = VoiceOptions & {
 // button while speaking. The child reads over what was heard and corrects it
 // before it goes to the teacher, about the scene it was asked in, or drops
 // it. A question is never an attempt; sent while the child is answering it
-// is recorded as help first, and does not go out until that is recorded.
+// is recorded as help first, and does not go out until that is recorded. The
+// last question sent stays known, for the child to read while the reply comes.
 export function useLessonQuestion(
   scope: LearningScope,
   stepId: string,
@@ -24,6 +25,7 @@ export function useLessonQuestion(
   const voice = useVoiceInput(scope, stepId, 'hold', voiceOptions);
   const feedback = useTeachingFeedback(scope);
   const askedIn = useRef(stepId);
+  const [asked, setAsked] = useState<string>();
   const answering = stepId === answerStep;
   const help = useQuestionHelp(scope, answering);
 
@@ -31,6 +33,7 @@ export function useLessonQuestion(
     voice: voice.state,
     blocked: voice.blocked,
     reply: feedback.state,
+    asked,
     sending: help.recording,
     sendFailed: help.failed,
     press() {
@@ -45,7 +48,9 @@ export function useLessonQuestion(
       if (voice.state.status !== 'review' || !voice.state.text.trim()) return;
       if (answering && !(await help.counted())) return;
       const text = voice.confirm();
-      if (text) void feedback.ask({ stepId: askedIn.current, text, drawing: [] });
+      if (!text) return;
+      setAsked(text);
+      void feedback.ask({ stepId: askedIn.current, text, drawing: [] });
     },
     guide() {
       voice.guide();

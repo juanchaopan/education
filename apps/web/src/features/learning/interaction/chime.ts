@@ -10,9 +10,12 @@ export function chimeMs(notes: readonly number[]) {
 // scale settling. One audio context serves the whole lesson, its tones and
 // whatever else listens through Web Audio, and is closed when the lesson
 // closes; a browser without Web Audio, or one that refuses to start it,
-// simply stays quiet.
+// simply stays quiet. While the lesson's sound is off the tones stay quiet
+// too, but the context still starts with the child's tap, since the
+// microphone is measured through it.
 export function createChime() {
   let context: AudioContext | undefined;
+  let muted = false;
   function audio() {
     try {
       context ??= new AudioContext();
@@ -25,7 +28,7 @@ export function createChime() {
   return {
     play(notes: readonly number[]) {
       const sound = notes.length ? audio() : undefined;
-      if (!sound) return;
+      if (!sound || muted) return;
       try {
         notes.forEach((frequency, index) => {
           const start = sound.currentTime + index * noteGap;
@@ -42,6 +45,9 @@ export function createChime() {
       } catch {
         // Sound effects are decoration; the scene goes on without them.
       }
+    },
+    mute(silent: boolean) {
+      muted = silent;
     },
     // The lesson's audio context, started by the child's first tap.
     audio,

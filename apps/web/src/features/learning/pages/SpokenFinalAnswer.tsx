@@ -1,13 +1,17 @@
 import { useEffect, useState } from 'react';
 import { useLatest } from '../../../shared/lib/useLatest';
-import { SpokenAnswerPanel } from '../components/SpokenAnswerPanel';
+import { AnswerCapsule } from '../components/lesson-stage/AnswerCapsule';
+import { FireflyHint } from '../components/lesson-stage/FireflyHint';
+import { StagePlace } from '../components/lesson-stage/LessonStage';
 import type { LearningScope } from '../data-access/learning-request';
 import { useLessonAnswer, type Judgement } from '../data-access/useLessonAnswer';
 import { useVoiceInput } from '../data-access/useVoiceInput';
 import { chimeMs, type Chime } from '../interaction/chime';
 import type { NarrationFailure } from '../interaction/narration';
-import { answerStep, type CountWords } from '../interaction/spoken-answer';
+import { answerStep, answerWords, type CountWords } from '../interaction/spoken-answer';
 import { spokenNumber } from '../interaction/spoken-number';
+import type { Subtitle, Words } from '../interaction/subtitle';
+import { useSubtitleWords } from '../interaction/useSubtitleWords';
 import { usesMicrophone, type MicrophoneTurn } from '../voice/microphone-turn';
 
 // The teacher's voice, which the microphone never listens over, and the
@@ -21,6 +25,7 @@ type Film = {
 
 type Props = {
   scope: LearningScope;
+  // What the count answers.
   question: string;
   // The unit the count is said in, and what a wrong count most likely is.
   words: CountWords;
@@ -30,12 +35,22 @@ type Props = {
   hintIds: readonly string[];
   film: Film;
   turn: MicrophoneTurn;
+  subtitle: Subtitle;
   onDone: () => void;
 };
 
 // The short rising cue that tells the child the microphone is open. The
 // microphone opens once it has sounded, so it is not heard as speech.
 const listenTones = [523, 784];
+
+const hintFailed = '提示暂时打不开，可以再试一次。';
+
+// What the teacher says about the hints: thinking while one is on its way,
+// so the last hint is not said again, then the new hint or why none came.
+function hintWords(answer: ReturnType<typeof useLessonAnswer>): Words {
+  if (answer.hintWaiting) return { thinking: true };
+  return { text: answer.hintFailed ? hintFailed : answer.hint };
+}
 
 // Whether the child still has an answer to give: none was sent yet, or the
 // last one was wrong or unclear.
@@ -73,36 +88,48 @@ function useListening(voice: ReturnType<typeof useVoiceInput>, film: Film, open:
   return { awaiting: wanted && open, listenAgain: () => setWanted(true) };
 }
 
-// A lesson's final count, said out loud and confirmed, then judged on the
-// server, which records whether it was independent or helped.
-export function SpokenFinalAnswer({ scope, question, words, choices, hintIds, ...on }: Props) {
+// A lesson's final count, said out loud and confirmed in the answer capsule,
+// then judged on the server, which records whether it was independent or
+// helped. The firefly hint drop beside it gives the authored hints one by
+// one; the teacher says each hint, and every step of the answer, in its
+// subtitle.
+export function SpokenFinalAnswer({ scope, words, choices, hintIds, subtitle, ...on }: Props) {
   const answer = useLessonAnswer(scope, hintIds);
   const voice = useVoiceInput(scope, 'answer', 'listen', {
     turn: on.turn,
     audio: on.film.chime.audio,
   });
   const listening = useListening(voice, on.film, answering(answer.judgement));
+  const step = answerStep(voice.state, answer.judgement, words, listening.awaiting);
+  useSubtitleWords(subtitle, 'answer', { text: answerWords(step) });
+  useSubtitleWords(subtitle, 'hint', hintWords(answer));
+  const { state } = voice;
   return (
-    <SpokenAnswerPanel
-      question={question}
-      step={answerStep(voice.state, answer.judgement, words, listening.awaiting)}
-      choices={choices}
-      hint={answer.hint}
-      hintFailed={answer.hintFailed}
-      canHint={answer.canHint}
-      blocked={voice.blocked}
-      onListen={listening.listenAgain}
-      onFinish={voice.release}
-      onStopWaiting={voice.guide}
-      onConfirm={() => {
-        const text = voice.confirm();
-        const count = text === undefined ? undefined : spokenNumber(text, words.unit);
-        if (count !== undefined) answer.submit(count);
-      }}
-      onChoose={answer.submit}
-      onRetry={answer.retry}
-      onHint={answer.askHint}
-      onContinue={on.onDone}
-    />
+    <>
+      <StagePlace at="answer">
+        <AnswerCapsule
+          question={on.question}
+          step={step}
+          unit={words.unit}
+          choices={choices}
+          blocked={voice.blocked}
+          level={state.status === 'recording' ? state.level : undefined}
+          onListen={listening.listenAgain}
+          onFinish={voice.release}
+          onStopWaiting={voice.guide}
+          onConfirm={() => {
+            const text = voice.confirm();
+            const count = text === undefined ? undefined : spokenNumber(text, words.unit);
+            if (count !== undefined) answer.submit(count);
+          }}
+          onChoose={answer.submit}
+          onRetry={answer.retry}
+          onContinue={on.onDone}
+        />
+      </StagePlace>
+      <StagePlace at="hint">
+        <FireflyHint left={answer.hintsLeft} ready={answer.canHint} onHint={answer.askHint} />
+      </StagePlace>
+    </>
   );
 }

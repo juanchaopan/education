@@ -1,6 +1,13 @@
 /* The colours come from the lesson's palette as `--stage-*` properties set on
-   the stage itself; spacing, type and radii come from the site's tokens. */
+   the stage itself, and the props' part of the world as `--staging-*`
+   numbers; spacing, type and radii come from the site's tokens. */
 .stage {
+  /* What an upright frame keeps clear for the controls along its top and
+     its bottom, so the props never sit under them: the tools, a subtitle
+     and a notice, and the microphone with an answer of two rows of
+     numbers. */
+  --reserve-top: 14.5rem;
+  --reserve-bottom: 14rem;
   position: relative;
   isolation: isolate;
   /* The stage fills the frame the page gives it, whatever its shape, and
@@ -8,12 +15,70 @@
   container-type: size;
   inline-size: 100%;
   block-size: 100%;
-  /* Clipped, never scrolled: the blurred painting and an upright frame's
-     picture reach past its edges, and nothing may move them into view. */
+  /* Clipped, never scrolled: the painting and the world reach past its
+     edges, and nothing may move them into view. */
   overflow: clip;
   background: var(--stage-sky);
   color: var(--stage-text);
   font-weight: 600;
+}
+
+/* Where the painting and the world lie, in pixels of the frame, from
+   `--unit`, the size of one world unit.
+
+   A wide frame sees the painting and the world as one picture, as large as
+   covers the frame, so long as the middle 910 units of the world stay in
+   view across it and no more than a tenth of its height is cut off; past
+   that the blurred painting fills in round it. */
+.canvas {
+  --unit: min(max(100cqw / 1200, 100cqh / 675), 100cqw / 910, 100cqh / 607.5);
+  --world-width: calc(1200 * var(--unit));
+  --world-height: calc(675 * var(--unit));
+  --world-left: calc(50cqw - var(--world-width) / 2);
+  --world-top: calc(50cqh - var(--world-height) / 2);
+  --painting-width: var(--world-width);
+  --painting-height: var(--world-height);
+  --painting-left: var(--world-left);
+  --painting-top: var(--world-top);
+  position: absolute;
+  inset: 0;
+}
+
+/* An upright frame is filled by the painting alone, as tall as the frame
+   and moved across so the middle of the props lies in the middle of the
+   frame, as far as its edges allow. The world is scaled so the props span
+   the frame's width, never larger than the painting is drawn, and moved
+   down so the props' middle lies on the same line of the painting, unless
+   that would put them under the controls. */
+@container (orientation: portrait) {
+  .canvas {
+    --paint: calc(100cqh / 675);
+    --unit: min(100cqw / (var(--staging-width) * 1.08), var(--paint));
+    --centre: calc(var(--staging-x) + var(--staging-width) / 2);
+    --middle: calc(var(--staging-y) + var(--staging-height) / 2);
+    --half: calc(var(--staging-height) / 2 * var(--unit));
+    --line: clamp(
+      var(--reserve-top) + var(--half),
+      var(--middle) * var(--paint),
+      100cqh - var(--reserve-bottom) - var(--half)
+    );
+    --world-left: calc(50cqw - var(--centre) * var(--unit));
+    --world-top: calc(var(--line) - var(--middle) * var(--unit));
+    --painting-width: calc(1200 * var(--paint));
+    --painting-height: 100cqh;
+    --painting-left: clamp(
+      100cqw - var(--painting-width),
+      50cqw - var(--centre) * var(--paint),
+      0px
+    );
+    --painting-top: 0px;
+  }
+
+  /* The teacher is seen in the portrait beside its subtitles instead. */
+  .teacher,
+  .ground {
+    display: none;
+  }
 }
 
 /* Around the picture, wherever the frame is a different shape from the
@@ -35,32 +100,27 @@
   pointer-events: none;
 }
 
-/* The picture: the painting and the world together, in the world's shape
-   (`--world-width` by `--world-height`, set by the stage), centred and as
-   large as the frame allows while `--in-view` world units across still fit
-   its width. A wide frame sees the whole world. A frame taller than it is
-   wide sees the middle 910 units, so the props in the middle grow larger and
-   the sides of the world fall outside the stage. Nothing the scene draws
-   past the world's edge shows over the blurred painting around it. */
+.painting,
 .picture {
-  --in-view: var(--world-width);
-  --picture-width: min(
-    100cqw * var(--world-width) / var(--in-view),
-    100cqh * var(--world-width) / var(--world-height)
-  );
-  --picture-height: calc(var(--picture-width) * var(--world-height) / var(--world-width));
   position: absolute;
-  inset-block-start: calc(50% - var(--picture-height) / 2);
-  inset-inline-start: calc(50% - var(--picture-width) / 2);
-  inline-size: var(--picture-width);
-  block-size: var(--picture-height);
   overflow: clip;
 }
 
-@container (orientation: portrait) {
-  .picture {
-    --in-view: 910;
-  }
+.painting {
+  inset-block-start: var(--painting-top);
+  inset-inline-start: var(--painting-left);
+  inline-size: var(--painting-width);
+  block-size: var(--painting-height);
+  pointer-events: none;
+}
+
+/* Nothing the scene draws past the world's edge shows over the blurred
+   painting around it. */
+.picture {
+  inset-block-start: var(--world-top);
+  inset-inline-start: var(--world-left);
+  inline-size: var(--world-width);
+  block-size: var(--world-height);
 }
 
 .backdrop,
@@ -106,7 +166,7 @@
 }
 
 /* The shade along the top and the bottom of the whole stage, under the
-   title and the caption. */
+   controls laid along them. */
 .vignette {
   z-index: 1;
   background:
@@ -187,8 +247,7 @@
   background: var(--stage-button-hover);
 }
 
-.entry:focus-visible,
-.replay:focus-visible {
+.entry:focus-visible {
   outline: 4px solid var(--stage-accent);
   outline-offset: 2px;
 }
@@ -200,106 +259,153 @@
   color: var(--stage-accent);
 }
 
-/* The series and the title, centred along the top, clear of the replay
-   button in the top right and of whatever the frame around the stage puts
-   in its corners, which it tells as `--frame-corner`. */
-.titleBar {
-  --clear: max(var(--frame-corner, 0px), var(--touch-target) + var(--space-4));
-  position: absolute;
-  z-index: 3;
-  inset-block-start: var(--space-4);
-  inset-inline: calc(var(--clear) + var(--space-3));
-  display: flex;
-  justify-content: center;
-  gap: var(--space-2);
-  align-items: center;
-  font-size: var(--text-sm);
-  color: var(--stage-title-bar);
-  text-shadow: 0 2px 7px var(--stage-title-bar-shade);
-  white-space: nowrap;
-}
-
-.titleBar span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.titleBar i {
-  flex: none;
-  display: block;
-  inline-size: 5px;
-  block-size: 5px;
-  border-radius: 100%;
-  background: var(--stage-title-bar-dot);
-}
-
-.replay {
+/* The controls lie over the picture along its edges, in places named on
+   each `StagePlace`; the picture shows through everywhere between them, and
+   the middle stays the scene's. On a wide frame the tools take the top
+   right with a notice under them, and the bottom row holds the subtitle,
+   the answer or the question box, and the microphone, with the hint above
+   the microphone. The question box takes the answer's place while the child
+   asks. An on-screen keyboard lifts the bottom of the controls above it.
+   Their words grow with the picture, as a film's subtitles do. */
+.controls {
+  --subtitle-size: clamp(var(--text-base), 2.1cqi, 2.4rem);
   position: absolute;
   z-index: 4;
-  inset-block-start: var(--space-3);
-  inset-inline-end: var(--space-4);
-  inline-size: var(--touch-target);
-  block-size: var(--touch-target);
-  border: 1px solid var(--stage-replay-edge);
-  border-radius: 50%;
-  background: var(--stage-replay);
-  color: inherit;
-  font-size: var(--text-lg);
-  cursor: pointer;
-}
-
-.replay.playing {
-  background: var(--stage-replay-playing);
-}
-
-/* A line that did not come out waits for the child: the button says so in
-   words, like the film's start button, and calls for a tap until pressed. */
-.replay.again {
-  inline-size: auto;
-  padding-inline: var(--space-4);
-  border: 2px solid var(--stage-button-edge);
-  border-radius: var(--radius-pill);
-  background: var(--stage-button);
-  font: inherit;
-  font-size: var(--text-base);
-  font-weight: 850;
-  animation: call 1.6s ease-in-out infinite;
-}
-
-@keyframes call {
-  50% {
-    box-shadow: 0 0 0 var(--space-2) var(--stage-replay-call);
-  }
-}
-
-.caption {
-  position: absolute;
-  z-index: 3;
-  inset-block-end: 5.5%;
-  inset-inline-start: 50%;
-  inline-size: max-content;
-  max-inline-size: min(91%, 860px);
-  margin: 0;
-  padding: var(--space-2) var(--space-4);
-  transform: translateX(-50%);
-  border: 1px solid var(--stage-caption-edge);
-  border-radius: var(--radius-lg);
-  background: var(--stage-caption);
-  box-shadow: 0 7px 19px var(--stage-caption-shadow);
-  color: var(--stage-caption-text);
-  text-align: center;
-  font-size: clamp(var(--text-base), 2.1cqi, 1.5625rem);
-  line-height: 1.45;
+  inset: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-rows: auto auto minmax(0, 1fr) auto auto;
+  grid-template-areas:
+    '. . tools'
+    '. . notice'
+    '. . .'
+    '. . hint'
+    'subtitle answer microphone';
+  gap: var(--space-3);
+  align-items: end;
+  padding: var(--space-3) var(--space-4) calc(var(--space-4) + var(--keyboard, 0px));
+  color: var(--dew-ink);
   pointer-events: none;
 }
 
-/* The teacher's name, from the caption's `data-speaker`, leads the line. */
-.caption::before {
-  content: attr(data-speaker);
-  margin-inline-end: var(--space-2);
-  font-size: 0.68em;
-  letter-spacing: 0.06em;
-  color: var(--stage-speaker);
+.place {
+  display: flex;
+  min-inline-size: 0;
+  pointer-events: auto;
+}
+
+.place:empty,
+.controls:has([data-at='question']) [data-at='answer'] {
+  display: none;
+}
+
+.place[data-at='tools'] {
+  grid-area: tools;
+  align-self: start;
+  justify-self: end;
+}
+
+.place[data-at='notice'] {
+  grid-area: notice;
+  align-self: start;
+  justify-self: end;
+  max-inline-size: min(30rem, 60cqw);
+}
+
+.place[data-at='subtitle'] {
+  grid-area: subtitle;
+  justify-self: start;
+  max-inline-size: min(56rem, 100%);
+}
+
+.place[data-at='answer'] {
+  grid-area: answer;
+}
+
+.place[data-at='hint'] {
+  grid-area: hint;
+  justify-self: center;
+}
+
+.place[data-at='question'] {
+  grid-area: answer;
+  inline-size: clamp(16rem, 36cqw, 40rem);
+}
+
+.place[data-at='question'] > * {
+  flex: 1;
+}
+
+.place[data-at='microphone'] {
+  grid-area: microphone;
+  justify-self: end;
+}
+
+.place[data-at='corner'] {
+  grid-column: 2 / 4;
+  grid-row: 5;
+  justify-self: end;
+  max-inline-size: min(26rem, 70cqw);
+}
+
+/* An upright frame stacks them: the tools at the top, the subtitle across
+   the width under them and a notice under that; at the bottom the answer
+   or the question box across the width, above the hint on the left and the
+   microphone on the right. While a keyboard covers the bottom, the question
+   box moves up under the subtitle, so the words being typed, the send drop
+   and the props between them all stay in sight. */
+@container (orientation: portrait) {
+  .controls {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-rows: auto auto auto minmax(0, 1fr) auto auto;
+    grid-template-areas:
+      '. . tools'
+      'subtitle subtitle subtitle'
+      'notice notice notice'
+      '. . .'
+      'answer answer answer'
+      'hint . microphone';
+    padding-inline: var(--space-3);
+  }
+
+  .place[data-at='subtitle'],
+  .place[data-at='notice'] {
+    justify-self: stretch;
+    max-inline-size: none;
+  }
+
+  .place[data-at='subtitle'] > *,
+  .place[data-at='notice'] > * {
+    flex: 1;
+  }
+
+  .place[data-at='answer'] {
+    justify-self: center;
+  }
+
+  .place[data-at='hint'] {
+    justify-self: start;
+  }
+
+  .place[data-at='question'] {
+    inline-size: auto;
+  }
+
+  .place[data-at='corner'] {
+    grid-column: 1 / 4;
+    grid-row: 6;
+  }
+
+  .controls[data-keyboard] [data-at='question'] {
+    grid-area: notice;
+    align-self: start;
+  }
+
+  .controls[data-keyboard] [data-at='notice'],
+  .controls[data-keyboard] [data-at='hint'],
+  .controls[data-keyboard] [data-at='microphone'] {
+    display: none;
+  }
 }
 
 .scene {
@@ -346,27 +452,6 @@
   50% {
     translate: 0 -5px;
     rotate: 1.8deg;
-  }
-}
-
-/* On a stage as narrow as a phone the corners' controls and the caption sit
-   closer to the edge, in smaller type, leaving the scene as much room as
-   they can. */
-@container (max-width: 610px) {
-  .titleBar {
-    inset-block-start: var(--space-3);
-    font-size: 0.6875rem;
-  }
-
-  .replay {
-    inset-block-start: var(--space-2);
-    inset-inline-end: var(--space-2);
-  }
-
-  .caption {
-    inset-block-end: var(--space-3);
-    padding: var(--space-2) var(--space-3);
-    font-size: var(--text-base);
   }
 }
 

@@ -93,7 +93,11 @@ export function useLessonAnswer(scope: LearningScope, hintIds: readonly string[]
       } else submit.mutate(last.sent ? last : attemptFor(last.count));
     },
     hint: hints.at(-1),
+    // A hint is on its way, or the last request for one failed.
+    hintWaiting: hint.isPending,
     hintFailed: hint.isError,
+    // How many of the authored hints the child has still to receive.
+    hintsLeft: hintIds.length - hints.length,
     canHint: round.isSuccess && !hint.isPending && next !== undefined,
     askHint() {
       if (next && round.data && !hint.isPending)

@@ -3,7 +3,7 @@ import type { VoiceState } from '../data-access/voice-input';
 import { spokenNumber } from './spoken-number';
 import { retryable, voiceMessage, type Alternative } from './voice-message';
 
-// What the answer panel shows next. The microphone opens by itself once the
+// What the answer shows next. The microphone opens by itself once the
 // question has been told; the child says the answer and confirms the number
 // that was heard. Tapping a number is offered only when speech cannot be used
 // at all.
@@ -100,4 +100,24 @@ export function answerStep(
   if (step?.kind === 'ask' && step.choices && said) return { ...step, message: said };
   if (step) return step;
   return awaiting ? { kind: 'waiting' } : ask(said ?? '');
+}
+
+// What the teacher says about a step of the answer, in its subtitle: the
+// count it heard, to be confirmed, a correct count, and what went wrong or
+// what to do next. While the child speaks, or waits, the teacher says
+// nothing; the answer's own drops show it.
+export function answerWords(step: AnswerStep): string | undefined {
+  switch (step.kind) {
+    case 'confirm':
+      return `我听到你说「${step.heard}」，是 ${step.count} 吗？`;
+    case 'done':
+      return step.assisted
+        ? '答对了！这次用了提示，下次试试自己数出来。'
+        : '答对了！你自己算出来了。';
+    case 'ask':
+    case 'failed':
+      return step.message || undefined;
+    default:
+      return undefined;
+  }
 }
