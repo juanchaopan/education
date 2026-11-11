@@ -1,17 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { FireflyHint } from './FireflyHint';
-import { StoryPainting } from './StoryPainting';
+import { onStoryPainting } from './on-story-painting';
 
 const meta = {
   title: 'Learning/Firefly hint',
   component: FireflyHint,
-  decorators: [
-    (Story) => (
-      <StoryPainting>
-        <Story />
-      </StoryPainting>
-    ),
-  ],
+  decorators: [onStoryPainting],
   args: { left: 2, ready: true, onHint: () => {} },
 } satisfies Meta<typeof FireflyHint>;
 export default meta;

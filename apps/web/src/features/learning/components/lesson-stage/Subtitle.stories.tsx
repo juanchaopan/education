@@ -1,18 +1,12 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { teachers } from '../../media/teachers/teachers';
-import { StoryPainting } from './StoryPainting';
+import { onStoryPainting } from './on-story-painting';
 import { Subtitle } from './Subtitle';
 
 const meta = {
   title: 'Learning/Subtitle',
   component: Subtitle,
-  decorators: [
-    (Story) => (
-      <StoryPainting>
-        <Story />
-      </StoryPainting>
-    ),
-  ],
+  decorators: [onStoryPainting],
   args: {
     teacher: teachers.rabbit,
     text: '那一个苹果，能换几根黄瓜呢？碰一碰这个苹果。',

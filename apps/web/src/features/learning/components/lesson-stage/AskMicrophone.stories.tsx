@@ -1,17 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { AskMicrophone } from './AskMicrophone';
-import { StoryPainting } from './StoryPainting';
+import { onStoryPainting } from './on-story-painting';
 
 const meta = {
   title: 'Learning/Ask microphone',
   component: AskMicrophone,
-  decorators: [
-    (Story) => (
-      <StoryPainting>
-        <Story />
-      </StoryPainting>
-    ),
-  ],
+  decorators: [onStoryPainting],
   args: { label: '按住问小兔', holding: false, onPress: () => {}, onRelease: () => {} },
 } satisfies Meta<typeof AskMicrophone>;
 export default meta;

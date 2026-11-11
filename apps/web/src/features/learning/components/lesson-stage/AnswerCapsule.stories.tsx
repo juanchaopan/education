@@ -1,17 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { AnswerCapsule } from './AnswerCapsule';
-import { StoryPainting } from './StoryPainting';
+import { onStoryPainting } from './on-story-painting';
 
 const meta = {
   title: 'Learning/Answer capsule',
   component: AnswerCapsule,
-  decorators: [
-    (Story) => (
-      <StoryPainting>
-        <Story />
-      </StoryPainting>
-    ),
-  ],
+  decorators: [onStoryPainting],
   args: {
     step: { kind: 'confirm', heard: '九根', count: 9 },
     unit: '根',

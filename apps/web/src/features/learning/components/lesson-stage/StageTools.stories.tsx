@@ -1,17 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import { onStoryPainting } from './on-story-painting';
 import { StageTools } from './StageTools';
-import { StoryPainting } from './StoryPainting';
 
 const meta = {
   title: 'Learning/Stage tools',
   component: StageTools,
-  decorators: [
-    (Story) => (
-      <StoryPainting>
-        <Story />
-      </StoryPainting>
-    ),
-  ],
+  decorators: [onStoryPainting],
   args: {
     speaking: false,
     again: false,
