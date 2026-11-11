@@ -2,7 +2,7 @@ import { expect, type Page } from '@playwright/test';
 import type { ProblemSummary } from '@education/contracts';
 import { longCatalog, serveApi, signedOutApi, unverifiedParentApi, type Api } from './api';
 import { emptyParentSpaceApi, parentSpaceApi, recordedChild } from './parent-space';
-import { fixClock, waitForFonts, type Theme } from './render';
+import { fixClock, waitForPicturesAndFonts, type Theme } from './render';
 
 // One page in one state: where to open it, how the API answers, the heading
 // that shows it has finished rendering that state, a button that must also be
@@ -165,9 +165,6 @@ export async function openPageState(page: Page, state: PageState) {
     });
   if (state.last) await expect(page.getByText(state.last, { exact: true })).toBeVisible();
   await expect(page.locator('html')).toHaveAttribute('data-theme', state.theme ?? 'day');
-  await page.waitForFunction(() =>
-    [...document.images].every((image) => image.complete || image.loading === 'lazy'),
-  );
-  await waitForFonts(page);
+  await waitForPicturesAndFonts(page);
   return unexpected;
 }
