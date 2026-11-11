@@ -11,6 +11,19 @@ import { backdrops } from '../features/learning/media/backdrops/backdrops';
 // problem version: the steps a model may see and the authored hints.
 export type PluginOutline = Readonly<{ steps: readonly string[]; hints: readonly string[] }>;
 
+// What a lesson's narration record, `assets/narration.json`, says its
+// recordings were made in and from: the voice, and the words by each
+// recording's file name. The narration tool writes it as it records
+// (scripts/lesson-narration.mjs).
+export type NarrationRecord = Readonly<{
+  voice: Readonly<Record<string, unknown>>;
+  recordings: Readonly<Record<string, string>>;
+}>;
+
+// The narration voice scripts/lesson-voice.json names: the engine, and the
+// engine's settings under its name.
+export type VoiceConfig = Readonly<{ engine: string }> & Readonly<Record<string, unknown>>;
+
 // A problem version as the checks name it.
 export const versionName = ({ id, version }: ProblemVersion) => `${id}/${version}`;
 
@@ -78,5 +91,34 @@ export function lessonProblems(
     ...answerProblems(lesson),
     ...stagingProblems(lesson),
     ...pluginProblems(listed, lesson, plugin),
+  ];
+}
+
+const fileName = (clip: string) => clip.slice(clip.lastIndexOf('/') + 1);
+
+// Every line's recording was made from the words the line shows, in the voice
+// the configuration names: a line edited without being recorded again, a line
+// recorded by hand without the tool, or a voice changed in lesson-voice.json
+// without recording the lesson again is found here.
+export function narrationProblems(
+  { script }: LessonOutline,
+  config: VoiceConfig,
+  record?: NarrationRecord,
+) {
+  if (!record) return ['the lesson has no narration record'];
+  const configured: Readonly<Record<string, unknown>> = {
+    engine: config.engine,
+    ...(config[config.engine] as object),
+  };
+  const otherVoice = Object.keys(record.voice).filter(
+    (key) => record.voice[key] !== configured[key],
+  );
+  return [
+    ...otherVoice.map(
+      (key) => `the lesson was recorded with another ${key} than lesson-voice.json`,
+    ),
+    ...Object.entries(script.lines)
+      .filter(([, { text, clip }]) => record.recordings[fileName(clip)] !== text)
+      .map(([line]) => `line ${line} was not recorded from its words`),
   ];
 }

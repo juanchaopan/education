@@ -25,7 +25,7 @@
 
 [#41](https://github.com/juanchaopan/education/issues/41) 以浏览器 `MediaRecorder` 和可取消的服务端文件转写为试点起点。按设备检查支持格式，以实际录音 MIME 与容器为准。先用 WebM/Opus，按需使用 MP4/AAC。只在明确操作并经 [#37](https://github.com/juanchaopan/education/issues/37) 家长授权后录制短音频，停止录音后一次提交，取消或后台切换时释放音轨。后端遵守 [#39](https://github.com/juanchaopan/education/issues/39) 的时长、字节数、超时与用量约束。原始音频仅用于转写，应用默认不保存。识别结果单独预览、可纠正，确认后再提交；超时、拒绝、配额耗尽或无结果时保留文字草稿。浏览器在线识别需单独验证并经过相应的家长披露和授权。
 
-[#42](https://github.com/juanchaopan/education/issues/42) 负责朗读与重听。维护者试听 [#48](https://github.com/juanchaopan/education/issues/48) 的三道原型后，认可其本地 Piper `zh_CN-huayan-medium` 合成音色。该声音的训练数据许可不明确，正式发布前由维护者确认或换用许可明确的声音，见 [#42 的记录](../evidence/42/README.md)。固定指令预先生成一次并复用，孩子使用时不调用在线服务；每段音频在所在题目里试听通过后才给儿童使用。始终显示文字，无合格音频时使用文字。停止、重播和切换步骤时取消上一次播放。淘汰探针的合成测试音；浏览器播放事件只记录诊断状态。[#32](https://github.com/juanchaopan/education/issues/32) 用同一画布处理触摸和鼠标；限制 `touch-action: none` 于绘图表面，支持指针捕获、取消、清空、画布外滚动与高 DPI。画布尺寸变化时从笔迹重绘。
+[#42](https://github.com/juanchaopan/education/issues/42) 负责朗读与重听。旁白的声音是 edge-tts 的 `zh-CN-XiaoxiaoNeural`（语速 −14%、音高 +5Hz），即 [#48](https://github.com/juanchaopan/education/issues/48) 原型和菜园题所用的声音；维护者试听过本地 Piper `zh_CN-huayan-medium`、Kokoro-82M 和 MeloTTS 后选定它。旁白在出题时由维护者用录音工具（`npm run lesson:narrate`）预先生成一次并复用，孩子使用时不调用在线服务。edge-tts 调用的是微软 Edge 未公开的在线朗读接口，用它生成要发布的音频是否符合微软的条款尚不明确，正式给儿童发布前由维护者确认，否则换用许可明确的声音，见 [#42 的记录](../evidence/42/README.md)。每段音频在所在题目里试听通过后才给儿童使用。始终显示文字，无合格音频时使用文字。停止、重播和切换步骤时取消上一次播放。淘汰探针的合成测试音；浏览器播放事件只记录诊断状态。[#32](https://github.com/juanchaopan/education/issues/32) 用同一画布处理触摸和鼠标；限制 `touch-action: none` 于绘图表面，支持指针捕获、取消、清空、画布外滚动与高 DPI。画布尺寸变化时从笔迹重绘。
 
 ## 证据
 

@@ -4,11 +4,13 @@
 
 ## 声音
 
-维护者试听 [#48 的三道原型](../../adr/assets/0048-interactive-teaching-evidence.md)后，认可其中的旁白音色：本地 [Piper](https://github.com/rhasspy/piper) 中文模型 `zh_CN-huayan-medium`，语速 `length_scale 1.12`，逐句合成、按教学动作断句，生成脚本见归档标签 `archive/spike-48-interactive-lessons` 的 `*-voice.py`。
+旁白用 [edge-tts](https://github.com/rany2/edge-tts) 的 `zh-CN-XiaoxiaoNeural`，语速 −14%、音高 +5Hz，逐句合成、按教学动作断句，存成 24 kHz、48 kbit/s 的单声道 MP3。这是 #48 原型的 `story-voice.py`、`pencil-voice.py`、`rail-voice.py` 用的声音（生成脚本在归档标签 `archive/spike-48-interactive-lessons`），菜园题的 14 段旁白就是原型的录音。维护者在 #136 试听了本地 Piper `zh_CN-huayan-medium`、Kokoro-82M 的四个中文女声和 MeloTTS 的中文声音，认为都不如 Xiaoxiao。
 
-- 每道题的旁白在出题时预先生成为静态音频文件，随页面一起发布。孩子使用时不调用任何在线服务，不发送孩子的任何信息，也不产生费用，所以不涉及 #37/#39 的授权与用量控制。
+声音写在 `scripts/lesson-voice.json`：`engine` 是合成引擎，引擎名下是它的设置。`npm run lesson:narrate -- <题目文件夹>` 按台词录下缺少或改过的句子，并在这道题的 `assets/narration.json` 记下每段录音的文字和声音，见 [README](../../../README.md)。
+
+- 每道题的旁白在出题时由维护者预先生成为静态音频文件，随页面一起发布。孩子使用时不调用任何在线服务，不发送孩子的任何信息，也不产生费用，所以不涉及 #37/#39 的授权与用量控制。
 - 每段音频仍要在所在的题目里实际试听，确认断句、停顿和音画同步，见[逐题设计互动教学与验收手册](../../design/interactive-lesson-authoring.md)。
-- **许可需要维护者确认**：Piper 程序是 MIT 许可，声音模型的训练数据不是。[`zh_CN-huayan-medium` 的模型卡](https://huggingface.co/rhasspy/piper-voices/blob/main/zh/zh_CN/huayan/medium/MODEL_CARD)把中文数据 HuaYan_TTS 的许可证标为 Unknown，模型卡链接的数据集仓库已无法访问；它又是从英文 `lessac` 声音微调而来，[`lessac` 的数据](https://www.cstr.ed.ac.uk/projects/blizzard/2013/lessac_blizzard2013/license.html)只按研究许可协议提供。正式给儿童发布这个声音之前，需要维护者确认可以使用，否则换用许可明确的声音。播放功能与声音无关，换声音只需重新生成音频文件。
+- **条款需要维护者确认**：edge-tts（LGPL-3.0）调用的是微软 Edge 未公开的在线朗读接口，不是开源的声音模型，也没有面向开发者的服务条款。用它生成要发布给儿童的音频是否符合微软的条款不明确，正式给儿童发布前需要维护者确认，否则换用许可明确的声音。播放功能与声音无关，换声音只需改 `scripts/lesson-voice.json`，再用 `--new-voice` 重新录音。
 
 ## 播放规则
 
@@ -51,4 +53,4 @@
 ## 未验证
 
 - 没有真机试听。iPhone、iPad、Android 的实际播放、静音键和后台切换，按 ADR-0012 交 [#51](https://github.com/juanchaopan/education/issues/51) 验收。
-- 题库为空，还没有页面挂载这个面板，也没有正式的旁白音频文件。首批真实题目由 [#49](https://github.com/juanchaopan/education/issues/49) 按上面的声音生成旁白并接入。
+- edge-tts 生成发布音频的条款，见上文。
