@@ -17,3 +17,7 @@ const verdictPhrase =
 export function givesVerdict(sentence: string) {
   return clauseVerdict.test(sentence) || verdictPhrase.test(sentence);
 }
+
+// Shown instead of a model sentence that judges what the child said. It judges
+// nothing itself and sends the child back to the scene to check.
+export const selfCheckSentence = '这个要你自己来核对哦。看看画面，一步一步数一数、想一想。';

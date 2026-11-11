@@ -7,7 +7,8 @@ import {
 } from '@education/contracts';
 import { Type, type Static } from '@sinclair/typebox';
 import { Value } from '@sinclair/typebox/value';
-import { givesVerdict } from './verdict.js';
+import { isChildSentence } from './child-sentence.js';
+import { givesVerdict, selfCheckSentence } from './verdict.js';
 
 // Below this self-reported confidence the model's reading of the child's input
 // is treated as unreliable.
@@ -35,28 +36,12 @@ export type ModelFeedback = Static<typeof ModelFeedback>;
 // `drawn` is whether the child submitted a drawing, the only thing a highlight can point at.
 export type FeedbackStepScope = { stepId: string; area?: FeedbackRegion; drawn: boolean };
 
-// HTML tags and entities, markdown, links and control characters never belong in a sentence
-// shown to a child. Comparison signs in maths feedback are ordinary text.
-const unsafeText = /<[a-zA-Z/!?]|&#?\w+;|`|\]\(|:\/\/|www\.|[\p{Cc}\p{Cf}]/u;
-
-function isInstruction(value: string) {
-  return (
-    value.trim() === value &&
-    value.length > 0 &&
-    value.length <= feedbackInstructionMaxLength &&
-    !unsafeText.test(value)
-  );
-}
+const isInstruction = (value: string) => isChildSentence(value, feedbackInstructionMaxLength);
 
 // Shown instead of a model reply that tells the child a guess is right or
-// wrong. It judges nothing, so its status is the one that never counts as a
-// mistake, and it sends the child back to the scene to check.
+// wrong. Its status is the one that never counts as a mistake.
 export function selfCheckFeedback(stepId: string): TeachingFeedback {
-  return {
-    status: 'uncertain',
-    instruction: '这个要你自己来核对哦。看看画面，一步一步数一数、想一想。',
-    stepId,
-  };
+  return { status: 'uncertain', instruction: selfCheckSentence, stepId };
 }
 
 // The model's reply is untrusted: anything outside the exact shape is refused.
