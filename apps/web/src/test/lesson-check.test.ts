@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { establishing, framed } from '../features/learning/components/lesson-stage/stage-look';
+import {
+  boardReach,
+  establishing,
+  framed,
+} from '../features/learning/components/lesson-stage/stage-look';
 import type { TeacherRole } from '../features/learning/lessons/lesson-definition';
 import type { LessonOutline } from '../features/learning/lessons/registry';
 import { backdrops, type BackdropId } from '../features/learning/media/backdrops/backdrops';
@@ -101,6 +105,93 @@ describe('the lesson definition check', () => {
     expect(lessonProblems(listed, outline, undefined)).toEqual([
       'the server has no plugin for fixture/1',
     ]);
+  });
+});
+
+describe('the conclusion board check', () => {
+  type Conclusions = NonNullable<LessonOutline['board']>['conclusions'];
+  const counted = {
+    id: 'one-pebble',
+    says: '桌上有 1 颗小石子',
+    amounts: [[1, 'pebble']],
+    from: 'count',
+    uses: ['count', 'after'],
+    hints: ['look-again'],
+    answer: { amount: [1, 'bowl'], says: '桌上有 1 颗小石子，在 1 个碗里' },
+  } satisfies Conclusions[number];
+  const supposed = {
+    id: 'two-pebbles',
+    says: '假如桌上有 2 颗小石子',
+    amounts: [[2, 'pebble']],
+    from: 'after',
+    supposed: true,
+  } satisfies Conclusions[number];
+  const pictures = { pebble: 'pebble', bowl: 'bowl' };
+  const keeping = (...conclusions: Conclusions) => problems({ board: { pictures, conclusions } });
+
+  it('passes a board whose conclusions agree with the scenes, hints and pictures', () => {
+    expect(keeping(counted, supposed)).toEqual([]);
+  });
+
+  it('finds a conclusion that first shows in a scene the lesson does not have', () => {
+    expect(keeping({ ...counted, from: 'counting' })).toEqual([
+      'conclusion one-pebble first shows in counting, which is not a scene',
+    ]);
+  });
+
+  it('finds a conclusion used before it shows, or in a scene the lesson does not have', () => {
+    expect(keeping({ ...counted, uses: ['look', 'later'] })).toEqual([
+      'conclusion one-pebble is used in look, which is not a scene from count on',
+      'conclusion one-pebble is used in later, which is not a scene from count on',
+    ]);
+  });
+
+  it('finds a conclusion lit by a hint the answer does not give', () => {
+    expect(keeping({ ...counted, hints: ['count-twice'] })).toEqual([
+      'conclusion one-pebble is lit by hint count-twice, which the answer does not give',
+    ]);
+  });
+
+  it('finds hints or a count meant for a conclusion that only shows after the count is asked', () => {
+    expect(keeping({ ...counted, from: 'after', uses: [] })).toEqual([
+      'conclusion one-pebble first shows after the count is asked, so the answer never reaches it',
+    ]);
+  });
+
+  it('finds a supposed conclusion with none on the board before it to stand beside', () => {
+    const beside =
+      'conclusion two-pebbles supposes a change but has no conclusion on the board to stand beside';
+    expect(keeping(supposed)).toEqual([beside]);
+    expect(
+      keeping(
+        { ...counted, from: 'after', hints: [], answer: undefined },
+        {
+          ...supposed,
+          from: 'count',
+        },
+      ),
+    ).toEqual([
+      'conclusion one-pebble is used in count, which is not a scene from after on',
+      beside,
+    ]);
+  });
+
+  it('finds an amount, or the answer written on, drawn with a picture the board lacks', () => {
+    expect(problems({ board: { pictures: { pebble: 'pebble' }, conclusions: [counted] } })).toEqual(
+      ['conclusion one-pebble draws bowl, which has no picture'],
+    );
+  });
+
+  it('finds two conclusions with the same id', () => {
+    expect(keeping(counted, counted)).toEqual(['conclusion one-pebble is declared twice']);
+  });
+
+  it('finds props that reach up under the board along the top of a wide picture', () => {
+    const staging = { ...outline.staging, y: boardReach - 1 };
+    expect(problems({ staging, board: { pictures, conclusions: [counted] } })).toContain(
+      'the props reach up under the conclusion board',
+    );
+    expect(problems({ staging })).not.toContain('the props reach up under the conclusion board');
   });
 });
 

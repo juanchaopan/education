@@ -1,15 +1,15 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 import { queryWrapper } from '../../../test/query-wrapper';
-import { useLessonAnswer } from './useLessonAnswer';
+import { useLessonAnswer, type AnswerEvents } from './useLessonAnswer';
 
 const scope = { id: 'garden-balance', version: 1, csrf: 'session-token' };
 const round = '11111111-1111-1111-1111-111111111111';
 const nextRound = '22222222-2222-2222-2222-222222222222';
 
-function setup(fetch: ReturnType<typeof vi.fn>) {
+function setup(fetch: ReturnType<typeof vi.fn>, events?: AnswerEvents) {
   vi.stubGlobal('fetch', fetch);
-  return renderHook(() => useLessonAnswer(scope, ['one-cabbage', 'count-groups']), {
+  return renderHook(() => useLessonAnswer(scope, ['one-cabbage', 'count-groups'], events), {
     wrapper: queryWrapper(),
   });
 }
@@ -121,4 +121,23 @@ it('gives the authored hints in order and stops when they run out', async () => 
     'one-cabbage',
     'count-groups',
   ]);
+});
+
+it('tells the page which hint the child received and that a count was judged right', async () => {
+  const events = { onHint: vi.fn(), onCorrect: vi.fn() };
+  const fetch = vi
+    .fn()
+    .mockResolvedValueOnce(Response.json({ round }))
+    .mockResolvedValueOnce(Response.json({ hint: '先看第一架秤。' }))
+    .mockImplementationOnce(receipt('incorrect'))
+    .mockImplementationOnce(receipt('assisted'));
+  const { result } = setup(fetch, events);
+  await waitFor(() => expect(result.current.canHint).toBe(true));
+  act(() => result.current.askHint());
+  await waitFor(() => expect(events.onHint).toHaveBeenCalledWith('one-cabbage'));
+  act(() => result.current.submit(6));
+  await waitFor(() => expect(result.current.judgement).toMatchObject({ outcome: 'incorrect' }));
+  expect(events.onCorrect).not.toHaveBeenCalled();
+  act(() => result.current.submit(9));
+  await waitFor(() => expect(events.onCorrect).toHaveBeenCalledOnce());
 });

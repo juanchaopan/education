@@ -1,8 +1,10 @@
 import {
+  boardReach,
   establishing,
   framed,
   inside,
 } from '../features/learning/components/lesson-stage/stage-look';
+import type { Conclusion } from '../features/learning/lessons/lesson-board';
 import { shotAfter, type ProblemVersion } from '../features/learning/lessons/lesson-definition';
 import type { LessonOutline } from '../features/learning/lessons/registry';
 import { backdrops } from '../features/learning/media/backdrops/backdrops';
@@ -84,6 +86,82 @@ function stagingProblems({ backdrop, staging, script }: LessonOutline) {
     .map((shot) => `the props stand outside the clearing of ${backdrop} in scene ${shot}`);
 }
 
+type BoardConclusion = Conclusion<never, string, string>;
+
+// One conclusion on the board: it first shows in one of the lesson's scenes,
+// is used only from there on, is lit only by hints the answer gives, and
+// draws only pictures the board has.
+function conclusionProblems(
+  { id, from, uses = [], hints = [], amounts, answer }: BoardConclusion,
+  { script, answer: count }: LessonOutline,
+  pictures: readonly string[],
+) {
+  const { shots } = script;
+  const first = shots.indexOf(from);
+  if (first < 0) return [`conclusion ${id} first shows in ${from}, which is not a scene`];
+  const drawn = [...amounts, ...(answer ? [answer.amount] : [])].map(([, picture]) => picture);
+  return [
+    ...uses
+      .filter((shot) => shots.indexOf(shot) < first)
+      .map((shot) => `conclusion ${id} is used in ${shot}, which is not a scene from ${from} on`),
+    ...missing(hints, count.hints).map(
+      (hint) => `conclusion ${id} is lit by hint ${hint}, which the answer does not give`,
+    ),
+    ...missing(drawn, pictures).map(
+      (picture) => `conclusion ${id} draws ${picture}, which has no picture`,
+    ),
+  ];
+}
+
+// A conclusion the answer's hints light or the count is written on is on the
+// board by the scene that asks for the count.
+function answeringProblems(
+  { id, from, hints = [], answer }: BoardConclusion,
+  { script, answer: count }: LessonOutline,
+) {
+  const late = script.shots.indexOf(from) > script.shots.indexOf(count.shot);
+  return late && (hints.length > 0 || answer)
+    ? [`conclusion ${id} first shows after the count is asked, so the answer never reaches it`]
+    : [];
+}
+
+// A supposed conclusion stands beside the one before it, which is on the
+// board by the time the supposed one shows.
+function besideProblems(
+  { id, from, supposed }: BoardConclusion,
+  before: BoardConclusion | undefined,
+  { script }: LessonOutline,
+) {
+  if (!supposed) return [];
+  const { shots } = script;
+  return before && shots.indexOf(before.from) <= shots.indexOf(from)
+    ? []
+    : [`conclusion ${id} supposes a change but has no conclusion on the board to stand beside`];
+}
+
+// The board's conclusions each have their own id and agree with the lesson's
+// scenes, hints, answer and pictures, a supposed one has its conclusion to
+// stand beside, and the props stand below the board along the top of a wide
+// picture.
+function boardProblems(lesson: LessonOutline) {
+  const { board, staging } = lesson;
+  if (!board) return [];
+  const { conclusions } = board;
+  const ids = conclusions.map(({ id }) => id);
+  const pictures = Object.keys(board.pictures);
+  return [
+    ...ids
+      .filter((id, index) => ids.indexOf(id) !== index)
+      .map((id) => `conclusion ${id} is declared twice`),
+    ...conclusions.flatMap((conclusion, index) => [
+      ...conclusionProblems(conclusion, lesson, pictures),
+      ...answeringProblems(conclusion, lesson),
+      ...besideProblems(conclusion, conclusions[index - 1], lesson),
+    ]),
+    ...(staging.y < boardReach ? ['the props reach up under the conclusion board'] : []),
+  ];
+}
+
 function pluginProblems(listed: ProblemVersion, lesson: LessonOutline, plugin?: PluginOutline) {
   if (!plugin) return [`the server has no plugin for ${versionName(listed)}`];
   const { script, answer } = lesson;
@@ -97,7 +175,8 @@ function pluginProblems(listed: ProblemVersion, lesson: LessonOutline, plugin?: 
 // Everything wrong with a registered lesson, or nothing: its version against
 // its registry line, its recordings and entry lines, its answer scene and the
 // scene after it, where its props stand against its backdrop in each scene,
-// and the server's plugin for it, with its steps and hints.
+// its conclusion board, and the server's plugin for it, with its steps and
+// hints.
 export function lessonProblems(
   listed: ProblemVersion,
   lesson: LessonOutline,
@@ -108,6 +187,7 @@ export function lessonProblems(
     ...scriptProblems(lesson),
     ...answerProblems(lesson),
     ...stagingProblems(lesson),
+    ...boardProblems(lesson),
     ...pluginProblems(listed, lesson, plugin),
   ];
 }

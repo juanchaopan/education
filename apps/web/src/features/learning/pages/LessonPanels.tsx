@@ -2,6 +2,7 @@ import { useFlash } from '../../../shared/lib/useFlash';
 import { DraftNotice } from '../components/DraftNotice';
 import { StagePlace } from '../components/lesson-stage/LessonStage';
 import type { LearningScope } from '../data-access/learning-request';
+import type { AnswerEvents } from '../data-access/useLessonAnswer';
 import type { useLessonDraft } from '../data-access/useLessonDraft';
 import type { FilmState } from '../interaction/lesson-film';
 import type { Subtitle } from '../interaction/subtitle';
@@ -46,6 +47,8 @@ type Props<Shot extends string> = {
   // time, and how the child starts over from there.
   resumed?: { shot: Shot };
   onRestart: () => void;
+  // What the page hears of the hints received and a count judged right.
+  answerEvents?: AnswerEvents;
 };
 
 // What the draft notice shows for a moment: picking up where the lesson was
@@ -78,6 +81,7 @@ export function LessonPanels<Shot extends string>({
   draft,
   resumed,
   onRestart,
+  answerEvents,
 }: Props<Shot>) {
   const { shot } = film.state;
   const moment = useDraftMoment(draft, shot, resumed);
@@ -109,6 +113,7 @@ export function LessonPanels<Shot extends string>({
           film={film}
           turn={turn}
           subtitle={subtitle}
+          events={answerEvents}
           onDone={() => {
             void draft.discard();
             const next = shotAfter(script, answer.shot);

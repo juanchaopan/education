@@ -1,15 +1,18 @@
 import { useState, type ComponentType, type ReactNode } from 'react';
 import { StagePlace } from '../components/lesson-stage/LessonStage';
 import type { LearningScope } from '../data-access/learning-request';
+import type { AnswerEvents } from '../data-access/useLessonAnswer';
 import { useLessonDraft } from '../data-access/useLessonDraft';
 import { useLessonPreferences } from '../data-access/useLessonPreferences';
 import { useLessonRecordings } from '../data-access/useLessonRecordings';
 import type { FilmState } from '../interaction/lesson-film';
 import { createSubtitle, type Subtitle } from '../interaction/subtitle';
 import { useLessonFilm, type LessonFilm } from '../interaction/useLessonFilm';
+import type { AnswerProgress, BoardScenes } from '../lessons/lesson-board';
 import { filmStory, resumed, stageLook, type LessonDefinition } from '../lessons/lesson-definition';
 import { createMicrophoneTurn, type MicrophoneTurn } from '../voice/microphone-turn';
 import { FilmControls } from './FilmControls';
+import { KeptConclusions } from './KeptConclusions';
 import { LessonPanels } from './LessonPanels';
 import { LessonSignInNotice } from './LessonSignInNotice';
 import { lessonScreen, type Start } from './lesson-screen';
@@ -21,6 +24,27 @@ const visitorControls = () => (
     <LessonSignInNotice />
   </StagePlace>
 );
+
+const unanswered: AnswerProgress = { answered: false };
+
+// How far the child has got with the count, which the conclusion board
+// follows: answered right in this visit, and the last hint received. Coming
+// to a scene up to the one that asks for the count, by starting over or
+// picking up a saved place, asks for it afresh.
+function useAnswerProgress<Shot extends string>({ shots, answer }: BoardScenes<Shot>) {
+  const [progress, setProgress] = useState(unanswered);
+  const [events] = useState<AnswerEvents>(() => ({
+    onHint: (hint) => setProgress((now) => ({ ...now, hint })),
+    onCorrect: () => setProgress((now) => ({ ...now, answered: true })),
+  }));
+  return {
+    progress,
+    events,
+    arrive(shot: Shot) {
+      if (shots.indexOf(shot) <= shots.indexOf(answer)) setProgress(unanswered);
+    },
+  };
+}
 
 // One problem's lesson page, built once for its own definition, so the page
 // holds the lesson to its own state, scenes, lines, moves and props. Anyone
@@ -41,11 +65,13 @@ export function lessonPage<
   const tale = filmStory(script, story);
   const firstScene = script.shots[0];
   const first = { stepId: firstScene, drawing: [] };
+  const scenes = { shots: script.shots, answer: lesson.answer.shot };
   const Screen = lessonScreen(lesson, look);
   // What the controls in the picture share: the playing film, the teacher's
-  // subtitle and the lesson's one microphone.
+  // subtitle, the lesson's one microphone, and what the answer tells the
+  // conclusion board.
   type Film = LessonFilm<State, Shot, Move>;
-  type Lesson = { film: Film; subtitle: Subtitle; turn: MicrophoneTurn };
+  type Lesson = { film: Film; subtitle: Subtitle; turn: MicrophoneTurn; answer: AnswerEvents };
   type BodyProps = {
     start?: Start<Shot>;
     onArrive?: (shot: Shot) => void;
@@ -54,11 +80,19 @@ export function lessonPage<
 
   // The playing film filling the screen, its recordings fetched as the page
   // opens, its sound and captions as the child chose them on this device, and
-  // the controls every lesson has beside the page's own.
+  // the controls every lesson has beside the page's own, with the conclusions
+  // it keeps when its way of teaching uses the board.
   function Body({ start = {}, onArrive, controls }: BodyProps) {
     const recordings = useLessonRecordings(script.lines);
     const preferences = useLessonPreferences();
-    const film = useLessonFilm(tale, { onArrive, muted: !preferences.sound });
+    const answer = useAnswerProgress(scenes);
+    const film = useLessonFilm(tale, {
+      onArrive: (shot) => {
+        answer.arrive(shot);
+        onArrive?.(shot);
+      },
+      muted: !preferences.sound,
+    });
     const [subtitle] = useState(createSubtitle);
     const [turn] = useState(createMicrophoneTurn);
     return (
@@ -75,7 +109,8 @@ export function lessonPage<
               preferences={preferences}
               teacher={look.teacher}
             >
-              {controls({ film, subtitle, turn })}
+              <KeptConclusions lesson={lesson} state={film.state} progress={answer.progress} />
+              {controls({ film, subtitle, turn, answer: answer.events })}
             </FilmControls>
           }
         />
@@ -107,7 +142,7 @@ export function lessonPage<
         onArrive={(shot) => {
           if (story.savesProgress(shot)) void draft.saveAs({ stepId: shot, drawing: [] });
         }}
-        controls={({ film, subtitle, turn }) => (
+        controls={({ film, subtitle, turn, answer }) => (
           <LessonPanels
             lesson={lesson}
             teacher={look.teacher.name}
@@ -118,6 +153,7 @@ export function lessonPage<
             draft={draft}
             resumed={picked}
             onRestart={() => startOver(film)}
+            answerEvents={answer}
           />
         )}
       />
