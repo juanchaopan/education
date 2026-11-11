@@ -1,10 +1,13 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import type { ReactNode } from 'react';
 import { AnswerCapsule } from './AnswerCapsule';
 import { AskMicrophone } from './AskMicrophone';
+import { ConclusionBoard, type BoardFact } from './ConclusionBoard';
 import { FireflyHint } from './FireflyHint';
-import { LessonStage, StagePlace } from './LessonStage';
+import { BoardPlace, LessonStage, StagePlace } from './LessonStage';
 import { QuestionBox } from './QuestionBox';
 import { StageTools } from './StageTools';
+import { storyBoards } from './story-board';
 import { StoryFrame, type FrameShape } from './StoryFrame';
 import { storyLook } from './story-look';
 import { Subtitle } from './Subtitle';
@@ -107,6 +110,16 @@ const asking = (
   </>
 );
 
+// The controls of a lesson that keeps its conclusions on the board.
+const keeping = (facts: readonly BoardFact[], controls: ReactNode) => (
+  <>
+    <BoardPlace>
+      <ConclusionBoard facts={facts} />
+    </BoardPlace>
+    {controls}
+  </>
+);
+
 const meta = {
   title: 'Learning/Lesson stage',
   component: LessonStage,
@@ -140,6 +153,11 @@ export const Speaking: Story = { args: { speaking: true } };
 export const CloserFraming: Story = { args: { shot: 'closer' } };
 export const Answering: Story = { args: { controls: answering } };
 export const Asking: Story = { args: { controls: asking } };
+// The conclusions found so far run along the top, between the back button
+// and the tools.
+export const KeepingConclusions: Story = {
+  args: { controls: keeping(storyBoards.inUse, answering) },
+};
 // An upright frame is filled by the painting, the props span its width and
 // the controls stack along its top and bottom.
 export const NarrowFrame: Story = { parameters: { frame: 'upright' } };
@@ -153,5 +171,16 @@ export const AskingOnAPhone: Story = { args: { controls: asking }, parameters: {
 // subtitle.
 export const TypingOnAPhone: Story = {
   args: { controls: asking, keyboard: 300 },
+  parameters: { frame: 'phone' },
+};
+// On an upright frame the board takes a row under the tools, wrapping onto
+// a second when it must, and the props fit the height left between the
+// controls.
+export const KeepingConclusionsUpright: Story = {
+  args: { controls: keeping(storyBoards.inUse, watching) },
+  parameters: { frame: 'upright' },
+};
+export const KeepingConclusionsOnAPhone: Story = {
+  args: { controls: keeping(storyBoards.supposed, answering) },
   parameters: { frame: 'phone' },
 };
