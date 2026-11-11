@@ -22,9 +22,14 @@ test('the theme is set before the app runs, so the first paint already has it', 
 });
 
 // Opens the child registration page shortly before 18:00 and fills a field,
-// so a switch can be seen to leave what the child typed alone.
+// so a switch can be seen to leave what the child typed alone. The clock
+// stands still while the page loads and the field is filled, so the theme
+// switches only when a test runs the clock on, however slow the machine is.
+// It is installed a little before the moment it pauses at, because a pause
+// can only move the clock forward.
 async function typeJustBeforeNightfall(page: Page) {
-  await page.clock.install({ time: at('17:59:58') });
+  await page.clock.install({ time: at('17:59:50') });
+  await page.clock.pauseAt(at('17:59:58'));
   await page.goto('/join');
   const key = page.getByLabel('家长给我的 KEY');
   await key.fill('ABCD-EFGH');
