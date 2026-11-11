@@ -3,6 +3,7 @@ import { ageNames, type Age } from '../../media/library';
 import type { LibraryTeacher } from '../../media/teachers/teachers';
 import { ClearingOutline } from './ClearingOutline';
 import { world } from './stage-look';
+import { TeacherAvatar } from './TeacherAvatar';
 import styles from './LibrarySheet.module.css';
 
 const years = (ages: readonly Age[]) => ages.map((age) => ageNames[age]).join('、');
@@ -62,11 +63,15 @@ export function BackdropSheet({
   );
 }
 
-// A library teacher on its own, with its name, school years and manner.
+// A library teacher on its own and as the round portrait beside its
+// subtitles, with its name, school years and manner.
 export function TeacherSheet({ teacher }: { teacher: LibraryTeacher }) {
   return (
     <figure className={styles.sheet}>
-      <img className={styles.portrait} src={teacher.image} alt={teacher.name} />
+      <div className={styles.pictures}>
+        <img className={styles.portrait} src={teacher.image} alt={teacher.name} />
+        <TeacherAvatar teacher={teacher} />
+      </div>
       <figcaption>
         <Tags
           tags={[

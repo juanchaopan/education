@@ -1,0 +1,82 @@
+.question {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-inline-size: 0;
+}
+
+/* Smoked glass while it listens and while the words are read over; warm
+   paper with a gold edge while the child corrects them, like a page to
+   write on. It shows two lines at most and scrolls past them. */
+.box {
+  position: relative;
+  display: flex;
+  flex: 1;
+  align-items: center;
+  min-inline-size: 0;
+  min-block-size: calc(var(--touch-target) + var(--space-3));
+  padding: var(--space-2) calc(var(--touch-target) + var(--space-2)) var(--space-2) var(--space-4);
+  border: 1.5px solid var(--dew-pane-edge);
+  border-radius: var(--radius-lg);
+  color: var(--dew-ink);
+  background: var(--dew-pane);
+  backdrop-filter: var(--glass-filter);
+  box-shadow: var(--dew-pane-shadow);
+  transition:
+    background var(--lift) var(--ease-out),
+    border-color var(--lift) var(--ease-out);
+}
+
+/* Only words that can be corrected turn the box to paper: focus on the
+   cross, or on words already sent, leaves it glass. */
+.box:has(.text:focus:not([readonly])) {
+  border-color: var(--dew-gold);
+  color: var(--dew-paper-ink);
+  background: var(--dew-paper);
+  box-shadow:
+    0 0 0 4px color-mix(in srgb, var(--dew-gold) 35%, transparent),
+    var(--dew-pane-shadow);
+}
+
+/* A question sent and waiting for its reply is only there to read. */
+.asked {
+  opacity: 0.8;
+}
+
+/* Sized to its words where the browser can, and two rows tall where it
+   cannot. */
+.text {
+  flex: 1;
+  min-inline-size: 0;
+  max-block-size: calc(2lh + var(--space-1));
+  margin: 0;
+  padding: 0;
+  border: 0;
+  color: inherit;
+  background: none;
+  font-family: var(--font-display);
+  font-size: var(--subtitle-size, var(--text-lg));
+  font-weight: 700;
+  line-height: 1.5;
+  resize: none;
+  field-sizing: content;
+  overflow-y: auto;
+  caret-color: var(--dew-clay);
+}
+
+.text:focus {
+  outline: none;
+}
+
+.close {
+  position: absolute;
+  inset-block-start: 50%;
+  inset-inline-end: var(--space-1);
+  translate: 0 -50%;
+}
+
+.listening {
+  display: inline-flex;
+  align-items: center;
+  font-size: var(--subtitle-size, var(--text-lg));
+}

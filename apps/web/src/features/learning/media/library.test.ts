@@ -71,6 +71,13 @@ describe('the teacher library', () => {
   it.each(Object.entries(teachers))('describes %s in full', (_, entry) => {
     expect([entry.name, entry.personality, entry.prompt].every(filled)).toBe(true);
   });
+
+  it.each(Object.entries(teachers))('finds the face of %s inside its picture', (_, { face }) => {
+    expect(face.size).toBeGreaterThan(0);
+    expect(face.x).toBeGreaterThanOrEqual(0);
+    expect(face.y).toBeGreaterThanOrEqual(0);
+    expect(face.x + face.size).toBeLessThanOrEqual(1);
+  });
 });
 
 describe('a library catalog', () => {

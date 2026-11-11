@@ -22,24 +22,3 @@
   opacity: 0.6;
   cursor: default;
 }
-
-/* Over a picture the card turns to frosted glass, which lets the picture show
-   through while its ink stays readable. */
-.glass {
-  border-color: color-mix(in srgb, var(--glass-ink) 18%, transparent);
-  color: var(--glass-ink);
-  background: var(--glass);
-  backdrop-filter: var(--glass-filter);
-}
-
-/* While what it asks for waits on something else, the button breathes
-   gently, beside whatever says so in words. */
-.button[aria-busy='true'] {
-  animation: waiting 1.2s ease-in-out infinite;
-}
-
-@keyframes waiting {
-  50% {
-    opacity: 0.65;
-  }
-}

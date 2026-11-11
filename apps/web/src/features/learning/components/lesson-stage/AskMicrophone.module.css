@@ -1,0 +1,53 @@
+/* While the child holds it, two rings of light spread from the drop. */
+.microphone {
+  position: relative;
+  display: inline-grid;
+  border-radius: 50%;
+}
+
+/* A held finger that wanders a little must not start a scroll, which would
+   end the hold and cut the question off. */
+.microphone > * {
+  touch-action: none;
+}
+
+.microphone::before,
+.microphone::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 2px solid color-mix(in srgb, var(--dew-paper) 70%, transparent);
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.holding::before,
+.holding::after {
+  opacity: 1;
+  animation: ripple 1.4s ease-out infinite;
+}
+
+.holding::after {
+  animation-delay: 0.7s;
+}
+
+/* Held still, the rings stay as two quiet circles round the drop. */
+.holding::before {
+  inset: calc(var(--space-2) * -1);
+}
+
+.holding::after {
+  inset: calc(var(--space-4) * -1);
+}
+
+@keyframes ripple {
+  from {
+    scale: 0.85;
+    opacity: 0.9;
+  }
+  to {
+    scale: 1.15;
+    opacity: 0;
+  }
+}

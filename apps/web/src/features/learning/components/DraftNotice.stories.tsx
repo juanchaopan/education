@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState, type ComponentProps } from 'react';
 import { DraftNotice } from './DraftNotice';
+import { onStoryPainting } from './lesson-stage/on-story-painting';
 
 function Preview(props: ComponentProps<typeof DraftNotice>) {
   const [status, setStatus] = useState(props.status);
@@ -20,6 +21,7 @@ const meta = {
   title: 'Learning/Draft notice',
   component: DraftNotice,
   render: (props) => <Preview key={props.status} {...props} />,
+  decorators: [onStoryPainting],
   args: {
     hasDraft: true,
     hasRemote: true,

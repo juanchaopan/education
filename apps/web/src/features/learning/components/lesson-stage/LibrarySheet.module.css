@@ -23,8 +23,14 @@
   block-size: 100%;
 }
 
+/* The full-length picture and, beside it, the portrait cut from its face. */
+.pictures {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-5);
+}
+
 .portrait {
-  justify-self: start;
   block-size: 18rem;
   inline-size: auto;
   padding: var(--space-4);

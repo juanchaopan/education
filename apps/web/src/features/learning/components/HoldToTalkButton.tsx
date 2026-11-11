@@ -1,6 +1,4 @@
-import { useEffect, useRef } from 'react';
-import { useLatest } from '../../../shared/lib/useLatest';
-import { bindHoldPress } from '../interaction/hold-press';
+import { useHoldPress } from '../interaction/useHoldPress';
 import action from './LessonAction.module.css';
 import styles from './HoldToTalkButton.module.css';
 
@@ -13,24 +11,9 @@ type Props = {
   onRelease: () => void;
 };
 
-// A button the child holds down to speak and lets go of when done, with the
-// mouse, a finger, or Space or Enter. A disabled button hears no letting go,
-// so being disabled ends any hold.
+// A button the child holds down to speak and lets go of when done.
 export function HoldToTalkButton({ label, holding, disabled, onPress, onRelease }: Props) {
-  const button = useRef<HTMLButtonElement>(null);
-  const binding = useRef<ReturnType<typeof bindHoldPress>>(undefined);
-  const hold = useLatest({ onPress, onRelease });
-  useEffect(() => {
-    const bound = bindHoldPress(button.current!, {
-      press: () => hold.current.onPress(),
-      release: () => hold.current.onRelease(),
-    });
-    binding.current = bound;
-    return bound.unbind;
-  }, [hold]);
-  useEffect(() => {
-    if (disabled) binding.current?.letGo();
-  }, [disabled]);
+  const button = useHoldPress<HTMLButtonElement>({ onPress, onRelease, disabled });
   return (
     <button
       ref={button}

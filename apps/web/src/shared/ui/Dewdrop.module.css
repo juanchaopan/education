@@ -1,0 +1,130 @@
+/* A glass sphere: the light catches its upper left, its lower half deepens,
+   and the painting behind shows through, blurred. The tone only changes the
+   colour of the glass, the size only its diameter. */
+.drop {
+  --face: var(--dew-face);
+  --deep: var(--dew-depth);
+  position: relative;
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  inline-size: var(--size);
+  block-size: var(--size);
+  padding: 0;
+  border: 1.5px solid var(--dew-rim);
+  border-radius: 50%;
+  color: var(--dew-ink);
+  background:
+    radial-gradient(circle at 33% 26%, var(--dew-shine) 0 8%, transparent 13%),
+    radial-gradient(
+      circle at 50% 115%,
+      color-mix(in srgb, var(--face) 40%, white) 0,
+      transparent 55%
+    ),
+    radial-gradient(
+      circle at 50% 38%,
+      var(--face),
+      color-mix(in srgb, var(--face) 70%, var(--deep))
+    );
+  box-shadow:
+    inset 0 -0.35em 0.7em var(--deep),
+    inset 0 0.2em 0.35em var(--dew-lip),
+    0 0.5em 1.1em var(--dew-shadow);
+  backdrop-filter: var(--glass-filter) saturate(1.25);
+  font-size: calc(var(--size) * 0.42);
+  cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  transition:
+    scale var(--lift) var(--ease-spring),
+    filter var(--press) var(--ease-out);
+}
+
+.small {
+  --size: var(--touch-target);
+}
+
+.regular {
+  --size: calc(var(--touch-target) + var(--space-2));
+}
+
+.large {
+  --size: calc(var(--touch-target) * 1.75);
+}
+
+.ok {
+  --face: var(--dew-ok);
+  --deep: var(--dew-ok-deep);
+}
+
+.honey {
+  --face: var(--dew-honey);
+  --deep: var(--dew-honey-deep);
+  color: var(--dew-honey-ink);
+}
+
+.clay {
+  --face: var(--dew-clay);
+  --deep: var(--dew-clay-deep);
+}
+
+.drop:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+.drop:active:not(:disabled) {
+  scale: 0.9;
+}
+
+.drop:focus-visible {
+  outline: var(--dew-focus-ring);
+  outline-offset: 3px;
+}
+
+/* A drop that cannot be used now keeps its place, fogged. */
+.drop:disabled {
+  filter: grayscale(0.6);
+  opacity: 0.55;
+  cursor: default;
+}
+
+/* A toggle that is off is a clear drop whatever its tone; its icon shows the
+   state, and `aria-pressed` tells it to a screen reader. */
+.drop[aria-pressed='false'] {
+  --face: var(--dew-face);
+  --deep: var(--dew-depth);
+  color: var(--dew-ink);
+}
+
+/* While what it asks for waits on something else, the drop breathes. */
+.drop[aria-busy='true'] {
+  animation: waiting 1.2s ease-in-out infinite;
+}
+
+@keyframes waiting {
+  50% {
+    opacity: 0.65;
+  }
+}
+
+.badge {
+  position: absolute;
+  inset-block-start: -0.3em;
+  inset-inline-end: -0.3em;
+  display: grid;
+  place-items: center;
+  min-inline-size: 1.15em;
+  block-size: 1.15em;
+  padding-inline: 0.2em;
+  border: 1.5px solid var(--dew-rim);
+  border-radius: var(--radius-pill);
+  color: var(--dew-gold-ink);
+  background: var(--dew-gold);
+  box-shadow: 0 0.1em 0.3em var(--dew-shadow);
+  font-family: var(--font-display);
+  font-size: 0.7em;
+  font-weight: 700;
+  line-height: 1;
+}

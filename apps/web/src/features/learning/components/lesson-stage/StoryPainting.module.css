@@ -1,0 +1,11 @@
+.painting {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-4);
+  max-inline-size: 48rem;
+  padding: var(--space-6);
+  border-radius: var(--radius);
+  background-position: center;
+  background-size: cover;
+}

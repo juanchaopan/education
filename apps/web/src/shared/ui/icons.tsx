@@ -8,10 +8,21 @@ export const glyphs = {
   back: <path d="M15 18l-6-6 6-6" />,
   chevron: <path d="m9.5 6 6 6-6 6" />,
   play: <path d="M8 5.5v13l10.5-6.5z" fill="currentColor" stroke="none" />,
+  pause: <path d="M9 6v12M15 6v12" />,
+  stop: <rect x="7" y="7" width="10" height="10" rx="2.5" fill="currentColor" stroke="none" />,
   mic: (
     <>
       <rect x="9" y="2.5" width="6" height="12" rx="3" />
       <path d="M5 11a7 7 0 0 0 14 0M12 18v3.5" />
+    </>
+  ),
+  // Speaking once more: the microphone inside a turning arrow.
+  sayAgain: (
+    <>
+      <path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3" />
+      <path d="M19.8 3.8v3.7h-3.7" />
+      <rect x="10.6" y="8" width="2.8" height="5.2" rx="1.4" />
+      <path d="M9 12.4a3 3 0 0 0 6 0M12 15.4v1.4" />
     </>
   ),
   replay: (
@@ -20,6 +31,32 @@ export const glyphs = {
       <path d="M3.5 3.5v5h5" />
     </>
   ),
+  captions: (
+    <>
+      <path d="M4 5h16a1.5 1.5 0 0 1 1.5 1.5v9A1.5 1.5 0 0 1 20 17h-8.5L7 20.5V17H4a1.5 1.5 0 0 1-1.5-1.5v-9A1.5 1.5 0 0 1 4 5z" />
+      <path d="M7 9.5h10M7 13h6" />
+    </>
+  ),
+  captionsOff: (
+    <>
+      <path d="M8 5h12a1.5 1.5 0 0 1 1.5 1.5v9a1.5 1.5 0 0 1-.6 1.2M15.5 17h-4L7 20.5V17H4a1.5 1.5 0 0 1-1.5-1.5v-9A1.5 1.5 0 0 1 4 5" />
+      <path d="M3 3l18 18" />
+    </>
+  ),
+  sound: (
+    <>
+      <path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" />
+      <path d="M15.5 9a4.2 4.2 0 0 1 0 6M18.5 6.5a7.8 7.8 0 0 1 0 11" />
+    </>
+  ),
+  soundOff: (
+    <>
+      <path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" />
+      <path d="M16 9.5l5 5M21 9.5l-5 5" />
+    </>
+  ),
+  send: <path d="M20.5 3.5 10.5 13.5M20.5 3.5l-6 17-4-7-7-4z" />,
+  close: <path d="M6.5 6.5l11 11M17.5 6.5l-11 11" />,
   bulb: (
     <path d="M9 17.5h6M10 21h4M12 3a6.5 6.5 0 0 0-3.8 11.8c.5.4.8 1 .8 1.7h6c0-.7.3-1.3.8-1.7A6.5 6.5 0 0 0 12 3z" />
   ),
