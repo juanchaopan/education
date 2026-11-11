@@ -35,6 +35,20 @@ it('keeps hidden words as the newest, so older words do not come back', () => {
   expect(subtitle.newest()).toMatchObject({ source: 'narration', hidden: true });
 });
 
+it('leaves newer words in place when older words are only shown or hidden', () => {
+  const subtitle = createSubtitle();
+  subtitle.say('narration', { text: '碰一碰这个苹果。' });
+  subtitle.say('question', { text: '因为苹果比空盘子重。' });
+  subtitle.say('narration', { text: '碰一碰这个苹果。', hidden: true });
+  expect(subtitle.newest()).toEqual({ source: 'question', text: '因为苹果比空盘子重。' });
+  subtitle.say('question', undefined);
+  expect(subtitle.newest()).toEqual({
+    source: 'narration',
+    text: '碰一碰这个苹果。',
+    hidden: true,
+  });
+});
+
 it('counts the teacher thinking as something said', () => {
   const subtitle = createSubtitle();
   subtitle.say('narration', { text: '碰一碰这个苹果。' });

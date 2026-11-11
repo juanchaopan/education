@@ -3,9 +3,11 @@ import { useSyncExternalStore } from 'react';
 // Less than this is the browser's own bars coming and going, not a keyboard.
 const smallestKeyboard = 120;
 
+// A page zoomed in with two fingers also shows less than the window, so the
+// visual viewport is read as a keyboard only at the page's own zoom.
 function inset() {
   const view = globalThis.visualViewport;
-  if (!view) return 0;
+  if (!view || view.scale > 1) return 0;
   const covered = Math.round(globalThis.innerHeight - view.height - view.offsetTop);
   return covered >= smallestKeyboard ? covered : 0;
 }
