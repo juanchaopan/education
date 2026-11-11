@@ -1,3 +1,5 @@
+import { createListeners } from '../../../shared/lib/listeners';
+
 // How the child likes lessons to sound and read on this device: the teacher's
 // voice on or off, and the narrated lines' captions on or off. They are kept
 // in the browser, so every lesson and every later visit start the same way,
@@ -33,7 +35,7 @@ export function createLessonPreferences(storage: Storage | undefined) {
   let visit: string | undefined;
   let raw: string | null = null;
   let current = usual;
-  const listeners = new Set<() => void>();
+  const { notify, subscribe } = createListeners();
   return {
     read() {
       const now = visit ?? load(storage);
@@ -51,12 +53,9 @@ export function createLessonPreferences(storage: Storage | undefined) {
       } catch {
         visit = wanted;
       }
-      listeners.forEach((listener) => listener());
+      notify();
     },
-    subscribe(listener: () => void) {
-      listeners.add(listener);
-      return () => void listeners.delete(listener);
-    },
+    subscribe,
   };
 }
 

@@ -1,3 +1,5 @@
+import { createListeners } from '../../../shared/lib/listeners';
+
 // Everything the teacher says goes through one subtitle: the narrated lines,
 // the replies to the child's questions, what the answer and the hints say.
 // Each part of the lesson speaks as its own source, and the subtitle shows the
@@ -28,7 +30,7 @@ export function createSubtitle() {
   // The sources with something to say, the one that spoke last at the end.
   const said = new Map<WordsSource, Words>();
   let newest: Said | undefined;
-  const listeners = new Set<() => void>();
+  const { notify, subscribe } = createListeners();
   return {
     // A source says new words, or nothing more when `words` is empty.
     say(source: WordsSource, words?: Words) {
@@ -37,13 +39,10 @@ export function createSubtitle() {
       if (saysSomething(words)) said.set(source, words);
       const last = [...said].at(-1);
       newest = last && { source: last[0], ...last[1] };
-      listeners.forEach((listener) => listener());
+      notify();
     },
     newest: () => newest,
-    subscribe(listener: () => void) {
-      listeners.add(listener);
-      return () => void listeners.delete(listener);
-    },
+    subscribe,
   };
 }
 
