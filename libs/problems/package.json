@@ -10,6 +10,13 @@
         "types": "./dist/server.d.ts",
         "import": "./dist/server.js"
       }
+    },
+    "./lesson-template": {
+      "types": "./dist/lesson-template.d.ts",
+      "node": {
+        "types": "./dist/lesson-template.d.ts",
+        "import": "./dist/lesson-template.js"
+      }
     }
   },
   "dependencies": {
