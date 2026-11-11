@@ -1,3 +1,5 @@
+import { createListeners } from '../../../shared/lib/listeners';
+
 // Whether a voice in this status has the microphone open, or about to open.
 export const usesMicrophone = (status: string) => status === 'starting' || status === 'recording';
 
@@ -8,8 +10,7 @@ type Holder = { owner: symbol; yieldTurn?: () => void };
 
 export function createMicrophoneTurn() {
   let holder: Holder | undefined;
-  const listeners = new Set<() => void>();
-  const changed = () => listeners.forEach((listener) => listener());
+  const { notify, subscribe } = createListeners();
   return {
     // Takes the microphone for `owner`; false when someone else keeps it.
     take(owner: symbol, yieldTurn?: () => void) {
@@ -20,22 +21,19 @@ export function createMicrophoneTurn() {
         stop();
       }
       holder = { owner, yieldTurn };
-      changed();
+      notify();
       return true;
     },
     give(owner: symbol) {
       if (holder?.owner !== owner) return;
       holder = undefined;
-      changed();
+      notify();
     },
     // Whether someone other than `owner` keeps the microphone from them.
     blocks: (owner: symbol) => !!holder && holder.owner !== owner && !holder.yieldTurn,
     // Whether the child is holding the microphone to speak.
     held: () => !!holder && !holder.yieldTurn,
-    subscribe(listener: () => void) {
-      listeners.add(listener);
-      return () => void listeners.delete(listener);
-    },
+    subscribe,
   };
 }
 
