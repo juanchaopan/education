@@ -87,3 +87,27 @@ export async function play(
     await after(step);
   }
 }
+
+// Waits until the recordings named, and nothing else, have each played to
+// their end since the last wait (see narration-check.ts).
+type Listener = { heard: (recordings: readonly string[]) => Promise<void> };
+
+// Starts the film and plays it to the question of the count, hearing each
+// line to its end before the next move.
+export async function hearToTheAnswer(page: Page, narration: Listener) {
+  await page.getByRole('button', { name: /开始短片/ }).click({ timeout: 30_000 });
+  await narration.heard(['hello', 'clue', 'question']);
+  await play(movesToTheAnswer(page), ({ says }) => narration.heard(says));
+}
+
+// A signed-in child at the question of the count taps 9, as one whose
+// browser has no microphone does, and plays the variation to its last line.
+export async function answerAndHearTheVariation(page: Page, narration: Listener) {
+  const answer = page.getByRole('region', { name: '说出答案' });
+  const numbers = answer.getByRole('group', { name: '点一个数字回答' });
+  await numbers.getByRole('button', { name: '9', exact: true }).click({ timeout: 30_000 });
+  await expect(gardenFilm(page).caption).toHaveText(/答对了/);
+  await answer.getByRole('button', { name: '接着看' }).click();
+  await narration.heard(['change']);
+  await play(movesInTheVariation(page), ({ says }) => narration.heard(says));
+}
