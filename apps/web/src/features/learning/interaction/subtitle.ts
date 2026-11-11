@@ -19,12 +19,14 @@ export type Words = Readonly<{
 }>;
 export type Said = Readonly<{ source: WordsSource }> & Words;
 
-const parts = ['text', 'thinking', 'hidden', 'again'] as const;
+const spoken = ['text', 'thinking', 'again'] as const;
 
 const saysSomething = (words?: Words): words is Words =>
   !!words && (!!words.text || !!words.thinking);
 
-const same = (one?: Words, other?: Words) => parts.every((part) => one?.[part] === other?.[part]);
+// The same speech, whether or not it is shown.
+const sameSpeech = (one?: Words, other?: Words) =>
+  spoken.every((part) => one?.[part] === other?.[part]);
 
 export function createSubtitle() {
   // The sources with something to say, the one that spoke last at the end.
@@ -32,10 +34,13 @@ export function createSubtitle() {
   let newest: Said | undefined;
   const { notify, subscribe } = createListeners();
   return {
-    // A source says new words, or nothing more when `words` is empty.
+    // A source says new words, or nothing more when `words` is empty. Only
+    // showing or hiding the same words keeps their place, so turning the
+    // captions on or off never puts an older line over a newer reply.
     say(source: WordsSource, words?: Words) {
-      if (same(said.get(source), words)) return;
-      said.delete(source);
+      const before = said.get(source);
+      if (sameSpeech(before, words) && before?.hidden === words?.hidden) return;
+      if (!sameSpeech(before, words)) said.delete(source);
       if (saysSomething(words)) said.set(source, words);
       const last = [...said].at(-1);
       newest = last && { source: last[0], ...last[1] };

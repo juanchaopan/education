@@ -10,7 +10,7 @@ import { chimeMs, type Chime } from '../interaction/chime';
 import type { NarrationFailure } from '../interaction/narration';
 import { answerStep, answerWords, type CountWords } from '../interaction/spoken-answer';
 import { spokenNumber } from '../interaction/spoken-number';
-import type { Subtitle } from '../interaction/subtitle';
+import type { Subtitle, Words } from '../interaction/subtitle';
 import { useSubtitleWords } from '../interaction/useSubtitleWords';
 import { usesMicrophone, type MicrophoneTurn } from '../voice/microphone-turn';
 
@@ -44,6 +44,13 @@ type Props = {
 const listenTones = [523, 784];
 
 const hintFailed = '提示暂时打不开，可以再试一次。';
+
+// What the teacher says about the hints: thinking while one is on its way,
+// so the last hint is not said again, then the new hint or why none came.
+function hintWords(answer: ReturnType<typeof useLessonAnswer>): Words {
+  if (answer.hintWaiting) return { thinking: true };
+  return { text: answer.hintFailed ? hintFailed : answer.hint };
+}
 
 // Whether the child still has an answer to give: none was sent yet, or the
 // last one was wrong or unclear.
@@ -95,7 +102,7 @@ export function SpokenFinalAnswer({ scope, words, choices, hintIds, subtitle, ..
   const listening = useListening(voice, on.film, answering(answer.judgement));
   const step = answerStep(voice.state, answer.judgement, words, listening.awaiting);
   useSubtitleWords(subtitle, 'answer', { text: answerWords(step) });
-  useSubtitleWords(subtitle, 'hint', { text: answer.hintFailed ? hintFailed : answer.hint });
+  useSubtitleWords(subtitle, 'hint', hintWords(answer));
   const { state } = voice;
   return (
     <>
