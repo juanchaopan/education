@@ -27,6 +27,23 @@
 
 完整常规检查 npm run check；数据库和浏览器检查单独执行，真实报告通过/失败/未运行。
 
+## 重型检查
+
+重型检查要占大量内存或用到 Docker，多个 issue 并行开发时同一时间只跑一个：npm run test:e2e、npm run test:visual、npm run test:accounts。
+
+检查跑完，不管通过还是失败，它启动的进程和容器都要结束：
+
+- test:visual 的容器和 test:accounts 的 Compose 项目由脚本自己清理。test:accounts 中途被打断时，用 docker compose ls 找到 education-accounts- 开头的项目，再对它执行 down -v。
+- 自己手动启动的服务（例如按 playwright.config.ts 的端口和命令启动的 API），跑完全部关掉。
+- 收尾后，docker ps 里看不到这些检查的容器。
+
+检查要用 Docker 而它没在运行时，先用 docker desktop start 启动；连续跑几个 Docker 检查时只启动一次。最后一个跑完后，由这次启动它的一方用 docker desktop stop 退出；原本就开着的不动。
+
+## 环境
+
+- staging：https://education-access-spike.hyp.app ，正在运行的提交看 /version.json 的 revision；发布流程见 docs/deployment/staging.md。
+- 一个改动完成须同时满足：PR 已合并；main 上合并提交的 CI 已通过；staging 运行的是这个提交，或者包含它的更新提交。
+
 ## 代码规范
 
 - 遵守 .claude/rules/ 与 docs/adr/；域模型不依赖框架或数据库，展示组件不取数据。
