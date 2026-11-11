@@ -1,3 +1,4 @@
+import { Spoken } from './Spoken';
 import styles from './Loading.module.css';
 
 // Three bouncing dots show that something is on its way. What is being
@@ -11,7 +12,7 @@ export function Loading({ label }: { label: string }) {
         <i />
         <i />
       </span>
-      <span className={styles.label}>{label}</span>
+      <Spoken>{label}</Spoken>
     </p>
   );
 }

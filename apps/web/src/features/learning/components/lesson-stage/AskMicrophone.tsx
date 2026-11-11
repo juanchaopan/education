@@ -17,10 +17,7 @@ type Props = {
 export function AskMicrophone({ label, holding, disabled, onPress, onRelease }: Props) {
   const drop = useHoldPress<HTMLButtonElement>({ onPress, onRelease, disabled });
   return (
-    <span
-      className={classNames(styles.microphone, holding && styles.holding)}
-      data-holding={holding || undefined}
-    >
+    <span className={classNames(styles.microphone, holding && styles.holding)}>
       <Dewdrop ref={drop} icon="mic" tone="clay" size="large" label={label} disabled={disabled} />
     </span>
   );

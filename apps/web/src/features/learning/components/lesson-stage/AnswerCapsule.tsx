@@ -1,6 +1,6 @@
 import { Dewdrop } from '../../../../shared/ui/Dewdrop';
+import { Spoken } from '../../../../shared/ui/Spoken';
 import type { AnswerStep } from '../../interaction/spoken-answer';
-import { Spoken } from './Spoken';
 import { VoiceMeter } from './VoiceMeter';
 import { WaitingDots } from './WaitingDots';
 import styles from './AnswerCapsule.module.css';
@@ -38,7 +38,8 @@ function Heard({ count, unit }: { count: number; unit?: string }) {
   );
 }
 
-// The gold star a correct count earns, drawn solid.
+// The gold star a correct count earns, drawn solid: the line icons are
+// outlines, and an earned star is filled.
 function Star() {
   return (
     <svg className={styles.star} viewBox="0 0 24 24" aria-hidden="true" focusable="false">
@@ -149,7 +150,7 @@ function Content({ step, unit, choices, blocked, level, ...on }: Props) {
 export function AnswerCapsule(props: Props) {
   if (props.step.kind === 'waiting') return null;
   return (
-    <section className={styles.capsule} aria-label="说出答案" data-step={props.step.kind}>
+    <section className={styles.capsule} aria-label="说出答案">
       <Content {...props} />
     </section>
   );

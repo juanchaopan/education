@@ -22,15 +22,3 @@
   opacity: 0.6;
   cursor: default;
 }
-
-/* While what it asks for waits on something else, the button breathes
-   gently, beside whatever says so in words. */
-.button[aria-busy='true'] {
-  animation: waiting 1.2s ease-in-out infinite;
-}
-
-@keyframes waiting {
-  50% {
-    opacity: 0.65;
-  }
-}

@@ -1,4 +1,4 @@
-import { Spoken } from './Spoken';
+import { Spoken } from '../../../../shared/ui/Spoken';
 import styles from './WaitingDots.module.css';
 
 // Three gold dots that rise in turn while something is on its way: words

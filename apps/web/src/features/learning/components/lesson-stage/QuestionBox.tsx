@@ -1,7 +1,7 @@
 import { feedbackTextMaxLength } from '@education/contracts';
 import { classNames } from '../../../../shared/lib/class-names';
 import { Dewdrop } from '../../../../shared/ui/Dewdrop';
-import { Spoken } from './Spoken';
+import { Spoken } from '../../../../shared/ui/Spoken';
 import { VoiceMeter } from './VoiceMeter';
 import { WaitingDots } from './WaitingDots';
 import styles from './QuestionBox.module.css';
@@ -96,7 +96,7 @@ function Send({ text, teacher, sending = false, sendFailed = false, onSend }: Pr
 export function QuestionBox(props: Props) {
   const { phase } = props;
   return (
-    <div className={styles.question} data-phase={phase}>
+    <div className={styles.question}>
       <div className={classNames(styles.box, phase === 'asked' && styles.asked)}>
         <Content {...props} />
         {phase !== 'listening' && <Close {...props} />}
