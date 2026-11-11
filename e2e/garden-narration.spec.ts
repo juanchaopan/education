@@ -1,6 +1,12 @@
 import { expect, test, type Page } from '@playwright/test';
 import pg from 'pg';
-import { gardenFilm, movesInTheVariation, movesToTheAnswer, play } from './garden-film.js';
+import {
+  answerAndHearTheVariation,
+  gardenFilm,
+  hearToTheAnswer,
+  movesToTheAnswer,
+  play,
+} from './garden-film.js';
 import { listenToNarration, recording } from './narration-check.js';
 import { seedSignedInFamily } from './seeded-family.js';
 import { signInWithToken } from './session-cookie.js';
@@ -10,20 +16,14 @@ import { signInWithToken } from './session-cookie.js';
 // none fails and none overlaps another. Runs in desktop Chromium, on a phone
 // and in WebKit.
 
-type Narration = Awaited<ReturnType<typeof listenToNarration>>;
-
 const database = process.env.DATABASE_URL;
 
 // The test servers answer over http, and WebKit sends no Secure cookie there,
 // so a child can be signed in only in Chromium.
 const signsIn = (browserName: string) => !!database && browserName === 'chromium';
 
-async function hearToTheAnswer(page: Page, narration: Narration) {
-  await page.getByRole('button', { name: /开始短片/ }).click({ timeout: 30_000 });
-  await narration.heard(['hello', 'clue', 'question']);
-  await play(movesToTheAnswer(page), ({ says }) => narration.heard(says));
-  await expect(page.locator('[data-narration-failure]')).toHaveCount(0);
-}
+const noLineFailed = (page: Page) =>
+  expect(page.locator('[data-narration-failure]')).toHaveCount(0);
 
 // Wherever a child cannot be signed in, the film is heard as a guest up to
 // the answer; elsewhere the signed-in child below hears these lines and the
@@ -37,6 +37,7 @@ test('a guest hears every line from the first scene to the question of the count
   const narration = await listenToNarration(page);
   await page.goto('/problems/garden-balance/1');
   await hearToTheAnswer(page, narration);
+  await noLineFailed(page);
 });
 
 test('a line that does not come out holds the scene until the child hears it again', async ({
@@ -98,17 +99,9 @@ test('a signed-in child hears every line of the film to its end', async ({
     const narration = await listenToNarration(page);
     await page.goto('/problems/garden-balance/1');
     await hearToTheAnswer(page, narration);
-
-    // The browser has no microphone, so once the question is told the
-    // answer is tapped.
-    const answer = page.getByRole('region', { name: '说出答案' });
-    const numbers = answer.getByRole('group', { name: '点一个数字回答' });
-    await numbers.getByRole('button', { name: '9', exact: true }).click({ timeout: 30_000 });
-    await expect(gardenFilm(page).caption).toHaveText(/答对了/);
-    await answer.getByRole('button', { name: '接着看' }).click();
-    await narration.heard(['change']);
-    await play(movesInTheVariation(page), ({ says }) => narration.heard(says));
-    await expect(page.locator('[data-narration-failure]')).toHaveCount(0);
+    await noLineFailed(page);
+    await answerAndHearTheVariation(page, narration);
+    await noLineFailed(page);
   } finally {
     await pool.query('DELETE FROM families WHERE id=$1', [family]);
     await pool.end();

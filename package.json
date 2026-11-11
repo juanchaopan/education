@@ -31,7 +31,9 @@
     "check": "npm run build:libs && npm run format:check && npm run lint && npm run arch && npm run typecheck && npm test && npm run build && npm run build-storybook",
     "build:libs": "npm run build -w @education/contracts && npm run build -w @education/problems",
     "test:db": "npm run test:db -w @education/api",
-    "test:toolchain": "node --test scripts/toolchain.test.mjs scripts/auto-merge.test.mjs"
+    "test:toolchain": "node --test scripts/toolchain.test.mjs scripts/auto-merge.test.mjs scripts/lesson-narration.test.mjs",
+    "lesson:narrate": "node scripts/lesson-narration.mjs",
+    "lesson:review": "node scripts/lesson-review.mjs"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.14.0",
