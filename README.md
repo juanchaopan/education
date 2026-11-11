@@ -97,6 +97,18 @@ npm run storybook
 
 `npm run test:visual` 需要 Docker 正在运行：它在固定版本的官方 Playwright 镜像里构建应用和 Storybook，把每个 story 和关键页面在桌面、平板、手机三个视口下与经维护者评审的基准截图对比，并检查 WCAG 2.2 AA、键盘、减少动画、触摸目标和缩放。外观有意改变时用 `npm run test:visual -- --update` 重新生成基准，随代码提交并由维护者评审。做法见 [视觉基准与可访问性检查](docs/design/visual-baselines.md)。
 
+## 题目旁白和审查录屏
+
+```sh
+npm run lesson:narrate -- garden-balance
+npm run build
+npm run lesson:review -- garden-balance
+```
+
+`npm run lesson:narrate -- <题目文件夹>` 按 `apps/web/src/features/learning/lessons/<题目文件夹>/script.ts` 的台词录旁白：只录缺少的和台词改过的句子，写进这道题的 `assets/`，并在 `assets/narration.json` 记下每个文件录的是哪句话、用的什么声音；单元测试按这份记录检查每句录音都按现在的台词、用现在配置的声音录过，改了台词或声音没重录时 `npm test` 不通过。声音写在 `scripts/lesson-voice.json`：`engine` 选合成引擎，引擎名下是它的设置，换声音只改这里。一道题录过的声音和配置的不同时，命令停下并说明，加 `--new-voice` 才把这道题的每一句都换成新声音重录。现在的声音是 edge-tts 的 `zh-CN-XiaoxiaoNeural`（语速 −14%、音高 +5Hz）：需要 [uv](https://docs.astral.sh/uv/) 和网络，第一次运行时 uv 安装固定版本的 `edge-tts`（LGPL-3.0，只作为本地工具运行）和它用的 Python；不需要账号或密钥，不产生费用，孩子使用时不调用它。edge-tts 用的是微软 Edge 未公开的在线朗读接口，生成要发布的音频的条款待维护者确认，见 [#42](docs/evidence/42/README.md#声音)；新录音在题目里试听过才能给孩子用。
+
+`npm run lesson:review -- <题目标识>[/<版本>]` 按登记表里的题目录一遍完整路径：先 `npm run build`，再由 `review/walks.ts` 里这道题的走法在 Chromium 里从片名卡走到最后一幕，每句旁白放完才做下一步；孩子的登录、草稿和作答由脚本代替服务器回答，不需要数据库。需要 FFmpeg 和 Playwright 的 Chromium。输出在 `review-recordings/<题目标识>-<版本>/`（Git 不跟踪，别的测试也不会清掉它）：带页面声音的 `lesson-review.mp4`，以及记下每个媒体事件和它所放录音的 `playback-events.json`。录屏只说明能生成证据，仍要人看、人听。
+
 ## 配置和安全
 
 `PAID_AI_ENABLED` 默认 `true`。只有同时配置后端 `OPENAI_API_KEY`、对应服务的资格开关（`OPENAI_TUTORING_ELIGIBLE`、`OPENAI_TRANSCRIPTION_ELIGIBLE`）并取得家长授权后才会调用供应商；缺少任何一项时不发出请求、不产生费用，孩子用题目提示继续，家长页的“外部 AI 授权”逐项显示“暂未启用”。资格开关只能在核实地区、条款和儿童数据处理资格后打开。密钥不得进入前端变量、源码或日志。
