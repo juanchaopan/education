@@ -17,8 +17,10 @@ type Props = {
 // The tools in the stage's top corner: hear the line again, captions, sound.
 // The replay drop glows while a line sounds, and turns honey and calls for a
 // tap while a line that did not come out waits. Without sound the captions
-// are the only way to follow, so they cannot be turned off then.
+// are the only way to follow, so they show as on and cannot be turned off
+// then, whatever the child chose for them.
 export function StageTools({ speaking, again, captions, sound, ...on }: Props) {
+  const captionsOn = captions || !sound;
   return (
     <div className={styles.tools} role="group" aria-label="课堂工具">
       <span className={classNames(styles.replay, speaking && styles.playing, again && styles.call)}>
@@ -30,9 +32,9 @@ export function StageTools({ speaking, again, captions, sound, ...on }: Props) {
         />
       </span>
       <Dewdrop
-        icon={captions ? 'captions' : 'captionsOff'}
+        icon={captionsOn ? 'captions' : 'captionsOff'}
         label="字幕"
-        aria-pressed={captions}
+        aria-pressed={captionsOn}
         disabled={!sound}
         onClick={on.onCaptions}
       />

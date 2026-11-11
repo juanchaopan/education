@@ -24,8 +24,8 @@ type Props = {
 // portrait: the lines it narrates and every reply, one at a time, the newest
 // in place of the last. A paused narration is carried on from the play mark
 // on the portrait; while the child speaks the mark only shows it is held.
-// Screen readers hear each new line with the teacher's name before it. Long
-// words scroll inside the subtitle, so while it has words it takes the
+// Screen readers hear each new line with the teacher's name before it, once.
+// Long words scroll inside the subtitle, so while it has words it takes the
 // keyboard's focus too and can be scrolled with the arrow keys.
 export function Subtitle({ teacher, text, thinking = false, narration, onResume }: Props) {
   const saying = !!text || thinking;
@@ -55,7 +55,7 @@ export function Subtitle({ teacher, text, thinking = false, narration, onResume 
         {text}
         {thinking && (
           <span className={styles.thinking}>
-            <WaitingDots label={`${teacher.name}正在想…`} />
+            <WaitingDots label="正在想…" />
           </span>
         )}
       </p>

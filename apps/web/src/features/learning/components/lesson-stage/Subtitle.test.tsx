@@ -30,7 +30,12 @@ it('only shows that the narration is held while the child speaks', () => {
   expect(screen.queryByRole('button')).toBeNull();
 });
 
-it('says the teacher is thinking while a reply is on its way', () => {
+it('says the teacher is thinking while a reply is on its way, naming the teacher once', () => {
   render(<Subtitle teacher={teacher} thinking />);
-  expect(screen.getByRole('status')).toHaveTextContent('小猫头鹰正在想…');
+  expect(screen.getByRole('status')).toHaveTextContent(/^小猫头鹰：正在想…$/);
+});
+
+it('can be reached from the keyboard to scroll long words', () => {
+  render(<Subtitle teacher={teacher} text="我们先看看桌子上有什么。" />);
+  expect(screen.getByRole('status')).toHaveAttribute('tabindex', '0');
 });

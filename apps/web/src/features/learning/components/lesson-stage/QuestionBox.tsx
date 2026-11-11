@@ -51,7 +51,7 @@ function Content({ phase, text, level, onEdit }: Props) {
           aria-label="听到的话"
           value={text}
           maxLength={feedbackTextMaxLength}
-          rows={1}
+          rows={2}
           readOnly={phase === 'asked'}
           onChange={(event) => onEdit(event.target.value)}
         />

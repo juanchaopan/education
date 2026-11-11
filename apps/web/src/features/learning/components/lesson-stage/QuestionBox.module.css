@@ -27,7 +27,9 @@
     border-color var(--lift) var(--ease-out);
 }
 
-.box:focus-within {
+/* Only words that can be corrected turn the box to paper: focus on the
+   cross, or on words already sent, leaves it glass. */
+.box:has(.text:focus:not([readonly])) {
   border-color: var(--dew-gold);
   color: var(--dew-paper-ink);
   background: var(--dew-paper);
@@ -41,6 +43,8 @@
   opacity: 0.8;
 }
 
+/* Sized to its words where the browser can, and two rows tall where it
+   cannot. */
 .text {
   flex: 1;
   min-inline-size: 0;

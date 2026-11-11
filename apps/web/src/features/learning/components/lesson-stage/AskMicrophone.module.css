@@ -5,6 +5,12 @@
   border-radius: 50%;
 }
 
+/* A held finger that wanders a little must not start a scroll, which would
+   end the hold and cut the question off. */
+.microphone > * {
+  touch-action: none;
+}
+
 .microphone::before,
 .microphone::after {
   content: '';

@@ -29,3 +29,8 @@ it('keeps the captions on while there is no sound', () => {
   expect(screen.getByRole('button', { name: '字幕', pressed: true })).toBeDisabled();
   expect(screen.getByRole('button', { name: '声音', pressed: false })).toBeEnabled();
 });
+
+it('shows the captions on without sound even when the child had turned them off', () => {
+  tools({ captions: false, sound: false });
+  expect(screen.getByRole('button', { name: '字幕', pressed: true })).toBeDisabled();
+});

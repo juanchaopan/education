@@ -39,19 +39,12 @@ function statusCopy(status: DraftStatus, hasRemote?: boolean) {
     : copy[status];
 }
 
+// The step that puts the draft right is gold; giving it up is the quiet one.
 function Actions({ status, hasDraft, hasRemote, ...on }: Omit<Props, 'message'>) {
   return (
     <>
-      {status === 'load-failed' && (
-        <NoticeButton quiet onClick={on.onReload}>
-          再找一次
-        </NoticeButton>
-      )}
-      {status === 'unsynced' && (
-        <NoticeButton quiet onClick={on.onSave}>
-          保存这份草稿
-        </NoticeButton>
-      )}
+      {status === 'load-failed' && <NoticeButton onClick={on.onReload}>再找一次</NoticeButton>}
+      {status === 'unsynced' && <NoticeButton onClick={on.onSave}>保存这份草稿</NoticeButton>}
       {hasDraft && (status === 'saved' || status === 'unsynced') && (
         <NoticeButton quiet onClick={on.onDiscard}>
           放弃这份草稿
