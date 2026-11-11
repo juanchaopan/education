@@ -11,6 +11,24 @@ import { backdrops } from '../features/learning/media/backdrops/backdrops';
 // problem version: the steps a model may see and the authored hints.
 export type PluginOutline = Readonly<{ steps: readonly string[]; hints: readonly string[] }>;
 
+// The parts of a problem plugin the outline is read from. The plugins live in
+// @education/problems, which only tests may load, so the check names just
+// the shape it reads.
+type PluginParts = Readonly<{
+  feedback?: Readonly<Record<string, unknown>>;
+  answering?: Readonly<{ hints?: Readonly<Record<string, unknown>> }>;
+}>;
+
+// A plugin's steps and hints, or nothing when the server has no plugin.
+export function pluginOutline(plugin?: PluginParts): PluginOutline | undefined {
+  return (
+    plugin && {
+      steps: Object.keys(plugin.feedback ?? {}),
+      hints: Object.keys(plugin.answering?.hints ?? {}),
+    }
+  );
+}
+
 // What a lesson's narration record, `assets/narration.json`, says its
 // recordings were made in and from: the voice, and the words by each
 // recording's file name. The narration tool writes it as it records

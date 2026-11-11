@@ -1,0 +1,51 @@
+import { Pebble, TemplateScene } from '../../components/lesson-template/TemplateScene';
+import type { LessonDefinition } from '../lesson-definition';
+import { templatePalette, templateStaging, templateTeacher } from './look';
+import {
+  answerChoices,
+  answerHints,
+  answerQuestion,
+  answerWords,
+  entryLines,
+  lines,
+  shots,
+  templateProblem,
+  type LineId,
+  type Shot,
+} from './script';
+import {
+  arrive,
+  opening,
+  pebbleLook,
+  respond,
+  savesProgress,
+  templateProps,
+  type Move,
+  type TemplateState,
+} from './story';
+
+// 数一数小石子, the template for a new lesson: the child puts two pebbles in a
+// bowl and says how many are in it. It plays on the library's morning forest
+// picnic with the squirrel. A new lesson copies this definition and its
+// folders, and is registered with one line in registry.ts.
+export const templateLesson = {
+  problem: templateProblem,
+  title: '碗里有几颗小石子？',
+  theater: '林间小剧场',
+  labels: { film: '数小石子互动短片', world: '可互动的小石子和碗' },
+  backdrop: 'forest-picnic-morning',
+  teacher: templateTeacher,
+  staging: templateStaging,
+  palette: templatePalette,
+  script: { lines, shots, entryLines },
+  story: { opening, arrive, respond, savesProgress },
+  props: { ...templateProps, carried: ({ size }) => <Pebble size={size} /> },
+  answer: {
+    shot: 'count',
+    question: answerQuestion,
+    words: answerWords,
+    choices: answerChoices,
+    hints: answerHints,
+  },
+  Scene: TemplateScene,
+} satisfies LessonDefinition<TemplateState, Shot, LineId, Move, 'pebble', typeof pebbleLook>;

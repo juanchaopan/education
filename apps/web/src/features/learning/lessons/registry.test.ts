@@ -8,6 +8,7 @@ import { problemPath } from '../../../shared/lib/problem-path';
 import {
   lessonProblems,
   narrationProblems,
+  pluginOutline,
   versionName,
   type NarrationRecord,
 } from '../../../test/lesson-check';
@@ -30,12 +31,8 @@ const each = lessons.map((entry) => [versionName(entry.problem), entry] as const
 it.each(each)(
   'registers %s so that it agrees with its plugin and plays every scene',
   async (_name, { problem, definition }) => {
-    const plugin = problemRegistry.find(problem.id, problem.version);
-    const outline = plugin && {
-      steps: Object.keys(plugin.feedback ?? {}),
-      hints: Object.keys(plugin.answering?.hints ?? {}),
-    };
-    expect(lessonProblems(problem, await definition(), outline)).toEqual([]);
+    const plugin = pluginOutline(problemRegistry.find(problem.id, problem.version));
+    expect(lessonProblems(problem, await definition(), plugin)).toEqual([]);
   },
 );
 

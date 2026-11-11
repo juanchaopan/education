@@ -1,0 +1,13 @@
+{
+  "voice": {
+    "engine": "edge-tts",
+    "name": "zh-CN-XiaoxiaoNeural",
+    "rate": "-14%",
+    "pitch": "+5Hz"
+  },
+  "recordings": {
+    "look.mp3": "桌上有两颗小石子。把它们一颗一颗放进碗里。",
+    "ask.mp3": "碗里一共有几颗小石子？",
+    "bye.mp3": "数对了。换一种东西，也能这样一个一个地数。"
+  }
+}
