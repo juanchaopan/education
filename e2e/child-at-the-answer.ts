@@ -44,13 +44,21 @@ export async function signInAtTheGardenStart(page: Page) {
   });
 }
 
+// How the test's server judges the garden answer: the outcome it gives every
+// count, and the words of each hint the child asks for, when it gives any.
+type GardenAnswers = Readonly<{ outcome?: 'independent' | 'assisted'; hint?: string }>;
+
 // A server that opens the answer round and takes each count the child
-// submits as correct, without help. It answers only those two requests, so a
-// walk using it neither asks for hints nor asks the teacher.
-export async function acceptEveryGardenAnswer(page: Page) {
+// submits as correct, without help unless told otherwise. It gives hints
+// only when told their words, and never answers a question to the teacher.
+export async function acceptEveryGardenAnswer(
+  page: Page,
+  { outcome = 'independent', hint }: GardenAnswers = {},
+) {
   await page.route(`**${gardenApi}/answer`, (route) => {
-    const body = route.request().postDataJSON() as { attemptId?: string } | null;
+    const body = route.request().postDataJSON() as { action?: string; attemptId?: string } | null;
     if (!body) return route.fulfill({ json: { round } });
-    return route.fulfill({ json: { attemptId: body.attemptId, outcome: 'independent' } });
+    if (body.action === 'hint' && hint) return route.fulfill({ json: { hint } });
+    return route.fulfill({ json: { attemptId: body.attemptId, outcome } });
   });
 }
