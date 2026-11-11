@@ -4,12 +4,7 @@ import { questionPhase, questionWords } from './question-words';
 const idle = { status: 'idle' } as const;
 const quiet = { voice: idle, reply: idle, sendFailed: false };
 const guidance = '碰一碰这个苹果。';
-const reply = {
-  status: 'ready',
-  source: 'ai',
-  feedback: { status: 'needs-work', stepId: 'apples', instruction: '看看哪边低一些。' },
-  drawing: [],
-} as const;
+const reply = { status: 'ready', source: 'ai', reply: '看看哪边低一些。' } as const;
 
 describe('the question box', () => {
   it('shows the voice while held, the words being heard, then the words to read over', () => {
@@ -40,6 +35,12 @@ describe("the teacher's words about the question", () => {
       thinking: true,
     });
     expect(questionWords({ ...quiet, reply }, guidance)).toEqual({ text: '看看哪边低一些。' });
+    expect(
+      questionWords(
+        { ...quiet, reply: { ...reply, source: 'rules', reply: '说得对！' } },
+        guidance,
+      ),
+    ).toEqual({ text: '说得对！' });
   });
 
   it("falls back on the scene's guidance when the teacher cannot answer", () => {

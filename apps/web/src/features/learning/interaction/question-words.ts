@@ -1,5 +1,5 @@
 import type { QuestionPhase } from '../components/lesson-stage/QuestionBox';
-import type { FeedbackState } from '../data-access/useTeachingFeedback';
+import type { QuestionReplyState } from '../data-access/useQuestionReply';
 import type { VoiceState } from '../data-access/voice-input';
 import { usesMicrophone } from '../voice/microphone-turn';
 import { fallbackMessage } from './ai-help-message';
@@ -10,7 +10,7 @@ import { voiceMessage, type Alternative } from './voice-message';
 // teacher's reply to the last question sent, which is still known.
 type Question = Readonly<{
   voice: VoiceState;
-  reply: FeedbackState;
+  reply: QuestionReplyState;
   asked?: string;
   sendFailed: boolean;
 }>;
@@ -30,12 +30,12 @@ export function questionPhase({ voice, reply, asked }: Question): QuestionPhase 
   return undefined;
 }
 
-function replyWords(reply: FeedbackState, guidance: string): Words {
+function replyWords(reply: QuestionReplyState, guidance: string): Words {
   switch (reply.status) {
     case 'pending':
       return { thinking: true };
     case 'ready':
-      return { text: reply.feedback.instruction };
+      return { text: reply.reply };
     case 'fallback':
       return { text: `${fallbackMessage(reply.reason)}${guidance}` };
     case 'guidance':

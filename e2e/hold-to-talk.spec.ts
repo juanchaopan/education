@@ -80,15 +80,10 @@ async function serveLesson(page: Page, heard: readonly string[]) {
     const text = heard[Math.min(recordings++, heard.length - 1)];
     return route.fulfill({ json: { status: 'ready', text } });
   });
-  await page.route(`**${gardenApi}/feedback`, (route) => {
+  await page.route(`**${gardenApi}/question`, (route) => {
     note(route.request());
-    const { stepId } = route.request().postDataJSON() as { stepId: string };
     return route.fulfill({
-      json: {
-        status: 'ready',
-        source: 'ai',
-        feedback: { status: 'needs-work', stepId, instruction: '数一数右盘有几组黄瓜。' },
-      },
+      json: { status: 'ready', source: 'ai', reply: '数一数右盘有几组黄瓜。' },
     });
   });
   return asked;
@@ -151,9 +146,12 @@ test('a question is held to ask, read over and sent; while answering it is help 
   await text.fill('要数几组黄瓜？');
   await film.getByRole('button', { name: '发给小兔' }).click();
   await expect(caption).toContainText('数一数右盘有几组黄瓜。');
-  const order = asked.map(({ path, body }) => body?.action ?? path.split('/').at(-1));
-  expect(order.slice(order.indexOf('question'))).toEqual(['question', 'feedback']);
-  expect(asked.find(({ path }) => path.endsWith('/feedback'))?.body).toMatchObject({
+  // Each request by its resource, and by its action for the answer resource.
+  const order = asked.map(({ path, body }) =>
+    [path.split('/').at(-1), body?.action].filter(Boolean).join(':'),
+  );
+  expect(order.slice(order.indexOf('answer:question'))).toEqual(['answer:question', 'question']);
+  expect(asked.find(({ path }) => path.endsWith('/question'))?.body).toEqual({
     stepId: 'answer',
     text: '要数几组黄瓜？',
   });
