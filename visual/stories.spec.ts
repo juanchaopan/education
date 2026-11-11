@@ -22,8 +22,6 @@ const stories = Object.values(index.entries).filter((entry) => entry.type === 's
 const feedbackStates = new Set([
   'learning-drawing-board--with-region',
   'learning-drawing-board--uncertain',
-  'learning-feedback-request--text-feedback',
-  'learning-feedback-request--usage-limited',
   'learning-subtitle--confirming',
   'family-childlogin--try-again',
   '家庭-孩子注册--invalid-key',
