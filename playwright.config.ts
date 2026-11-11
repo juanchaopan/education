@@ -1,22 +1,5 @@
-import { randomBytes } from 'node:crypto';
 import { defineConfig, devices } from '@playwright/test';
-
-const origin = (port: number) => `http://127.0.0.1:${port}`;
-function server(port: number) {
-  return {
-    command: `HOST=127.0.0.1 PORT=${port} npm start -w @education/api`,
-    url: `${origin(port)}/health/live`,
-    reuseExistingServer: false,
-    env: {
-      APP_ORIGIN: origin(port),
-      PIN_PEPPER: 'ab'.repeat(32),
-      REGISTRATION_ENABLED: process.env.DATABASE_URL ? 'true' : 'false',
-      // Each server keys its authentication budgets with its own secret, so the
-      // budgets of tests on different servers never add up.
-      AUTH_RATE_LIMIT_KEY: randomBytes(32).toString('hex'),
-    },
-  };
-}
+import { apiServer, origin } from './e2e/api-server';
 
 const browsers = {
   desktop: devices['Desktop Chrome'],
@@ -79,5 +62,5 @@ export default defineConfig({
   ],
   webServer: [shared, ...ownServers.map(({ ports }) => ports)]
     .flatMap((ports) => Object.values(ports))
-    .map(server),
+    .map((port) => apiServer(port)),
 });
