@@ -79,6 +79,11 @@
   --dew-gold: #f2c35b;
   --dew-gold-ink: #3a2706;
   --dew-focus: #ffe7a8;
+  /* The lift every smoked pane casts on the painting, sized by the pane's own
+     text, and the warm outline that marks keyboard focus on any part laid
+     into the painting. */
+  --dew-pane-shadow: 0 0.5em 1.4em var(--dew-shadow);
+  --dew-focus-ring: 3px solid var(--dew-focus);
 
   /* Fine paper grain, drawn as SVG noise rather than shipped as an image. */
   --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .42 0 0 0 0 .3 0 0 0 0 .16 0 0 0 .11 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");

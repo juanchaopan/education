@@ -12,7 +12,7 @@
   color: var(--dew-ink);
   background: var(--dew-pane);
   backdrop-filter: var(--glass-filter);
-  box-shadow: 0 0.5em 1.4em var(--dew-shadow);
+  box-shadow: var(--dew-pane-shadow);
 }
 
 .words {
@@ -31,7 +31,7 @@
 /* Reached from the keyboard to scroll long words, the words show the same
    warm ring as the drops. */
 .words:focus-visible {
-  outline: 3px solid var(--dew-focus);
+  outline: var(--dew-focus-ring);
   outline-offset: 2px;
 }
 

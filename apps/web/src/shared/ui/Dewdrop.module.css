@@ -79,7 +79,7 @@
 }
 
 .drop:focus-visible {
-  outline: 3px solid var(--dew-focus);
+  outline: var(--dew-focus-ring);
   outline-offset: 3px;
 }
 

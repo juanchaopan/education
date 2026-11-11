@@ -14,7 +14,7 @@
   color: var(--dew-ink);
   background: var(--dew-pane);
   backdrop-filter: var(--glass-filter);
-  box-shadow: 0 0.5em 1.4em var(--dew-shadow);
+  box-shadow: var(--dew-pane-shadow);
   font-size: var(--subtitle-size, var(--text-lg));
   animation: rise-in var(--enter) var(--ease-out) both;
 }
