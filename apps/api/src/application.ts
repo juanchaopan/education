@@ -48,6 +48,7 @@ import { createAiConsent } from './ai-consent-application.js';
 import { createFamilyExport } from './family-export-application.js';
 import { createFamilyDeletion } from './family-deletion-application.js';
 import { createTeachingFeedback } from './teaching-feedback-application.js';
+import { createTeacherQuestion } from './teacher-question-application.js';
 import { createVoiceTranscription } from './voice-transcription-application.js';
 
 export async function createApplication(env: NodeJS.ProcessEnv = process.env) {
@@ -62,18 +63,19 @@ export async function createApplication(env: NodeJS.ProcessEnv = process.env) {
         hash: hashParentPassword,
       })
     : undefined;
-  const { sessions, childSessions, drafts, answering, teachingFeedback, voiceTranscription } =
-    await createIdentitySessions(pool, config, admit, env);
+  const { sessions, childSessions, ...childServices } = await createIdentitySessions(
+    pool,
+    config,
+    admit,
+    env,
+  );
   const app = buildApp({
     origin: config.origin,
     registration,
     sessions,
     childRegistration: createChildRegistration(pool, config, admit),
     childSessions,
-    drafts,
-    answering,
-    teachingFeedback,
-    voiceTranscription,
+    ...childServices,
     childAccess: createChildAccess(pool, sessions, admit, config),
     ...createFamilyManagement({ pool, ledgerPool, sessions, admit, ai: config.ai }),
     verification: createVerification(pool, mailConfig, admit),
@@ -132,15 +134,7 @@ async function createIdentitySessions(
   admit: ReturnType<typeof createAuthAdmission> | undefined,
   env: NodeJS.ProcessEnv,
 ) {
-  if (!pool || !admit)
-    return {
-      sessions: undefined,
-      childSessions: undefined,
-      drafts: undefined,
-      answering: undefined,
-      teachingFeedback: undefined,
-      voiceTranscription: undefined,
-    };
+  if (!pool || !admit) return { sessions: undefined, childSessions: undefined };
   const dummyHash = await hashParentPassword(randomBytes(32).toString('base64url'));
   const sessions = createSessionService({
     repository: createSessionRepository(pool),
@@ -164,6 +158,7 @@ async function createIdentitySessions(
       drafts: createDrafts(pool),
       answering: createAnswering(pool, config.rateLimitKey!),
       teachingFeedback: createTeachingFeedback(pool, env),
+      teacherQuestion: createTeacherQuestion(pool, env),
       voiceTranscription: createVoiceTranscription(pool, env),
     }),
   };
