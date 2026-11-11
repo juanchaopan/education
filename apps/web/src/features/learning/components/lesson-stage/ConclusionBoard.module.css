@@ -1,0 +1,150 @@
+/* A row of smoked glass capsules, centred, wrapping onto a second line when
+   the picture is too narrow for them. Its size follows `--board-size`, which
+   the lesson stage sets so the board grows with the picture as the subtitle
+   does. A changed condition sits close beside the one it changes, in the
+   same item, so the two never wrap apart. */
+.board {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: var(--space-2) 0.5em;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--dew-ink);
+  font-family: var(--font-display);
+  font-size: var(--board-size, var(--text-lg));
+  font-weight: 700;
+  line-height: 1;
+}
+
+.group {
+  display: flex;
+  gap: 0.25em;
+}
+
+/* Every capsule keeps the same edge, lit or not, so lighting one never
+   moves the others or rewraps the board. */
+.fact {
+  position: relative;
+  display: flex;
+  padding: 0.16em 0.62em 0.16em 0.55em;
+  border: 1.5px solid var(--dew-pane-edge);
+  border-radius: var(--radius-pill);
+  background: var(--dew-pane);
+  backdrop-filter: var(--glass-filter);
+  box-shadow: var(--dew-pane-shadow);
+  white-space: nowrap;
+  animation: arrive 1.2s var(--ease-out) both;
+}
+
+/* A new conclusion fades in where it stays and glows once. */
+@keyframes arrive {
+  from {
+    opacity: 0;
+    scale: 0.92;
+  }
+  35% {
+    opacity: 1;
+    scale: 1;
+    box-shadow:
+      0 0 0 0.2em color-mix(in srgb, var(--dew-paper) 30%, transparent),
+      0 0 1.1em color-mix(in srgb, var(--dew-paper) 70%, transparent);
+  }
+}
+
+/* The conclusion the scene or a hint is using: a gold edge with a gold ring
+   and a soft glow round it. The ring and glow are drawn once round the
+   capsule and breathe slowly by fading, so the glass under them is not
+   painted again on every frame. */
+.lit {
+  border-color: var(--dew-gold);
+}
+
+.lit::after {
+  content: '';
+  position: absolute;
+  inset: -1.5px;
+  border-radius: inherit;
+  box-shadow:
+    0 0 0 0.1em var(--dew-gold),
+    0 0 0 0.2em color-mix(in srgb, var(--dew-gold) 30%, transparent),
+    0 0 0.8em color-mix(in srgb, var(--dew-gold) 65%, transparent);
+  pointer-events: none;
+  animation: breathe 2.6s ease-in-out 1.2s infinite alternate;
+}
+
+@keyframes breathe {
+  to {
+    opacity: 0.5;
+  }
+}
+
+/* A changed condition: a honey dashed frame with 假如 on its corner. */
+.supposed {
+  border-style: dashed;
+  border-color: var(--dew-honey);
+}
+
+.supposed.lit {
+  border-color: var(--dew-gold);
+}
+
+.tag {
+  position: absolute;
+  inset-block-start: -0.62em;
+  inset-inline-start: 0.7em;
+  padding: 0.08em 0.38em;
+  border-radius: var(--radius-pill);
+  color: var(--dew-honey-ink);
+  background: var(--dew-honey);
+  font-size: max(0.5em, 0.625rem);
+  font-weight: 800;
+  letter-spacing: 0.05em;
+}
+
+.amounts {
+  display: flex;
+  align-items: center;
+  gap: 0.16em;
+}
+
+/* An amount added later, the final count once it is answered, fades in
+   too. */
+.amount {
+  display: flex;
+  align-items: center;
+  gap: 0.08em;
+  animation: appear 0.8s var(--ease-out) both;
+}
+
+@keyframes appear {
+  from {
+    opacity: 0;
+  }
+}
+
+.count {
+  font-size: 1.12em;
+  font-weight: 800;
+}
+
+.equals {
+  margin-inline: 0.04em;
+}
+
+.picture {
+  inline-size: 1.3em;
+  block-size: 1.3em;
+  overflow: visible;
+  filter: drop-shadow(0 0.06em 0.06em var(--dew-shadow));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fact,
+  .lit::after,
+  .amount {
+    animation: none;
+  }
+}
