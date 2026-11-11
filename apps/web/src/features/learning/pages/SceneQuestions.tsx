@@ -27,15 +27,21 @@ type Props = {
 // pauses the narration, the question box beside it shows the voice and then
 // the words to read over and send, and the teacher's reply is the teacher's
 // subtitle. The child carries the narration on from the subtitle.
-export function SceneQuestions({ scope, teacher, stepId, narration, subtitle, ...rest }: Props) {
-  const question = useLessonQuestion(scope, stepId, {
-    answerStep: rest.answerStep,
-    turn: rest.turn,
-    audio: rest.audio,
-  });
+export function SceneQuestions({
+  scope,
+  teacher,
+  stepId,
+  answerStep,
+  guidance,
+  narration,
+  turn,
+  audio,
+  subtitle,
+}: Props) {
+  const question = useLessonQuestion(scope, stepId, { answerStep, turn, audio });
   const { voice } = question;
   const phase = questionPhase(question);
-  useSubtitleWords(subtitle, 'question', questionWords(question, rest.guidance));
+  useSubtitleWords(subtitle, 'question', questionWords(question, guidance));
   const waiting = voice.status === 'transcribing' || question.reply.status === 'pending';
   return (
     <>

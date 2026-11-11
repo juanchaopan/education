@@ -112,7 +112,7 @@ const meta = {
   component: LessonStage,
   decorators: [
     (Story, { parameters }) => (
-      <StoryFrame shape={(parameters.frame as FrameShape | undefined) ?? 'wide'}>
+      <StoryFrame shape={parameters.frame as FrameShape | undefined}>
         <Story />
       </StoryFrame>
     ),
