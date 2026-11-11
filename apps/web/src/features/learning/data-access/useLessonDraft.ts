@@ -19,6 +19,9 @@ type DraftState = {
   // The command that last failed, so it can be sent again as it was.
   failed?: DraftWrite['action'];
   message?: string;
+  // How many saves the server has taken since the lesson opened, so the page
+  // can tell the child each time one lands.
+  saves: number;
 };
 
 export type DraftStatus =
@@ -59,8 +62,8 @@ function useSavedDraft(scope: DraftScope) {
 export function useLessonDraft({ id, version, csrf }: DraftScope, initial: LocalDraft) {
   const scope = useMemo(() => ({ id, version, csrf }), [id, version, csrf]);
   const load = useSavedDraft(scope);
-  const [stored, setStored] = useState<DraftState>({ scope });
-  const state = stored.scope === scope ? stored : { scope };
+  const [stored, setStored] = useState<DraftState>({ scope, saves: 0 });
+  const state = stored.scope === scope ? stored : { scope, saves: 0 };
   if (stored.scope !== scope) setStored(state);
   const base = state.base === undefined ? load.data?.draft : state.base;
   const content = state.local ?? base?.content ?? initial;
@@ -96,6 +99,7 @@ export function useLessonDraft({ id, version, csrf }: DraftScope, initial: Local
             scope,
             base: current.conflict.draft,
             local: choice === 'keep' ? (current.local ?? content) : undefined,
+            saves: current.saves,
           }
         : current,
     );
@@ -105,6 +109,7 @@ export function useLessonDraft({ id, version, csrf }: DraftScope, initial: Local
     content,
     status,
     message: state.message,
+    saves: state.saves,
     hasDraft: Boolean(state.local || base),
     hasRemote: Boolean(state.conflict?.draft),
     edit,
@@ -139,6 +144,7 @@ function useDraftCommand(
               scope,
               base: result.draft,
               local: current.local === sent ? undefined : current.local,
+              saves: current.saves + (command.action === 'save' ? 1 : 0),
             },
       );
     } catch (error) {

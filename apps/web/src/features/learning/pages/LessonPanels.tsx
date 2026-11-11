@@ -1,3 +1,4 @@
+import { useFlash } from '../../../shared/lib/useFlash';
 import { DraftNotice } from '../components/DraftNotice';
 import { StagePlace } from '../components/lesson-stage/LessonStage';
 import type { LearningScope } from '../data-access/learning-request';
@@ -9,6 +10,12 @@ import { guidance, shotAfter, type LessonDefinition } from '../lessons/lesson-de
 import type { MicrophoneTurn } from '../voice/microphone-turn';
 import { SceneQuestions } from './SceneQuestions';
 import { SpokenFinalAnswer } from './SpokenFinalAnswer';
+
+// How long the draft notice tells the child the lesson picked up where it was
+// left, long enough to reach its button, and how long it tells them a save
+// landed.
+const resumedFor = 6000;
+const savedFor = 3000;
 
 // What the controls read of a lesson: its script and its final count.
 type PanelLesson<Shot extends string> = Pick<
@@ -35,9 +42,27 @@ type Props<Shot extends string> = {
   turn: MicrophoneTurn;
   subtitle: Subtitle;
   draft: ReturnType<typeof useLessonDraft>;
+  // The scene the child last picked up a saved lesson at, a fresh value each
+  // time, and how the child starts over from there.
+  resumed?: { shot: Shot };
+  onRestart: () => void;
 };
 
-// The controls a signed-in child has in the picture: the draft's state under
+// What the draft notice shows for a moment: picking up where the lesson was
+// left while the child is still in that scene, otherwise a save that just
+// landed.
+function useDraftMoment<Shot extends string>(
+  { saves }: Pick<Props<Shot>['draft'], 'saves'>,
+  shot: Shot | 'opening',
+  resumed?: { shot: Shot },
+) {
+  const picked = useFlash(resumed, resumedFor) && resumed?.shot === shot;
+  const saved = useFlash(saves || undefined, savedFor);
+  if (picked) return 'resumed';
+  return saved ? 'saved' : undefined;
+}
+
+// The controls a signed-in child has in the picture: the draft's notice under
 // the tools; in the answer scene the final count, which the microphone
 // listens for by itself, and the hints; in every scene a question about it,
 // which in the answer scene counts as help. A correct answer ends the saved
@@ -51,8 +76,11 @@ export function LessonPanels<Shot extends string>({
   turn,
   subtitle,
   draft,
+  resumed,
+  onRestart,
 }: Props<Shot>) {
   const { shot } = film.state;
+  const moment = useDraftMoment(draft, shot, resumed);
   if (shot === 'opening') return null;
   const { answer, script } = lesson;
   return (
@@ -60,6 +88,7 @@ export function LessonPanels<Shot extends string>({
       <StagePlace at="notice">
         <DraftNotice
           status={draft.status}
+          moment={moment}
           hasDraft={draft.hasDraft}
           hasRemote={draft.hasRemote}
           message={draft.message}
@@ -67,6 +96,7 @@ export function LessonPanels<Shot extends string>({
           onReload={() => void draft.reload()}
           onDiscard={() => void draft.discard()}
           onChoose={draft.resolve}
+          onRestart={onRestart}
         />
       </StagePlace>
       {shot === answer.shot && (
