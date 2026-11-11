@@ -7,6 +7,7 @@ import {
 } from '@education/contracts';
 import { Type, type Static } from '@sinclair/typebox';
 import { Value } from '@sinclair/typebox/value';
+import { givesVerdict } from './verdict.js';
 
 // Below this self-reported confidence the model's reading of the child's input
 // is treated as unreliable.
@@ -47,6 +48,17 @@ function isInstruction(value: string) {
   );
 }
 
+// Shown instead of a model reply that tells the child a guess is right or
+// wrong. It judges nothing, so its status is the one that never counts as a
+// mistake, and it sends the child back to the scene to check.
+export function selfCheckFeedback(stepId: string): TeachingFeedback {
+  return {
+    status: 'uncertain',
+    instruction: '这个要你自己来核对哦。看看画面，一步一步数一数、想一想。',
+    stepId,
+  };
+}
+
 // The model's reply is untrusted: anything outside the exact shape is refused.
 export function parseModelFeedback(text: string): ModelFeedback | undefined {
   let value: unknown;
@@ -60,14 +72,16 @@ export function parseModelFeedback(text: string): ModelFeedback | undefined {
 }
 
 // Turns a well-formed model reply into feedback, asking the child to confirm
-// whenever the reply cannot be trusted. The reply decides only what the child
-// reads and which region is outlined.
+// whenever the reply cannot be trusted and to check for themselves whenever it
+// judges what the child said. The reply decides only what the child reads and
+// which region is outlined.
 export function modelFeedbackFor(reply: ModelFeedback, scope: FeedbackStepScope): TeachingFeedback {
   const { stepId, area, drawn } = scope;
   const highlight = drawn ? reply.highlight : null;
   if (reply.injection || reply.confidence < MIN_FEEDBACK_CONFIDENCE)
     return uncertainFeedback(stepId);
   if (highlight && !regionFits(highlight, area)) return uncertainFeedback(stepId);
+  if (givesVerdict(reply.instruction)) return selfCheckFeedback(stepId);
   const feedback: TeachingFeedback = {
     status: reply.status,
     instruction: reply.instruction,

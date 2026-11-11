@@ -1,7 +1,7 @@
 import { uncertainFeedback } from '@education/contracts';
 import { describe, expect, it, vi } from 'vitest';
 import { RequestError } from '../../shared/request-error.js';
-import type { ModelFeedback } from '../domain/teaching-feedback.js';
+import { selfCheckFeedback, type ModelFeedback } from '../domain/teaching-feedback.js';
 import { createTeachingFeedbackService } from './teaching-feedback.js';
 
 const credentials = { token: 'synthetic-session' };
@@ -152,6 +152,21 @@ describe('model feedback', () => {
       status: 'ready',
       source: 'ai',
       feedback: uncertainFeedback('count-left'),
+    });
+  });
+
+  it('never passes on a reply that confirms the guess in a question', async () => {
+    const { request, askModel } = setup(withStep);
+    askModel.mockResolvedValueOnce({
+      status: 'ready',
+      value: { ...modelReply, status: 'correct', instruction: '对，左边有三个点。' },
+    });
+    await expect(
+      request(credentials, problem, { stepId: 'count-left', text: '是三个对不对？' }),
+    ).resolves.toEqual({
+      status: 'ready',
+      source: 'ai',
+      feedback: selfCheckFeedback('count-left'),
     });
   });
 
