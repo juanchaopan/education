@@ -3,7 +3,13 @@ import { establishing, framed } from '../features/learning/components/lesson-sta
 import type { TeacherRole } from '../features/learning/lessons/lesson-definition';
 import type { LessonOutline } from '../features/learning/lessons/registry';
 import { backdrops, type BackdropId } from '../features/learning/media/backdrops/backdrops';
-import { lessonProblems, type PluginOutline } from './lesson-check';
+import {
+  lessonProblems,
+  narrationProblems,
+  type NarrationRecord,
+  type PluginOutline,
+  type VoiceConfig,
+} from './lesson-check';
 import { fixtureLesson } from './lesson-fixture';
 
 const listed = { id: 'fixture', version: 1 };
@@ -94,6 +100,50 @@ describe('the lesson definition check', () => {
   it('finds a version the server keeps no plugin for', () => {
     expect(lessonProblems(listed, outline, undefined)).toEqual([
       'the server has no plugin for fixture/1',
+    ]);
+  });
+});
+
+describe('the narration check', () => {
+  const config: VoiceConfig = {
+    engine: 'edge-tts',
+    'edge-tts': { name: 'zh-CN-XiaoxiaoNeural', rate: '-14%', package: 'edge-tts==7.3.1' },
+  };
+  const voice = { engine: 'edge-tts', name: 'zh-CN-XiaoxiaoNeural', rate: '-14%' };
+  // What the fixture's recordings were made from, by file name.
+  const hello = { 'hello.mp3': '看看这颗小石子。' };
+  const ask = { 'ask.mp3': '一共有几颗？' };
+  const record: NarrationRecord = {
+    voice,
+    recordings: { ...hello, ...ask, 'bye.mp3': '数完了。' },
+  };
+
+  it('passes a lesson whose every line was recorded from its words in the configured voice', () => {
+    expect(narrationProblems(outline, config, record)).toEqual([]);
+  });
+
+  it('finds a line whose words changed after it was recorded', () => {
+    const lines = { ...script.lines, ask: { text: '一共有几个？', clip: '/fixture/ask.mp3' } };
+    const edited = { ...outline, script: { ...script, lines } };
+    expect(narrationProblems(edited, config, record)).toEqual([
+      'line ask was not recorded from its words',
+    ]);
+  });
+
+  it('finds a line recorded without the tool, and a lesson with no record at all', () => {
+    const unrecorded = { voice, recordings: { ...hello, ...ask } };
+    expect(narrationProblems(outline, config, unrecorded)).toEqual([
+      'line bye was not recorded from its words',
+    ]);
+    expect(narrationProblems(outline, config, undefined)).toEqual([
+      'the lesson has no narration record',
+    ]);
+  });
+
+  it('finds a lesson recorded in another voice than the configuration names', () => {
+    const slower = { ...record, voice: { ...voice, rate: '-20%' } };
+    expect(narrationProblems(outline, config, slower)).toEqual([
+      'the lesson was recorded with another rate than lesson-voice.json',
     ]);
   });
 });
