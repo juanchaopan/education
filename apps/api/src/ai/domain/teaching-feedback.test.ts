@@ -4,8 +4,10 @@ import {
   modelFeedbackFor,
   parseModelFeedback,
   ruleFeedbackFor,
+  selfCheckFeedback,
   type ModelFeedback,
 } from './teaching-feedback.js';
+import { givesVerdict } from './verdict.js';
 
 const scope = { stepId: 'count-left', drawn: true };
 const reply: ModelFeedback = {
@@ -121,6 +123,35 @@ describe('model feedback for a step', () => {
     });
     const offSheet = { ...reply, highlight: { x: 0.9, y: 0.9, width: 0.5, height: 0.5 } };
     expect(modelFeedbackFor(offSheet, text)).not.toHaveProperty('highlight');
+  });
+});
+
+describe('a reply that judges what the child said', () => {
+  const selfCheck = selfCheckFeedback('count-left');
+
+  it('sends the child to check instead of confirming or denying a guess', () => {
+    for (const [status, instruction] of [
+      ['correct', '对，右盘有3组、每组3根黄瓜；想想一棵青菜相当于几根黄瓜。'],
+      ['needs-work', '不对，再数一数左边的点。'],
+      ['uncertain', '你猜对了一半，再看看左边。'],
+    ] as const) {
+      expect(modelFeedbackFor({ ...reply, status, instruction }, scope)).toEqual(selfCheck);
+    }
+  });
+
+  it('keeps a reply that only points to the next step', () => {
+    const instruction = '你把三组各三根合起来了，下一步数数一共有几根黄瓜。';
+    expect(modelFeedbackFor({ ...reply, status: 'uncertain', instruction }, scope)).toMatchObject({
+      status: 'uncertain',
+      instruction,
+    });
+  });
+
+  it('judges nothing itself and is a sentence a child may be shown', () => {
+    const { instruction } = selfCheck;
+    expect(selfCheck).toEqual({ status: 'uncertain', instruction, stepId: 'count-left' });
+    expect(givesVerdict(instruction)).toBe(false);
+    expect(parseModelFeedback(JSON.stringify({ ...reply, instruction }))).toBeDefined();
   });
 });
 
