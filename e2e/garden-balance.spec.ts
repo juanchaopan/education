@@ -10,7 +10,9 @@ import { signInWithToken } from './session-cookie.js';
 // it, a signed-in child plays every scene by dragging and tapping, the place
 // is saved, and the final count is judged on the server. The browser here has
 // no microphone and the server no AI key, so the answer falls back to tapping
-// a number and a question sends the child back to the scene.
+// a number and a question sends the child back to the scene. The teacher's
+// words are checked without the teacher's name, which only screen readers
+// hear before them.
 
 test('a child places the garden problem, resumes it and is judged on the counted answer', async ({
   page,
@@ -65,7 +67,7 @@ test('a child places the garden problem, resumes it and is judged on the counted
     await numbers.getByRole('button', { name: '6', exact: true }).click({ timeout: 30_000 });
     await expect(caption).toHaveText(/6 是一开始苹果的个数/);
     await film.getByRole('button', { name: /给我一个提示/ }).click();
-    await expect(caption).toHaveText('先看第一架秤：一棵青菜和几个苹果一样重？');
+    await expect(caption).toHaveText(/先看第一架秤：一棵青菜和几个苹果一样重？$/);
     await numbers.getByRole('button', { name: '9', exact: true }).click();
     await expect(caption).toHaveText(/答对了！这次用了提示/);
     await answer.screenshot({ path: info.outputPath('answer-assisted.png') });
