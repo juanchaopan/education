@@ -124,12 +124,11 @@ function Controls({ keyboard = 0, children }: { keyboard?: number; children: Rea
 // A lesson as a short film that fills the screen: a painted backdrop framed
 // for each scene, the lesson's own props as vector art in front, and the
 // teacher. The title card opens it; afterwards the controls are laid into the
-// picture's edges, with no strip of their own. A wide frame is filled by the
-// backdrop and the world as one picture, so the props stand where the
-// painting expects them. An upright frame is filled by the painting alone,
-// and the props, without the teacher, are fitted to its width. The stage
-// reports which prop or place the child chose; the page decides what that
-// does.
+// picture's edges. A wide frame is filled by the backdrop and the world as
+// one picture, so the props stand where the painting expects them. An
+// upright frame is filled by the painting alone, and the props, without the
+// teacher, are fitted to its width. The stage reports which prop or place the
+// child chose; the page decides what that does.
 export function LessonStage(props: Props) {
   const { look, shot, speaking, failure, worldRef, onActivate } = props;
   // The stage redraws on every step of a drag; its palette and layout stay

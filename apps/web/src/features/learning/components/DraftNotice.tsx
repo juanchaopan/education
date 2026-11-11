@@ -44,9 +44,7 @@ function ProblemActions({
   hasDraft,
   hasRemote,
   ...on
-}: Pick<Props, 'hasDraft' | 'hasRemote' | 'onSave' | 'onReload' | 'onDiscard' | 'onChoose'> & {
-  status: Problem;
-}) {
+}: Omit<Props, 'status' | 'moment' | 'message' | 'onRestart'> & { status: Problem }) {
   if (status === 'load-failed') return <NoticeButton onClick={on.onReload}>再找一次</NoticeButton>;
   if (status === 'unsynced')
     return (
