@@ -13,15 +13,21 @@ const answer = 9;
 export const gardenBalanceSteps = sceneSteps(gardenBalanceLesson);
 
 // The groups staying three, and each group holding two, said the right way
-// round; a negated or reversed answer matches neither and is left to the model.
+// round; a negated or reversed answer matches neither.
 const groupsKept = /(还是|仍然是|都是)三组|组数(没|不)变|三组没变/;
 const countChanged = /(变成|只有|换成|每组)(两|二|2)根|根数变了/;
 const negated = /不是|没有变成/;
 
+// Whether a sentence says what stays and what changes once each apple swaps
+// for two cucumbers: still three groups, each holding fewer.
+function explainsChange(text: string) {
+  return groupsKept.test(text) && countChanged.test(text) && !negated.test(text);
+}
+
 // The closing question has a short authored answer: the groups stay three and
 // each group holds fewer. Anything else is left to the model.
 function checkStep({ stepId, answer: text }: { stepId: string; answer: string }): TeachingFeedback {
-  if (stepId === 'end' && groupsKept.test(text) && countChanged.test(text) && !negated.test(text))
+  if (stepId === 'end' && explainsChange(text))
     return {
       status: 'correct',
       stepId,
