@@ -3,16 +3,14 @@ import type {
   FamilyChildren,
   LearningSummary,
   ParentSession,
-  PracticePage,
   ProblemLearningSummary,
   RegistrationKeyStatus,
 } from '@education/contracts';
 import type { Api } from './api';
+import { childShelf, familyShelf, givenBooks, lele, libraryShelf, xiaomi } from './bookshelf';
 
 // A verified parent's family for the parent space screenshots. Test fixtures
 // only: the problems and the long nickname never enter the problem list.
-const xiaomi = '11111111-1111-4111-8111-111111111111';
-const lele = '22222222-2222-4222-8222-222222222222';
 const ok = <T>(json: T) => ({ status: 200, json });
 
 // The child whose learning record has problems in it, for opening the
@@ -71,8 +69,8 @@ const signedIn: Api = {
   }),
 };
 
-// Two children: one with a record, a problem worth another try and nothing
-// planned; one with a long nickname, no record and one planned problem.
+// Two children, both given books: one with a record and a problem worth
+// another try; one with a long nickname and no record.
 export const parentSpaceApi: Api = {
   ...signedIn,
   'GET /api/v1/parents/registration-keys': ok<RegistrationKeyStatus>({
@@ -100,14 +98,8 @@ export const parentSpaceApi: Api = {
     hasMore: false,
     problems: [],
   }),
-  [`GET /api/v1/parents/children/${xiaomi}/practice`]: ok<PracticePage>({
-    hasMore: false,
-    problems: [],
-  }),
-  [`GET /api/v1/parents/children/${lele}/practice`]: ok<PracticePage>({
-    hasMore: false,
-    problems: [{ id: 'visual-fixture-three', version: 1, title: '测试用的第三道题' }],
-  }),
+  [`GET /api/v1/parents/children/${xiaomi}/books`]: ok(givenBooks(xiaomi)),
+  [`GET /api/v1/parents/children/${lele}/books`]: ok(givenBooks(lele)),
 };
 
 // A family whose first child has not joined yet: no children and no code.
@@ -121,4 +113,16 @@ export const emptyParentSpaceApi: Api = {
     reauthenticationRequired: false,
     children: [],
   }),
+};
+
+// The bookshelf of the same family: the library, the family shelf and 小米's
+// shelf, each as its own address answers it.
+export const libraryApi: Api = { ...parentSpaceApi, 'GET /api/v1/parents/books': ok(libraryShelf) };
+export const familyShelfApi: Api = {
+  ...parentSpaceApi,
+  'GET /api/v1/parents/books': ok(familyShelf),
+};
+export const childShelfApi: Api = {
+  ...parentSpaceApi,
+  [`GET /api/v1/parents/children/${xiaomi}/books`]: ok(childShelf(xiaomi)),
 };

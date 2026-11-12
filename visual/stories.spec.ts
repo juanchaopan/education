@@ -45,6 +45,10 @@ const nightStories = new Set([
   '公共部件-加载--waiting',
   '公共部件-开关--on',
   '公共部件-图标--all-icons',
+  '公共部件-书卡--family',
+  '公共部件-书卡--unavailable',
+  '公共部件-书卡--default-covers',
+  '公共部件-安排按钮--given',
 ]);
 
 test('the feedback and night states are all in Storybook', () => {

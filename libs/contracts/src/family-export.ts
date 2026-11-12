@@ -1,14 +1,20 @@
 import { Type, type Static } from '@sinclair/typebox';
 import { AiConsentChange } from './ai-consent.js';
 import { BookStatus } from './bookshelf.js';
-import { ProblemId } from './catalog.js';
+import { ProblemId, ProblemSummary, ProblemVersion } from './catalog.js';
 import { ChildAccess } from './child-access.js';
 import { SavedDraft } from './draft.js';
 import { ProblemLearningSummary } from './learning-summary.js';
-import { PracticeItem } from './practice.js';
 
 const closed = { additionalProperties: false };
 const Count = Type.Integer({ minimum: 0 });
+// The problem a draft belongs to, with its title, or null for a version the
+// catalogue no longer lists.
+const draftProblem = {
+  id: ProblemId,
+  version: ProblemVersion,
+  title: Type.Union([ProblemSummary.properties.title, Type.Null()]),
+};
 
 // What a family export holds and leaves out. The file carries the same lists
 // so it explains itself after it leaves the parent space.
@@ -82,9 +88,7 @@ export const FamilyExport = Type.Object(
           nickname: ChildAccess.properties.nickname,
           learning: Type.Array(ProblemLearningSummary),
           books: Type.Array(ExportedBook),
-          drafts: Type.Array(
-            Type.Object({ ...PracticeItem.properties, expiresAt, content }, closed),
-          ),
+          drafts: Type.Array(Type.Object({ ...draftProblem, expiresAt, content }, closed)),
         },
         closed,
       ),

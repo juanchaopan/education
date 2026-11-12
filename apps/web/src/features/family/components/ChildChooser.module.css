@@ -1,0 +1,100 @@
+/* The button looks like the switch of a book that can be given, or of one
+   that is unavailable and can only be taken back. */
+.trigger {
+  composes: toggle from '../../../shared/ui/AssignToggle.module.css';
+  gap: var(--space-2);
+}
+
+/* On a wide screen the list is a small raised card just under the button,
+   laid over the page at the place the page measured for it. */
+.list {
+  position: absolute;
+  inset-block-start: var(--top);
+  inset-inline-start: var(--left);
+  z-index: 20;
+  display: grid;
+  inline-size: min(20rem, calc(100vw - var(--space-6)));
+  padding: var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  color: var(--ink);
+  background: var(--surface-raised);
+  box-shadow: var(--raised-shadow);
+}
+.list:focus {
+  outline: none;
+}
+.head,
+.scrim {
+  display: none;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-1);
+}
+.row + .row {
+  border-block-start: 1px dashed var(--line);
+}
+.name {
+  flex: 1;
+  min-inline-size: 0;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.progress {
+  color: var(--ink-soft);
+  font-weight: 700;
+  font-size: var(--text-sm);
+}
+.toggle {
+  flex: none;
+  min-inline-size: 7.5rem;
+}
+
+/* On a phone the list slides up from the bottom over a veil, above the tab
+   bar, headed by the book's cover and name and a close button. */
+@media (max-width: 56rem) {
+  .scrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    background: var(--scrim);
+  }
+  .list {
+    position: fixed;
+    inset: auto 0 0;
+    z-index: 21;
+    inline-size: auto;
+    padding: var(--space-3) var(--space-5) var(--space-6);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    animation: rise var(--lift) var(--ease-out);
+  }
+  .head {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    margin-block-end: var(--space-3);
+  }
+  .title {
+    flex: 1;
+    margin: 0;
+    font-size: var(--text-lg);
+  }
+  .row {
+    padding: var(--space-3) var(--space-1);
+  }
+}
+@keyframes rise {
+  from {
+    translate: 0 100%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .list {
+    animation: none;
+  }
+}

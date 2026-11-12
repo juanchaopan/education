@@ -1,0 +1,50 @@
+/* A small paper tag that stands a little off the cover. */
+/* A long name is cut short so the tag stays on its cover. */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  max-inline-size: 100%;
+  padding: 0.1875rem 0.625rem;
+  border-radius: var(--radius-pill);
+  color: var(--cover-paper-ink);
+  background: var(--cover-paper);
+  box-shadow: var(--cover-mark-shadow);
+  font-weight: 700;
+  font-size: var(--text-sm);
+  white-space: nowrap;
+}
+.tag[data-finished] {
+  color: var(--cover-paper);
+  background: var(--cover-finished);
+  box-shadow: 0 2px 0 var(--cover-finished-edge);
+}
+.tick {
+  font-size: 1em;
+}
+.name {
+  min-inline-size: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.disc {
+  display: inline-grid;
+  place-items: center;
+  inline-size: 1.125rem;
+  block-size: 1.125rem;
+  border-radius: 50%;
+  color: var(--cover-paper);
+  background: var(--cover-child-first);
+  font-family: var(--font-display);
+  font-size: 0.8em;
+}
+.disc[data-place='1'] {
+  background: var(--cover-child-second);
+}
+.tag[data-finished] .disc {
+  color: var(--cover-child-first);
+  background: var(--cover-paper);
+}
+.tag[data-finished] .disc[data-place='1'] {
+  color: var(--cover-child-second);
+}

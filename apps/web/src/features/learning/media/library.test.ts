@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
+import type { Age } from '../../../shared/lib/media-library';
 import { inside, world } from '../components/lesson-stage/stage-look';
 import { backdrops } from './backdrops/backdrops';
 import * as backdropStories from './backdrops/backdrops.stories';
-import { catalog, type Age } from './library';
 import { teachers } from './teachers/teachers';
 import * as teacherStories from './teachers/teachers.stories';
 
@@ -77,21 +77,5 @@ describe('the teacher library', () => {
     expect(face.x).toBeGreaterThanOrEqual(0);
     expect(face.y).toBeGreaterThanOrEqual(0);
     expect(face.x + face.size).toBeLessThanOrEqual(1);
-  });
-});
-
-describe('a library catalog', () => {
-  const files = { './found.webp': '/assets/found-1a2b.webp' };
-
-  it('gives each entry its id and the address of its picture', () => {
-    expect(catalog({ found: { file: 'found.webp' } }, files)).toEqual({
-      found: { id: 'found', file: 'found.webp', image: '/assets/found-1a2b.webp' },
-    });
-  });
-
-  it('takes only pictures beside the list that names them', () => {
-    expect(() => catalog({ lost: { file: 'lost.webp' } }, files)).toThrow(
-      'lost.webp is not in the library',
-    );
   });
 });

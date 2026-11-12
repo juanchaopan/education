@@ -8,17 +8,17 @@ import { ChildDigest, type LearningTotals } from '../components/ChildDigest';
 import { ParentSection } from '../components/ParentSection';
 import { SettingsList } from '../components/SettingsList';
 import { useAiConsent } from '../data-access/useAiConsent';
+import { useChildrenAssigned } from '../data-access/useBookshelf';
 import { useFamilyChildren } from '../data-access/useChildAccess';
 import { useChildRecords, type ChildRecord } from '../data-access/useLearningSummary';
-import { useChildrenPractice } from '../data-access/usePractice';
 import { useRegistrationKey } from '../data-access/useRegistrationKey';
 import { FamilyCodePanel } from './FamilyCodePanel';
-import { AssignedPractice, ReviewIdeas, type ChildActivity } from './OverviewPractice';
+import { AssignedBooks, ReviewIdeas, type ChildActivity } from './OverviewPractice';
 import styles from './OverviewPage.module.css';
 
 // The first page of the parent space: the family code and the way to invite a
 // child, each child at a glance, the problems worth another try and the
-// practice already planned, then the family's settings.
+// books already given, then the family's settings.
 export function OverviewPage({ csrf }: { csrf: string }) {
   const family = useFamilyChildren(csrf);
   const registration = useRegistrationKey(csrf);
@@ -69,17 +69,17 @@ function totalsOf({ problems, complete }: ChildRecord): LearningTotals {
 }
 
 // Each child's card, then what is worth practising again beside what is
-// already planned. Every child's record and practice are read side by side,
-// and each child is kept together with its own record and practice. A record
+// already given. Every child's record and books are read side by side, and
+// each child is kept together with its own record and books. A record
 // read again after a failure shows as being read until it arrives.
 function FamilyActivity({ csrf, family }: { csrf: string; family: readonly ChildAccess[] }) {
   const ids = family.map(({ id }) => id);
   const records = useChildRecords(csrf, ids);
-  const practice = useChildrenPractice(csrf, ids);
+  const books = useChildrenAssigned(csrf, ids);
   const activity: ChildActivity[] = family.map((child, place) => ({
     child,
     record: records[place]!,
-    practice: practice[place]!,
+    books: books[place]!,
   }));
   return (
     <>
@@ -98,8 +98,8 @@ function FamilyActivity({ csrf, family }: { csrf: string; family: readonly Child
         ))}
       </div>
       <div className={styles.pair}>
-        <ReviewIdeas csrf={csrf} activity={activity} />
-        <AssignedPractice activity={activity} />
+        <ReviewIdeas activity={activity} />
+        <AssignedBooks csrf={csrf} activity={activity} />
       </div>
     </>
   );

@@ -1,0 +1,70 @@
+/* Books stand four or five to a row on a wide screen, each at least 11.5rem
+   wide, and two to a row on a phone. */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(11.5rem, 1fr));
+  gap: var(--space-5) var(--space-4);
+}
+.count {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: var(--text-sm);
+}
+.count b {
+  margin: 0 var(--space-1);
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+}
+.mark {
+  display: grid;
+  place-items: center;
+  flex: none;
+  inline-size: 2.75rem;
+  block-size: 2.75rem;
+  border-radius: 50%;
+  color: var(--ink-soft);
+  background: var(--surface-2);
+  font-size: var(--text-lg);
+}
+.note {
+  margin: 0;
+  color: var(--danger);
+  font-size: var(--text-sm);
+}
+
+.invite {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-4);
+  margin-block-end: var(--space-4);
+  padding: var(--space-4) var(--space-5);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  background-image: var(--texture);
+  box-shadow: var(--shadow);
+}
+.invite p {
+  flex: 1;
+  margin: 0;
+  font-weight: 700;
+}
+.bubble {
+  display: grid;
+  place-items: center;
+  flex: none;
+  inline-size: 3.25rem;
+  block-size: 3.25rem;
+  border-radius: 50%;
+  color: var(--accent-2);
+  background: var(--surface-2);
+  font-size: var(--text-lg);
+}
+
+@media (max-width: 56rem) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-4) var(--space-3);
+  }
+}

@@ -1,5 +1,5 @@
+import { ageNames, type Age } from '../../../../shared/lib/media-library';
 import { clearingNames, type LibraryBackdrop } from '../../media/backdrops/backdrops';
-import { ageNames, type Age } from '../../media/library';
 import type { LibraryTeacher } from '../../media/teachers/teachers';
 import { ClearingOutline } from './ClearingOutline';
 import { world } from './stage-look';

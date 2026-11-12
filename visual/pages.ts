@@ -1,7 +1,15 @@
 import { expect, type Page } from '@playwright/test';
 import type { ProblemSummary } from '@education/contracts';
 import { longCatalog, serveApi, signedOutApi, unverifiedParentApi, type Api } from './api';
-import { emptyParentSpaceApi, parentSpaceApi, recordedChild } from './parent-space';
+import { xiaomi } from './bookshelf';
+import {
+  childShelfApi,
+  emptyParentSpaceApi,
+  familyShelfApi,
+  libraryApi,
+  parentSpaceApi,
+  recordedChild,
+} from './parent-space';
 import { fixClock, waitForPicturesAndFonts, type Theme } from './render';
 
 // One page in one state: where to open it, how the API answers, the heading
@@ -88,7 +96,7 @@ const dayStates: PageState[] = [
     name: 'family-overview',
     path: '/family',
     ready: '总览',
-    last: '测试用的第三道题',
+    last: '自然拼读',
     api: parentSpaceApi,
   },
   {
@@ -108,9 +116,45 @@ const dayStates: PageState[] = [
   {
     name: 'family-practice',
     path: '/family/practice',
-    ready: '安排练习',
-    last: '为哪位孩子安排',
-    api: parentSpaceApi,
+    ready: '练习安排',
+    last: '一共 6 本，都在这里了',
+    api: libraryApi,
+  },
+  {
+    name: 'family-practice-family',
+    path: '/family/practice?shelf=family',
+    ready: '练习安排',
+    last: '一共 5 本，都在这里了',
+    api: familyShelfApi,
+  },
+  {
+    name: 'family-practice-child',
+    path: `/family/practice?child=${xiaomi}`,
+    ready: '练习安排',
+    last: '一共 11 本，都在这里了',
+    api: childShelfApi,
+  },
+  {
+    name: 'family-practice-loading',
+    path: '/family/practice',
+    ready: '练习安排',
+    api: { ...libraryApi, 'GET /api/v1/parents/books': 'pending' },
+  },
+  {
+    name: 'family-practice-failed',
+    path: '/family/practice',
+    ready: '书架没打开',
+    api: { ...libraryApi, 'GET /api/v1/parents/books': failed },
+  },
+  {
+    name: 'family-practice-no-children',
+    path: '/family/practice',
+    ready: '练习安排',
+    last: '一共 6 本，都在这里了',
+    api: {
+      ...libraryApi,
+      'GET /api/v1/parents/children': emptyParentSpaceApi['GET /api/v1/parents/children']!,
+    },
   },
   {
     name: 'family-learning',
@@ -135,13 +179,15 @@ const dayStates: PageState[] = [
 ];
 
 // The key pages are also seen in the night theme: the catalogue, the child's
-// and the parent's sign-in, the parent space's overview, a lesson's title
-// card and the page for a path that leads nowhere.
+// and the parent's sign-in, the parent space's overview and bookshelf, a
+// lesson's title card and the page for a path that leads nowhere.
 const nightPages = [
   'explore-empty',
   'child-signed-out',
   'family-signed-out',
   'family-overview',
+  'family-practice',
+  'family-practice-family',
   'lesson-title-card',
   'not-found',
 ];

@@ -1,0 +1,86 @@
+/* A full-width pill at the foot of a book card or a child's row: secondary
+   while the book can be given, primary once it is, edged in the danger
+   colour where it would take the book back. */
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 100%;
+  min-block-size: var(--touch-target);
+  padding: 0 var(--space-4);
+  border: 0;
+  border-radius: var(--radius-pill);
+  font: inherit;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    translate var(--press) var(--ease-out),
+    box-shadow var(--press) var(--ease-out);
+}
+.toggle[data-state='open'] {
+  color: var(--primary);
+  background: var(--surface-2);
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--primary) 45%, var(--line));
+}
+.toggle[data-state='assigned'] {
+  color: var(--primary-ink);
+  background: linear-gradient(var(--primary-hi), var(--primary) 60%);
+  box-shadow: 0 var(--space-1) 0 var(--primary-edge);
+}
+.toggle[data-state='withdrawn'] {
+  color: var(--danger);
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1.5px var(--danger);
+}
+.toggle[data-state='closed'] {
+  color: var(--ink-soft);
+  background: var(--surface-2);
+  box-shadow: inset 0 0 0 1.5px var(--line);
+  cursor: default;
+}
+.toggle[aria-disabled='true'] {
+  cursor: progress;
+}
+.toggle:active:not(:disabled, [aria-disabled='true']) {
+  translate: 0 1px;
+}
+
+.face {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.icon {
+  font-size: 1.1em;
+}
+
+/* A given book offers to take it back under a pointer or the keyboard focus.
+   Without hover, as on a touch screen, it keeps reading 已安排. */
+.face[data-face='leaving'] {
+  display: none;
+}
+.toggle[data-state='assigned']:focus-visible:not([aria-disabled='true']) {
+  color: var(--danger);
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1.5px var(--danger);
+}
+.toggle[data-state='assigned']:focus-visible:not([aria-disabled='true']) [data-face='resting'] {
+  display: none;
+}
+.toggle[data-state='assigned']:focus-visible:not([aria-disabled='true']) [data-face='leaving'] {
+  display: inline-flex;
+}
+@media (hover: hover) {
+  .toggle[data-state='assigned']:hover:not([aria-disabled='true']) {
+    color: var(--danger);
+    background: var(--surface);
+    box-shadow: inset 0 0 0 1.5px var(--danger);
+  }
+  .toggle[data-state='assigned']:hover:not([aria-disabled='true']) [data-face='resting'] {
+    display: none;
+  }
+  .toggle[data-state='assigned']:hover:not([aria-disabled='true']) [data-face='leaving'] {
+    display: inline-flex;
+  }
+}

@@ -55,7 +55,7 @@ it('denies the hosted data API roles table access while the server owner can use
       'attempts',
       'progress',
       'help_events',
-      'assignments',
+      'book_assignments',
       'ai_consents',
       'ai_usage',
     ])

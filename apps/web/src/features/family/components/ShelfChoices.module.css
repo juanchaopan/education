@@ -1,0 +1,104 @@
+/* The choices stay on one line and scroll sideways when they do not fit. */
+.group {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-inline-size: 0;
+  max-inline-size: 100%;
+  margin: 0;
+  padding: var(--space-1);
+  border: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.group legend {
+  float: left;
+  padding: 0;
+}
+.group[data-look='segment'] {
+  gap: var(--space-1);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+}
+.group[data-look='pill'] {
+  gap: var(--space-3);
+}
+
+/* The radio itself is invisible and covers its whole pill, so a press
+   anywhere on the pill is a press on the radio; its focus ring shows on the
+   pill. */
+.input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.choice {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-2);
+  min-block-size: var(--touch-target);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-pill);
+  color: var(--ink-soft);
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.choice:has(.input:focus-visible) {
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
+}
+.choice[data-apart]::before {
+  content: '';
+  align-self: stretch;
+  inline-size: 1px;
+  margin: var(--space-1) var(--space-2) var(--space-1) calc(var(--space-2) * -1);
+  background: var(--line);
+}
+
+.group[data-look='pill'] .choice {
+  min-block-size: 3.5rem;
+  padding: 0.375rem 1.25rem 0.375rem 0.375rem;
+  border: 1.5px solid var(--line);
+  background: color-mix(in srgb, var(--surface) 70%, transparent);
+  font-size: var(--text-base);
+}
+.group[data-look='pill'] .choice[data-apart] {
+  margin-inline-start: var(--space-4);
+}
+.group[data-look='pill'] .choice[data-apart]::before {
+  position: absolute;
+  inset-block: var(--space-2);
+  inset-inline-start: calc(var(--space-4) * -1 - 1px);
+  margin: 0;
+}
+.group[data-look='pill'] .choice[data-chosen] {
+  border-color: var(--primary);
+  color: var(--ink);
+  background: var(--surface);
+  box-shadow:
+    var(--focus-ring),
+    0 3px 0 color-mix(in srgb, var(--primary) 40%, transparent);
+}
+
+.group[data-look='segment'] .choice[data-chosen] {
+  color: var(--primary-ink);
+  background: linear-gradient(var(--primary-hi), var(--primary));
+  box-shadow: 0 3px 0 var(--primary-edge);
+}
+
+.group[data-look='chip'] .choice {
+  border: 1.5px solid var(--line);
+  background: var(--surface);
+}
+.group[data-look='chip'] .choice[data-chosen] {
+  border-color: var(--accent);
+  color: var(--ink);
+  background: var(--accent-soft);
+  box-shadow: 0 3px 0 color-mix(in srgb, var(--accent) 55%, transparent);
+}

@@ -43,7 +43,6 @@ import { readRevision } from './shared/revision.js';
 import { createDrafts } from './draft-application.js';
 import { createAnswering } from './answer-application.js';
 import { createLearningSummary } from './learning-summary-application.js';
-import { createPracticeAssignments } from './practice-application.js';
 import { createBookshelf } from './bookshelf-application.js';
 import { createAiConsent } from './ai-consent-application.js';
 import { createFamilyExport } from './family-export-application.js';
@@ -238,7 +237,6 @@ function createFamilyManagement({
   if (!pool || !sessions || !admit) return {};
   return {
     learningSummary: createLearningSummary(pool),
-    practice: createPracticeAssignments(pool),
     bookshelf: createBookshelf(pool),
     aiConsent: createAiConsent(pool, ai),
     familyExport: createFamilyExport(pool),
