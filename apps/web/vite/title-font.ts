@@ -64,10 +64,11 @@ async function catalogueTexts() {
 
 // The words of every lesson's content, such as the teacher's lines shown in
 // the subtitle, which the site loads from the problem package rather than
-// from its own source: the built content modules beside the content types.
+// from its own source: the built content modules beside the content types'
+// module.
 async function lessonContentTexts() {
-  const types = fileURLToPath(import.meta.resolve('@education/problems/lesson-content'));
-  const folder = path.join(path.dirname(types), 'lessons');
+  const module = fileURLToPath(import.meta.resolve('@education/problems/lesson-content'));
+  const folder = path.join(path.dirname(module), 'lessons');
   const files = (await readdir(folder)).filter((file) => file.endsWith('.js'));
   return Promise.all(files.map((file) => readFile(path.join(folder, file), 'utf8')));
 }
@@ -95,12 +96,12 @@ export function titleFont({ sourceDirectory, output }: Options): Plugin {
     name: 'education-title-font',
     async buildStart() {
       if (process.env.VITEST) return;
-      const texts = [
-        ...(await sourceTexts(sourceDirectory)),
-        ...(await lessonContentTexts()),
-        ...(await catalogueTexts()),
-      ];
-      await writeTitleFont(titleCharacters(texts), output);
+      const texts = await Promise.all([
+        sourceTexts(sourceDirectory),
+        lessonContentTexts(),
+        catalogueTexts(),
+      ]);
+      await writeTitleFont(titleCharacters(texts.flat()), output);
     },
     async generateBundle() {
       this.emitFile({
