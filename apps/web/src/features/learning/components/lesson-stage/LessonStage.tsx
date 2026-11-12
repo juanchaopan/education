@@ -12,7 +12,7 @@ import {
 } from 'react';
 import { classNames } from '../../../../shared/lib/class-names';
 import { Icon } from '../../../../shared/ui/Icon';
-import { activationAt, type Activation } from '../../interaction/stage-activation';
+import { activationAt, nudgeAt, type Activation } from '../../interaction/stage-activation';
 import {
   establishing,
   paletteStyle,
@@ -176,8 +176,8 @@ function useLayout(look: StageLook) {
 // one picture, so the props stand where the painting expects them. An
 // upright frame is filled by the painting alone, and the props, without the
 // teacher, are fitted to its width and to the height the controls leave. The
-// stage reports which prop or place the child chose; the page decides what
-// that does.
+// stage reports which prop or place the child chose, and which prop an arrow
+// key nudged; the page decides what that does.
 export function LessonStage(props: Props) {
   const { look, shot, speaking, failure, worldRef, onActivate } = props;
   const layout = useLayout(look);
@@ -185,6 +185,16 @@ export function LessonStage(props: Props) {
   const choose = (event: MouseEvent | KeyboardEvent) => {
     const target = activationAt(event.target);
     if (target) onActivate(target);
+  };
+  // Enter and Space take a prop or place, as a tap does; the arrow keys
+  // nudge a prop that slides along the stage.
+  const press = (event: KeyboardEvent) => {
+    const nudged = nudgeAt(event.target, event.key);
+    const taking = event.key === 'Enter' || event.key === ' ';
+    if (!nudged && !taking) return;
+    event.preventDefault();
+    if (nudged) onActivate(nudged);
+    else choose(event);
   };
   return (
     <section
@@ -205,11 +215,7 @@ export function LessonStage(props: Props) {
             role="group"
             aria-label={look.worldLabel}
             onClick={choose}
-            onKeyDown={(event) => {
-              if (event.key !== 'Enter' && event.key !== ' ') return;
-              event.preventDefault();
-              choose(event);
-            }}
+            onKeyDown={press}
           >
             {props.defs}
             {props.ambience}
