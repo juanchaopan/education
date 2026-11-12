@@ -32,10 +32,9 @@ export function KeptConclusions<State extends FilmState<Shot>, Shot extends stri
 }: Props<State, Shot>) {
   if (!board) return null;
   const scenes = { shots: script.shots, answer: answer.shot };
-  const kept = { ...board, conclusions: content.conclusions };
   return (
     <BoardPlace>
-      <ConclusionBoard facts={boardFacts(kept, scenes, state, progress)} />
+      <ConclusionBoard facts={boardFacts(board, content.conclusions, scenes, state, progress)} />
     </BoardPlace>
   );
 }

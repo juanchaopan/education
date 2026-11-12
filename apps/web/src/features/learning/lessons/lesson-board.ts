@@ -14,10 +14,6 @@ export type LessonBoard<State, Picture extends string> = Readonly<{
   found?: Readonly<Record<string, (state: State) => boolean>>;
 }>;
 
-// A board with the lesson's conclusions on it, in the order they stand.
-export type KeptBoard<State, Shot extends string> = LessonBoard<State, string> &
-  Readonly<{ conclusions: readonly Conclusion<Shot, string>[] }>;
-
 // How far the child has got with the final count: answered right in this
 // visit, and the last of the authored hints received.
 export type AnswerProgress = Readonly<{ answered: boolean; hint?: string }>;
@@ -71,13 +67,14 @@ function factOf<Shot extends string>(
   };
 }
 
-// The conclusions a lesson's board shows in a state of its film, as the board
-// draws them; the title card shows none. The count is answered once the
-// child got it right in this visit, or once the film has moved past the
-// scene that asks for it. A hint lights what it uses only while the child is
-// still answering.
+// The conclusions a lesson's board shows in a state of its film, drawn as
+// the board draws them, in the order the lesson's content lists them; the
+// title card shows none. The count is answered once the child got it right
+// in this visit, or once the film has moved past the scene that asks for it.
+// A hint lights what it uses only while the child is still answering.
 export function boardFacts<State extends FilmState<Shot>, Shot extends string>(
-  board: KeptBoard<State, Shot>,
+  board: LessonBoard<State, string>,
+  conclusions: readonly Conclusion<Shot, string>[],
   scenes: BoardScenes<Shot>,
   state: State,
   progress: AnswerProgress,
@@ -91,7 +88,7 @@ export function boardFacts<State extends FilmState<Shot>, Shot extends string>(
     answered,
     hint: shot === answer && !answered ? progress.hint : undefined,
   };
-  return board.conclusions
+  return conclusions
     .filter((conclusion) => shown(conclusion, board, scenes, shot, state))
     .map((conclusion) => factOf(conclusion, board.pictures, moment));
 }

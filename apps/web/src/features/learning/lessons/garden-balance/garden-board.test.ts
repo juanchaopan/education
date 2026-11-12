@@ -6,13 +6,12 @@ import { arrive, respond, type GardenState, type Move } from './garden-story';
 import { shots } from './script';
 
 const scenes = { shots, answer: 'answer' } as const;
-const kept = { ...gardenBoard, conclusions: gardenBalanceLesson.conclusions };
 const unanswered: AnswerProgress = { answered: false };
 
 // The board as the child sees it: each conclusion's sentence, with a mark
 // for the ones in use.
 function board(state: GardenState, progress = unanswered) {
-  return boardFacts(kept, scenes, state, progress).map(
+  return boardFacts(gardenBoard, gardenBalanceLesson.conclusions, scenes, state, progress).map(
     ({ says, lit }) => `${says}${lit ? ' *' : ''}`,
   );
 }

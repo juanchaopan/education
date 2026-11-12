@@ -1,52 +1,55 @@
+import type { Conclusion } from '@education/problems/lesson-content';
 import { describe, expect, it } from 'vitest';
-import { boardFacts, type AnswerProgress, type KeptBoard } from './lesson-board';
+import { boardFacts, type AnswerProgress, type LessonBoard } from './lesson-board';
 
 type Shot = 'weigh' | 'swap' | 'answer' | 'suppose';
 type State = Readonly<{ shot: Shot | 'opening'; level: boolean }>;
 
-const board: KeptBoard<State, Shot> = {
+const board: LessonBoard<State, 'box' | 'ball' | 'group'> = {
   pictures: { box: 'box', ball: 'ball', group: 'group' },
   found: { 'box-balls': ({ level }) => level },
-  conclusions: [
-    {
-      id: 'box-balls',
-      says: '1 个盒子和 3 个球一样重',
-      amounts: [
-        [1, 'box'],
-        [3, 'ball'],
-      ],
-      from: 'weigh',
-      hints: ['first-scale'],
-    },
-    {
-      id: 'box-groups',
-      says: '1 个盒子和 3 组球一样重',
-      amounts: [
-        [1, 'box'],
-        [3, 'group'],
-      ],
-      from: 'answer',
-      uses: ['answer'],
-      answer: { amount: [9, 'ball'], says: '1 个盒子和 3 组球、9 个球一样重' },
-    },
-    {
-      id: 'box-balls-two',
-      says: '假如 1 个盒子和 2 个球一样重',
-      amounts: [
-        [1, 'box'],
-        [2, 'ball'],
-      ],
-      from: 'suppose',
-      uses: ['suppose'],
-      supposed: true,
-    },
-  ],
 };
+
+const conclusions: readonly Conclusion<Shot, 'box' | 'ball' | 'group'>[] = [
+  {
+    id: 'box-balls',
+    says: '1 个盒子和 3 个球一样重',
+    amounts: [
+      [1, 'box'],
+      [3, 'ball'],
+    ],
+    from: 'weigh',
+    hints: ['first-scale'],
+  },
+  {
+    id: 'box-groups',
+    says: '1 个盒子和 3 组球一样重',
+    amounts: [
+      [1, 'box'],
+      [3, 'group'],
+    ],
+    from: 'answer',
+    uses: ['answer'],
+    answer: { amount: [9, 'ball'], says: '1 个盒子和 3 组球、9 个球一样重' },
+  },
+  {
+    id: 'box-balls-two',
+    says: '假如 1 个盒子和 2 个球一样重',
+    amounts: [
+      [1, 'box'],
+      [2, 'ball'],
+    ],
+    from: 'suppose',
+    uses: ['suppose'],
+    supposed: true,
+  },
+];
 
 const scenes = { shots: ['weigh', 'swap', 'answer', 'suppose'], answer: 'answer' } as const;
 const fresh: AnswerProgress = { answered: false };
 
-const facts = (state: State, progress = fresh) => boardFacts(board, scenes, state, progress);
+const facts = (state: State, progress = fresh) =>
+  boardFacts(board, conclusions, scenes, state, progress);
 const ids = (state: State, progress = fresh) => facts(state, progress).map(({ id }) => id);
 const lit = (state: State, progress = fresh) =>
   facts(state, progress)

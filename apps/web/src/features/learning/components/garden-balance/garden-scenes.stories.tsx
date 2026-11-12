@@ -27,13 +27,13 @@ type FilmArgs = Omit<ComponentProps<typeof LessonStage>, 'look' | 'shot' | 'chil
 
 const look = stageLook(gardenLesson);
 const scenes = { shots: gardenLesson.script.shots, answer: gardenLesson.answer.shot };
-const kept = { ...gardenLesson.board, conclusions: gardenLesson.content.conclusions };
 
 // The garden scenes on the lesson stage, as the lesson page shows them, with
 // the conclusions found so far on the board and the rabbit's line in its
 // subtitle.
 function GardenFilm({ state, handling, line, answered = false, frame, ...stage }: FilmArgs) {
-  const facts = boardFacts(kept, scenes, state, { answered });
+  const { board, content } = gardenLesson;
+  const facts = boardFacts(board, content.conclusions, scenes, state, { answered });
   return (
     <StoryFrame shape={frame}>
       <LessonStage
