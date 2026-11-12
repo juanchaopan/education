@@ -62,8 +62,10 @@ async function learner(family: string, nickname: string) {
      VALUES($1,'apples',1,$2,'count'),($1,'shapes',2,$2,'look')`,
     [child, round],
   );
+  // The maintained book, and a book id the catalogue does not list.
   await pool.query(
-    `INSERT INTO assignments(child_id,problem_id,problem_version) VALUES($1,'apples',1)`,
+    `INSERT INTO book_assignments(child_id,book_id)
+     VALUES($1,'g1-math-xueersi'),($1,'fixture-missing-book')`,
     [child],
   );
   await pool.query(
@@ -80,6 +82,49 @@ async function learner(family: string, nickname: string) {
   return child;
 }
 
+// What the export holds for a child made by `learner`: its learning summary,
+// the maintained book without the one the catalogue does not list, and the
+// draft that has not expired.
+const exportedLearner = {
+  nickname: '小鹿',
+  learning: [
+    {
+      id: 'apples',
+      version: 1,
+      title: null,
+      independent: 0,
+      assisted: 0,
+      incorrect: 2,
+      uncertain: 0,
+      hints: 1,
+      reviewSuggested: true,
+    },
+    expect.objectContaining({ id: 'shapes', version: 2, hints: 1, reviewSuggested: false }),
+  ],
+  books: [
+    {
+      id: 'g1-math-xueersi',
+      grade: '一年级',
+      subject: '数学',
+      name: '学而思',
+      status: 'available',
+      assignedAt: expect.any(String),
+      done: 0,
+      total: 1,
+      finished: false,
+    },
+  ],
+  drafts: [
+    {
+      id: 'apples',
+      version: 1,
+      title: null,
+      expiresAt: expect.any(String),
+      content: { stepId: 'count', drawing },
+    },
+  ],
+};
+
 const exportFor = (token: string) =>
   app.inject({
     method: 'POST',
@@ -94,7 +139,7 @@ const exportFor = (token: string) =>
     payload: {},
   });
 
-it('exports only the signed-in family, its live drafts and no credentials', async () => {
+it('exports only the signed-in family, its books, its live drafts and no credentials', async () => {
   const owner = await household('小鹿');
   const other = await household('小兔');
   const response = await exportFor(owner.token);
@@ -103,42 +148,14 @@ it('exports only the signed-in family, its live drafts and no credentials', asyn
   const file = response.json<FamilyExport>();
   expect(file.format).toMatchObject({
     name: 'education-family-export',
-    version: 1,
+    version: 2,
     includes: [...familyExportScope.includes],
   });
   expect(file.parent).toEqual({ email: `${owner.family}@example.test`, emailVerified: true });
   expect(file.aiConsents).toEqual([
     { scope: 'openai-tutoring', policyVersion: 1, granted: true, changedAt: expect.any(String) },
   ]);
-  expect(file.children).toEqual([
-    {
-      nickname: '小鹿',
-      learning: [
-        {
-          id: 'apples',
-          version: 1,
-          title: null,
-          independent: 0,
-          assisted: 0,
-          incorrect: 2,
-          uncertain: 0,
-          hints: 1,
-          reviewSuggested: true,
-        },
-        expect.objectContaining({ id: 'shapes', version: 2, hints: 1, reviewSuggested: false }),
-      ],
-      practice: [{ id: 'apples', version: 1, title: null }],
-      drafts: [
-        {
-          id: 'apples',
-          version: 1,
-          title: null,
-          expiresAt: expect.any(String),
-          content: { stepId: 'count', drawing },
-        },
-      ],
-    },
-  ]);
+  expect(file.children).toEqual([exportedLearner]);
   for (const secret of [
     'private-',
     owner.token,
@@ -147,6 +164,7 @@ it('exports only the signed-in family, its live drafts and no credentials', asyn
     owner.child!,
     other.family,
     '小兔',
+    'fixture-missing-book',
   ])
     expect(response.body).not.toContain(secret);
 });

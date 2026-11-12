@@ -34,9 +34,7 @@ export const gardenBalance: ProblemPlugin = {
   summary: {
     ...gardenBalanceLesson.problem,
     title: '一棵青菜有多重',
-    grade: '一年级',
-    subject: '数学',
-    category: '学而思',
+    book: 'g1-math-xueersi',
     sequence: 7,
   },
   answering: {

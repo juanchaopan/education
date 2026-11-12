@@ -6,13 +6,12 @@ import { createPracticeAssignments } from '../apps/api/src/practice-application.
 import { seedSignedInFamily } from './seeded-family.js';
 import { signInWithToken } from './session-cookie.js';
 
+const book = { id: 'fixture-patterns', grade: '一年级', subject: '数学', category: '规律' };
 const selected = {
   id: 'fixture-pattern',
   version: 2,
   title: '辨认规律',
-  grade: '一年级',
-  subject: '数学',
-  category: '规律',
+  book: book.id,
   sequence: 1,
 };
 const other = { ...selected, id: 'fixture-shapes', title: '认识图形', sequence: 2 };
@@ -29,7 +28,7 @@ test('parent arranges optional practice and only the selected child can open it'
     .toBe(200);
   const pool = new pg.Pool({ connectionString: database });
   // Only this test instance has a fixture registry. Session calls still use the regular web server.
-  const registry = createProblemRegistry([{ summary: selected }, { summary: other }]);
+  const registry = createProblemRegistry([{ summary: selected }, { summary: other }], [book]);
   const app = buildApp({ origin: baseURL, practice: createPracticeAssignments(pool, registry) });
   const { family, parent, children } = await seedSignedInFamily(pool, ['小鹿', '小猫']);
   const deer = children[0]!;

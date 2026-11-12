@@ -1,6 +1,6 @@
 import Fastify from 'fastify';
 import { describe, expect, it } from 'vitest';
-import { createProblemRegistry } from '@education/problems/server';
+import { createProblemRegistry, type Book, type ProblemEntry } from '@education/problems/server';
 import type { ProblemSummary } from '@education/contracts';
 import { registerCatalog } from './catalog.js';
 import { createCatalog } from '../services/catalog.js';
@@ -11,33 +11,29 @@ const rules = () => ({
   stepId: 'start',
 });
 
-function plugin(id: string, fields: Partial<ProblemSummary> = {}) {
+const shapes: Book = { id: 'shapes', grade: '二年级', subject: '数学', category: '图形' };
+const reading: Book = { id: 'reading', grade: '一年级', subject: '语文', category: '阅读' };
+const quantities: Book = { id: 'quantities', grade: '二年级', subject: '数学', category: '数量' };
+const shelf = [shapes, reading, quantities];
+
+function plugin(id: string, fields: Partial<ProblemEntry> = {}) {
   return {
-    summary: {
-      id,
-      title: id,
-      version: 1,
-      grade: '1年级',
-      subject: '数学',
-      category: '图形',
-      sequence: 1,
-      ...fields,
-    },
+    summary: { id, title: id, version: 1, book: shapes.id, sequence: 1, ...fields },
     checkStep: rules,
   };
 }
 
 describe('versioned catalog', () => {
-  it('lists current versions in stable order and includes configured empty categories', async () => {
+  it('lists current versions in stable order and includes the categories of empty books', async () => {
     const registry = createProblemRegistry(
       [
         plugin('shape-b'),
         plugin('shape-a', { version: 2 }),
         plugin('shape-a', { title: '旧版本' }),
-        plugin('reading', { grade: '2年级', subject: '语文', category: '阅读' }),
+        plugin('reading', { book: reading.id }),
         plugin('first-shape', { sequence: 0 }),
       ],
-      [{ grade: '1年级', subject: '数学', category: '数量' }],
+      shelf,
     );
     const app = Fastify();
     registerCatalog(app, createCatalog(registry));
@@ -52,7 +48,7 @@ describe('versioned catalog', () => {
         ['reading', 1],
       ]);
       expect(catalog.categories).toContainEqual({
-        grade: '1年级',
+        grade: '二年级',
         subject: '数学',
         category: '数量',
       });
@@ -65,13 +61,21 @@ describe('versioned catalog', () => {
 
   it('resolves an exact historical version and rejects unknown or unsafe versions', async () => {
     const previous = plugin('shape-a', { title: '旧版本' });
-    const registry = createProblemRegistry([plugin('shape-a', { version: 2 }), previous]);
+    const registry = createProblemRegistry([plugin('shape-a', { version: 2 }), previous], shelf);
     const app = Fastify();
     registerCatalog(app, createCatalog(registry));
     try {
       const response = await app.inject('/api/v1/problems/shape-a/1');
       expect(response.statusCode).toBe(200);
-      expect(response.json()).toEqual(previous.summary);
+      expect(response.json()).toEqual({
+        id: 'shape-a',
+        version: 1,
+        title: '旧版本',
+        sequence: 1,
+        grade: shapes.grade,
+        subject: shapes.subject,
+        category: shapes.category,
+      });
       expect(registry.find('shape-a', 1)?.checkStep).toBe(rules);
       for (const path of ['shape-a/3', 'unknown/1', 'shape-a/01', 'shape-a/9007199254740993']) {
         const missing = await app.inject(`/api/v1/problems/${path}`);
@@ -84,7 +88,7 @@ describe('versioned catalog', () => {
   });
 
   it('rejects duplicate version keys', () => {
-    expect(() => createProblemRegistry([plugin('shape-a'), plugin('shape-a')])).toThrow(
+    expect(() => createProblemRegistry([plugin('shape-a'), plugin('shape-a')], shelf)).toThrow(
       'Duplicate problem version: shape-a/1',
     );
   });

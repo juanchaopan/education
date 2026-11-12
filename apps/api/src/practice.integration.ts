@@ -1,81 +1,38 @@
-import { randomBytes, randomUUID } from 'node:crypto';
-import pg from 'pg';
+import { randomUUID } from 'node:crypto';
 import { afterAll, expect, it } from 'vitest';
 import { createProblemRegistry } from '@education/problems/server';
 import { buildApp } from './app.js';
 import { createPracticeAssignments } from './practice-application.js';
-import { csrfToken, tokenHash } from './identity/services/session-security.js';
+import { familyFixtures, fixtureOrigin, sessionHeaders } from './family-fixtures.js';
 
-if (!process.env.DATABASE_URL?.endsWith('/education_test'))
-  throw new Error('Use isolated education_test');
-const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
-const families: string[] = [];
-const origin = 'https://education.example';
+const { pool, household, learner, close } = familyFixtures();
+const book = { id: 'fixture-patterns', grade: '一年级', subject: '数学', category: '规律' };
 const summary = {
   id: 'fixture-pattern',
   version: 2,
   title: '辨认规律',
-  grade: '一年级',
-  subject: '数学',
-  category: '规律',
+  book: book.id,
   sequence: 1,
 };
-const registry = createProblemRegistry([{ summary }]);
-const app = buildApp({ origin, practice: createPracticeAssignments(pool, registry) });
+const registry = createProblemRegistry([{ summary }], [book]);
+const app = buildApp({
+  origin: fixtureOrigin,
+  practice: createPracticeAssignments(pool, registry),
+});
 
 afterAll(async () => {
   await app.close();
-  await pool.query('DELETE FROM families WHERE id=ANY($1::uuid[])', [families]);
-  await pool.end();
+  await close();
 });
-
-async function household(verified = true) {
-  const family = randomUUID();
-  const token = randomBytes(32).toString('base64url');
-  families.push(family);
-  await pool.query('INSERT INTO families(id) VALUES($1)', [family]);
-  await pool.query(
-    `WITH parent AS (
-       INSERT INTO parents(family_id,email,password_hash,email_verified)
-       VALUES($1,$2,'fixture',$3) RETURNING id
-     )
-     INSERT INTO parent_sessions(token_hash,parent_id,credential_version,family_epoch,expires_at,verified)
-     SELECT $4,id,1,1,now()+interval '1 day',$3 FROM parent`,
-    [family, `${family}@example.test`, verified, tokenHash(token)],
-  );
-  return { family, token };
-}
-
-async function learner(family: string, nickname: string) {
-  const id = randomUUID(),
-    token = randomBytes(32).toString('base64url');
-  await pool.query(
-    `INSERT INTO children(id,family_id,nickname,canonical_nickname,pin_hash,pin_pepper_version)
-     VALUES($1,$2,$3,$3,'fixture',1)`,
-    [id, family, nickname],
-  );
-  await pool.query(
-    `INSERT INTO child_sessions(token_hash,child_id,credential_version,family_epoch,expires_at)
-     VALUES($1,$2,1,1,now()+interval '1 day')`,
-    [tokenHash(token), id],
-  );
-  return { id, token };
-}
 
 const childPath = '/api/v1/children/practice';
 const parentPath = (id: string) => `/api/v1/parents/children/${id}/practice`;
-const headers = (token: string) => ({
-  cookie: `__Host-education_session=${token}`,
-  origin,
-  'x-education-request': 'session',
-  'x-csrf-token': csrfToken(token),
-});
-const read = (url: string, token: string) => app.inject({ url, headers: headers(token) });
+const read = (url: string, token: string) => app.inject({ url, headers: sessionHeaders(token) });
 const assign = (id: string, token: string, version = 2, extra = {}) =>
   app.inject({
     method: 'POST',
     url: parentPath(id),
-    headers: { ...headers(token), ...extra },
+    headers: { ...sessionHeaders(token), ...extra },
     payload: { id: summary.id, version },
   });
 

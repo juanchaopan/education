@@ -24,7 +24,7 @@ export function createCatalog(registry = problemRegistry) {
     (a, b) => compareCategory(a, b) || a.sequence - b.sequence || compareLabel(a.id, b.id),
   );
   const paths = new Map<string, CatalogCategory>();
-  for (const { grade, subject, category } of [...registry.categories, ...problems]) {
+  for (const { grade, subject, category } of [...registry.books, ...problems]) {
     paths.set(JSON.stringify([grade, subject, category]), { grade, subject, category });
   }
   const categories = [...paths.values()].sort(compareCategory);
@@ -34,7 +34,7 @@ export function createCatalog(registry = problemRegistry) {
     list: () => listing,
     detail: (id: string, rawVersion: string) => {
       const version = parseProblemVersion(rawVersion);
-      return version === undefined ? undefined : registry.find(id, version)?.summary;
+      return version === undefined ? undefined : registry.summary(id, version);
     },
   };
 }

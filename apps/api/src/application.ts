@@ -44,6 +44,7 @@ import { createDrafts } from './draft-application.js';
 import { createAnswering } from './answer-application.js';
 import { createLearningSummary } from './learning-summary-application.js';
 import { createPracticeAssignments } from './practice-application.js';
+import { createBookshelf } from './bookshelf-application.js';
 import { createAiConsent } from './ai-consent-application.js';
 import { createFamilyExport } from './family-export-application.js';
 import { createFamilyDeletion } from './family-deletion-application.js';
@@ -238,6 +239,7 @@ function createFamilyManagement({
   return {
     learningSummary: createLearningSummary(pool),
     practice: createPracticeAssignments(pool),
+    bookshelf: createBookshelf(pool),
     aiConsent: createAiConsent(pool, ai),
     familyExport: createFamilyExport(pool),
     familyDeletion: createFamilyDeletion(pool, ledgerPool),

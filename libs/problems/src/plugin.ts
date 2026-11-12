@@ -1,11 +1,11 @@
 import {
   isProblemId,
-  type CatalogCategory,
   type FeedbackRegion,
   type ProblemSummary,
   type TeachingFeedback,
   type SubmitAnswer,
 } from '@education/contracts';
+import { indexBooks, type Book } from './books.js';
 
 export type AnsweringPolicy = {
   hints?: Readonly<Record<string, string>>;
@@ -23,8 +23,15 @@ export type FeedbackStep = {
   vocabulary?: readonly string[];
 };
 
+// What a problem says of itself: its id and version, its title, the id of
+// the book it is filed in and its place in that book. Its grade, subject and
+// category are the book's.
+export type ProblemEntry = Pick<ProblemSummary, 'id' | 'version' | 'title' | 'sequence'> & {
+  book: string;
+};
+
 export type ProblemPlugin = {
-  summary: ProblemSummary;
+  summary: ProblemEntry;
   answering?: AnsweringPolicy;
   feedback?: Readonly<Record<string, FeedbackStep>>;
   // Authored rules run on the child's text before any model; they cannot read a
@@ -35,26 +42,66 @@ export type ProblemPlugin = {
   }) => TeachingFeedback | Promise<TeachingFeedback>;
 };
 
-export function createProblemRegistry(
-  plugins: readonly ProblemPlugin[],
-  categories: readonly CatalogCategory[] = [],
-) {
-  const versions = new Map<string, ProblemPlugin>();
-  const latest = new Map<string, ProblemSummary>();
+// A registered problem version: its plugin, the summary the catalogue lists
+// for it, and the id of its book.
+type Registered = Readonly<{ plugin: ProblemPlugin; summary: ProblemSummary; book: string }>;
+
+// The problem as the catalogue lists it, filed under its book.
+function listed({ id, version, title, sequence }: ProblemEntry, book: Book): ProblemSummary {
+  return {
+    id,
+    version,
+    title,
+    sequence,
+    grade: book.grade,
+    subject: book.subject,
+    category: book.category,
+  };
+}
+
+const bookOrder = (a: ProblemSummary, b: ProblemSummary) =>
+  a.sequence - b.sequence || (a.id < b.id ? -1 : Number(a.id > b.id));
+
+// The latest version of every problem, grouped by the book that version is
+// filed in, each book's problems in its order.
+function shelve(latest: Iterable<Registered>) {
+  const byBook = new Map<string, ProblemSummary[]>();
+  for (const { summary, book } of latest) {
+    const problems = byBook.get(book) ?? [];
+    problems.push(summary);
+    byBook.set(book, problems);
+  }
+  for (const problems of byBook.values()) problems.sort(bookOrder);
+  return byBook as ReadonlyMap<string, readonly ProblemSummary[]>;
+}
+
+export function createProblemRegistry(plugins: readonly ProblemPlugin[], shelf: readonly Book[]) {
+  const booksById = indexBooks(shelf);
+  const versions = new Map<string, Registered>();
+  const latest = new Map<string, Registered>();
   for (const plugin of plugins) {
-    const { id, version } = plugin.summary;
+    const { id, version, book: bookId } = plugin.summary;
     if (!isProblemId(id) || !Number.isSafeInteger(version) || version < 1) {
       throw new Error(`Invalid problem version: ${id}/${version}`);
     }
     const key = `${id}/${version}`;
     if (versions.has(key)) throw new Error(`Duplicate problem version: ${key}`);
-    versions.set(key, plugin);
+    const book = booksById.get(bookId);
+    if (!book) throw new Error(`Problem ${key} names an unknown book: ${bookId}`);
+    const registered = { plugin, summary: listed(plugin.summary, book), book: bookId };
+    versions.set(key, registered);
     const current = latest.get(id);
-    if (!current || version > current.version) latest.set(id, plugin.summary);
+    if (!current || version > current.summary.version) latest.set(id, registered);
   }
+  const byBook = shelve(latest.values());
   return {
-    current: [...latest.values()],
-    categories,
-    find: (id: string, version: number) => versions.get(`${id}/${version}`),
+    current: [...latest.values()].map(({ summary }) => summary),
+    books: shelf,
+    find: (id: string, version: number) => versions.get(`${id}/${version}`)?.plugin,
+    summary: (id: string, version: number) => versions.get(`${id}/${version}`)?.summary,
+    // The latest version of every problem filed in the book, in the book's order.
+    problemsOf: (bookId: string) => byBook.get(bookId) ?? [],
   };
 }
+
+export type ProblemRegistry = ReturnType<typeof createProblemRegistry>;

@@ -51,14 +51,14 @@ export async function sourceTexts(directory: string) {
   return Promise.all(sources.map((file) => readFile(path.join(directory, file), 'utf8')));
 }
 
-// The titles and the grade, subject and category names of the problem
-// catalogue, which reach the page from the API rather than from the source.
+// The titles of the problem catalogue and the grade, subject and category
+// names of its books, which reach the page from the API rather than from the
+// source.
 async function catalogueTexts() {
   const { problemRegistry } = await import('@education/problems/server');
-  const places = [...problemRegistry.current, ...problemRegistry.categories];
   return [
     ...problemRegistry.current.map((problem) => problem.title),
-    ...places.flatMap(({ grade, subject, category }) => [grade, subject, category]),
+    ...problemRegistry.books.flatMap(({ grade, subject, category }) => [grade, subject, category]),
   ];
 }
 

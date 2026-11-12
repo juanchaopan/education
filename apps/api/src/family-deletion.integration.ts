@@ -113,6 +113,9 @@ async function learning(family: string, child: string) {
     `INSERT INTO assignments(child_id,problem_id,problem_version) VALUES($1,'apples',1)`,
     [child],
   );
+  await pool.query(`INSERT INTO book_assignments(child_id,book_id) VALUES($1,'g1-math-xueersi')`, [
+    child,
+  ]);
   await pool.query(
     `INSERT INTO drafts(child_id,problem_id,problem_version,content,expires_at)
      VALUES($1,'test-deletion',1,$2,now()+interval '1 day')`,
@@ -171,6 +174,7 @@ async function remaining(family: string, child: string) {
        (SELECT count(*) FROM attempts WHERE child_id=$2)::int AS attempts,
        (SELECT count(*) FROM help_events WHERE child_id=$2)::int AS hints,
        (SELECT count(*) FROM assignments WHERE child_id=$2)::int AS assignments,
+       (SELECT count(*) FROM book_assignments WHERE child_id=$2)::int AS "bookAssignments",
        (SELECT count(*) FROM drafts WHERE child_id=$2)::int AS drafts,
        (SELECT count(*) FROM registration_keys WHERE family_id=$1)::int AS keys,
        (SELECT count(*) FROM ai_consents WHERE family_id=$1)::int AS consents,
@@ -191,6 +195,7 @@ const nothingLeft = {
   attempts: 0,
   hints: 0,
   assignments: 0,
+  bookAssignments: 0,
   drafts: 0,
   keys: 0,
   consents: 0,
@@ -230,7 +235,10 @@ it('deletes only this family, signs out every device on every server and records
   expect((await exportFrom(second, owner.parent)).statusCode).toBe(401);
   expect((await deleteFamily(owner.parent, second)).statusCode).toBe(401);
 
-  expect((await remaining(other.family, other.child)).drafts).toBe(1);
+  expect(await remaining(other.family, other.child)).toMatchObject({
+    drafts: 1,
+    bookAssignments: 1,
+  });
   expect((await exportFrom(second, other.parent)).statusCode).toBe(200);
   expect(await ledgerEntry(other.family)).toBeUndefined();
   expect(await fixtureCost()).toBe(cost);

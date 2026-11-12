@@ -16,24 +16,21 @@ const families: string[] = [];
 const anonymousUsage: string[] = [];
 const env = { OPENAI_API_KEY: 'synthetic-key', OPENAI_TUTORING_ELIGIBLE: 'true' };
 const problem = { id: 'count-dots', version: 1 };
-const registry = createProblemRegistry([
-  {
-    summary: {
-      ...problem,
-      title: 'fixture',
-      grade: '1年级',
-      subject: '数学',
-      category: '图形',
-      sequence: 1,
+const book = { id: 'fixture-shapes', grade: '一年级', subject: '数学', category: '图形' };
+const registry = createProblemRegistry(
+  [
+    {
+      summary: { ...problem, title: 'fixture', book: book.id, sequence: 1 },
+      feedback: { 'count-left': { prompt: '数一数左边的点。' } },
+      checkStep: ({ answer }) => ({
+        status: answer === '三个' ? 'correct' : 'uncertain',
+        instruction: answer === '三个' ? '数对了！' : '再看看。',
+        stepId: 'count-left',
+      }),
     },
-    feedback: { 'count-left': { prompt: '数一数左边的点。' } },
-    checkStep: ({ answer }) => ({
-      status: answer === '三个' ? 'correct' : 'uncertain',
-      instruction: answer === '三个' ? '数对了！' : '再看看。',
-      stepId: 'count-left',
-    }),
-  },
-]);
+  ],
+  [book],
+);
 const modelReply = {
   status: 'needs-work',
   instruction: '再数一数框里的点。',

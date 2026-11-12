@@ -28,7 +28,7 @@ export function createFamilyExportService(
       return {
         format: {
           name: 'education-family-export',
-          version: 1,
+          version: 2,
           generatedAt: now().toISOString(),
           includes: [...familyExportScope.includes],
           excludes: [...familyExportScope.excludes],

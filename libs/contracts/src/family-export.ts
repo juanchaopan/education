@@ -1,11 +1,14 @@
 import { Type, type Static } from '@sinclair/typebox';
 import { AiConsentChange } from './ai-consent.js';
+import { BookStatus } from './bookshelf.js';
+import { ProblemId } from './catalog.js';
 import { ChildAccess } from './child-access.js';
 import { SavedDraft } from './draft.js';
 import { ProblemLearningSummary } from './learning-summary.js';
 import { PracticeItem } from './practice.js';
 
 const closed = { additionalProperties: false };
+const Count = Type.Integer({ minimum: 0 });
 
 // What a family export holds and leaves out. The file carries the same lists
 // so it explains itself after it leaves the parent space.
@@ -14,7 +17,7 @@ export const familyExportScope = {
     '家长邮箱和邮箱验证状态',
     '孩子的昵称',
     '每道题的学习摘要：独立完成、提示后完成、未答对和不确定的次数，提示次数和复习建议',
-    '家长安排的练习',
+    '家长安排的书，以及导出时每本书的状态、已做的题数、题数和是否学完',
     '尚未过期的当前草稿，包括做到的步骤和绘图笔迹',
     '外部 AI 授权的用途、政策版本、是否授权和修改时间',
   ],
@@ -31,13 +34,30 @@ export const familyExportScope = {
 
 const { expiresAt, content } = SavedDraft.properties;
 
+// A book given to a child: what it is, when it was given, and the child's
+// progress in it when the file was made.
+export const ExportedBook = Type.Object(
+  {
+    id: ProblemId,
+    grade: Type.String(),
+    subject: Type.String(),
+    name: Type.String(),
+    status: BookStatus,
+    assignedAt: Type.String(),
+    done: Count,
+    total: Count,
+    finished: Type.Boolean(),
+  },
+  closed,
+);
+
 export const FamilyExportRequest = Type.Object({}, closed);
 export const FamilyExport = Type.Object(
   {
     format: Type.Object(
       {
         name: Type.Literal('education-family-export'),
-        version: Type.Literal(1),
+        version: Type.Literal(2),
         generatedAt: Type.String(),
         includes: Type.Array(Type.String()),
         excludes: Type.Array(Type.String()),
@@ -61,7 +81,7 @@ export const FamilyExport = Type.Object(
         {
           nickname: ChildAccess.properties.nickname,
           learning: Type.Array(ProblemLearningSummary),
-          practice: Type.Array(PracticeItem),
+          books: Type.Array(ExportedBook),
           drafts: Type.Array(
             Type.Object({ ...PracticeItem.properties, expiresAt, content }, closed),
           ),
@@ -73,6 +93,7 @@ export const FamilyExport = Type.Object(
   closed,
 );
 
+export type ExportedBook = Static<typeof ExportedBook>;
 export type FamilyExportRequest = Static<typeof FamilyExportRequest>;
 export type FamilyExport = Static<typeof FamilyExport>;
 export type ChildExport = FamilyExport['children'][number];

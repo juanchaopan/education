@@ -1,8 +1,8 @@
-# 绘景和讲课角色的风格说明与提示词
+# 绘景、讲课角色和书的封面的风格说明与提示词
 
-绘景库和角色库（见 [课堂公共部件与绘景库](lesson-kit.md#绘景库和角色库)）里的图都按这份说明，用 OpenAI 的图像模型生成。Claude Code 不自己画这些图：它按维护者的批准调用图像模型，或者接收维护者在 Codex 里生成的图，再把图转成 WebP、量出空地、填好清单、加上 story 和视觉基准。
+绘景库和角色库（见 [课堂公共部件与绘景库](lesson-kit.md#绘景库和角色库)）、封面库（见 [家长书架与按书安排练习](bookshelf.md#封面库)）里的图都按这份说明，用 OpenAI 的图像模型生成。Claude Code 不自己画这些图：它按维护者的批准调用图像模型，或者接收维护者在 Codex 里生成的图，再把图转成 WebP、量出空地、填好清单、加上 story 和视觉基准。
 
-库里 #48 的三张背景（菜园、画室、火车工作间）和小兔是这套风格最早的样子，它们的提示词记在 `apps/web/src/features/learning/media/` 的清单里。下面的 12 张背景和 3 个角色是第一批按这份说明生成的图，清单里记的提示词和这里一致。
+库里 #48 的三张背景（菜园、画室、火车工作间）和小兔是这套风格最早的样子，它们的提示词记在 `apps/web/src/features/learning/media/` 的清单里。下面的 12 张背景和 3 个角色是第一批按这份说明生成的图，清单里记的提示词和这里一致。书的封面见文末的[书的封面](#书的封面)。
 
 ## 统一风格
 
@@ -196,6 +196,48 @@ Transparent full-body character sprite for a polished family animated movie. One
 Transparent full-body character sprite for a polished family animated movie. One wise, friendly tawny owl astronomer, with soft brown-and-cream patterned feathers, large warm amber eyes behind small round brass-rimmed glasses, and short ear tufts, wearing a deep teal scholar's waistcoat with a tiny brass star pin. Standing upright and leaning forward slightly with one wing raised and its feather tips pointing conversationally toward the viewer's right like a hand, eyes looking right, a calm, thoughtful smile. Visible whole body including the feet and tail feathers, clear silhouette, centered, subject uses 90 percent of the vertical image. 3D animated feature-quality character with soft hand-painted texture and cool silver rim light, refined and not babyish, appealing for ages 10 to 12, high production values. No platform, no scene, no books, no shadows outside the silhouette, no other objects or text. True transparent background.
 ```
 
+## 书的封面
+
+封面是书架和孩子题库首页的书卡上代表一本书的竖版图片，放在封面库里。它和绘景是两套图：绘景是题目页的整屏背景，封面不在题目里出现，绘景也不拿来当封面。
+
+### 风格
+
+- **和绘景同一种质感**：2.5D/3D 手作，捏塑的黏土、上色的木头、毛毡和纸，形状圆润，景深柔和，一个明确的主光，阴影偏冷、亮部偏暖。
+- **中间一个主体**：一件代表这本书内容的东西，例如算盘和积木、翻开的书和毛笔、地球仪，占画面中间约六成；四周是柔和、简单的底色和很少的小道具，不画成一整个场景。
+- **底色按科目**：数学偏苔绿和蜂蜜黄，语文偏杏色和陶土橙，英语偏天青和灰蓝，其他科目偏米色和麦色，和默认封面的科目色一致，书架上一眼分得出科目。
+- **按年龄段调整**：和背景一样，低年级更像玩具、更暖更亮，高年级更精致、配色更沉稳。
+- **给书卡留位置**：右上角和右下角干净、没有高光，书卡在那里放孩子的进度小签；主光从左上方来；外圈约 8% 不放重要的东西，书卡的圆角会裁掉一点。
+- **不画**：人物和动物、文字、字母、数字、符号、书名、界面、边框、水印。书名由页面写在封面下面。
+
+### 出图和交付
+
+- 维护者在 Codex 里用 ImageGen 出竖幅图，用能给的最高分辨率。
+- 入库时保留中间裁成 3:4，缩到 768×1024，转成 WebP，每张不超过 80 KB；文件名是封面 id，放进 `apps/web/src/shared/media/covers/`，在清单 `covers.ts` 里记科目、年龄段、主体和提示词，加一个 story，在固定镜像里生成视觉基准。
+- 封面 id 按画的主体起名（例如 `abacus-sprout`），不按书起名，因为几本书可以用同一张封面。书在书单里用 `cover` 引用它。
+- 不预先批量生成。`/change` 导入一本新书时问维护者：新建一张、挑一张已有的，或者照下面的写法在 Codex 里生成。
+
+出图后维护者看：
+
+- [ ] 缩到书卡大小（约 180px 宽）时主体还认得出。
+- [ ] 画面里没有人物、动物、文字、乱码字母、数字和符号。
+- [ ] 右上角和右下角干净，叠上进度小签以后仍然看得清。
+- [ ] 和书架上其他封面放在一起风格一致，科目的颜色分得出。
+
+| id              | 科目 | 年龄段 | 主体                       | 用于的书          |
+| --------------- | ---- | ------ | -------------------------- | ----------------- |
+| `abacus-sprout` | 数学 | 低年级 | 小算盘、几块积木和一盆小芽 | `g1-math-xueersi` |
+
+### `abacus-sprout` 算盘和小芽
+
+- 科目：数学。年龄段：低年级。
+- 用于「一年级 / 数学 / 学而思」。
+
+```text
+Portrait 3:4 book cover illustration for a Chinese children's learning app, made like a still from a carefully lit 3D family animated feature: tactile sculpted clay, painted wood, felt and paper materials, soft rounded shapes, gentle depth of field, one warm key light from the upper left with soft cool shadows. One centered hero object: a small wooden abacus with chunky round clay beads in honey yellow, leaf green and coral, standing slightly angled, with three plain toy building blocks at its foot and a tiny potted sprout beside it. Behind it, a calm, simple backdrop of soft sage green with a faint paper texture and a gentle glow, no scenery. The group fills about the middle 60 percent of the frame; keep the upper right and lower right corners plain, calm and free of highlights, and keep anything important out of the outer 8 percent so rounded card corners never cut it. Palette of sage, honey yellow, warm wood and coral with soft teal shadows. Big simple toy-like shapes, bright, cheerful and cozy for ages 6 to 8. No characters or animals, no text, letters, numbers or symbols on the blocks or anywhere, no title, no UI, no frames, borders or split panels, no watermark.
+```
+
 ## 以后加图
 
 新题在库里挑不到合适的背景时，按同一套风格生成一张通用的背景加进库里：提示词的开头一段（从「Wide 16:9 full-bleed background plate」到「gentle depth of field.」）和结尾的空地、不画清单照抄上面的，中间写场景、光线、四周的细节、配色和年龄段那一句；在这份文件的背景表里加一行和一节，再按「出图和交付」入库。加角色也一样，照抄角色提示词的姿势、质感和透明底要求。
+
+加封面时，照抄封面提示词的开头一段（从「Portrait 3:4 book cover illustration」到「soft cool shadows.」）和结尾的留位置、不画清单，中间写主体、底色、配色和年龄段那一句；在「书的封面」的表里加一行和一节，再按那里的「出图和交付」入库。
