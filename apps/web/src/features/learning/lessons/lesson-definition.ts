@@ -1,3 +1,4 @@
+import type { LessonContent } from '@education/problems/lesson-content';
 import type { ComponentType, ReactNode } from 'react';
 import type {
   Box,
@@ -78,12 +79,15 @@ type Looks = Readonly<{
   ambience?: ReactNode;
 }>;
 
-// Everything one problem gives the shared lesson page: its version, how its
-// film looks, its script and scene rules, its props, its final count and its
-// own scene, drawn on the stage's 1200×675 world. A lesson whose way of
-// teaching keeps its conclusions on the conclusion board declares them in
-// `board`, drawn with the lesson's own symbols. The page is built for one
-// definition at a time, so each lesson's own types hold all the way through.
+// Everything one problem gives the shared lesson page: its content, declared
+// in @education/problems and read by the server too, with its version, the
+// lesson flow it follows, its scenes and the conclusions they find; how its
+// film looks; its script, which pairs the content's lines with their
+// recordings, and its scene rules; its props, its final count and its own
+// scene, drawn on the stage's 1200×675 world. A lesson whose way of teaching
+// keeps its conclusions on the conclusion board says in `board` how they are
+// drawn, with the lesson's own symbols. The page is built for one definition
+// at a time, so each lesson's own types hold all the way through.
 export type LessonDefinition<
   State extends FilmState<Shot>,
   Shot extends string,
@@ -93,12 +97,12 @@ export type LessonDefinition<
   Look extends object,
 > = Looks &
   Readonly<{
-    problem: ProblemVersion;
+    content: LessonContent<Shot, Line, string>;
     script: Script<Shot, Line>;
     story: Story<State, Shot, Line, Move>;
     props: LessonProps<Move, Piece, Look>;
     answer: LessonAnswer<Shot>;
-    board?: LessonBoard<State, Shot, string>;
+    board?: LessonBoard<State, string>;
     Scene: ComponentType<SceneProps<State>>;
   }>;
 

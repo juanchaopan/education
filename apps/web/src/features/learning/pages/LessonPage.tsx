@@ -162,6 +162,6 @@ export function lessonPage<
 
   return function LessonPage({ csrf }) {
     if (!csrf) return <Body controls={visitorControls} />;
-    return <SignedIn scope={{ ...lesson.problem, csrf }} />;
+    return <SignedIn scope={{ ...lesson.content.problem, csrf }} />;
   };
 }

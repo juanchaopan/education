@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { boardFacts, type AnswerProgress, type LessonBoard } from './lesson-board';
+import { boardFacts, type AnswerProgress, type KeptBoard } from './lesson-board';
 
 type Shot = 'weigh' | 'swap' | 'answer' | 'suppose';
 type State = Readonly<{ shot: Shot | 'opening'; level: boolean }>;
 
-const board: LessonBoard<State, Shot, 'box' | 'ball' | 'group'> = {
+const board: KeptBoard<State, Shot> = {
   pictures: { box: 'box', ball: 'ball', group: 'group' },
+  found: { 'box-balls': ({ level }) => level },
   conclusions: [
     {
       id: 'box-balls',
@@ -15,7 +16,6 @@ const board: LessonBoard<State, Shot, 'box' | 'ball' | 'group'> = {
         [3, 'ball'],
       ],
       from: 'weigh',
-      found: ({ level }) => level,
       hints: ['first-scale'],
     },
     {

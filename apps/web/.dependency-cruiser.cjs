@@ -5,6 +5,10 @@
 const lessonFolder = '^src/features/learning/(?:lessons|components)/(?!lesson-stage/)';
 const lessonFiles = `${lessonFolder}[^/]+/`;
 
+// 题目包里网站可以读的部分：课堂内容的类型（lesson-content）和每道题的课堂内容（lessons/<题目>）。
+const problemPackage = '(^|/)(@education|libs)/problems';
+const lessonContent = `${problemPackage}/((dist|src)/)?(lesson-content|lessons/[^/]+?)([.](js|ts|d[.]ts))?$`;
+
 module.exports = {
   forbidden: [
     {
@@ -48,6 +52,17 @@ module.exports = {
       to: { path: lessonFiles, pathNot: `${lessonFolder}$1/` },
     },
     {
+      name: 'lessons-read-their-own-content',
+      comment:
+        '一道题只读自己的课堂内容（@education/problems/lessons/<同一道题>），不读另一道题的。',
+      severity: 'error',
+      from: { path: `${lessonFolder}([^/]+)/` },
+      to: {
+        path: `${problemPackage}/((dist|src)/)?lessons/`,
+        pathNot: `${problemPackage}/((dist|src)/)?lessons/$1([.](js|ts|d[.]ts))?$`,
+      },
+    },
+    {
       name: 'lessons-loaded-on-demand',
       comment:
         '题目的文件和公共题目页只在孩子打开题目时加载：题目以外的代码只能用动态 import 引用它们，题库页因此不带题目的代码。',
@@ -61,10 +76,10 @@ module.exports = {
     {
       name: 'no-problem-plugins-in-browser',
       comment:
-        '题目插件里有答案和判定规则，只在服务器上运行，网站的代码不引用它们。测试可以读插件，用来检查题目定义和插件一致。',
+        '题目插件里有判定规则、答案和提示的文字，只在服务器上运行，网站的代码不引用它们。网站只能读课堂内容（lesson-content 和 lessons/<题目>），它们不含判定规则。测试可以读插件，用来检查题目定义和插件一致。',
       severity: 'error',
       from: {},
-      to: { path: '(^|/)(@education|libs)/problems(/|$)' },
+      to: { path: `${problemPackage}(/|$)`, pathNot: lessonContent },
     },
     {
       name: 'shared-independent',

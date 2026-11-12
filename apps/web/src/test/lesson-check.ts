@@ -1,10 +1,14 @@
 import {
+  lessonContentProblems,
+  type AnyLessonContent,
+  type LessonFlow,
+} from '@education/problems/lesson-content';
+import {
   boardReach,
   establishing,
   framed,
   inside,
 } from '../features/learning/components/lesson-stage/stage-look';
-import type { Conclusion } from '../features/learning/lessons/lesson-board';
 import { shotAfter, type ProblemVersion } from '../features/learning/lessons/lesson-definition';
 import type { LessonOutline } from '../features/learning/lessons/registry';
 import { backdrops } from '../features/learning/media/backdrops/backdrops';
@@ -14,8 +18,8 @@ import { backdrops } from '../features/learning/media/backdrops/backdrops';
 export type PluginOutline = Readonly<{ steps: readonly string[]; hints: readonly string[] }>;
 
 // The parts of a problem plugin the outline is read from. The plugins live in
-// @education/problems, which only tests may load, so the check names just
-// the shape it reads.
+// @education/problems/server, which only tests may load, so the check names
+// just the shape it reads.
 type PluginParts = Readonly<{
   feedback?: Readonly<Record<string, unknown>>;
   answering?: Readonly<{ hints?: Readonly<Record<string, unknown>> }>;
@@ -50,29 +54,53 @@ export const versionName = ({ id, version }: ProblemVersion) => `${id}/${version
 const missing = (from: readonly string[], within: readonly string[]) =>
   from.filter((name) => !within.includes(name));
 
-function versionProblems(listed: ProblemVersion, lesson: LessonOutline) {
-  const [registered, own] = [versionName(listed), versionName(lesson.problem)];
+const same = (one: readonly string[], other: readonly string[]) =>
+  one.length === other.length && one.every((name, index) => other[index] === name);
+
+function versionProblems(listed: ProblemVersion, { content }: LessonOutline) {
+  const [registered, own] = [versionName(listed), versionName(content.problem)];
   return own === registered ? [] : [`registered as ${registered} but defined as ${own}`];
 }
 
-function scriptProblems({ script }: LessonOutline) {
+// The script plays the content's lines, scenes and entry lines, each line
+// with a recording of its own.
+function scriptProblems({ script, content }: LessonOutline) {
   const { lines, shots, entryLines } = script;
   const unrecorded = Object.entries(lines).filter(([, { clip }]) => !clip.trim());
-  const silent = shots.filter((shot) => !entryLines[shot]?.length);
-  const unknown = shots.flatMap((shot) => missing(entryLines[shot] ?? [], Object.keys(lines)));
+  const [played, declared] = [Object.keys(lines), Object.keys(content.lines)];
+  const reworded = declared.filter(
+    (line) => lines[line] && lines[line].text !== content.lines[line]?.text,
+  );
+  const reentered = shots.filter(
+    (shot) => !same(entryLines[shot] ?? [], content.scenes[shot]?.entry ?? []),
+  );
   return [
     ...unrecorded.map(([line]) => `line ${line} has no recording`),
-    ...silent.map((shot) => `scene ${shot} has no entry lines`),
-    ...unknown.map((line) => `entry line ${line} is not in the script`),
+    ...(same(shots, content.shots) ? [] : ["the script's scenes are not the content's scenes"]),
+    ...missing(played, declared).map((line) => `script line ${line} is not in the content`),
+    ...missing(declared, played).map((line) => `content line ${line} is not in the script`),
+    ...reworded.map((line) => `script line ${line} says other words than the content`),
+    ...reentered.map((shot) => `the script's entry lines of ${shot} are not the content's`),
   ];
 }
 
-// The count is asked in one of the lesson's scenes, and a correct count plays
-// on into the scene after it.
-function answerProblems({ script, answer }: LessonOutline) {
+// 逐幕探究 asks for the count in one of the lesson's scenes, and a correct
+// count plays on into the scene after it.
+function sceneBySceneProblems({ script, answer }: LessonOutline) {
   const { shot } = answer;
   if (!script.shots.includes(shot)) return [`answer scene ${shot} is not a scene`];
   return shotAfter(script, shot) ? [] : [`answer scene ${shot} has no scene after it`];
+}
+
+// What each lesson flow asks of a lesson that follows it.
+const flowRules: Readonly<Record<LessonFlow, (lesson: LessonOutline) => string[]>> = {
+  'scene-by-scene': sceneBySceneProblems,
+};
+
+function flowProblems(lesson: LessonOutline) {
+  const { flow } = lesson.content;
+  const rules = Object.hasOwn(flowRules, flow) ? flowRules[flow] : undefined;
+  return rules ? rules(lesson) : [`the lesson follows flow ${flow}, which is not in the list`];
 }
 
 // The lesson's props stand in its backdrop's clearing in every scene, as that
@@ -86,80 +114,50 @@ function stagingProblems({ backdrop, staging, script }: LessonOutline) {
     .map((shot) => `the props stand outside the clearing of ${backdrop} in scene ${shot}`);
 }
 
-type BoardConclusion = Conclusion<never, string, string>;
+type AnyConclusion = AnyLessonContent['conclusions'][number];
 
-// One conclusion on the board: it first shows in one of the lesson's scenes,
-// is used only from there on, is lit only by hints the answer gives, and
-// draws only pictures the board has.
-function conclusionProblems(
-  { id, from, uses = [], hints = [], amounts, answer }: BoardConclusion,
-  { script, answer: count }: LessonOutline,
-  pictures: readonly string[],
-) {
-  const { shots } = script;
-  const first = shots.indexOf(from);
-  if (first < 0) return [`conclusion ${id} first shows in ${from}, which is not a scene`];
-  const drawn = [...amounts, ...(answer ? [answer.amount] : [])].map(([, picture]) => picture);
-  return [
-    ...uses
-      .filter((shot) => shots.indexOf(shot) < first)
-      .map((shot) => `conclusion ${id} is used in ${shot}, which is not a scene from ${from} on`),
-    ...missing(hints, count.hints).map(
-      (hint) => `conclusion ${id} is lit by hint ${hint}, which the answer does not give`,
-    ),
-    ...missing(drawn, pictures).map(
-      (picture) => `conclusion ${id} draws ${picture}, which has no picture`,
-    ),
-  ];
-}
-
-// A conclusion the answer's hints light or the count is written on is on the
-// board by the scene that asks for the count.
+// A conclusion is lit only by hints the answer gives, and one the answer's
+// hints light or the count is written on is found by the scene that asks for
+// the count.
 function answeringProblems(
-  { id, from, hints = [], answer }: BoardConclusion,
+  { id, from, hints = [], answer }: AnyConclusion,
   { script, answer: count }: LessonOutline,
 ) {
   const late = script.shots.indexOf(from) > script.shots.indexOf(count.shot);
-  return late && (hints.length > 0 || answer)
-    ? [`conclusion ${id} first shows after the count is asked, so the answer never reaches it`]
-    : [];
-}
-
-// A supposed conclusion stands beside the one before it, which is on the
-// board by the time the supposed one shows.
-function besideProblems(
-  { id, from, supposed }: BoardConclusion,
-  before: BoardConclusion | undefined,
-  { script }: LessonOutline,
-) {
-  if (!supposed) return [];
-  const { shots } = script;
-  return before && shots.indexOf(before.from) <= shots.indexOf(from)
-    ? []
-    : [`conclusion ${id} supposes a change but has no conclusion on the board to stand beside`];
-}
-
-// The board's conclusions each have their own id and agree with the lesson's
-// scenes, hints, answer and pictures, a supposed one has its conclusion to
-// stand beside, and the props stand below the board along the top of a wide
-// picture.
-function boardProblems(lesson: LessonOutline) {
-  const { board, staging } = lesson;
-  if (!board) return [];
-  const { conclusions } = board;
-  const ids = conclusions.map(({ id }) => id);
-  const pictures = Object.keys(board.pictures);
   return [
-    ...ids
-      .filter((id, index) => ids.indexOf(id) !== index)
-      .map((id) => `conclusion ${id} is declared twice`),
-    ...conclusions.flatMap((conclusion, index) => [
-      ...conclusionProblems(conclusion, lesson, pictures),
-      ...answeringProblems(conclusion, lesson),
-      ...besideProblems(conclusion, conclusions[index - 1], lesson),
-    ]),
+    ...missing(hints, count.hints).map(
+      (hint) => `conclusion ${id} is lit by hint ${hint}, which the answer does not give`,
+    ),
+    ...(late && (hints.length > 0 || answer)
+      ? [`conclusion ${id} first shows after the count is asked, so the answer never reaches it`]
+      : []),
+  ];
+}
+
+// A board draws every conclusion with pictures it has, says when only
+// conclusions there are count as found, and leaves the props below it along
+// the top of a wide picture.
+function boardProblems({ board, content, staging }: LessonOutline) {
+  if (!board) return [];
+  const pictures = Object.keys(board.pictures);
+  const ids = content.conclusions.map(({ id }) => id);
+  return [
+    ...content.conclusions.flatMap(({ id, amounts, answer }) =>
+      missing(
+        [...amounts, ...(answer ? [answer.amount] : [])].map(([, picture]) => picture),
+        pictures,
+      ).map((picture) => `conclusion ${id} draws ${picture}, which has no picture`),
+    ),
+    ...missing(Object.keys(board.found ?? {}), ids).map(
+      (id) => `the board says when ${id} is found, which is not a conclusion`,
+    ),
     ...(staging.y < boardReach ? ['the props reach up under the conclusion board'] : []),
   ];
+}
+
+// The conclusions agree with the answer whether or not a board shows them.
+function conclusionProblems(lesson: LessonOutline) {
+  return lesson.content.conclusions.flatMap((conclusion) => answeringProblems(conclusion, lesson));
 }
 
 function pluginProblems(listed: ProblemVersion, lesson: LessonOutline, plugin?: PluginOutline) {
@@ -173,10 +171,10 @@ function pluginProblems(listed: ProblemVersion, lesson: LessonOutline, plugin?: 
 }
 
 // Everything wrong with a registered lesson, or nothing: its version against
-// its registry line, its recordings and entry lines, its answer scene and the
-// scene after it, where its props stand against its backdrop in each scene,
-// its conclusion board, and the server's plugin for it, with its steps and
-// hints.
+// its registry line, its content, its script and recordings against the
+// content, what its lesson flow asks of it, where its props stand against
+// its backdrop in each scene, its conclusions and their board, and the
+// server's plugin for it, with its steps and hints.
 export function lessonProblems(
   listed: ProblemVersion,
   lesson: LessonOutline,
@@ -184,9 +182,11 @@ export function lessonProblems(
 ) {
   return [
     ...versionProblems(listed, lesson),
+    ...lessonContentProblems(lesson.content),
     ...scriptProblems(lesson),
-    ...answerProblems(lesson),
+    ...flowProblems(lesson),
     ...stagingProblems(lesson),
+    ...conclusionProblems(lesson),
     ...boardProblems(lesson),
     ...pluginProblems(listed, lesson, plugin),
   ];
