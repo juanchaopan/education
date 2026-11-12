@@ -20,21 +20,23 @@ export type Amount<Picture extends string> = readonly [count: number, picture: P
 
 // One conclusion a scene finds:
 // - `says`, the sentence a screen reader reads for it;
-// - `amounts`, the amounts that weigh the same, in order;
+// - `amounts`, the amounts that weigh the same, in order, which a lesson
+//   whose way of teaching keeps its conclusions on the conclusion board
+//   draws there; a lesson that keeps them in its own picture leaves them out;
 // - `from`, the first scene that finds it;
 // - `uses` and `hints`, the scenes, and the answer's hints, that use it;
-// - `answer`, the final count it is written on with once the child has
-//   answered right, and the sentence it then reads as;
+// - `answer`, what it says once the child has answered right, with the
+//   amount the board then writes on;
 // - `supposed`, a changed condition, which comes right after the
 //   conclusion it changes.
 export type Conclusion<Shot extends string, Picture extends string> = Readonly<{
   id: string;
   says: string;
-  amounts: readonly [Amount<Picture>, ...Amount<Picture>[]];
+  amounts?: readonly [Amount<Picture>, ...Amount<Picture>[]];
   from: Shot;
   uses?: readonly Shot[];
   hints?: readonly string[];
-  answer?: Readonly<{ amount: Amount<Picture>; says: string }>;
+  answer?: Readonly<{ amount?: Amount<Picture>; says: string }>;
   supposed?: boolean;
 }>;
 

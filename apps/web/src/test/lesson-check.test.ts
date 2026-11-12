@@ -225,6 +225,14 @@ describe('the conclusion check', () => {
     ]);
   });
 
+  it('finds a conclusion with no amounts for a board to draw, which needs them only with a board', () => {
+    const unweighed = { ...counted, amounts: undefined, answer: { says: '桌上有 1 颗小石子' } };
+    expect(keeping(unweighed)).toEqual([
+      'conclusion one-pebble has no amounts to draw on the board',
+    ]);
+    expect(declaring(undefined, unweighed)).toEqual([]);
+  });
+
   it('finds a board that says when something not declared is found', () => {
     const found = { 'one-pebble': () => true, 'two-pebbles': () => true };
     expect(declaring({ pictures, found }, counted)).toEqual([
