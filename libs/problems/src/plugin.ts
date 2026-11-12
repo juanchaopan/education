@@ -1,16 +1,31 @@
 import {
   isProblemId,
+  type AnswerInput,
   type FeedbackRegion,
   type ProblemSummary,
   type TeachingFeedback,
-  type SubmitAnswer,
+  type VariationReason,
 } from '@education/contracts';
 import { indexBooks, type Book } from './books.js';
+
+// What an authored rule makes of one answer: right, wrong, or not understood,
+// which is never counted as wrong.
+export type Judgement = 'correct' | 'incorrect' | 'uncertain';
 
 export type AnsweringPolicy = {
   hints?: Readonly<Record<string, string>>;
   // Completion checks run locally and synchronously, using authored rules.
-  checkCompletion: (input: SubmitAnswer['input']) => 'correct' | 'incorrect' | 'uncertain';
+  checkCompletion: (input: AnswerInput) => Judgement;
+};
+
+// The variation a scene-by-scene lesson ends with: its own one or two hints,
+// the rule for the number the child guesses first, and the rule for the
+// reason the child then gives, said or tapped. Only these authored rules
+// judge; no model does.
+export type VariationPolicy = {
+  hints: Readonly<Record<string, string>>;
+  checkGuess: (input: AnswerInput) => Judgement;
+  checkReason: (reason: VariationReason) => Judgement;
 };
 
 // The only problem content a model may see for a step. `area` limits where a
@@ -33,6 +48,7 @@ export type ProblemEntry = Pick<ProblemSummary, 'id' | 'version' | 'title' | 'se
 export type ProblemPlugin = {
   summary: ProblemEntry;
   answering?: AnsweringPolicy;
+  variation?: VariationPolicy;
   feedback?: Readonly<Record<string, FeedbackStep>>;
   // Authored rules run on the child's text before any model; they cannot read a
   // drawing. An 'uncertain' or 'recognition-failed' result leaves the step to the model.
