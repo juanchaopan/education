@@ -1,5 +1,10 @@
 import type pg from 'pg';
-import { familyExportScope, type ChildExport, type FamilyExport } from '@education/contracts';
+import {
+  familyExportScope,
+  familyExportVersion,
+  type ChildExport,
+  type FamilyExport,
+} from '@education/contracts';
 import { readFamilyAccount } from '../repositories/postgres-family-account.js';
 import type { Credentials, ParentTransaction } from './parent-transaction.js';
 import { RequestError } from '../../shared/request-error.js';
@@ -28,7 +33,7 @@ export function createFamilyExportService(
       return {
         format: {
           name: 'education-family-export',
-          version: 2,
+          version: familyExportVersion,
           generatedAt: now().toISOString(),
           includes: [...familyExportScope.includes],
           excludes: [...familyExportScope.excludes],

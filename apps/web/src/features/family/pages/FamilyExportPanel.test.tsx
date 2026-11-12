@@ -10,7 +10,7 @@ const renewed = 'b'.repeat(43);
 const file: FamilyExport = {
   format: {
     name: 'education-family-export',
-    version: 2,
+    version: 3,
     generatedAt: '2026-11-07T12:00:00.000Z',
     includes: [],
     excludes: [],
