@@ -10,6 +10,7 @@ type DraftStore = {
 };
 type WithDrafts = <T>(
   credentials: Credentials,
+  problem: DraftProblem,
   work: (store: DraftStore) => Promise<T>,
 ) => Promise<T>;
 
@@ -18,7 +19,7 @@ export function createDraftService(
   available: (id: string, version: number) => boolean,
 ) {
   return (credentials: Credentials, problem: DraftProblem, command?: DraftCommand) =>
-    withDrafts(credentials, async (store) => {
+    withDrafts(credentials, problem, async (store) => {
       if (!available(problem.id, problem.version))
         throw new RequestError(404, '这道题或这个版本暂时不可用。');
       const current = await store.current(problem);

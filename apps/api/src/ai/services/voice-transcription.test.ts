@@ -43,7 +43,7 @@ it('sends the decoded recording with the step words and proposes the text', asyn
     status: 'ready',
     text: '每份是四。',
   });
-  expect(authenticate).toHaveBeenCalledWith(credentials);
+  expect(authenticate).toHaveBeenCalledWith(credentials, problem);
   expect(transcribe).toHaveBeenCalledExactlyOnceWith(
     credentials,
     { audio: webm, format: 'webm', prompt: '平均分、每份' },

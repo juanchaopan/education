@@ -3,7 +3,7 @@ import { problemRegistry } from '@education/problems/server';
 import { createAiTutoring } from './ai-tutoring-application.js';
 import { feedbackTask } from './ai/services/feedback-task.js';
 import { createTeachingFeedbackService } from './ai/services/teaching-feedback.js';
-import { childAuthenticator } from './child-session-transaction.js';
+import { childProblemAuthenticator } from './child-problem-transaction.js';
 
 export function createTeachingFeedback(
   pool: pg.Pool,
@@ -13,7 +13,7 @@ export function createTeachingFeedback(
 ) {
   const gateway = createAiTutoring(pool, env, send);
   return createTeachingFeedbackService(
-    childAuthenticator(pool),
+    childProblemAuthenticator(pool),
     find,
     (credentials, input, signal) => gateway(feedbackTask, credentials, input, signal),
   );
