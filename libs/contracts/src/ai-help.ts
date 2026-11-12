@@ -19,3 +19,9 @@ export type AiHelpFallback = (typeof aiHelpFallbackReasons)[number];
 export const AiHelpFallbackSchema = Type.Union(
   aiHelpFallbackReasons.map((reason) => Type.Literal(reason)),
 );
+
+// How every AI help reply says the child goes on without the AI, and why.
+export const AiHelpFallbackResult = Type.Object(
+  { status: Type.Literal('fallback'), reason: AiHelpFallbackSchema },
+  { additionalProperties: false },
+);

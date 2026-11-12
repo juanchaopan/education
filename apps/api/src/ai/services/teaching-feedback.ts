@@ -1,27 +1,21 @@
-import type { AiHelpFallback, FeedbackRequest, TeachingFeedbackResult } from '@education/contracts';
+import type { FeedbackRequest, TeachingFeedbackResult } from '@education/contracts';
 import type { ProblemPlugin } from '@education/problems/server';
 import { feedbackImageUrl } from '../domain/feedback-image.js';
 import { modelFeedbackFor, type ModelFeedback } from '../domain/teaching-feedback.js';
 import { authoredRuling, authoredStep } from './authored-step.js';
 import type { FeedbackModelInput } from './feedback-task.js';
 import type { Credentials } from './metered-call.js';
+import type { AskModel } from './model-task.js';
 
 type Problem = { id: string; version: number };
 type FeedbackProblem = Pick<ProblemPlugin, 'feedback' | 'checkStep'>;
-type ModelReply =
-  { status: 'ready'; value: ModelFeedback } | { status: 'fallback'; reason: AiHelpFallback };
-type AskModel = (
-  credentials: Credentials,
-  input: FeedbackModelInput,
-  signal?: AbortSignal,
-) => Promise<ModelReply>;
 
 // Feedback is advice only. Nothing here records an attempt, changes progress or
 // touches permissions, so a late or failed model reply never alters learning.
 export function createTeachingFeedbackService(
   authenticate: (credentials: Credentials) => Promise<void>,
   find: (id: string, version: number) => FeedbackProblem | undefined,
-  askModel: AskModel,
+  askModel: AskModel<FeedbackModelInput, ModelFeedback>,
 ) {
   return async (
     credentials: Credentials,

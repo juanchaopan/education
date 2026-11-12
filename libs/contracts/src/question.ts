@@ -1,10 +1,6 @@
 import { Type, type Static } from '@sinclair/typebox';
-import { AiHelpFallbackSchema } from './ai-help.js';
-import {
-  feedbackInstructionMaxLength,
-  feedbackTextMaxLength,
-  StepId,
-} from './teaching-feedback.js';
+import { AiHelpFallbackResult } from './ai-help.js';
+import { ChildText, feedbackInstructionMaxLength, StepId } from './teaching-feedback.js';
 
 const closed = { additionalProperties: false };
 
@@ -13,17 +9,11 @@ const closed = { additionalProperties: false };
 // escaped, and the step's name.
 export const questionBodyLimit = 4 * 1024;
 
-export const QuestionRequest = Type.Object(
-  {
-    stepId: StepId,
-    text: Type.String({ minLength: 1, maxLength: feedbackTextMaxLength }),
-  },
-  closed,
-);
+export const QuestionRequest = Type.Object({ stepId: StepId, text: ChildText }, closed);
 
-// The teacher's answer is one sentence for the child. It judges nothing and
-// points at nothing on screen; `source` says whether the author's rules or the
-// model wrote it.
+// The teacher's answer is one sentence for the child that points at nothing on
+// screen. `source` says who wrote it: the author's rules, which may say whether
+// the child's words are right, or the model, which never does.
 export const QuestionResult = Type.Union([
   Type.Object(
     {
@@ -33,7 +23,7 @@ export const QuestionResult = Type.Union([
     },
     closed,
   ),
-  Type.Object({ status: Type.Literal('fallback'), reason: AiHelpFallbackSchema }, closed),
+  AiHelpFallbackResult,
 ]);
 
 export type QuestionRequest = Static<typeof QuestionRequest>;

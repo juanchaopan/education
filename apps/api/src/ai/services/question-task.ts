@@ -1,9 +1,8 @@
 import { feedbackTextMaxLength } from '@education/contracts';
 import { MAX_TUTORING_OUTPUT_TOKENS } from '../domain/tutoring-cost.js';
 import { ModelQuestionReply, parseModelQuestionReply } from '../domain/question-reply.js';
-import type { ModelTask } from './model-task.js';
+import { MAX_STEP_PROMPT_LENGTH, type ModelTask } from './model-task.js';
 
-const MAX_STEP_LENGTH = 1_200;
 // A question is answered, not judged. The model cannot see the scene, so it
 // answers from the author's description and never names places it was not told.
 // Asking for the answer is ordinary child behaviour, not an attempt to change
@@ -30,7 +29,7 @@ export type QuestionModelInput = { step: string; question: string };
 export const questionTask: ModelTask<QuestionModelInput, ModelQuestionReply> = {
   maxOutputTokens: MAX_TUTORING_OUTPUT_TOKENS,
   request({ step, question }) {
-    if (!step.trim() || step.length > MAX_STEP_LENGTH) return;
+    if (!step.trim() || step.length > MAX_STEP_PROMPT_LENGTH) return;
     if (!question.trim() || question.length > feedbackTextMaxLength) return;
     return {
       instructions: INSTRUCTIONS,

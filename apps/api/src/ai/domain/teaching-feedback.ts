@@ -6,8 +6,8 @@ import {
   type TeachingFeedback,
 } from '@education/contracts';
 import { Type, type Static } from '@sinclair/typebox';
-import { Value } from '@sinclair/typebox/value';
 import { isChildSentence } from './child-sentence.js';
+import { parseModelJson } from './model-json.js';
 import { givesVerdict, selfCheckSentence } from './verdict.js';
 
 // Below this self-reported confidence the model's reading of the child's input
@@ -44,15 +44,11 @@ export function selfCheckFeedback(stepId: string): TeachingFeedback {
   return { status: 'uncertain', instruction: selfCheckSentence, stepId };
 }
 
-// The model's reply is untrusted: anything outside the exact shape is refused.
+// A reply is refused unless it has exactly the agreed shape, a sentence that
+// may be shown to a child and a confidence between zero and one.
 export function parseModelFeedback(text: string): ModelFeedback | undefined {
-  let value: unknown;
-  try {
-    value = JSON.parse(text);
-  } catch {
-    return;
-  }
-  if (!Value.Check(ModelFeedback, value) || !isInstruction(value.instruction)) return;
+  const value = parseModelJson(ModelFeedback, text);
+  if (!value || !isInstruction(value.instruction)) return;
   return value.confidence >= 0 && value.confidence <= 1 ? value : undefined;
 }
 
