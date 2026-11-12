@@ -51,6 +51,14 @@ async function signInAgain(page: Page, login: ChildLogin) {
   await submitChildLogin(page, login);
 }
 
+// A shelf or filter is chosen through the address, so its radio shows as
+// chosen once the page has moved there rather than the moment it is pressed.
+async function chooseShelf(parent: Page, name: string) {
+  const choice = parent.getByRole('radio', { name });
+  await choice.click();
+  await expect(choice).toBeChecked();
+}
+
 // The parent pages invent no learning: the child has no records and no books,
 // and the child's shelf holds only the maintained books.
 async function expectNothingRecorded(parent: Page) {
@@ -59,7 +67,7 @@ async function expectNothingRecorded(parent: Page) {
   await summary.getByLabel('选择孩子').selectOption({ label: nickname });
   await expect(summary.getByText('还没有这位孩子的学习记录。')).toBeVisible();
   await openParentPart(parent, '练习安排');
-  await parent.getByRole('radio', { name: nickname }).check();
+  await chooseShelf(parent, nickname);
   const book = parent.getByRole('article');
   await expect(book).toHaveCount(1);
   await expect(book.getByRole('heading')).toHaveText(maintainedBook);
@@ -70,7 +78,7 @@ async function expectNothingRecorded(parent: Page) {
     'aria-pressed',
     'false',
   );
-  await parent.getByRole('radio', { name: '已安排' }).check();
+  await chooseShelf(parent, '已安排');
   await expect(parent.getByText('这里还没有书')).toBeVisible();
 }
 
