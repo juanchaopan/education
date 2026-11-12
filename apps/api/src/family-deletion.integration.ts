@@ -109,10 +109,6 @@ async function learning(family: string, child: string) {
     `INSERT INTO help_events(child_id,problem_id,problem_version,round,hint_id) VALUES($1,'apples',1,$2,'count')`,
     [child, round],
   );
-  await pool.query(
-    `INSERT INTO assignments(child_id,problem_id,problem_version) VALUES($1,'apples',1)`,
-    [child],
-  );
   await pool.query(`INSERT INTO book_assignments(child_id,book_id) VALUES($1,'g1-math-xueersi')`, [
     child,
   ]);
@@ -173,7 +169,6 @@ async function remaining(family: string, child: string) {
        (SELECT count(*) FROM progress WHERE child_id=$2)::int AS progress,
        (SELECT count(*) FROM attempts WHERE child_id=$2)::int AS attempts,
        (SELECT count(*) FROM help_events WHERE child_id=$2)::int AS hints,
-       (SELECT count(*) FROM assignments WHERE child_id=$2)::int AS assignments,
        (SELECT count(*) FROM book_assignments WHERE child_id=$2)::int AS "bookAssignments",
        (SELECT count(*) FROM drafts WHERE child_id=$2)::int AS drafts,
        (SELECT count(*) FROM registration_keys WHERE family_id=$1)::int AS keys,
@@ -194,7 +189,6 @@ const nothingLeft = {
   progress: 0,
   attempts: 0,
   hints: 0,
-  assignments: 0,
   bookAssignments: 0,
   drafts: 0,
   keys: 0,

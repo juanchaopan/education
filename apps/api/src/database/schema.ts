@@ -163,10 +163,6 @@ const learningSlot = () => ({
   problemVersion: bigint('problem_version', { mode: 'number' }).notNull(),
 });
 
-export const assignments = pgTable('assignments', learningSlot(), (table) => [
-  primaryKey({ columns: [table.childId, table.problemId, table.problemVersion] }),
-]).enableRLS();
-
 // The books a parent has given each child, by the book's stable id; the book
 // list itself is in the problem catalogue. A child holds a book at most once,
 // and the row goes with the child.
