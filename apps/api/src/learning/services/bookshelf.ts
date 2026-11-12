@@ -42,21 +42,15 @@ type ChildTransaction = <T>(
   work: (client: pg.PoolClient, childId: string) => Promise<T>,
 ) => Promise<T>;
 
-// The catalogue's books in shelf order, and the order of grades and subjects.
-export type Shelf = ShelfOrder & Readonly<{ books: readonly ShelvedBook[] }>;
+// The catalogue's books in shelf order and by id, and the order of grades
+// and subjects.
+export type Shelf = ShelfOrder &
+  Readonly<{ books: readonly ShelvedBook[]; byId: ReadonlyMap<string, ShelvedBook> }>;
 
-const nothingDone: ReadonlySet<string> = new Set();
 const page = (offset: string | undefined, size: number) => ({ offset: Number(offset ?? 0), size });
 
-const card = ({ id, name, grade, subject, cover, status, problems }: ShelvedBook) => ({
-  id,
-  name,
-  grade,
-  subject,
-  cover,
-  status,
-  problems: problems.length,
-});
+// A book as every shelf sends it: its problems counted, not listed.
+const card = ({ problems, ...book }: ShelvedBook) => ({ ...book, problems: problems.length });
 
 // Whom each book was given to, by book id.
 async function holders(client: pg.PoolClient, childIds: readonly string[]) {
@@ -71,11 +65,11 @@ async function holders(client: pg.PoolClient, childIds: readonly string[]) {
 // lists is left out.
 export async function readChildBooks(shelf: Shelf, client: pg.PoolClient, childId: string) {
   const books = (await readBookAssignments(client, [childId])).flatMap(({ bookId, assignedAt }) => {
-    const book = shelf.books.find(({ id }) => id === bookId);
+    const book = shelf.byId.get(bookId);
     return book ? [{ book, assignedAt }] : [];
   });
   const done = await readDoneProblems(client, [childId], problemIds(books.map(({ book }) => book)));
-  return { books, done: done.get(childId) ?? nothingDone };
+  return { books, done: done(childId) };
 }
 
 // The library holds the books no child of the family has that can be given;
@@ -99,7 +93,7 @@ async function familyShelf(
       children: childIds.map((childId) => ({
         childId,
         assigned: !!given.get(book.id)?.has(childId),
-        done: progress(book, done.get(childId) ?? nothingDone).done,
+        done: progress(book, done(childId)).done,
       })),
     })),
   };
@@ -122,13 +116,13 @@ async function childShelf(
   const given = await holders(client, [childId]);
   const books = shelf.books.filter((book) => onChildShelf(book, given.has(book.id), query.state));
   const found = browse(books, shelf, query, page(query.offset, shelfPageSize));
-  const done = (await readDoneProblems(client, [childId], problemIds(found.books))).get(childId);
+  const done = (await readDoneProblems(client, [childId], problemIds(found.books)))(childId);
   return {
     ...found,
     books: found.books.map((book) => ({
       ...card(book),
       assigned: given.has(book.id),
-      done: progress(book, done ?? nothingDone).done,
+      done: progress(book, done).done,
     })),
   };
 }
@@ -176,7 +170,6 @@ export function createBookshelfService({
   child: ChildTransaction;
   shelf: Shelf;
 }) {
-  const byId = new Map(shelf.books.map((book) => [book.id, book]));
   return {
     familyShelf: (credentials: Credentials, query: FamilyShelfQuery) =>
       family(credentials, (client, childIds) => familyShelf(shelf, client, childIds, query)),
@@ -186,7 +179,7 @@ export function createBookshelfService({
       child(credentials, (client, childId) => practice(shelf, client, childId, offset)),
     assign: (credentials: Credentials, childId: string, bookId: string) =>
       parent(credentials, childId, async (client) => {
-        if (!assignable(byId.get(bookId)))
+        if (!assignable(shelf.byId.get(bookId)))
           throw new RequestError(409, '这本书暂时不能安排，请刷新书架。');
         await assignBook(client, childId, bookId);
       }),

@@ -54,7 +54,7 @@ describe('books', () => {
       category: '规律',
     });
     expect(registry.current).toEqual([registry.summary('fixture-problem', 1)]);
-    expect(registry.book('fixture-book')).toEqual(book());
+    expect(registry.books).toEqual([book()]);
   });
 
   it("lists a book's problems at their latest version, in the book's order", () => {

@@ -1,8 +1,7 @@
 import type pg from 'pg';
+import type { Credentials } from './identity/services/parent-transaction.js';
 import { parentSessionTransaction } from './parent-session-transaction.js';
 import { RequestError } from './shared/request-error.js';
-
-type Credentials = { token?: string; csrf?: string };
 
 // Work for a signed-in parent on the whole family, given its children's ids
 // in the order the parent space lists them, or on one of its children. A

@@ -1,6 +1,6 @@
 import type pg from 'pg';
 
-export type BookAssignmentRow = { childId: string; bookId: string; assignedAt: Date };
+type BookAssignmentRow = { childId: string; bookId: string; assignedAt: Date };
 
 // Every book the children have been given, newest first.
 export async function readBookAssignments(
@@ -16,8 +16,11 @@ export async function readBookAssignments(
   return rows;
 }
 
+const nothingDone: ReadonlySet<string> = new Set();
+
 // The problems among `problemIds` each child has finished, alone or with
-// help, at any version.
+// help, at any version, as a lookup by child; a child who has done none of
+// them gets the empty set.
 export async function readDoneProblems(
   client: pg.PoolClient,
   childIds: readonly string[],
@@ -29,9 +32,12 @@ export async function readDoneProblems(
        AND (independent>0 OR assisted>0)`,
     [childIds, problemIds],
   );
-  const done = new Map<string, Set<string>>(childIds.map((id) => [id, new Set()]));
-  for (const { childId, problemId } of rows) done.get(childId)?.add(problemId);
-  return done as ReadonlyMap<string, ReadonlySet<string>>;
+  const done = new Map<string, Set<string>>();
+  for (const { childId, problemId } of rows) {
+    const problems = done.get(childId) ?? new Set<string>();
+    done.set(childId, problems.add(problemId));
+  }
+  return (childId: string): ReadonlySet<string> => done.get(childId) ?? nothingDone;
 }
 
 // Giving a book the child already has changes nothing, so it keeps the time

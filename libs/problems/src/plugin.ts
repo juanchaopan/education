@@ -42,6 +42,10 @@ export type ProblemPlugin = {
   }) => TeachingFeedback | Promise<TeachingFeedback>;
 };
 
+// A registered problem version: its plugin, the summary the catalogue lists
+// for it, and the id of its book.
+type Registered = Readonly<{ plugin: ProblemPlugin; summary: ProblemSummary; book: string }>;
+
 // The problem as the catalogue lists it, filed under its book.
 function listed({ id, version, title, sequence }: ProblemEntry, book: Book): ProblemSummary {
   return {
@@ -60,18 +64,21 @@ const bookOrder = (a: ProblemSummary, b: ProblemSummary) =>
 
 // The latest version of every problem, grouped by the book that version is
 // filed in, each book's problems in its order.
-function shelve(latest: Iterable<{ summary: ProblemSummary; book: string }>) {
+function shelve(latest: Iterable<Registered>) {
   const byBook = new Map<string, ProblemSummary[]>();
-  for (const { summary, book } of latest) byBook.set(book, [...(byBook.get(book) ?? []), summary]);
+  for (const { summary, book } of latest) {
+    const problems = byBook.get(book) ?? [];
+    problems.push(summary);
+    byBook.set(book, problems);
+  }
   for (const problems of byBook.values()) problems.sort(bookOrder);
   return byBook as ReadonlyMap<string, readonly ProblemSummary[]>;
 }
 
 export function createProblemRegistry(plugins: readonly ProblemPlugin[], shelf: readonly Book[]) {
   const booksById = indexBooks(shelf);
-  const versions = new Map<string, ProblemPlugin>();
-  const summaries = new Map<string, ProblemSummary>();
-  const latest = new Map<string, { summary: ProblemSummary; book: string }>();
+  const versions = new Map<string, Registered>();
+  const latest = new Map<string, Registered>();
   for (const plugin of plugins) {
     const { id, version, book: bookId } = plugin.summary;
     if (!isProblemId(id) || !Number.isSafeInteger(version) || version < 1) {
@@ -81,19 +88,17 @@ export function createProblemRegistry(plugins: readonly ProblemPlugin[], shelf: 
     if (versions.has(key)) throw new Error(`Duplicate problem version: ${key}`);
     const book = booksById.get(bookId);
     if (!book) throw new Error(`Problem ${key} names an unknown book: ${bookId}`);
-    const summary = listed(plugin.summary, book);
-    versions.set(key, plugin);
-    summaries.set(key, summary);
+    const registered = { plugin, summary: listed(plugin.summary, book), book: bookId };
+    versions.set(key, registered);
     const current = latest.get(id);
-    if (!current || version > current.summary.version) latest.set(id, { summary, book: bookId });
+    if (!current || version > current.summary.version) latest.set(id, registered);
   }
   const byBook = shelve(latest.values());
   return {
     current: [...latest.values()].map(({ summary }) => summary),
     books: shelf,
-    book: (id: string) => booksById.get(id),
-    find: (id: string, version: number) => versions.get(`${id}/${version}`),
-    summary: (id: string, version: number) => summaries.get(`${id}/${version}`),
+    find: (id: string, version: number) => versions.get(`${id}/${version}`)?.plugin,
+    summary: (id: string, version: number) => versions.get(`${id}/${version}`)?.summary,
     // The latest version of every problem filed in the book, in the book's order.
     problemsOf: (bookId: string) => byBook.get(bookId) ?? [],
   };

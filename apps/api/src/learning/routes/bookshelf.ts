@@ -55,24 +55,26 @@ export function registerBookshelf(
     { schema: { querystring: PracticeBookQuery, response: { 200: PracticeBookPage } } },
     (request, reply) => available().practice(credentials(request, reply), request.query.offset),
   );
-  const change = {
-    bodyLimit: 1024,
-    onRequest: sessionWriteGuard(origin),
-    schema: {
-      params: BookAssignment,
-      querystring: Type.Object({}, { additionalProperties: false }),
-      body: Type.Object({}, { additionalProperties: false }),
-      response: { 204: Type.Null() },
-    },
-  };
-  app.put<{ Params: BookAssignment }>(assignmentPath, change, async (request, reply) => {
-    const { childId, bookId } = request.params;
-    await available().assign(credentials(request, reply), childId, bookId);
-    return reply.code(204).send();
-  });
-  app.delete<{ Params: BookAssignment }>(assignmentPath, change, async (request, reply) => {
-    const { childId, bookId } = request.params;
-    await available().cancel(credentials(request, reply), childId, bookId);
-    return reply.code(204).send();
-  });
+  // Giving by PUT and taking back by DELETE answer alike: nothing, once done.
+  for (const [method, action] of [
+    ['PUT', 'assign'],
+    ['DELETE', 'cancel'],
+  ] as const)
+    app.route<{ Params: BookAssignment }>({
+      method,
+      url: assignmentPath,
+      bodyLimit: 1024,
+      onRequest: sessionWriteGuard(origin),
+      schema: {
+        params: BookAssignment,
+        querystring: Type.Object({}, { additionalProperties: false }),
+        body: Type.Object({}, { additionalProperties: false }),
+        response: { 204: Type.Null() },
+      },
+      handler: async (request, reply) => {
+        const { childId, bookId } = request.params;
+        await available()[action](credentials(request, reply), childId, bookId);
+        return reply.code(204).send();
+      },
+    });
 }
