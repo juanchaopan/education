@@ -17,12 +17,15 @@ import {
 import { fixtureLesson } from './lesson-fixture';
 
 const listed = { id: 'fixture', version: 1 };
-const plugin: PluginOutline = { steps: ['look', 'count', 'after'], hints: ['look-again'] };
 const outline: LessonOutline = fixtureLesson;
 const { script, content } = outline;
+const plugin: PluginOutline = { steps: ['look', 'count', 'after'], hints: ['look-again'] };
 
+// The lesson changed as given, checked against a plugin that carries the
+// same content unless the case says otherwise.
 function problems(change: Partial<LessonOutline>, against = plugin) {
-  return lessonProblems(listed, { ...outline, ...change }, against);
+  const lesson = { ...outline, ...change };
+  return lessonProblems(listed, lesson, { lesson: lesson.content, ...against });
 }
 
 const outside = (shot: string) =>
@@ -115,6 +118,15 @@ describe('the lesson definition check', () => {
   it('finds an answer hint the plugin does not have', () => {
     const answer = { hints: ['look-again', 'count-twice'] };
     expect(problems({ answer })).toEqual(['hint count-twice is not in the plugin']);
+  });
+
+  it('finds a plugin that carries no lesson content, or other content than the lesson plays', () => {
+    const bare = { ...plugin, lesson: undefined };
+    const reworded = { ...content, vocabulary: ['苹果'] };
+    expect(problems({}, bare)).toEqual(['the plugin carries no lesson content']);
+    expect(problems({}, { ...plugin, lesson: reworded })).toEqual([
+      'the plugin carries other lesson content than the lesson plays',
+    ]);
   });
 
   it('finds a version the content does not share with its registry line', () => {

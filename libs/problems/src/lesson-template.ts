@@ -36,4 +36,5 @@ export const lessonTemplate: ProblemPlugin = {
     checkCompletion: wholeNumberAnswer(answer),
   },
   feedback: lessonTemplateSteps,
+  lesson: lessonTemplateLesson,
 };

@@ -1,6 +1,7 @@
 import { randomBytes, randomUUID } from 'node:crypto';
 import pg from 'pg';
 import { afterAll, afterEach, expect, it, vi } from 'vitest';
+import { lessonContent } from '@education/problems/lesson-content';
 import { createProblemRegistry } from '@education/problems/server';
 import { aiConsentPolicies } from './identity/domain/ai-consent-policy.js';
 import { csrfToken, tokenHash } from './identity/services/session-security.js';
@@ -17,11 +18,28 @@ const anonymousUsage: string[] = [];
 const env = { OPENAI_API_KEY: 'synthetic-key', OPENAI_TUTORING_ELIGIBLE: 'true' };
 const problem = { id: 'count-dots', version: 1 };
 const book = { id: 'fixture-shapes', grade: '一年级', subject: '数学', category: '图形' };
+const lesson = lessonContent({
+  problem,
+  flow: 'scene-by-scene',
+  vocabulary: ['点'],
+  shots: ['count-left', 'done'],
+  answerScene: 'count-left',
+  lines: {
+    ask: { scene: 'count-left', text: '左边有几个点？' },
+    bye: { scene: 'done', text: '数完了。' },
+  },
+  scenes: {
+    'count-left': { prompt: '数一数左边的点。', entry: ['ask'] },
+    done: { prompt: '孩子数完了左边的点。', entry: ['bye'] },
+  },
+  conclusions: [],
+});
 const registry = createProblemRegistry(
   [
     {
       summary: { ...problem, title: 'fixture', book: book.id, sequence: 1 },
       feedback: { 'count-left': { prompt: '数一数左边的点。' } },
+      lesson,
       checkStep: ({ answer }) => ({
         status: answer === '三个' ? 'correct' : 'uncertain',
         instruction: answer === '三个' ? '数对了！' : '再看看。',

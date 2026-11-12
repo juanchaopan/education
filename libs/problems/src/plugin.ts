@@ -7,6 +7,7 @@ import {
   type VariationReason,
 } from '@education/contracts';
 import { indexBooks, type Book } from './books.js';
+import type { AnyLessonContent } from './lesson-content.js';
 
 // What an authored rule makes of one answer: right, wrong, or not understood,
 // which is never counted as wrong.
@@ -45,11 +46,16 @@ export type ProblemEntry = Pick<ProblemSummary, 'id' | 'version' | 'title' | 'se
   book: string;
 };
 
+// A problem version on the server: what it says of itself, how its final
+// answer is judged, the steps a model may see when judging work, its lesson
+// content, which questions to the teacher are answered from, and the rules
+// its author wrote for the child's words in a step.
 export type ProblemPlugin = {
   summary: ProblemEntry;
   answering?: AnsweringPolicy;
   variation?: VariationPolicy;
   feedback?: Readonly<Record<string, FeedbackStep>>;
+  lesson?: AnyLessonContent;
   // Authored rules run on the child's text before any model; they cannot read a
   // drawing. An 'uncertain' or 'recognition-failed' result leaves the step to the model.
   checkStep?: (input: {

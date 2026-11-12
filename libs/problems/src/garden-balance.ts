@@ -73,5 +73,6 @@ export const gardenBalance: ProblemPlugin = {
     }),
   },
   feedback: gardenBalanceSteps,
+  lesson: gardenBalanceLesson,
   checkStep,
 };

@@ -10,8 +10,13 @@ import type { LessonOutline } from '../features/learning/lessons/registry';
 import { backdrops } from '../features/learning/media/backdrops/backdrops';
 
 // What a lesson must agree with in the plugin the server keeps for its
-// problem version: the steps a model may see and the authored hints.
-export type PluginOutline = Readonly<{ steps: readonly string[]; hints: readonly string[] }>;
+// problem version: the steps a model may see, the authored hints, and the
+// lesson content questions to the teacher are answered from.
+export type PluginOutline = Readonly<{
+  steps: readonly string[];
+  hints: readonly string[];
+  lesson?: unknown;
+}>;
 
 // The parts of a problem plugin the outline is read from. The plugins live in
 // @education/problems/server, which only tests may load, so the check names
@@ -19,14 +24,17 @@ export type PluginOutline = Readonly<{ steps: readonly string[]; hints: readonly
 type PluginParts = Readonly<{
   feedback?: Readonly<Record<string, unknown>>;
   answering?: Readonly<{ hints?: Readonly<Record<string, unknown>> }>;
+  lesson?: unknown;
 }>;
 
-// A plugin's steps and hints, or nothing when the server has no plugin.
+// A plugin's steps, hints and lesson content, or nothing when the server has
+// no plugin.
 export function pluginOutline(plugin?: PluginParts): PluginOutline | undefined {
   return (
     plugin && {
       steps: Object.keys(plugin.feedback ?? {}),
       hints: Object.keys(plugin.answering?.hints ?? {}),
+      lesson: plugin.lesson,
     }
   );
 }
@@ -138,10 +146,20 @@ function conclusionProblems(lesson: LessonOutline) {
   return lesson.content.conclusions.flatMap((conclusion) => answeringProblems(conclusion, lesson));
 }
 
+// The server answers questions from the lesson content its plugin carries,
+// so it is the very content the site plays. Content is plain data, so the
+// same declaration reads the same as JSON.
+function carriedProblems({ content }: LessonOutline, { lesson }: PluginOutline) {
+  if (lesson === undefined) return ['the plugin carries no lesson content'];
+  const same = JSON.stringify(lesson) === JSON.stringify(content);
+  return same ? [] : ['the plugin carries other lesson content than the lesson plays'];
+}
+
 function pluginProblems(listed: ProblemVersion, lesson: LessonOutline, plugin?: PluginOutline) {
   if (!plugin) return [`the server has no plugin for ${versionName(listed)}`];
   const { script, answer } = lesson;
   return [
+    ...carriedProblems(lesson, plugin),
     ...missing(script.shots, plugin.steps).map((shot) => `scene ${shot} is not a plugin step`),
     ...missing(plugin.steps, script.shots).map((step) => `plugin step ${step} is not a scene`),
     ...missing(answer.hints, plugin.hints).map((hint) => `hint ${hint} is not in the plugin`),
@@ -152,7 +170,7 @@ function pluginProblems(listed: ProblemVersion, lesson: LessonOutline, plugin?: 
 // its registry line, its content, with what its lesson flow asks of it, its
 // script and recordings against the content, where its props stand against
 // its backdrop in each scene, its conclusions and their board, and the
-// server's plugin for it, with its steps and hints.
+// server's plugin for it, with its steps, hints and lesson content.
 export function lessonProblems(
   listed: ProblemVersion,
   lesson: LessonOutline,
