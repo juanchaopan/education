@@ -21,7 +21,9 @@ test(`records ${named} from its first scene to its last`, async ({ page }) => {
   const { problem } = entry;
   const walk = walks[problem.id];
   if (!walk) throw new Error(`${problem.id} has no walk in review/walks.ts`);
-  test.setTimeout(600_000);
+  // A whole film with its checks and variation, every line heard to its end,
+  // can run past a quarter of an hour.
+  test.setTimeout(1_800_000);
   await prepareLessonCapture(page);
   const playLesson = await walk(page);
   await page.goto(problemPath(problem.id, problem.version));
