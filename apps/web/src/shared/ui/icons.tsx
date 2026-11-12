@@ -7,6 +7,8 @@ import type { ReactNode } from 'react';
 export const glyphs = {
   back: <path d="M15 18l-6-6 6-6" />,
   chevron: <path d="m9.5 6 6 6-6 6" />,
+  // Opening a small list beneath the control it belongs to.
+  expand: <path d="m6 9.5 6 6 6-6" />,
   play: <path d="M8 5.5v13l10.5-6.5z" fill="currentColor" stroke="none" />,
   pause: <path d="M9 6v12M15 6v12" />,
   stop: <rect x="7" y="7" width="10" height="10" rx="2.5" fill="currentColor" stroke="none" />,
@@ -90,6 +92,30 @@ export const glyphs = {
   ),
   plus: <path d="M12 5v14M5 12h14" />,
   home: <path d="M3.5 10.5 12 3.5l8.5 7V20a1 1 0 0 1-1 1H15v-6H9v6H4.5a1 1 0 0 1-1-1z" />,
+  // A row of books standing on a shelf, for the library of books.
+  library: <path d="M4 4.5v15M8.5 4.5v15M13 6l3.5 13.5M17 5.5l3.5 13M3 20h18" />,
+  // A closed book, for a book in general and a subject without its own icon.
+  book: (
+    <>
+      <path d="M5 4.5h11.5a2 2 0 0 1 2 2V20H7a2 2 0 0 1-2-2z" />
+      <path d="M5 18a2 2 0 0 1 2-2h11.5M9 8.5h6" />
+    </>
+  ),
+  // The subjects: four arithmetic signs for maths, an open book for Chinese
+  // and a speech bubble holding "Aa" for English.
+  math: <path d="M7 3.5v7M3.5 7h7M14.5 4.5l5 5M19.5 4.5l-5 5M3.5 17h7M13.5 15h6.5M13.5 19.5h6.5" />,
+  chinese: (
+    <>
+      <path d="M3 5.5c3.2-1 6.2-.8 9 1.3 2.8-2.1 5.8-2.3 9-1.3v13c-3.2-1-6.2-.8-9 1.3-2.8-2.1-5.8-2.3-9-1.3z" />
+      <path d="M12 6.8v13M6 9.5c1.5-.3 2.8 0 3.5.6M14.5 10c.7-.6 2-.9 3.5-.6" />
+    </>
+  ),
+  english: (
+    <>
+      <path d="M4 5h16a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1h-9l-4.5 3.5V16H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z" />
+      <path d="M8 13l2-5.5 2 5.5M8.7 11.2h2.6M14.5 8v5M14.5 10.6c.4-.8 1-1.1 1.7-1.1.9 0 1.5.7 1.5 1.7V13" />
+    </>
+  ),
   sprout: (
     <>
       <path d="M12 21v-8.5" />

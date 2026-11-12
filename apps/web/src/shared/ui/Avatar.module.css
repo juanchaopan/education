@@ -19,3 +19,9 @@
 .avatar[data-tone='second'] {
   --tone: var(--accent-2);
 }
+.avatar[data-size='small'] {
+  inline-size: 1.75rem;
+  block-size: 1.75rem;
+  box-shadow: 0 2px 0 color-mix(in srgb, var(--tone) 60%, var(--ink));
+  font-size: var(--text-sm);
+}

@@ -85,6 +85,42 @@
   --dew-pane-shadow: 0 0.5em 1.4em var(--dew-shadow);
   --dew-focus-ring: 3px solid var(--dew-focus);
 
+  /* Book covers belong to the book, not to the time of day, so a painted
+     cover, the default one drawn for a book without a picture and the marks
+     laid on either are the same in both themes. A default cover runs from a
+     light to a deeper tone of its subject's colour, with its icon and grade
+     label in the subject's ink; a subject without its own colours takes the
+     wheat ones. Progress sits on a cover as paper tags, green once a book is
+     finished, each child's initial on a small disc in the child's colour,
+     and a dark band crosses the cover of a book that is unavailable. */
+  --cover-math-light: #e6f0de;
+  --cover-math-deep: #b5d3b6;
+  --cover-math-ink: #2f6e52;
+  --cover-chinese-light: #fbe8d2;
+  --cover-chinese-deep: #eebd93;
+  --cover-chinese-ink: #a64b26;
+  --cover-english-light: #e2eef5;
+  --cover-english-deep: #aecbdf;
+  --cover-english-ink: #2b5d7c;
+  --cover-other-light: #f4ead8;
+  --cover-other-deep: #dccaa9;
+  --cover-other-ink: #6b5642;
+  --cover-paper: #fff8ea;
+  --cover-paper-ink: #33281d;
+  --cover-finished: #3d8a5a;
+  --cover-finished-edge: #24583a;
+  --cover-child-first: #2f6e52;
+  --cover-child-second: #c45f3a;
+  --cover-band: rgba(51, 40, 29, 0.82);
+  --cover-mark-shadow: 0 2px 0 rgba(0, 0, 0, 0.14);
+  --cover-spine: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0.28),
+    rgba(255, 255, 255, 0.22) 60%,
+    transparent
+  );
+  --cover-shadow: 0 1px 2px rgba(0, 0, 0, 0.18), 0 8px 14px -8px rgba(60, 40, 20, 0.5);
+
   /* Fine paper grain, drawn as SVG noise rather than shipped as an image. */
   --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .42 0 0 0 0 .3 0 0 0 0 .16 0 0 0 .11 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   /* Both page backdrops: warm paper under a morning glow, and a dusky green
@@ -108,6 +144,9 @@
   --bg: #f3eada;
   --surface: #fffaf1;
   --surface-2: #f6ecdb;
+  /* A surface raised above the cards, such as a small list that opens over
+     them, solid in either theme so the cards beneath never show through. */
+  --surface-raised: #fffaf1;
   /* Body text and secondary text. */
   --ink: #33281d;
   --ink-soft: #735f4b;
@@ -134,6 +173,10 @@
   --shadow:
     0 1px 0 rgba(255, 255, 255, 0.9) inset, 0 2px 3px rgba(92, 62, 28, 0.07),
     0 14px 28px -14px rgba(92, 62, 28, 0.35);
+  /* The deeper shadow of a surface raised above the cards, and the veil
+     laid over the page behind a sheet that slides up from the bottom. */
+  --raised-shadow: var(--shadow), 0 24px 40px -16px rgba(40, 25, 10, 0.45);
+  --scrim: rgba(30, 20, 10, 0.35);
   /* Cards are paper with the grain; the day backdrop is the one on show. */
   --texture: var(--grain);
   --surface-filter: none;
@@ -146,6 +189,7 @@
   --bg: #13201e;
   --surface: rgba(32, 50, 47, 0.78);
   --surface-2: rgba(255, 240, 210, 0.06);
+  --surface-raised: #1f3330;
   --ink: #f6ead2;
   --ink-soft: #b7aa90;
   --line: rgba(246, 222, 170, 0.16);
@@ -163,6 +207,8 @@
   --danger-ink: #2a1d08;
   --ok: #8fe0a8;
   --shadow: 0 1px 0 rgba(255, 236, 196, 0.08) inset, 0 18px 40px -18px rgba(0, 0, 0, 0.7);
+  --raised-shadow: var(--shadow), 0 24px 40px -16px rgba(0, 0, 0, 0.75);
+  --scrim: rgba(4, 10, 9, 0.55);
   /* Cards are smoked glass over the lit backdrop. */
   --texture: none;
   --surface-filter: blur(14px);

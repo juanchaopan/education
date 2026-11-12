@@ -11,3 +11,4 @@ type Story = StoryObj<typeof meta>;
 
 export const First: Story = {};
 export const Second: Story = { args: { name: 'parent@example.test', place: 1 } };
+export const Small: Story = { args: { size: 'small' } };

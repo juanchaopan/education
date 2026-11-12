@@ -1,0 +1,56 @@
+/* A book stands on its own paper card, its cover on top and its action at
+   the foot, so the buttons of a row of cards line up. */
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: 0.625rem 0.625rem 0.875rem;
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  background-image: var(--texture);
+  box-shadow: var(--shadow);
+  backdrop-filter: var(--surface-filter);
+}
+:root[data-theme='night'] .card {
+  outline: 1px solid var(--line);
+}
+
+.name {
+  display: -webkit-box;
+  margin: 0;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  font-size: var(--text-base);
+  line-height: 1.35;
+}
+.detail {
+  margin: calc(var(--space-1) * -1) 0 0;
+  color: var(--ink-soft);
+  font-size: var(--text-sm);
+}
+.card[data-unavailable] .name,
+.card[data-unavailable] .detail {
+  color: var(--ink-soft);
+}
+.action {
+  position: relative;
+  margin-block-start: auto;
+}
+
+/* The placeholder holds the place of a cover and two lines of words. */
+.ghostCover,
+.ghostLine {
+  border-radius: 0.625rem;
+  background: color-mix(in srgb, var(--line) 70%, transparent);
+}
+.ghostCover {
+  aspect-ratio: 3 / 4;
+}
+.ghostLine {
+  block-size: 1rem;
+}
+.ghostLine[data-short] {
+  inline-size: 60%;
+}
