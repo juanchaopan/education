@@ -1,0 +1,23 @@
+.pill {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0.1875rem var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  font-weight: 700;
+  font-size: var(--text-sm);
+  white-space: nowrap;
+}
+.pill[data-finished] {
+  border-color: color-mix(in srgb, var(--ok) 40%, transparent);
+  background: color-mix(in srgb, var(--ok) 18%, var(--surface));
+}
+.pill[data-unavailable] {
+  color: var(--ink-soft);
+}
+.tick {
+  color: var(--ok);
+}

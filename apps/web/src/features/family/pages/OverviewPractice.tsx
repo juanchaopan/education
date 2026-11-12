@@ -1,77 +1,51 @@
+import { useNavigate } from 'react-router-dom';
 import type { UseQueryResult } from '@tanstack/react-query';
-import type { ChildAccess, PracticePage, ProblemLearningSummary } from '@education/contracts';
+import type { ChildAccess, ChildShelfPage, ProblemLearningSummary } from '@education/contracts';
 import { problemPath } from '../../../shared/lib/problem-path';
 import { Button } from '../../../shared/ui/Button';
+import { EmptyState } from '../../../shared/ui/EmptyState';
 import { Hint } from '../../../shared/ui/Hint';
 import { Icon } from '../../../shared/ui/Icon';
 import { IconLink } from '../../../shared/ui/IconLink';
 import { Loading } from '../../../shared/ui/Loading';
 import { Notice } from '../../../shared/ui/Notice';
-import { StandaloneLink } from '../../../shared/ui/StandaloneLink';
+import { BookRows, ChildBooksLinks, type BookRow } from '../components/BookRows';
 import { ParentCard } from '../components/ParentCard';
 import { ProblemRows, type ProblemRow } from '../components/ProblemRows';
+import { useBookToggles, type BookFailure } from '../data-access/useBookshelf';
 import type { ChildRecord } from '../data-access/useLearningSummary';
-import { useAssignPractice, type PracticeAssignment } from '../data-access/usePractice';
 
-// A child with its learning record and its first page of practice, as the
-// overview reads them.
+// A child with its learning record and the first page of the books it has,
+// as the overview reads them.
 export type ChildActivity = {
   child: ChildAccess;
   record: UseQueryResult<ChildRecord>;
-  practice: UseQueryResult<PracticePage>;
+  books: UseQueryResult<ChildShelfPage>;
 };
 
-// The overview shows the first few planned problems; the practice page has
-// them all.
-const shownPlanned = 5;
-
-const sameProblem = (problem: { id: string; version: number }, id: string, version: number) =>
-  problem.id === id && problem.version === version;
+// The overview shows the first few books given; each child's link opens all
+// of that child's books.
+const shownBooks = 5;
+const library = '/family/practice';
+const childBooks = (childId: string) =>
+  `/family/practice?child=${encodeURIComponent(childId)}&state=assigned`;
 
 // Problems a child answered wrongly and has not yet finished alone, as the
-// learning summary marks them, each with a button to plan it as practice. A
-// problem the practice already holds, or that was just planned, says so
-// instead; the practice is read again after each plan. A record that could
-// not be read is said to have failed rather than to hold nothing.
-export function ReviewIdeas({
-  csrf,
-  activity,
-}: {
-  csrf: string;
-  activity: readonly ChildActivity[];
-}) {
-  const assign = useAssignPractice(csrf);
-  const justPlanned = (childId: string, id: string, version: number) =>
-    assign.isSuccess &&
-    assign.variables.childId === childId &&
-    sameProblem(assign.variables.problem, id, version);
-  const rows: ProblemRow[] = activity.flatMap(({ child, record, practice }) =>
+// learning summary marks them. A record that could not be read is said to
+// have failed rather than to hold nothing.
+export function ReviewIdeas({ activity }: { activity: readonly ChildActivity[] }) {
+  const rows: ProblemRow[] = activity.flatMap(({ child, record }) =>
     (record.data?.problems ?? []).flatMap(
-      ({ id, version, title, incorrect, reviewSuggested }: ProblemLearningSummary) => {
-        if (!reviewSuggested || title === null) return [];
-        const planned =
-          justPlanned(child.id, id, version) ||
-          !!practice.data?.problems.some((problem) => sameProblem(problem, id, version));
-        const plan: PracticeAssignment = { childId: child.id, problem: { id, version } };
-        return {
-          key: `${child.id}/${problemPath(id, version)}`,
-          title,
-          detail: `${child.nickname} · 答错 ${incorrect} 次`,
-          action: planned ? (
-            <span role="status">已安排</span>
-          ) : (
-            <Button
-              variant="secondary"
-              aria-label={`为${child.nickname}安排“${title}”`}
-              disabled={assign.isPending}
-              onClick={() => assign.mutate(plan)}
-            >
-              <Icon name="plus" />
-              安排
-            </Button>
-          ),
-        };
-      },
+      ({ id, version, title, incorrect, reviewSuggested }: ProblemLearningSummary) =>
+        reviewSuggested && title !== null
+          ? [
+              {
+                key: `${child.id}/${problemPath(id, version)}`,
+                title,
+                detail: `${child.nickname} · 答错 ${incorrect} 次`,
+              },
+            ]
+          : [],
     ),
   );
   const reading = activity.some(({ record }) => record.isPending);
@@ -83,21 +57,41 @@ export function ReviewIdeas({
       {failed && <Notice tone="error">有的学习记录没有读出来，请刷新页面。</Notice>}
       {!reading && !failed && !rows.length && <p>暂时没有。</p>}
       <ProblemRows icon="bulb" rows={rows} />
-      {assign.isError && <Notice tone="error">{assign.error.message}</Notice>}
     </ParentCard>
   );
 }
 
-// Each child's planned problems as rows, taken in turn one child at a time,
-// so the first few shown include every child's practice rather than all of
-// one child's.
-function plannedInTurn(activity: readonly ChildActivity[]): ProblemRow[] {
-  const lists = activity.map(({ child, practice }) =>
-    (practice.data?.problems ?? []).map(({ id, version, title }) => ({
-      key: `${child.id}/${problemPath(id, version)}`,
-      title: title ?? '这道题暂时不可用',
-      detail: child.nickname,
-    })),
+// Each child's books as rows, taken in turn one child at a time, so the
+// first few shown include every child's books rather than all of one
+// child's. A book that is unavailable offers to take it back instead of its
+// progress.
+type TakeBack = Readonly<{
+  press: (childId: string, bookId: string) => void;
+  pending: (childId: string, bookId: string) => boolean;
+}>;
+
+function booksInTurn(activity: readonly ChildActivity[], takeBack: TakeBack): BookRow[] {
+  const lists = activity.map(({ child, books }) =>
+    (books.data?.books ?? []).map((book) => {
+      const unavailable = book.status === 'unavailable';
+      return {
+        key: `${child.id}/${book.id}`,
+        book,
+        detail: `${child.nickname} · ${unavailable ? '暂时不可用' : `${book.grade}${book.subject}`}`,
+        done: book.done,
+        action: unavailable ? (
+          <Button
+            variant="secondary"
+            aria-label={`取消给${child.nickname}安排《${book.name}》`}
+            disabled={takeBack.pending(child.id, book.id)}
+            onClick={() => takeBack.press(child.id, book.id)}
+          >
+            <Icon name="close" />
+            取消
+          </Button>
+        ) : undefined,
+      };
+    }),
   );
   const longest = Math.max(0, ...lists.map((list) => list.length));
   return Array.from({ length: longest }, (_, turn) =>
@@ -105,25 +99,59 @@ function plannedInTurn(activity: readonly ChildActivity[]): ProblemRow[] {
   ).flat();
 }
 
-// The practice planned for the children, the first few of them.
-export function AssignedPractice({ activity }: { activity: readonly ChildActivity[] }) {
-  const rows = plannedInTurn(activity);
-  const reading = activity.some(({ practice }) => practice.isPending);
-  const failed = activity.some(({ practice }) => practice.isError);
+// Which child's book a change that did not go through was for, and why.
+function failureWords(activity: readonly ChildActivity[], failure: BookFailure) {
+  const found = activity.find(({ child }) => child.id === failure.childId);
+  const book = found?.books.data?.books.find(({ id }) => id === failure.bookId);
+  return found && book
+    ? `${found.child.nickname}《${book.name}》：${failure.message}`
+    : failure.message;
+}
+
+// The books given to the children, the first few of them, and a link to
+// each child's books.
+export function AssignedBooks({
+  csrf,
+  activity,
+}: {
+  csrf: string;
+  activity: readonly ChildActivity[];
+}) {
+  const navigate = useNavigate();
+  const toggles = useBookToggles(csrf);
+  const rows = booksInTurn(activity, {
+    press: (childId, bookId) => void toggles.toggle({ childId, bookId, assign: false }),
+    pending: toggles.isPending,
+  }).slice(0, shownBooks);
+  const failure = toggles.failure && failureWords(activity, toggles.failure);
+  const reading = activity.some(({ books }) => books.isPending);
+  const failed = activity.some(({ books }) => books.isError);
+  const links = activity.flatMap(({ child, books }, place) =>
+    books.data?.total
+      ? [{ childId: child.id, nickname: child.nickname, place, count: books.data.total }]
+      : [],
+  );
   return (
     <ParentCard
-      titleId="assigned-practice-title"
+      titleId="assigned-books-title"
       icon="calendar"
       title="已安排"
-      action={<IconLink to="/family/practice" icon="plus" label="安排练习" />}
+      action={<IconLink to={library} icon="plus" label="去书库挑书" />}
     >
-      {reading && <Loading label="正在读取练习安排…" />}
-      {failed && <Notice tone="error">有的练习安排没有读出来，请刷新页面。</Notice>}
-      {!reading && !failed && !rows.length && <p>还没有安排练习。</p>}
-      <ProblemRows icon="calendar" rows={rows.slice(0, shownPlanned)} />
-      {rows.length > shownPlanned && (
-        <StandaloneLink to="/family/practice">查看全部练习</StandaloneLink>
+      {reading && <Loading label="正在读取安排的书…" />}
+      {failed && <Notice tone="error">有的孩子安排的书没有读出来，请刷新页面。</Notice>}
+      {!reading && !failed && !rows.length && (
+        <EmptyState
+          icon="library"
+          title="还没有安排书"
+          description="在书库里挑书，安排给孩子。"
+          actionLabel="去书库挑书"
+          onAction={() => void navigate(library)}
+        />
       )}
+      <BookRows rows={rows} />
+      {failure && <Notice tone="error">{failure}</Notice>}
+      {links.length > 0 && <ChildBooksLinks links={links} to={childBooks} />}
     </ParentCard>
   );
 }
