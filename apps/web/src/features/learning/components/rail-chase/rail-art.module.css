@@ -1,0 +1,238 @@
+/* The rail chase's own drawing: the tracks, the two cars, the squares that
+   count the distance and the small pieces of glass that label them. The
+   cars' and squares' paints are this lesson's own, named once here; text,
+   glass, gold and the cue outline come from the stage and its controls. */
+.scene {
+  --rail-track: #9fb4b6;
+  --rail-yellow: #f2b545;
+  --rail-blue: #6cc4cf;
+  --rail-square: #2c4a52;
+  --rail-square-edge: #9ccfd2;
+  --rail-gap: #5fb0c0;
+  --rail-gap-edge: #d8f6f6;
+  --rail-ahead-edge: #ffd7c2;
+  --rail-drop: #d8e7e6;
+  --rail-midpoint-edge: #0b1b22;
+}
+
+.track {
+  stroke: var(--rail-track);
+  stroke-width: 3;
+  stroke-linecap: round;
+  opacity: 0.7;
+}
+
+.trailYellow,
+.trailBlue {
+  stroke-width: 5;
+  stroke-linecap: round;
+}
+
+.trailYellow {
+  stroke: var(--rail-yellow);
+}
+
+.trailBlue {
+  stroke: var(--rail-blue);
+}
+
+.point,
+.label {
+  font-family: var(--font-display);
+  font-weight: 700;
+  text-anchor: middle;
+  fill: var(--stage-text);
+  pointer-events: none;
+}
+
+.point {
+  font-size: 20px;
+}
+
+.label {
+  font-size: 16px;
+}
+
+.start {
+  text-anchor: start;
+}
+
+.yellowBlock {
+  fill: var(--rail-yellow);
+}
+
+.blueBlock {
+  fill: var(--rail-blue);
+}
+
+.warm {
+  fill: var(--stage-accent);
+}
+
+.cool {
+  fill: var(--rail-gap-edge);
+}
+
+.pushable {
+  cursor: grab;
+}
+
+.held {
+  cursor: grabbing;
+}
+
+.tappable {
+  cursor: pointer;
+}
+
+.pushable:focus-visible,
+.tappable:focus-visible {
+  outline: none;
+}
+
+.pushable:focus-visible .halo,
+.tappable:focus-visible .halo,
+.tappable:focus-visible .target {
+  stroke-width: 4;
+}
+
+.midpoint {
+  fill: var(--dew-paper);
+  stroke: var(--rail-midpoint-edge);
+  stroke-width: 2;
+}
+
+.headlight {
+  fill: var(--dew-paper);
+  opacity: 0.7;
+}
+
+/* A tap on a car on the opening scene flashes its headlight once. */
+.lit {
+  animation: flash 0.7s ease-out both;
+}
+
+@keyframes flash {
+  40% {
+    opacity: 1;
+    filter: drop-shadow(0 0 6px var(--stage-glow));
+  }
+}
+
+.halo,
+.target {
+  fill: none;
+  stroke: var(--stage-halo);
+  stroke-width: 2.5;
+  stroke-dasharray: 7 5;
+}
+
+.target {
+  fill: color-mix(in srgb, var(--stage-halo) 8%, transparent);
+}
+
+/* The glass the scene's labels sit on, like the lesson's controls. */
+.glass {
+  fill: var(--dew-pane);
+  stroke: var(--dew-pane-edge);
+  stroke-width: 1.5;
+}
+
+/* What the variation supposes: honey and dashed, as on the conclusion board. */
+.supposed {
+  stroke: var(--dew-honey);
+  stroke-dasharray: 6 4;
+}
+
+.square {
+  fill: var(--rail-square);
+  stroke: var(--rail-square-edge);
+  stroke-width: 1.2;
+}
+
+/* The squares between the midpoints: teal while the blue car is ahead,
+   clay once the yellow car is. */
+.gap {
+  fill: var(--rail-gap);
+  stroke: var(--rail-gap-edge);
+  stroke-width: 1.2;
+}
+
+.ahead {
+  fill: var(--dew-clay);
+  stroke: var(--rail-ahead-edge);
+}
+
+.won {
+  fill: var(--dew-gold);
+  stroke: var(--dew-paper);
+  stroke-width: 1.2;
+}
+
+.step {
+  fill: color-mix(in srgb, var(--stage-halo) 12%, transparent);
+  stroke: var(--stage-halo);
+  stroke-width: 1.5;
+  stroke-dasharray: 5 4;
+}
+
+.drop {
+  stroke: var(--rail-drop);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 5;
+  opacity: 0.75;
+}
+
+.arrow {
+  stroke: var(--dew-clay);
+  stroke-width: 2.5;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.meet {
+  fill: none;
+  stroke: var(--dew-paper);
+  stroke-width: 3;
+}
+
+.ruler {
+  fill: var(--dew-gold);
+  stroke: var(--dew-paper);
+  stroke-width: 1.5;
+}
+
+.rulerText {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 15px;
+  text-anchor: middle;
+  fill: var(--dew-gold-ink);
+}
+
+.picked .glass {
+  stroke: var(--dew-gold);
+  stroke-width: 2.5;
+}
+
+/* The start squares light one after another while they are counted. */
+.counted {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: count-in 0.35s ease-out both;
+}
+
+@keyframes count-in {
+  from {
+    opacity: 0;
+    scale: 0.6;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lit,
+  .counted {
+    animation: none;
+  }
+}

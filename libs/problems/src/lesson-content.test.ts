@@ -8,9 +8,10 @@ import {
 } from './lesson-content.js';
 import { gardenBalanceLesson } from './lessons/garden-balance.js';
 import { lessonTemplateLesson } from './lessons/lesson-template.js';
+import { railChaseLesson } from './lessons/rail-chase.js';
 
 describe('each lesson declared in lessons/', () => {
-  it.each([gardenBalanceLesson, lessonTemplateLesson])(
+  it.each([gardenBalanceLesson, railChaseLesson, lessonTemplateLesson])(
     '$problem.id follows a listed flow and has no problems',
     (content) => {
       expect(lessonFlows).toContain(content.flow);

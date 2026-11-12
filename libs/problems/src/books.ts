@@ -28,6 +28,7 @@ export const bookStatus = (book: Book): BookStatus => book.status ?? 'available'
 // The maintained books. A problem names its book; see ProblemPlugin.
 export const books: readonly Book[] = [
   { id: 'g1-math-xueersi', grade: '一年级', subject: '数学', category: '学而思' },
+  { id: 'g6-math-xueersi', grade: '六年级', subject: '数学', category: '学而思' },
 ];
 
 // The books by id, after checking that every id is well formed and used once,
