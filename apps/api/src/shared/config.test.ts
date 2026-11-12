@@ -39,6 +39,15 @@ it('keeps paid AI switched on without a key or eligibility, and reads each servi
     expect(() => readConfig({ [flag]: 'TRUE' })).toThrow(`${flag} must be true or false`);
 });
 
+it('counts families without a time zone in China time unless another IANA zone is set', () => {
+  expect(readConfig({}).defaultTimeZone).toBe('Asia/Shanghai');
+  expect(readConfig({ DEFAULT_TIME_ZONE: 'america/toronto' }).defaultTimeZone).toBe(
+    'America/Toronto',
+  );
+  for (const value of ['+08:00', 'China', ''])
+    expect(() => readConfig({ DEFAULT_TIME_ZONE: value })).toThrow('DEFAULT_TIME_ZONE');
+});
+
 const env = {
   REGISTRATION_ENABLED: 'true',
   DATABASE_URL: 'postgres://localhost/isolated',
