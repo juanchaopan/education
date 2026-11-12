@@ -1,4 +1,4 @@
-import type { AnswerCommand, AskForHint, AttemptReceipt, SubmitAnswer } from '@education/contracts';
+import type { AnswerCommand, AttemptReceipt, SubmitAnswer } from '@education/contracts';
 import type { AnsweringPolicy } from '@education/problems/server';
 import { RequestError } from '../../shared/request-error.js';
 import { authoredHint } from '../domain/hints.js';
@@ -8,11 +8,11 @@ type Credentials = { token?: string; csrf?: string };
 type Problem = { id: string; version: number };
 type Outcome = AttemptReceipt['outcome'];
 type Submission = Omit<SubmitAnswer, 'action' | 'input'>;
-type AnswerStore = {
+type HelpStore = { help: (round: string, helpId: string) => Promise<void> };
+type AnswerStore = HelpStore & {
   round: () => Promise<string>;
   previous: (id: string) => Promise<{ fingerprint: string; outcome: Outcome } | undefined>;
   fingerprint: (input: SubmitAnswer) => string;
-  help: (round: string, helpId: string) => Promise<void>;
   usedHelp: (round: string) => Promise<boolean>;
   commit: (input: Submission, fingerprint: string, outcome: Outcome) => Promise<void>;
 };
@@ -27,6 +27,27 @@ type WithAnswers = <T>(
 // asked for under it; the integration tests hold the two apart.
 export const teacherQuestion = 'teacher:question';
 
+// Records one of the authored hints as help taken in the round and returns its
+// text; a hint the problem does not have is refused.
+export async function giveHint(
+  store: HelpStore,
+  hints: Readonly<Record<string, string>> | undefined,
+  round: string,
+  hintId: string,
+) {
+  const text = authoredHint(hints, hintId);
+  if (!text) throw new RequestError(404, '这条提示暂时不可用。');
+  await store.help(round, hintId);
+  return { hint: text };
+}
+
+// Records a question to the teacher as help taken in the round, before the
+// question is sent.
+export async function noteQuestion(store: HelpStore, round: string) {
+  await store.help(round, teacherQuestion);
+  return { helped: true as const };
+}
+
 // The final answer of one problem and the help taken on the way to it: the
 // authored hints and the questions asked of the teacher while answering. Help
 // is recorded once per round, and a correct answer after any of it counts as
@@ -40,34 +61,17 @@ export function createAnswerService(
       const policy = find(problem.id, problem.version);
       if (!policy) throw new RequestError(404, '这道题或这个版本暂时不能提交。');
       if (!command) return { round: await store.round() };
-      switch (command.action) {
-        case 'submit':
-          return submit(store, policy, command);
-        case 'hint':
-          return hint(store, policy, command);
-        case 'question':
-          return question(store, command.round);
-      }
+      if (command.action === 'submit') return submit(store, policy, command);
+      await requireRound(store, command.round);
+      return command.action === 'hint'
+        ? giveHint(store, policy.hints, command.round, command.hintId)
+        : noteQuestion(store, command.round);
     });
 }
 
 async function requireRound(store: AnswerStore, expected: string) {
   if ((await store.round()) !== expected)
     throw new RequestError(409, '这一轮练习已完成，请重新打开题目。');
-}
-
-async function hint(store: AnswerStore, policy: AnsweringPolicy, command: AskForHint) {
-  await requireRound(store, command.round);
-  const text = authoredHint(policy.hints, command.hintId);
-  if (!text) throw new RequestError(404, '这条提示暂时不可用。');
-  await store.help(command.round, command.hintId);
-  return { hint: text };
-}
-
-async function question(store: AnswerStore, round: string) {
-  await requireRound(store, round);
-  await store.help(round, teacherQuestion);
-  return { helped: true as const };
 }
 
 async function submit(store: AnswerStore, policy: AnsweringPolicy, command: SubmitAnswer) {
