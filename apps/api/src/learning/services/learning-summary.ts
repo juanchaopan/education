@@ -12,11 +12,17 @@ export function withTitle<T extends { id: string; version: number }>(problem: T,
   return { ...problem, title: title(problem.id, problem.version) ?? null };
 }
 
+// Worth another try: answered wrongly more than once and never finished alone.
+// An answer that could not be judged is not evidence of a wrong one.
+export function reviewSuggested({
+  incorrect,
+  independent,
+}: Pick<LearningEvidence, 'incorrect' | 'independent'>) {
+  return incorrect >= 2 && independent === 0;
+}
+
 export function summarizeProblem(row: LearningEvidence, title: Title): ProblemLearningSummary {
-  return {
-    ...withTitle(row, title),
-    reviewSuggested: row.incorrect >= 2 && row.independent === 0,
-  };
+  return { ...withTitle(row, title), reviewSuggested: reviewSuggested(row) };
 }
 
 export function createLearningSummaryService(
