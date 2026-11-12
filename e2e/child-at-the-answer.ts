@@ -1,11 +1,14 @@
 import { randomUUID } from 'node:crypto';
 import type { DraftCommand } from '@education/contracts';
 import type { Page } from '@playwright/test';
-import { signInAsAssignedChild } from './assigned-child.js';
+import { signInAsAssignedChild, type Given } from './assigned-child.js';
+
+// A lesson's part of the API, by its problem version.
+export const lessonApi = (id: string, version = 1) => `/api/v1/problems/${id}/${version}`;
 
 // The garden lesson's part of the API, and the answer round the test's server
-// keeps open in it.
-export const gardenApi = '/api/v1/problems/garden-balance/1';
+// keeps open in every lesson.
+export const gardenApi = lessonApi('garden-balance');
 export const round = '11111111-1111-1111-1111-111111111111';
 
 const expiresAt = '2099-01-01T00:00:00.000Z';
@@ -23,11 +26,12 @@ export async function signInAtTheGardenAnswer(page: Page) {
   );
 }
 
-// A signed-in child who has not started the garden lesson: the draft the
-// lesson saves at each scene is kept, as the server would keep it.
-export async function signInAtTheGardenStart(page: Page) {
-  await signInAsAssignedChild(page);
-  await page.route(`**${gardenApi}/draft`, (route) => {
+// A signed-in child, given the books of `given`, who has not started the
+// lesson behind `api`: the draft the lesson saves at each scene is kept, as
+// the server would keep it.
+export async function signInAtTheStart(page: Page, api: string, given?: Given) {
+  await signInAsAssignedChild(page, given);
+  await page.route(`**${api}/draft`, (route) => {
     const write = route.request().postDataJSON() as DraftCommand | null;
     const draft =
       write?.action === 'save'
@@ -37,18 +41,24 @@ export async function signInAtTheGardenStart(page: Page) {
   });
 }
 
-// How the test's server judges the garden answer: the outcome it gives every
-// count, and the words of each hint the child asks for, when it gives any.
-type GardenAnswers = Readonly<{ outcome?: 'independent' | 'assisted'; hint?: string }>;
+// A signed-in child who has not started the garden lesson.
+export const signInAtTheGardenStart = (page: Page) => signInAtTheStart(page, gardenApi);
 
-// A server that opens the answer round and takes each count the child
-// submits as correct, without help unless told otherwise. It gives hints
-// only when told their words, and never answers a question to the teacher.
-export async function acceptEveryGardenAnswer(
+// How the test's server judges a lesson's answer: the outcome it gives
+// every answer, and the words of each hint the child asks for, when it
+// gives any.
+type Answers = Readonly<{ outcome?: 'independent' | 'assisted'; hint?: string }>;
+
+// A server that opens the answer round of the lesson behind `api` and takes
+// each answer the child submits as correct, without help unless told
+// otherwise. It gives hints only when told their words, and never answers a
+// question to the teacher.
+export async function acceptEveryAnswer(
   page: Page,
-  { outcome = 'independent', hint }: GardenAnswers = {},
+  api: string,
+  { outcome = 'independent', hint }: Answers = {},
 ) {
-  await page.route(`**${gardenApi}/answer`, (route) => {
+  await page.route(`**${api}/answer`, (route) => {
     const body = route.request().postDataJSON() as { action?: string; attemptId?: string } | null;
     if (!body) return route.fulfill({ json: { round } });
     if (body.action === 'hint' && hint) return route.fulfill({ json: { hint } });

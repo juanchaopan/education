@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import {
-  acceptEveryGardenAnswer,
+  acceptEveryAnswer,
+  gardenApi,
   signInAtTheGardenAnswer,
   signInAtTheGardenStart,
 } from './child-at-the-answer.js';
@@ -68,7 +69,7 @@ test('writes the count on once said right, and sets the changed condition beside
   page,
 }) => {
   await signInAtTheGardenAnswer(page);
-  await acceptEveryGardenAnswer(page, { outcome: 'assisted', hint: '先看第一架秤。' });
+  await acceptEveryAnswer(page, gardenApi, { outcome: 'assisted', hint: '先看第一架秤。' });
   await page.goto(lesson);
   await page.getByRole('button', { name: /接着上次的地方/ }).click({ timeout: 60_000 });
   const { film } = gardenFilm(page);
