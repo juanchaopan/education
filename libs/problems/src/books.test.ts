@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { bookStatus, books, indexBooks, type Book, type BookStatus } from './books.js';
+import type { BookStatus } from '@education/contracts';
+import { bookStatus, books, indexBooks, type Book } from './books.js';
 import { createProblemRegistry, type ProblemPlugin } from './plugin.js';
 
 const book = (fields: Partial<Book> = {}): Book => ({

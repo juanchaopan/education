@@ -3,8 +3,10 @@ import { Type, type Static } from '@sinclair/typebox';
 const problemIdPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const versionParamPattern = /^[1-9][0-9]*$/;
 const maxIdLength = 100;
-const ProblemId = Type.String({ pattern: problemIdPattern.source, maxLength: maxIdLength });
-const ProblemVersion = Type.Integer({ minimum: 1, maximum: Number.MAX_SAFE_INTEGER });
+// Problem ids, and the book ids written the same way: lower-case letters and
+// digits in words joined by single hyphens.
+export const ProblemId = Type.String({ pattern: problemIdPattern.source, maxLength: maxIdLength });
+export const ProblemVersion = Type.Integer({ minimum: 1, maximum: Number.MAX_SAFE_INTEGER });
 
 export const CatalogCategory = Type.Object({
   grade: Type.String({ minLength: 1 }),

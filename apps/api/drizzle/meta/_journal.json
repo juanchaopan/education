@@ -99,6 +99,13 @@
       "when": 1794076799281,
       "tag": "0013_service_gate",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1794492938890,
+      "tag": "0014_book_assignments",
+      "breakpoints": true
     }
   ]
 }

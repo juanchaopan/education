@@ -1,4 +1,4 @@
-import { isProblemId } from '@education/contracts';
+import { bookStatuses, isProblemId, type BookStatus } from '@education/contracts';
 
 // The school years and subjects books are filed under, in the order shelves
 // list them. Chinese collation cannot order 一、二、三、六年级, so the order is
@@ -6,19 +6,14 @@ import { isProblemId } from '@education/contracts';
 export const grades = ['一年级', '二年级', '三年级', '四年级', '五年级', '六年级'] as const;
 export const subjects = ['数学', '语文', '英语'] as const;
 
-// Whether a book can be given to children. A book is never removed from the
-// list: one that must be withdrawn, for example over copyright, becomes
-// unavailable, so families who were given it still find it, and it can
-// later be made available again.
-export const bookStatuses = ['available', 'unavailable'] as const;
-export type BookStatus = (typeof bookStatuses)[number];
-
 // A book is one grade, subject and category, holding every problem filed
 // under it, and is shown by its category's name. Its id is chosen when the
 // book is added and never changes, whatever the book is later called, so
-// what refers to a book keeps referring to it. A book without a status is
-// available. Its cover, when it has one, names a picture in the site's cover
-// library.
+// what refers to a book keeps referring to it. A book is never removed from
+// the list: one that must be withdrawn, for example over copyright, is marked
+// unavailable, so families who were given it still find it, and it can later
+// be made available again. A book without a status is available. Its cover,
+// when it has one, names a picture in the site's cover library.
 export type Book = Readonly<{
   id: string;
   grade: string;

@@ -44,6 +44,8 @@ import { registerLearningSummary } from './learning/routes/learning-summary.js';
 import type { LearningSummaryService } from './learning/services/learning-summary.js';
 import { registerPractice } from './learning/routes/practice.js';
 import type { PracticeService } from './learning/services/practice.js';
+import { registerBookshelf } from './learning/routes/bookshelf.js';
+import type { BookshelfService } from './learning/services/bookshelf.js';
 import { registerTeachingFeedback } from './ai/routes/teaching-feedback.js';
 import type { TeachingFeedbackService } from './ai/services/teaching-feedback.js';
 import { registerTeacherQuestion } from './ai/routes/teacher-question.js';
@@ -62,6 +64,7 @@ type AppOptions = {
   answering?: AnswerService;
   learningSummary?: LearningSummaryService;
   practice?: PracticeService;
+  bookshelf?: BookshelfService;
   teachingFeedback?: TeachingFeedbackService;
   teacherQuestion?: TeacherQuestionService;
   voiceTranscription?: VoiceTranscriptionService;
@@ -108,10 +111,7 @@ export function buildApp(options: AppOptions = {}) {
   });
   registerServiceGate(app, options.ready);
   registerCatalog(app);
-  registerDrafts(app, options.origin ?? localOrigin, options.drafts);
-  registerAnswering(app, options.origin ?? localOrigin, options.answering);
-  registerLearningSummary(app, options.learningSummary);
-  registerPractice(app, options.origin ?? localOrigin, options.practice);
+  registerLearning(app, options);
   registerTeachingFeedback(app, options.origin ?? localOrigin, options.teachingFeedback);
   registerTeacherQuestion(app, options.origin ?? localOrigin, options.teacherQuestion);
   registerTranscription(app, options.origin ?? localOrigin, options.voiceTranscription);
@@ -182,6 +182,15 @@ function registerErrors(app: FastifyInstance) {
               : '暂时无法完成，请稍后重试。',
       });
   });
+}
+
+function registerLearning(app: FastifyInstance, options: AppOptions) {
+  const origin = options.origin ?? localOrigin;
+  registerDrafts(app, origin, options.drafts);
+  registerAnswering(app, origin, options.answering);
+  registerLearningSummary(app, options.learningSummary);
+  registerPractice(app, origin, options.practice);
+  registerBookshelf(app, origin, options.bookshelf);
 }
 
 function registerIdentity(app: FastifyInstance, options: AppOptions) {

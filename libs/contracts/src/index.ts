@@ -21,6 +21,7 @@ export * from './draft.js';
 export * from './answer.js';
 export * from './learning-summary.js';
 export * from './practice.js';
+export * from './bookshelf.js';
 export * from './ai-consent.js';
 export * from './ai-help.js';
 export * from './teaching-feedback.js';
