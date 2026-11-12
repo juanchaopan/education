@@ -14,8 +14,9 @@ Thumbs.db
 !.env.example
 *.local
 
-# Claude Code 的个人设置
+# Claude Code 的个人设置，以及并行开发时每个 issue 各自的 worktree
 .claude/settings.local.json
+.claude/worktrees/
 
 # 日志
 *.log

@@ -8,3 +8,4 @@ package-lock.json
 apps/web/public
 apps/api/drizzle/meta
 apps/api/drizzle-ledger/meta
+.claude/worktrees
