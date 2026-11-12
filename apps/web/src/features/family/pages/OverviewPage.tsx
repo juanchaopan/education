@@ -4,13 +4,13 @@ import { Icon } from '../../../shared/ui/Icon';
 import { LinkButton } from '../../../shared/ui/LinkButton';
 import { Loading } from '../../../shared/ui/Loading';
 import { Notice } from '../../../shared/ui/Notice';
-import { ChildDigest, type LearningTotals } from '../components/ChildDigest';
+import { ChildDigest } from '../components/ChildDigest';
 import { ParentSection } from '../components/ParentSection';
 import { SettingsList } from '../components/SettingsList';
 import { useAiConsent } from '../data-access/useAiConsent';
 import { useChildrenAssigned } from '../data-access/useBookshelf';
 import { useFamilyChildren } from '../data-access/useChildAccess';
-import { useChildRecords, type ChildRecord } from '../data-access/useLearningSummary';
+import { useFamilyOverview } from '../data-access/useLearningSummary';
 import { useRegistrationKey } from '../data-access/useRegistrationKey';
 import { FamilyCodePanel } from './FamilyCodePanel';
 import { AssignedBooks, ReviewIdeas, type ChildActivity } from './OverviewPractice';
@@ -57,28 +57,19 @@ export function OverviewPage({ csrf }: { csrf: string }) {
   );
 }
 
-function totalsOf({ problems, complete }: ChildRecord): LearningTotals {
-  const sum = (count: (problem: ChildRecord['problems'][number]) => number) =>
-    problems.reduce((total, problem) => total + count(problem), 0);
-  return {
-    problems: problems.length,
-    independent: sum((problem) => problem.independent),
-    assisted: sum((problem) => problem.assisted),
-    complete,
-  };
-}
-
 // Each child's card, then what is worth practising again beside what is
-// already given. Every child's record and books are read side by side, and
-// each child is kept together with its own record and books. A record
-// read again after a failure shows as being read until it arrives.
+// already given. The family's record comes in one reply; each child's books
+// are read side by side and kept together with the child. A record read
+// again after a failure shows as being read until it arrives.
 function FamilyActivity({ csrf, family }: { csrf: string; family: readonly ChildAccess[] }) {
-  const ids = family.map(({ id }) => id);
-  const records = useChildRecords(csrf, ids);
-  const books = useChildrenAssigned(csrf, ids);
+  const overview = useFamilyOverview(csrf);
+  const books = useChildrenAssigned(
+    csrf,
+    family.map(({ id }) => id),
+  );
   const activity: ChildActivity[] = family.map((child, place) => ({
     child,
-    record: records[place]!,
+    record: overview.data?.children.find(({ id }) => id === child.id),
     books: books[place]!,
   }));
   return (
@@ -90,15 +81,15 @@ function FamilyActivity({ csrf, family }: { csrf: string; family: readonly Child
             childId={child.id}
             nickname={child.nickname}
             place={place}
-            totals={record.data && totalsOf(record.data)}
-            loading={record.isFetching && !record.data}
-            failed={record.isError && !record.isFetching}
-            onRetry={() => void record.refetch()}
+            totals={record?.total}
+            loading={overview.isFetching && !overview.data}
+            failed={overview.isError && !overview.isFetching}
+            onRetry={() => void overview.refetch()}
           />
         ))}
       </div>
       <div className={styles.pair}>
-        <ReviewIdeas activity={activity} />
+        <ReviewIdeas activity={activity} reading={overview.isPending} failed={overview.isError} />
         <AssignedBooks csrf={csrf} activity={activity} />
       </div>
     </>

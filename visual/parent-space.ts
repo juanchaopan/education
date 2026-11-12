@@ -1,6 +1,7 @@
 import type {
   AiConsentView,
   FamilyChildren,
+  FamilyOverview,
   LearningSummary,
   ParentSession,
   ProblemLearningSummary,
@@ -97,6 +98,16 @@ export const parentSpaceApi: Api = {
     childId: lele,
     hasMore: false,
     problems: [],
+  }),
+  'GET /api/v1/parents/overview': ok<FamilyOverview>({
+    children: [
+      {
+        id: xiaomi,
+        total: { problems: 2, independent: 2, assisted: 1 },
+        review: [{ id: 'visual-fixture-two', version: 1, title: '测试用的第二道题', incorrect: 1 }],
+      },
+      { id: lele, total: { problems: 0, independent: 0, assisted: 0 }, review: [] },
+    ],
   }),
   [`GET /api/v1/parents/children/${xiaomi}/books`]: ok(givenBooks(xiaomi)),
   [`GET /api/v1/parents/children/${lele}/books`]: ok(givenBooks(lele)),

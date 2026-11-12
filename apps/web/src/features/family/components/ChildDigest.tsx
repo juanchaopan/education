@@ -1,3 +1,4 @@
+import type { LearningTotals } from '@education/contracts';
 import { Avatar } from '../../../shared/ui/Avatar';
 import { Button } from '../../../shared/ui/Button';
 import { Card } from '../../../shared/ui/Card';
@@ -6,15 +7,6 @@ import { Loading } from '../../../shared/ui/Loading';
 import { StandaloneLink } from '../../../shared/ui/StandaloneLink';
 import { StatTiles } from './StatTiles';
 import styles from './ChildDigest.module.css';
-
-// A child's record added up over every problem they have tried. A record
-// read only in part says so with a "+" rather than passing for the whole.
-export type LearningTotals = {
-  problems: number;
-  independent: number;
-  assisted: number;
-  complete: boolean;
-};
 
 type Props = {
   childId: string;
@@ -60,14 +52,13 @@ export function ChildDigest({ childId, nickname, place, totals, loading, failed,
 
 function Totals({ totals }: { totals: LearningTotals }) {
   if (!totals.problems) return <p className={styles.empty}>还没有学习记录。</p>;
-  const more = totals.complete ? '' : '+';
   return (
     <StatTiles
       size="large"
       tiles={[
-        ['道题', `${totals.problems}${more}`],
-        ['次独立完成', `${totals.independent}${more}`],
-        ['次提示后完成', `${totals.assisted}${more}`],
+        ['道题', String(totals.problems)],
+        ['次独立完成', String(totals.independent)],
+        ['次提示后完成', String(totals.assisted)],
       ]}
     />
   );

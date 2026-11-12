@@ -16,7 +16,7 @@ const meta = {
     childId: '11111111-1111-4111-8111-111111111111',
     nickname: '小米',
     place: 0,
-    totals: { problems: 5, independent: 3, assisted: 2, complete: true },
+    totals: { problems: 5, independent: 3, assisted: 2 },
     onRetry: () => {},
   },
 } satisfies Meta<typeof ChildDigest>;
@@ -24,11 +24,8 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const WithRecord: Story = {};
-export const PartlyRead: Story = {
-  args: { totals: { problems: 200, independent: 140, assisted: 61, complete: false } },
-};
 export const NoRecord: Story = {
-  args: { place: 1, totals: { problems: 0, independent: 0, assisted: 0, complete: true } },
+  args: { place: 1, totals: { problems: 0, independent: 0, assisted: 0 } },
 };
 export const Loading: Story = { args: { totals: undefined, loading: true } };
 export const Failed: Story = { args: { totals: undefined, failed: true } };

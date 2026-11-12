@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import type { UseQueryResult } from '@tanstack/react-query';
-import type { ChildAccess, ChildShelfPage, ProblemLearningSummary } from '@education/contracts';
+import type { ChildAccess, ChildOverview, ChildShelfPage } from '@education/contracts';
 import { problemPath } from '../../../shared/lib/problem-path';
 import { Button } from '../../../shared/ui/Button';
 import { EmptyState } from '../../../shared/ui/EmptyState';
@@ -13,13 +13,12 @@ import { BookRows, ChildBooksLinks, type BookRow } from '../components/BookRows'
 import { ParentCard } from '../components/ParentCard';
 import { ProblemRows, type ProblemRow } from '../components/ProblemRows';
 import { useBookToggles, type BookFailure } from '../data-access/useBookshelf';
-import type { ChildRecord } from '../data-access/useLearningSummary';
 
-// A child with its learning record and the first page of the books it has,
-// as the overview reads them.
+// A child with its part of the family overview, once read, and the first
+// page of the books it has.
 export type ChildActivity = {
   child: ChildAccess;
-  record: UseQueryResult<ChildRecord>;
+  record?: ChildOverview;
   books: UseQueryResult<ChildShelfPage>;
 };
 
@@ -31,25 +30,24 @@ const childBooks = (childId: string) =>
   `/family/practice?child=${encodeURIComponent(childId)}&state=assigned`;
 
 // Problems a child answered wrongly and has not yet finished alone, as the
-// learning summary marks them. A record that could not be read is said to
-// have failed rather than to hold nothing.
-export function ReviewIdeas({ activity }: { activity: readonly ChildActivity[] }) {
+// server marks them. A record that could not be read is said to have failed
+// rather than to hold nothing.
+export function ReviewIdeas({
+  activity,
+  reading,
+  failed,
+}: {
+  activity: readonly ChildActivity[];
+  reading: boolean;
+  failed: boolean;
+}) {
   const rows: ProblemRow[] = activity.flatMap(({ child, record }) =>
-    (record.data?.problems ?? []).flatMap(
-      ({ id, version, title, incorrect, reviewSuggested }: ProblemLearningSummary) =>
-        reviewSuggested && title !== null
-          ? [
-              {
-                key: `${child.id}/${problemPath(id, version)}`,
-                title,
-                detail: `${child.nickname} · 答错 ${incorrect} 次`,
-              },
-            ]
-          : [],
-    ),
+    (record?.review ?? []).map(({ id, version, title, incorrect }) => ({
+      key: `${child.id}/${problemPath(id, version)}`,
+      title,
+      detail: `${child.nickname} · 答错 ${incorrect} 次`,
+    })),
   );
-  const reading = activity.some(({ record }) => record.isPending);
-  const failed = activity.some(({ record }) => record.isError);
   return (
     <ParentCard titleId="review-ideas-title" icon="bulb" title="值得再练">
       <Hint>答错过、还没有独立完成的题。</Hint>
