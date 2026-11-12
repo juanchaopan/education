@@ -1,7 +1,10 @@
 import { uncertainFeedback, type TeachingFeedback } from '@education/contracts';
 import { sceneSteps, variationReason, wholeNumberAnswer } from './lesson-rules.js';
-import { gardenBalanceLesson } from './lessons/garden-balance.js';
-import { gardenVariationChoices, type GardenVariationChoice } from './lessons/garden-variation.js';
+import {
+  gardenBalanceLesson,
+  gardenVariationChoices,
+  type GardenVariationChoice,
+} from './lessons/garden-balance.js';
 import type { ProblemPlugin } from './plugin.js';
 
 // 一年级试卷第 7 题：一棵青菜和几根黄瓜一样重？The child halves the scale to

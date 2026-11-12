@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { gardenBalance, gardenBalanceSteps } from './garden-balance.js';
-import { gardenVariationChoices } from './lessons/garden-variation.js';
+import { gardenVariationChoices } from './lessons/garden-balance.js';
 import { problemRegistry } from './server.js';
 
 const { answering, variation, checkStep } = gardenBalance;
