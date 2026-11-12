@@ -5,9 +5,9 @@ import type {
   VariationReceipt,
   VariationState,
 } from '@education/contracts';
-import type { Judgement, VariationPolicy } from '@education/problems/server';
+import type { VariationPolicy } from '@education/problems/server';
 import { RequestError } from '../../shared/request-error.js';
-import { judgedOutcome, type JudgedOutcome } from '../domain/outcome.js';
+import { judgedOutcome, type Judgement, type JudgedOutcome } from '../domain/outcome.js';
 import { giveHint, noteQuestion } from './answer.js';
 
 type Credentials = { token?: string; csrf?: string };
