@@ -54,8 +54,11 @@ const mistakes: Readonly<Record<number, string>> = {
   6: '6 是一开始苹果的个数。现在右盘都是黄瓜了，数数有几根。',
 };
 
-// The count is said in cucumbers, 根.
+// The count is said in cucumbers, 根; it is a single answer, so the child
+// said one number.
 export const answerWords: CountWords = {
   unit: '根',
-  explain: (count) => mistakes[count] ?? `${count} 根还不对。一组一组地数数右盘的黄瓜，再告诉我。`,
+  explain: ([count]) =>
+    (count !== undefined && mistakes[count]) ||
+    `${count} 根还不对。一组一组地数数右盘的黄瓜，再告诉我。`,
 };

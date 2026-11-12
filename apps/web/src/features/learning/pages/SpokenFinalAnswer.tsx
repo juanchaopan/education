@@ -5,12 +5,11 @@ import { FireflyHint } from '../components/lesson-stage/FireflyHint';
 import { StagePlace } from '../components/lesson-stage/LessonStage';
 import type { LearningScope } from '../data-access/learning-request';
 import type { AnswerEvents } from '../data-access/useAnswerHints';
-import { useLessonAnswer, type Judgement } from '../data-access/useLessonAnswer';
+import { answerInput, useLessonAnswer, type Judgement } from '../data-access/useLessonAnswer';
 import { useVoiceInput } from '../data-access/useVoiceInput';
 import { chimeMs, type Chime } from '../interaction/chime';
 import type { NarrationFailure } from '../interaction/narration';
 import { answerStep, answerWords, hintWords, type CountWords } from '../interaction/spoken-answer';
-import { spokenNumber } from '../interaction/spoken-number';
 import type { Subtitle } from '../interaction/subtitle';
 import { useSubtitleWords } from '../interaction/useSubtitleWords';
 import { usesMicrophone, type MicrophoneTurn } from '../voice/microphone-turn';
@@ -26,10 +25,13 @@ type Film = {
 
 type Props = {
   scope: LearningScope;
-  // What the count answers.
+  // What the answer answers.
   question: string;
-  // The unit the count is said in, and what a wrong count most likely is.
+  // The unit the answer is said in, and what a wrong answer most likely is.
   words: CountWords;
+  // The answer is every number that fits, sent as a list; otherwise it is
+  // one number.
+  every?: boolean;
   // Numbers to tap when speech cannot be used.
   choices: readonly number[];
   // The problem's authored hints, in the order the child receives them.
@@ -37,7 +39,7 @@ type Props = {
   film: Film;
   turn: MicrophoneTurn;
   subtitle: Subtitle;
-  // What the page hears of the hints received and a count judged right.
+  // What the page hears of the hints received and an answer judged right.
   events?: AnswerEvents;
   onDone: () => void;
 };
@@ -82,22 +84,34 @@ function useListening(voice: ReturnType<typeof useVoiceInput>, film: Film, open:
   return { awaiting: wanted && open, listenAgain: () => setWanted(true) };
 }
 
-// A lesson's final count, said out loud and confirmed in the answer capsule,
+// A lesson's final answer, said out loud and confirmed in the answer capsule,
 // then judged on the server, which records whether it was independent or
 // helped. The firefly hint drop beside it gives the authored hints one by
 // one; the teacher says each hint, and every step of the answer, in its
 // subtitle.
-export function SpokenFinalAnswer({ scope, words, choices, hintIds, subtitle, ...on }: Props) {
+export function SpokenFinalAnswer({
+  scope,
+  words,
+  every = false,
+  choices,
+  hintIds,
+  subtitle,
+  ...on
+}: Props) {
   const answer = useLessonAnswer(scope, hintIds, on.events);
   const voice = useVoiceInput(scope, 'answer', 'listen', {
     turn: on.turn,
     audio: on.film.chime.audio,
   });
   const listening = useListening(voice, on.film, answering(answer.judgement));
-  const step = answerStep(voice.state, answer.judgement, words, listening.awaiting);
+  const step = answerStep(voice.state, answer.judgement, words, {
+    every,
+    awaiting: listening.awaiting,
+  });
   useSubtitleWords(subtitle, 'answer', { text: answerWords(step) });
   useSubtitleWords(subtitle, 'hint', hintWords(answer));
   const { state } = voice;
+  const send = (said: readonly number[]) => answer.submit(answerInput(said, every));
   return (
     <>
       <StagePlace at="answer">
@@ -105,6 +119,7 @@ export function SpokenFinalAnswer({ scope, words, choices, hintIds, subtitle, ..
           question={on.question}
           step={step}
           unit={words.unit}
+          every={every}
           choices={choices}
           blocked={voice.blocked}
           level={state.status === 'recording' ? state.level : undefined}
@@ -112,11 +127,9 @@ export function SpokenFinalAnswer({ scope, words, choices, hintIds, subtitle, ..
           onFinish={voice.release}
           onStopWaiting={voice.guide}
           onConfirm={() => {
-            const text = voice.confirm();
-            const count = text === undefined ? undefined : spokenNumber(text, words.unit);
-            if (count !== undefined) answer.submit(count);
+            if (step.kind === 'confirm' && voice.confirm() !== undefined) send(step.said);
           }}
-          onChoose={answer.submit}
+          onChoose={send}
           onRetry={answer.retry}
           onContinue={on.onDone}
         />

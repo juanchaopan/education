@@ -71,7 +71,7 @@ const answering = (
     <StagePlace at="answer">
       <AnswerCapsule
         question="桌子上一共有几个球？"
-        step={{ kind: 'confirm', heard: '两个', count: 2 }}
+        step={{ kind: 'confirm', heard: '两个', said: [2] }}
         unit="个"
         choices={[1, 2, 3]}
         blocked={false}
