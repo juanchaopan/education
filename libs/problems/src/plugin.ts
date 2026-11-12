@@ -55,11 +55,23 @@ function listed({ id, version, title, sequence }: ProblemEntry, book: Book): Pro
   };
 }
 
+const bookOrder = (a: ProblemSummary, b: ProblemSummary) =>
+  a.sequence - b.sequence || (a.id < b.id ? -1 : Number(a.id > b.id));
+
+// The latest version of every problem, grouped by the book that version is
+// filed in, each book's problems in its order.
+function shelve(latest: Iterable<{ summary: ProblemSummary; book: string }>) {
+  const byBook = new Map<string, ProblemSummary[]>();
+  for (const { summary, book } of latest) byBook.set(book, [...(byBook.get(book) ?? []), summary]);
+  for (const problems of byBook.values()) problems.sort(bookOrder);
+  return byBook as ReadonlyMap<string, readonly ProblemSummary[]>;
+}
+
 export function createProblemRegistry(plugins: readonly ProblemPlugin[], shelf: readonly Book[]) {
   const booksById = indexBooks(shelf);
   const versions = new Map<string, ProblemPlugin>();
   const summaries = new Map<string, ProblemSummary>();
-  const latest = new Map<string, ProblemSummary>();
+  const latest = new Map<string, { summary: ProblemSummary; book: string }>();
   for (const plugin of plugins) {
     const { id, version, book: bookId } = plugin.summary;
     if (!isProblemId(id) || !Number.isSafeInteger(version) || version < 1) {
@@ -73,13 +85,17 @@ export function createProblemRegistry(plugins: readonly ProblemPlugin[], shelf: 
     versions.set(key, plugin);
     summaries.set(key, summary);
     const current = latest.get(id);
-    if (!current || version > current.version) latest.set(id, summary);
+    if (!current || version > current.summary.version) latest.set(id, { summary, book: bookId });
   }
+  const byBook = shelve(latest.values());
   return {
-    current: [...latest.values()],
+    current: [...latest.values()].map(({ summary }) => summary),
     books: shelf,
+    book: (id: string) => booksById.get(id),
     find: (id: string, version: number) => versions.get(`${id}/${version}`),
     summary: (id: string, version: number) => summaries.get(`${id}/${version}`),
+    // The latest version of every problem filed in the book, in the book's order.
+    problemsOf: (bookId: string) => byBook.get(bookId) ?? [],
   };
 }
 
