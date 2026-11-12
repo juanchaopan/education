@@ -1,6 +1,6 @@
 # #221 孩子只学安排的书，访客看不到题目：样稿
 
-[#221](https://github.com/juanchaopan/education/issues/221) 的样稿。设计见 [孩子只学安排的书，访客看不到题目](../../design/book-access.md)。登录页、题目页和预览模式维护者已确认；孩子首页按第五轮意见重画，待维护者确认。
+[#221](https://github.com/juanchaopan/education/issues/221) 的样稿。设计见 [孩子只学安排的书，访客看不到题目](../../design/book-access.md)。登录页、孩子首页、题目页和预览模式的样稿维护者 2026-11-12 已确认；孩子首页是第五轮重画的样子。
 
 ## 怎么做的
 
