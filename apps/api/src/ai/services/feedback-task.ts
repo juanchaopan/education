@@ -1,9 +1,8 @@
 import { feedbackTextMaxLength } from '@education/contracts';
 import { MAX_FEEDBACK_OUTPUT_TOKENS } from '../domain/tutoring-cost.js';
 import { ModelFeedback, parseModelFeedback } from '../domain/teaching-feedback.js';
-import type { ContentPart, ModelTask } from './model-task.js';
+import { MAX_STEP_PROMPT_LENGTH, type ContentPart, type ModelTask } from './model-task.js';
 
-const MAX_PROMPT_LENGTH = 1_200;
 // Asking for the answer or a score is ordinary child behaviour, not an attempt
 // to change the rules, so it gets a next step rather than the injection fallback.
 const INSTRUCTIONS =
@@ -26,7 +25,7 @@ export type FeedbackModelInput = { prompt: string; text?: string; imageUrl?: str
 export const feedbackTask: ModelTask<FeedbackModelInput, ModelFeedback> = {
   maxOutputTokens: MAX_FEEDBACK_OUTPUT_TOKENS,
   request({ prompt, text, imageUrl }) {
-    if (!prompt.trim() || prompt.length > MAX_PROMPT_LENGTH) return;
+    if (!prompt.trim() || prompt.length > MAX_STEP_PROMPT_LENGTH) return;
     if (text !== undefined && (!text.trim() || text.length > feedbackTextMaxLength)) return;
     if (text === undefined && !imageUrl) return;
     const content: ContentPart[] = [

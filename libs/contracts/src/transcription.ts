@@ -1,7 +1,7 @@
 import { Type, type Static } from '@sinclair/typebox';
-import { AiHelpFallbackSchema } from './ai-help.js';
+import { AiHelpFallbackResult } from './ai-help.js';
 import { base64Length, base64Pattern } from './patterns.js';
-import { feedbackTextMaxLength, StepId } from './teaching-feedback.js';
+import { ChildText, StepId } from './teaching-feedback.js';
 
 const closed = { additionalProperties: false };
 
@@ -34,15 +34,9 @@ export const TranscriptionRequest = Type.Object(
 // What was heard is only a proposal: the child reads and corrects it before it
 // becomes the step's text answer. `unheard` means no words were recognised.
 export const TranscriptionResult = Type.Union([
-  Type.Object(
-    {
-      status: Type.Literal('ready'),
-      text: Type.String({ minLength: 1, maxLength: feedbackTextMaxLength }),
-    },
-    closed,
-  ),
+  Type.Object({ status: Type.Literal('ready'), text: ChildText }, closed),
   Type.Object({ status: Type.Literal('unheard') }, closed),
-  Type.Object({ status: Type.Literal('fallback'), reason: AiHelpFallbackSchema }, closed),
+  AiHelpFallbackResult,
 ]);
 
 export type TranscriptionRequest = Static<typeof TranscriptionRequest>;

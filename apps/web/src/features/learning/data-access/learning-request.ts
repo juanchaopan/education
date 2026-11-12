@@ -2,7 +2,7 @@ import type { Static, TSchema } from '@sinclair/typebox';
 import { Value } from '@sinclair/typebox/value';
 
 export type LearningScope = Readonly<{ id: string; version: number; csrf: string }>;
-type Resource = 'draft' | 'answer' | 'feedback' | 'transcription';
+type Resource = 'draft' | 'answer' | 'question' | 'transcription';
 
 export function requestLearning(
   scope: LearningScope,

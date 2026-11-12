@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import type { LearningScope } from './learning-request';
 import { useQuestionHelp } from './useQuestionHelp';
-import { useTeachingFeedback } from './useTeachingFeedback';
+import { useQuestionReply } from './useQuestionReply';
 import { useVoiceInput } from './useVoiceInput';
 import type { VoiceOptions } from './voice-input';
 
@@ -23,7 +23,7 @@ export function useLessonQuestion(
   { answerStep, ...voiceOptions }: Options = {},
 ) {
   const voice = useVoiceInput(scope, stepId, 'hold', voiceOptions);
-  const feedback = useTeachingFeedback(scope);
+  const teacher = useQuestionReply(scope);
   const askedIn = useRef(stepId);
   const [asked, setAsked] = useState<string>();
   const answering = stepId === answerStep;
@@ -32,7 +32,7 @@ export function useLessonQuestion(
   return {
     voice: voice.state,
     blocked: voice.blocked,
-    reply: feedback.state,
+    reply: teacher.state,
     asked,
     sending: help.recording,
     sendFailed: help.failed,
@@ -50,11 +50,11 @@ export function useLessonQuestion(
       const text = voice.confirm();
       if (!text) return;
       setAsked(text);
-      void feedback.ask({ stepId: askedIn.current, text, drawing: [] });
+      void teacher.ask({ stepId: askedIn.current, text });
     },
     guide() {
       voice.guide();
-      feedback.guide();
+      teacher.guide();
     },
   };
 }

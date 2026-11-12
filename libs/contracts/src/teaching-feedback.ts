@@ -1,5 +1,5 @@
 import { Type, type Static } from '@sinclair/typebox';
-import { AiHelpFallbackSchema } from './ai-help.js';
+import { AiHelpFallbackResult } from './ai-help.js';
 import { base64Length, base64Pattern, identifierPattern } from './patterns.js';
 
 const closed = { additionalProperties: false };
@@ -15,6 +15,9 @@ export const feedbackImageMaxBytes = 512 * 1024;
 const feedbackImageMaxLength = base64Length(feedbackImageMaxBytes);
 // The body adds a small JSON envelope to the encoded image.
 export const feedbackBodyLimit = feedbackImageMaxLength + 4 * 1024;
+
+// Words a child wrote or said and read over, as they go to the server.
+export const ChildText = Type.String({ minLength: 1, maxLength: feedbackTextMaxLength });
 
 // Fractions of the drawing sheet, with the origin at its top-left corner.
 export const FeedbackRegion = Type.Object(
@@ -42,7 +45,7 @@ export const TeachingFeedback = Type.Object(
 export const FeedbackRequest = Type.Object(
   {
     stepId: StepId,
-    text: Type.Optional(Type.String({ minLength: 1, maxLength: feedbackTextMaxLength })),
+    text: Type.Optional(ChildText),
     image: Type.Optional(
       Type.String({ pattern: base64Pattern.source, maxLength: feedbackImageMaxLength }),
     ),
@@ -59,7 +62,7 @@ export const TeachingFeedbackResult = Type.Union([
     },
     closed,
   ),
-  Type.Object({ status: Type.Literal('fallback'), reason: AiHelpFallbackSchema }, closed),
+  AiHelpFallbackResult,
 ]);
 
 export type FeedbackRegion = Static<typeof FeedbackRegion>;

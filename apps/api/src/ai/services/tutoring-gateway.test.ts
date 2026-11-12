@@ -9,10 +9,11 @@ import {
   settings,
   stream,
 } from './gateway-fixtures.js';
-import { hintTask } from './hint-task.js';
+import { questionTask } from './question-task.js';
 
 const input = { step: '观察两组物体的数量。', question: '先数哪一组？' };
-const done = completion('先看看左边有几个。');
+const answer = '先看看左边有几个。';
+const done = completion(JSON.stringify({ reply: answer, injection: false }));
 
 function setup(config = settings) {
   const { gateway, ...rest } = setupGateway(config);
@@ -20,7 +21,7 @@ function setup(config = settings) {
     credentials: Parameters<typeof gateway>[1],
     context: typeof input,
     signal?: AbortSignal,
-  ) => gateway(hintTask, credentials, context, signal);
+  ) => gateway(questionTask, credentials, context, signal);
   return { ...rest, request };
 }
 
@@ -60,7 +61,7 @@ it('starts one bounded stateless request and decodes a completion across UTF-8 c
   const context = { ...input, history: 'private past answer', answerKey: 'private solution' };
   await expect(request(credentials, context)).resolves.toMatchObject({
     status: 'ready',
-    value: '先看看左边有几个。',
+    value: { reply: answer, injection: false },
     model: 'gpt-6-luna',
   });
   expect(meter.settle).toHaveBeenCalledExactlyOnceWith('id', {
@@ -153,7 +154,7 @@ it('falls back at admission without dispatching or settling', async () => {
   expect(meter.settle).not.toHaveBeenCalled();
 });
 
-it('settles reported usage for unusable hints and flags out-of-bounds responses', async () => {
+it('settles reported usage for unusable replies and flags out-of-bounds responses', async () => {
   const { request, send, meter } = setup();
   send.mockResolvedValueOnce(stream(encoder.encode(done.replace('output_text', 'refusal'))));
   await expect(request(credentials, input)).resolves.toMatchObject({ reason: 'unavailable' });
@@ -176,8 +177,9 @@ it.each([
   event({ type: 'response.failed', secret: 'private provider error' }),
   event({ type: 'response.output_text.delta', delta: 'incomplete' }),
   done.replace('output_text', 'refusal'),
-  done.replace('先看看左边有几个。', ' '.repeat(10)),
-  done.replace('先看看左边有几个。', '答'.repeat(161)),
+  done.replace(answer, ' '.repeat(10)),
+  done.replace(answer, '答'.repeat(161)),
+  completion(answer),
   ' '.repeat(65_537),
 ])('discards failed, incomplete and malformed streams', async (payload) => {
   const { request, send } = setup();

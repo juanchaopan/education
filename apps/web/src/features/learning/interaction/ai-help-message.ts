@@ -16,5 +16,3 @@ const copy: Record<AiHelpFallback, string> = {
 export function fallbackMessage(reason: AiHelpFallback) {
   return copy[reason];
 }
-
-export const guidanceMessage = '好的，我们用提示继续。你的作答还在。';

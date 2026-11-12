@@ -4,6 +4,7 @@ import { afterAll, afterEach, expect, it, vi } from 'vitest';
 import { createProblemRegistry } from '@education/problems/server';
 import { aiConsentPolicies } from './identity/domain/ai-consent-policy.js';
 import { csrfToken, tokenHash } from './identity/services/session-security.js';
+import { createTeacherQuestion } from './teacher-question-application.js';
 import { createTeachingFeedback } from './teaching-feedback-application.js';
 
 if (!process.env.DATABASE_URL?.endsWith('/education_test'))
@@ -116,7 +117,10 @@ it('needs a valid child session and withholds the model without family consent',
   const send = vi.fn<typeof fetch>();
   const request = service(send);
   await expect(
-    request({ token: 'invalid', csrf: 'invalid' }, problem, { stepId: 'count-left', text: '好了' }),
+    request({ token: 'invalid', csrf: 'invalid' }, problem, {
+      stepId: 'count-left',
+      text: '好了',
+    }),
   ).rejects.toMatchObject({ statusCode: 401 });
   await expect(
     request(owner.credentials, problem, { stepId: 'count-left', text: '好了' }),
@@ -180,4 +184,41 @@ it('withholds a reply that arrives after the family is deleted and still settles
   expect(rows).toEqual([
     { state: 'settled', input_tokens: '300', family_id: null, child_id: null },
   ]);
+});
+
+const ask = (send: typeof fetch) => createTeacherQuestion(pool, env, send, registry.find);
+
+it('answers a question the rules settle without consent, the provider or any usage record', async () => {
+  const owner = await child(false);
+  const send = vi.fn<typeof fetch>();
+  await expect(
+    ask(send)(owner.credentials, problem, { stepId: 'count-left', text: '三个' }),
+  ).resolves.toEqual({ status: 'ready', source: 'rules', reply: '数对了！' });
+  await expect(
+    ask(send)(owner.credentials, problem, { stepId: 'count-left', text: '从哪里数？' }),
+  ).resolves.toEqual({ status: 'fallback', reason: 'unauthorized' });
+  expect(send).not.toHaveBeenCalled();
+  expect(await usage(owner.family)).toEqual([]);
+});
+
+it('sends a question only with its scene, answers in one sentence and settles the usage', async () => {
+  const owner = await child(true);
+  const reply = { reply: '从左边第一个点开始，一个一个数。', injection: false };
+  const send = vi.fn<typeof fetch>(async () => providerReply(JSON.stringify(reply)));
+  await expect(
+    ask(send)(owner.credentials, problem, { stepId: 'count-left', text: '从哪里数？' }),
+  ).resolves.toEqual({ status: 'ready', source: 'ai', reply: reply.reply });
+  const body = String(send.mock.calls[0]?.[1]?.body);
+  expect(JSON.parse(body)).toMatchObject({
+    input: [
+      {
+        role: 'user',
+        content: JSON.stringify({ step: '数一数左边的点。', question: '从哪里数？' }),
+      },
+    ],
+    text: { format: { name: 'teacher_answer', strict: true } },
+  });
+  expect(body).not.toContain(owner.family);
+  expect(body).not.toContain(owner.credentials.token);
+  expect(await usage(owner.family)).toEqual([{ state: 'settled', input_tokens: '300' }]);
 });
