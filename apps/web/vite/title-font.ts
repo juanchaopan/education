@@ -2,6 +2,7 @@ import { existsSync } from 'node:fs';
 import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import subsetFont from 'subset-font';
 import type { Plugin } from 'vite';
 
@@ -61,6 +62,17 @@ async function catalogueTexts() {
   ];
 }
 
+// The words of every lesson's content, such as the teacher's lines shown in
+// the subtitle, which the site loads from the problem package rather than
+// from its own source: the built content modules beside the content types'
+// module.
+async function lessonContentTexts() {
+  const module = fileURLToPath(import.meta.resolve('@education/problems/lesson-content'));
+  const folder = path.join(path.dirname(module), 'lessons');
+  const files = (await readdir(folder)).filter((file) => file.endsWith('.js'));
+  return Promise.all(files.map((file) => readFile(path.join(folder, file), 'utf8')));
+}
+
 // Writes the title font for `characters`, unless the font already on disk was
 // built from exactly those characters.
 async function writeTitleFont(characters: string, output: string) {
@@ -76,16 +88,20 @@ async function writeTitleFont(characters: string, output: string) {
 type Options = { sourceDirectory: string; output: string };
 
 // Builds the self-hosted title font when a build or the dev server starts:
-// LXGW WenKai cut down to the characters the site's own text and its problem
-// catalogue use, so no page loads the whole typeface or any font from
-// elsewhere. Unit tests never draw text, so they skip it.
+// LXGW WenKai cut down to the characters the site's own text, its lessons'
+// content and its problem catalogue use, so no page loads the whole typeface
+// or any font from elsewhere. Unit tests never draw text, so they skip it.
 export function titleFont({ sourceDirectory, output }: Options): Plugin {
   return {
     name: 'education-title-font',
     async buildStart() {
       if (process.env.VITEST) return;
-      const texts = [...(await sourceTexts(sourceDirectory)), ...(await catalogueTexts())];
-      await writeTitleFont(titleCharacters(texts), output);
+      const texts = await Promise.all([
+        sourceTexts(sourceDirectory),
+        lessonContentTexts(),
+        catalogueTexts(),
+      ]);
+      await writeTitleFont(titleCharacters(texts.flat()), output);
     },
     async generateBundle() {
       this.emitFile({

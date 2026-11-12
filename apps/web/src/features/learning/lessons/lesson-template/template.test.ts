@@ -12,12 +12,14 @@ import { lessons } from '../registry';
 import record from './assets/narration.json';
 import { templateLesson } from './definition';
 
+const { problem } = templateLesson.content;
+
 it('passes every check a registered lesson must pass, against its own plugin', () => {
   const plugin = pluginOutline(lessonTemplate);
-  expect(lessonProblems(templateLesson.problem, templateLesson, plugin)).toEqual([]);
+  expect(lessonProblems(problem, templateLesson, plugin)).toEqual([]);
   expect(narrationProblems(templateLesson, voiceConfig, record)).toEqual([]);
 });
 
 it('is not registered, so no page is built for it', () => {
-  expect(lessons.map(({ problem }) => problem.id)).not.toContain(templateLesson.problem.id);
+  expect(lessons.map(({ problem: listed }) => listed.id)).not.toContain(problem.id);
 });

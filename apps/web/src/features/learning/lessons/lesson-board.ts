@@ -1,40 +1,17 @@
+import type { Conclusion } from '@education/problems/lesson-content';
 import type { ReactNode } from 'react';
 import type { BoardFact } from '../components/lesson-stage/ConclusionBoard';
 import type { FilmState } from '../interaction/lesson-film';
 
-// How many of one of the lesson's pictures, for example three apples.
-export type Amount<Picture extends string> = readonly [count: number, picture: Picture];
-
-// One conclusion a lesson keeps on its board once a scene has found it:
-// - `says`, the sentence a screen reader reads for it;
-// - `amounts`, the amounts that weigh the same, drawn in order with equal
-//   signs between them;
-// - `from`, the first scene it shows in; while that scene plays it shows
-//   once `found` says the state has found it, or from the scene's start;
-// - `uses` and `hints`, the scenes, and the answer's hints while the child
-//   answers, that use it and so light it up;
-// - `answer`, the final count it is written on with once the child has
-//   answered right, and the sentence it then reads as;
-// - `supposed`, a changed condition, set beside the one it changes by
-//   coming right after it in the lesson's list.
-export type Conclusion<State, Shot extends string, Picture extends string> = Readonly<{
-  id: string;
-  says: string;
-  amounts: readonly [Amount<Picture>, ...Amount<Picture>[]];
-  from: Shot;
-  found?: (state: State) => boolean;
-  uses?: readonly Shot[];
-  hints?: readonly string[];
-  answer?: Readonly<{ amount: Amount<Picture>; says: string }>;
-  supposed?: boolean;
-}>;
-
-// A lesson's conclusion board: the small pictures its amounts are drawn
-// with, each an SVG element the board scales to the size of the words, and
-// its conclusions in the order they stand on the board.
-export type LessonBoard<State, Shot extends string, Picture extends string> = Readonly<{
+// How a lesson whose way of teaching keeps its conclusions on the board draws
+// them: the small pictures its amounts are drawn with, each an SVG element
+// the board scales to the size of the words, and, by conclusion id, when a
+// conclusion counts as found in the scene that first shows it, for example
+// once the scale is level. A conclusion with no such rule shows from its
+// scene's start. The conclusions themselves are the lesson's content.
+export type LessonBoard<State, Picture extends string> = Readonly<{
   pictures: Readonly<Record<Picture, ReactNode>>;
-  conclusions: readonly Conclusion<State, Shot, Picture>[];
+  found?: Readonly<Record<string, (state: State) => boolean>>;
 }>;
 
 // How far the child has got with the final count: answered right in this
@@ -49,19 +26,20 @@ export type BoardScenes<Shot extends string> = Readonly<{ shots: readonly Shot[]
 // screen, whether the count is answered, and the hint the child is using.
 type Moment<Shot extends string> = Readonly<{ shot: Shot; answered: boolean; hint?: string }>;
 
-function shown<State extends FilmState<Shot>, Shot extends string>(
-  { from, found }: Conclusion<State, Shot, string>,
+function shown<State, Shot extends string>(
+  { id, from }: Conclusion<Shot, string>,
+  { found }: LessonBoard<State, string>,
   { shots }: BoardScenes<Shot>,
   shot: Shot,
   state: State,
 ) {
   const now = shots.indexOf(shot);
   const first = shots.indexOf(from);
-  return now > first || (now === first && (found?.(state) ?? true));
+  return now > first || (now === first && (found?.[id]?.(state) ?? true));
 }
 
 function used<Shot extends string>(
-  { uses = [], hints = [] }: Conclusion<never, Shot, string>,
+  { uses = [], hints = [] }: Conclusion<Shot, string>,
   { shot, hint }: Moment<Shot>,
 ) {
   return uses.includes(shot) || (hint !== undefined && hints.includes(hint));
@@ -70,7 +48,7 @@ function used<Shot extends string>(
 // A conclusion as the board draws it. Its amounts only ever grow at the end,
 // so each is named by its place in the line.
 function factOf<Shot extends string>(
-  conclusion: Conclusion<never, Shot, string>,
+  conclusion: Conclusion<Shot, string>,
   pictures: Readonly<Record<string, ReactNode>>,
   moment: Moment<Shot>,
 ): BoardFact {
@@ -89,13 +67,14 @@ function factOf<Shot extends string>(
   };
 }
 
-// The conclusions a lesson's board shows in a state of its film, as the board
-// draws them; the title card shows none. The count is answered once the
-// child got it right in this visit, or once the film has moved past the
-// scene that asks for it. A hint lights what it uses only while the child is
-// still answering.
+// The conclusions a lesson's board shows in a state of its film, drawn as
+// the board draws them, in the order the lesson's content lists them; the
+// title card shows none. The count is answered once the child got it right
+// in this visit, or once the film has moved past the scene that asks for it.
+// A hint lights what it uses only while the child is still answering.
 export function boardFacts<State extends FilmState<Shot>, Shot extends string>(
-  { pictures, conclusions }: LessonBoard<State, Shot, string>,
+  board: LessonBoard<State, string>,
+  conclusions: readonly Conclusion<Shot, string>[],
   scenes: BoardScenes<Shot>,
   state: State,
   progress: AnswerProgress,
@@ -110,6 +89,6 @@ export function boardFacts<State extends FilmState<Shot>, Shot extends string>(
     hint: shot === answer && !answered ? progress.hint : undefined,
   };
   return conclusions
-    .filter((conclusion) => shown(conclusion, scenes, shot, state))
-    .map((conclusion) => factOf(conclusion, pictures, moment));
+    .filter((conclusion) => shown(conclusion, board, scenes, shot, state))
+    .map((conclusion) => factOf(conclusion, board.pictures, moment));
 }

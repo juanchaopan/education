@@ -1,3 +1,4 @@
+import { gardenBalanceLesson } from '@education/problems/lessons/garden-balance';
 import { describe, expect, it } from 'vitest';
 import { boardFacts, type AnswerProgress } from '../lesson-board';
 import { gardenBoard } from './garden-board';
@@ -10,7 +11,7 @@ const unanswered: AnswerProgress = { answered: false };
 // The board as the child sees it: each conclusion's sentence, with a mark
 // for the ones in use.
 function board(state: GardenState, progress = unanswered) {
-  return boardFacts(gardenBoard, scenes, state, progress).map(
+  return boardFacts(gardenBoard, gardenBalanceLesson.conclusions, scenes, state, progress).map(
     ({ says, lit }) => `${says}${lit ? ' *' : ''}`,
   );
 }

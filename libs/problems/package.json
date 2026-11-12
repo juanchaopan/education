@@ -17,6 +17,14 @@
         "types": "./dist/lesson-template.d.ts",
         "import": "./dist/lesson-template.js"
       }
+    },
+    "./lesson-content": {
+      "types": "./dist/lesson-content.d.ts",
+      "import": "./dist/lesson-content.js"
+    },
+    "./lessons/*": {
+      "types": "./dist/lessons/*.d.ts",
+      "import": "./dist/lessons/*.js"
     }
   },
   "dependencies": {
@@ -25,6 +33,7 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "build": "tsc -p tsconfig.build.json",
-    "test": "vitest run"
+    "test": "vitest run",
+    "arch": "node ../../scripts/arch-check.mjs"
   }
 }

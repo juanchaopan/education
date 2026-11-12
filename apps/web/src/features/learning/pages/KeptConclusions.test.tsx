@@ -1,28 +1,26 @@
 import { render, screen, within } from '@testing-library/react';
 import { expect, it } from 'vitest';
-import type { LessonBoard } from '../lessons/lesson-board';
 import { KeptConclusions } from './KeptConclusions';
 
 type Shot = 'look' | 'count' | 'after';
 type State = Readonly<{ shot: Shot | 'opening' }>;
 
-const board: LessonBoard<State, Shot, 'pebble'> = {
-  pictures: { pebble: <circle cx="50%" cy="50%" r="40%" /> },
-  conclusions: [
-    {
-      id: 'one-pebble',
-      says: '桌上有 1 颗小石子',
-      amounts: [[1, 'pebble']],
-      from: 'count',
-      uses: ['count'],
-      answer: { amount: [1, 'pebble'], says: '桌上一共 1 颗小石子' },
-    },
-  ],
-};
 const lesson = {
+  content: {
+    conclusions: [
+      {
+        id: 'one-pebble',
+        says: '桌上有 1 颗小石子',
+        amounts: [[1, 'pebble']],
+        from: 'count',
+        uses: ['count'],
+        answer: { amount: [1, 'pebble'], says: '桌上一共 1 颗小石子' },
+      },
+    ],
+  },
   script: { shots: ['look', 'count', 'after'] },
   answer: { shot: 'count' },
-  board,
+  board: { pictures: { pebble: <circle cx="50%" cy="50%" r="40%" /> } },
 } as const;
 
 function keep(shot: State['shot'], answered = false) {
@@ -46,7 +44,7 @@ it('writes the count on once the child has answered it right', () => {
   expect(kept.getByRole('listitem')).toHaveTextContent('桌上一共 1 颗小石子');
 });
 
-it('shows no board for a lesson that keeps none', () => {
+it('shows no board for a lesson that keeps none, even with conclusions declared', () => {
   render(
     <KeptConclusions
       lesson={{ ...lesson, board: undefined }}

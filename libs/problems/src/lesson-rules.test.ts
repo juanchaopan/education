@@ -16,9 +16,13 @@ describe('wholeNumberAnswer', () => {
 });
 
 describe('sceneSteps', () => {
-  it('gives every scene its own prompt and the problem vocabulary, by scene id', () => {
+  it("gives every scene its declared prompt and the problem's vocabulary, by scene id", () => {
     const vocabulary = ['苹果', '一样重'];
-    expect(sceneSteps(vocabulary, { weigh: '称一称。', count: '数一数。' })).toEqual({
+    const scenes = {
+      weigh: { prompt: '称一称。', entry: ['hello'] },
+      count: { prompt: '数一数。', entry: ['ask'] },
+    };
+    expect(sceneSteps({ shots: ['weigh', 'count'], scenes, vocabulary })).toEqual({
       weigh: { prompt: '称一称。', vocabulary },
       count: { prompt: '数一数。', vocabulary },
     });

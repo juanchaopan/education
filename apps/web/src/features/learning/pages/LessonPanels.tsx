@@ -9,8 +9,8 @@ import type { Subtitle } from '../interaction/subtitle';
 import type { LessonFilm } from '../interaction/useLessonFilm';
 import { guidance, shotAfter, type LessonDefinition } from '../lessons/lesson-definition';
 import type { MicrophoneTurn } from '../voice/microphone-turn';
+import { flowAnswers } from './flows/flow-answers';
 import { SceneQuestions } from './SceneQuestions';
-import { SpokenFinalAnswer } from './SpokenFinalAnswer';
 
 // How long the draft notice tells the child the lesson picked up where it was
 // left, long enough to reach its button, and how long it tells them a save
@@ -18,10 +18,11 @@ import { SpokenFinalAnswer } from './SpokenFinalAnswer';
 const resumedFor = 6000;
 const savedFor = 3000;
 
-// What the controls read of a lesson: its script and its final count.
+// What the controls read of a lesson: the flow its content follows, its
+// script and its answer settings.
 type PanelLesson<Shot extends string> = Pick<
   LessonDefinition<FilmState<Shot>, Shot, string, unknown, string, object>,
-  'script' | 'answer'
+  'content' | 'script' | 'answer'
 >;
 
 // What the controls need from the playing film: the scene on screen, a way
@@ -66,11 +67,11 @@ function useDraftMoment<Shot extends string>(
 }
 
 // The controls a signed-in child has in the picture: the draft's notice under
-// the tools; in the answer scene the final count, which the microphone
-// listens for by itself, and the hints; in every scene a question about it,
-// which in the answer scene counts as help. A correct answer ends the saved
-// work, so its draft is discarded, and the film plays on from the scene after
-// the answer.
+// the tools; the answer part of the lesson's flow, which for 逐幕探究 is the
+// final count in the answer scene, which the microphone listens for by
+// itself, and the hints; in every scene a question about it, which in the
+// answer scene counts as help. A correct answer ends the saved work, so its
+// draft is discarded, and the film plays on from the scene after the answer.
 export function LessonPanels<Shot extends string>({
   lesson,
   teacher,
@@ -87,6 +88,7 @@ export function LessonPanels<Shot extends string>({
   const moment = useDraftMoment(draft, shot, resumed);
   if (shot === 'opening') return null;
   const { answer, script } = lesson;
+  const FlowAnswer = flowAnswers[lesson.content.flow];
   return (
     <>
       <StagePlace at="notice">
@@ -103,24 +105,20 @@ export function LessonPanels<Shot extends string>({
           onRestart={onRestart}
         />
       </StagePlace>
-      {shot === answer.shot && (
-        <SpokenFinalAnswer
-          scope={scope}
-          question={answer.question}
-          words={answer.words}
-          choices={answer.choices}
-          hintIds={answer.hints}
-          film={film}
-          turn={turn}
-          subtitle={subtitle}
-          events={answerEvents}
-          onDone={() => {
-            void draft.discard();
-            const next = shotAfter(script, answer.shot);
-            if (next) film.go(next);
-          }}
-        />
-      )}
+      <FlowAnswer
+        answer={answer}
+        shot={shot}
+        scope={scope}
+        film={film}
+        turn={turn}
+        subtitle={subtitle}
+        events={answerEvents}
+        onDone={() => {
+          void draft.discard();
+          const next = shotAfter(script, answer.shot);
+          if (next) film.go(next);
+        }}
+      />
       <SceneQuestions
         scope={scope}
         teacher={teacher}

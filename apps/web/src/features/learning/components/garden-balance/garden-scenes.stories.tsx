@@ -32,7 +32,8 @@ const scenes = { shots: gardenLesson.script.shots, answer: gardenLesson.answer.s
 // the conclusions found so far on the board and the rabbit's line in its
 // subtitle.
 function GardenFilm({ state, handling, line, answered = false, frame, ...stage }: FilmArgs) {
-  const facts = boardFacts(gardenLesson.board, scenes, state, { answered });
+  const { board, content } = gardenLesson;
+  const facts = boardFacts(board, content.conclusions, scenes, state, { answered });
   return (
     <StoryFrame shape={frame}>
       <LessonStage
