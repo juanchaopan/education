@@ -31,7 +31,7 @@ const unanswered: AnswerProgress = { answered: false };
 // follows: answered right in this visit, and the last hint received. Coming
 // to a scene up to the one that asks for the count, by starting over or
 // picking up a saved place, asks for it afresh.
-function useAnswerProgress<Shot extends string>({ shots, answer }: BoardScenes<Shot>) {
+function useAnswerProgress<Shot extends string>({ shots, answerScene }: BoardScenes<Shot>) {
   const [progress, setProgress] = useState(unanswered);
   const [events] = useState<AnswerEvents>(() => ({
     onHint: (hint) => setProgress((now) => ({ ...now, hint })),
@@ -41,7 +41,7 @@ function useAnswerProgress<Shot extends string>({ shots, answer }: BoardScenes<S
     progress,
     events,
     arrive(shot: Shot) {
-      if (shots.indexOf(shot) <= shots.indexOf(answer)) setProgress(unanswered);
+      if (shots.indexOf(shot) <= shots.indexOf(answerScene)) setProgress(unanswered);
     },
   };
 }
@@ -65,7 +65,6 @@ export function lessonPage<
   const tale = filmStory(script, story);
   const firstScene = script.shots[0];
   const first = { stepId: firstScene, drawing: [] };
-  const scenes = { shots: script.shots, answer: lesson.answer.shot };
   const Screen = lessonScreen(lesson, look);
   // What the controls in the picture share: the playing film, the teacher's
   // subtitle, the lesson's one microphone, and what the answer tells the
@@ -85,7 +84,7 @@ export function lessonPage<
   function Body({ start = {}, onArrive, controls }: BodyProps) {
     const recordings = useLessonRecordings(script.lines);
     const preferences = useLessonPreferences();
-    const answer = useAnswerProgress(scenes);
+    const answer = useAnswerProgress(lesson.content);
     const film = useLessonFilm(tale, {
       onArrive: (shot) => {
         answer.arrive(shot);

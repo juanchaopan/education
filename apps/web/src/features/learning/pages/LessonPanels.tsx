@@ -19,8 +19,8 @@ import { SceneQuestions } from './SceneQuestions';
 const resumedFor = 6000;
 const savedFor = 3000;
 
-// What the controls read of a lesson: the flow its content follows, its
-// script and its answer settings.
+// What the controls read of a lesson: its content's flow and answer scene,
+// its script and its answer settings.
 type PanelLesson<Shot extends string> = Pick<
   LessonDefinition<FilmState<Shot>, Shot, string, unknown, string, object>,
   'content' | 'script' | 'answer'
@@ -92,8 +92,9 @@ export function LessonPanels<Shot extends string>({
   const moment = useDraftMoment(draft, shot, resumed);
   useStudyTime(scope.csrf);
   if (shot === 'opening') return null;
-  const { answer, script } = lesson;
-  const FlowAnswer = flowAnswers[lesson.content.flow];
+  const { answer, script, content } = lesson;
+  const { answerScene } = content;
+  const FlowAnswer = flowAnswers[content.flow];
   return (
     <>
       <StagePlace at="notice">
@@ -112,6 +113,7 @@ export function LessonPanels<Shot extends string>({
       </StagePlace>
       <FlowAnswer
         answer={answer}
+        answerScene={answerScene}
         shot={shot}
         scope={scope}
         film={film}
@@ -120,7 +122,7 @@ export function LessonPanels<Shot extends string>({
         events={answerEvents}
         onDone={() => {
           void draft.discard();
-          const next = shotAfter(script, answer.shot);
+          const next = shotAfter(script, answerScene);
           if (next) film.go(next);
         }}
       />
@@ -128,7 +130,7 @@ export function LessonPanels<Shot extends string>({
         scope={scope}
         teacher={teacher}
         stepId={shot}
-        answerStep={answer.shot}
+        answerStep={answerScene}
         guidance={guidance(script, shot)}
         narration={film}
         turn={turn}

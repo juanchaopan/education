@@ -7,6 +7,8 @@ type State = Readonly<{ shot: Shot | 'opening' }>;
 
 const lesson = {
   content: {
+    shots: ['look', 'count', 'after'],
+    answerScene: 'count',
     conclusions: [
       {
         id: 'one-pebble',
@@ -18,8 +20,6 @@ const lesson = {
       },
     ],
   },
-  script: { shots: ['look', 'count', 'after'] },
-  answer: { shot: 'count' },
   board: { pictures: { pebble: <circle cx="50%" cy="50%" r="40%" /> } },
 } as const;
 
@@ -41,6 +41,11 @@ it('shows a conclusion found, marked current while the scene on screen uses it',
 
 it('writes the count on once the child has answered it right', () => {
   const kept = keep('count', true);
+  expect(kept.getByRole('listitem')).toHaveTextContent('桌上一共 1 颗小石子');
+});
+
+it('writes the count on in the scenes after the answer scene', () => {
+  const kept = keep('after');
   expect(kept.getByRole('listitem')).toHaveTextContent('桌上一共 1 颗小石子');
 });
 

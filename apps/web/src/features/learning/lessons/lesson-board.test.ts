@@ -45,7 +45,7 @@ const conclusions: readonly Conclusion<Shot, 'box' | 'ball' | 'group'>[] = [
   },
 ];
 
-const scenes = { shots: ['weigh', 'swap', 'answer', 'suppose'], answer: 'answer' } as const;
+const scenes = { shots: ['weigh', 'swap', 'answer', 'suppose'], answerScene: 'answer' } as const;
 const fresh: AnswerProgress = { answered: false };
 
 const facts = (state: State, progress = fresh) =>

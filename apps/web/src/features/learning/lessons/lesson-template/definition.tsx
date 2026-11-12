@@ -42,7 +42,6 @@ export const templateLesson = {
   story: { opening, arrive, respond, savesProgress },
   props: { ...templateProps, carried: ({ size }) => <Pebble size={size} /> },
   answer: {
-    shot: 'count',
     question: answerQuestion,
     words: answerWords,
     choices: answerChoices,

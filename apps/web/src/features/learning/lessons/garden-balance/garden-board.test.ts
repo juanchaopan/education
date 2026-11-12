@@ -5,7 +5,7 @@ import { gardenBoard } from './garden-board';
 import { arrive, respond, type GardenState, type Move } from './garden-story';
 import { shots } from './script';
 
-const scenes = { shots, answer: 'answer' } as const;
+const scenes = { shots, answerScene: 'answer' } as const;
 const unanswered: AnswerProgress = { answered: false };
 
 // The board as the child sees it: each conclusion's sentence, with a mark

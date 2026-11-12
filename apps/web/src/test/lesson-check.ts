@@ -1,15 +1,11 @@
-import {
-  lessonContentProblems,
-  type AnyLessonContent,
-  type LessonFlow,
-} from '@education/problems/lesson-content';
+import { lessonContentProblems, type AnyLessonContent } from '@education/problems/lesson-content';
 import {
   boardReach,
   establishing,
   framed,
   inside,
 } from '../features/learning/components/lesson-stage/stage-look';
-import { shotAfter, type ProblemVersion } from '../features/learning/lessons/lesson-definition';
+import type { ProblemVersion } from '../features/learning/lessons/lesson-definition';
 import type { LessonOutline } from '../features/learning/lessons/registry';
 import { backdrops } from '../features/learning/media/backdrops/backdrops';
 
@@ -84,25 +80,6 @@ function scriptProblems({ script, content }: LessonOutline) {
   ];
 }
 
-// 逐幕探究 asks for the count in one of the lesson's scenes, and a correct
-// count plays on into the scene after it.
-function sceneBySceneProblems({ script, answer }: LessonOutline) {
-  const { shot } = answer;
-  if (!script.shots.includes(shot)) return [`answer scene ${shot} is not a scene`];
-  return shotAfter(script, shot) ? [] : [`answer scene ${shot} has no scene after it`];
-}
-
-// What each lesson flow asks of a lesson that follows it.
-const flowRules: Readonly<Record<LessonFlow, (lesson: LessonOutline) => string[]>> = {
-  'scene-by-scene': sceneBySceneProblems,
-};
-
-function flowProblems(lesson: LessonOutline) {
-  const { flow } = lesson.content;
-  const rules = Object.hasOwn(flowRules, flow) ? flowRules[flow] : undefined;
-  return rules ? rules(lesson) : [`the lesson follows flow ${flow}, which is not in the list`];
-}
-
 // The lesson's props stand in its backdrop's clearing in every scene, as that
 // scene frames the backdrop; the props stay put while the backdrop zooms and
 // moves. Its backdrop and teacher are library ids by type, so a lesson naming
@@ -121,9 +98,10 @@ type AnyConclusion = AnyLessonContent['conclusions'][number];
 // the count.
 function answeringProblems(
   { id, from, hints = [], answer }: AnyConclusion,
-  { script, answer: count }: LessonOutline,
+  { content, answer: count }: LessonOutline,
 ) {
-  const late = script.shots.indexOf(from) > script.shots.indexOf(count.shot);
+  const { shots, answerScene } = content;
+  const late = shots.indexOf(from) > shots.indexOf(answerScene);
   return [
     ...missing(hints, count.hints).map(
       (hint) => `conclusion ${id} is lit by hint ${hint}, which the answer does not give`,
@@ -171,8 +149,8 @@ function pluginProblems(listed: ProblemVersion, lesson: LessonOutline, plugin?: 
 }
 
 // Everything wrong with a registered lesson, or nothing: its version against
-// its registry line, its content, its script and recordings against the
-// content, what its lesson flow asks of it, where its props stand against
+// its registry line, its content, with what its lesson flow asks of it, its
+// script and recordings against the content, where its props stand against
 // its backdrop in each scene, its conclusions and their board, and the
 // server's plugin for it, with its steps and hints.
 export function lessonProblems(
@@ -184,7 +162,6 @@ export function lessonProblems(
     ...versionProblems(listed, lesson),
     ...lessonContentProblems(lesson.content),
     ...scriptProblems(lesson),
-    ...flowProblems(lesson),
     ...stagingProblems(lesson),
     ...conclusionProblems(lesson),
     ...boardProblems(lesson),

@@ -18,6 +18,7 @@ export const fixtureContent = lessonContent({
   flow: 'scene-by-scene',
   vocabulary: ['小石子'],
   shots: ['look', 'count', 'after'],
+  answerScene: 'count',
   lines: {
     hello: { scene: 'look', text: '看看这颗小石子。' },
     ask: { scene: 'count', text: '一共有几颗？' },
@@ -70,7 +71,6 @@ export const fixtureLesson = {
     carried: () => null,
   },
   answer: {
-    shot: 'count',
     question: '一共有几颗小石子？',
     words: { unit: '颗', explain: (count) => `${count} 颗还不对。` },
     choices: [1, 2, 3],

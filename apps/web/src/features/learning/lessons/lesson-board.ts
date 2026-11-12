@@ -19,8 +19,11 @@ export type LessonBoard<State, Picture extends string> = Readonly<{
 export type AnswerProgress = Readonly<{ answered: boolean; hint?: string }>;
 
 // Where a lesson's scenes stand in teaching order, and which one asks for
-// the count.
-export type BoardScenes<Shot extends string> = Readonly<{ shots: readonly Shot[]; answer: Shot }>;
+// the count, as its content declares them.
+export type BoardScenes<Shot extends string> = Readonly<{
+  shots: readonly Shot[];
+  answerScene: Shot;
+}>;
 
 // What the board knows of the film when it draws a conclusion: the scene on
 // screen, whether the count is answered, and the hint the child is using.
@@ -81,12 +84,12 @@ export function boardFacts<State extends FilmState<Shot>, Shot extends string>(
 ): BoardFact[] {
   const shot = state.shot;
   if (shot === 'opening') return [];
-  const { shots, answer } = scenes;
-  const answered = progress.answered || shots.indexOf(answer) < shots.indexOf(shot);
+  const { shots, answerScene } = scenes;
+  const answered = progress.answered || shots.indexOf(answerScene) < shots.indexOf(shot);
   const moment = {
     shot,
     answered,
-    hint: shot === answer && !answered ? progress.hint : undefined,
+    hint: shot === answerScene && !answered ? progress.hint : undefined,
   };
   return conclusions
     .filter((conclusion) => shown(conclusion, board, scenes, shot, state))

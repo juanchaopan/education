@@ -72,14 +72,10 @@ describe('the lesson definition check', () => {
     ]);
   });
 
-  it('finds an answer scene that is not a scene', () => {
-    const answer = { ...outline.answer, shot: 'counting' };
-    expect(problems({ answer })).toEqual(['answer scene counting is not a scene']);
-  });
-
-  it('finds an answer scene with no scene after it to play on into', () => {
-    const answer = { ...outline.answer, shot: 'after' };
-    expect(problems({ answer })).toEqual(['answer scene after has no scene after it']);
+  it("finds what the lesson's flow asks of its answer scene", () => {
+    expect(problems({ content: { ...content, answerScene: 'after' } })).toEqual([
+      'answer scene after has no scene after it',
+    ]);
   });
 
   it('finds props that stand outside the backdrop clearing, even by a little', () => {
@@ -117,7 +113,7 @@ describe('the lesson definition check', () => {
   });
 
   it('finds an answer hint the plugin does not have', () => {
-    const answer = { ...outline.answer, hints: ['look-again', 'count-twice'] };
+    const answer = { hints: ['look-again', 'count-twice'] };
     expect(problems({ answer })).toEqual(['hint count-twice is not in the plugin']);
   });
 
