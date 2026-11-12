@@ -7,16 +7,11 @@ export function SceneBySceneAnswer({ answer, shot, ...on }: FlowAnswerProps) {
   if (shot !== answer.shot) return null;
   return (
     <SpokenFinalAnswer
-      scope={on.scope}
+      {...on}
       question={answer.question}
       words={answer.words}
       choices={answer.choices}
       hintIds={answer.hints}
-      film={on.film}
-      turn={on.turn}
-      subtitle={on.subtitle}
-      events={on.events}
-      onDone={on.onDone}
     />
   );
 }
