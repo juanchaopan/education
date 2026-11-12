@@ -31,7 +31,7 @@
 
   /* Motion: a press, a lift or a hover, a page coming in step by step, and a
      spring for switches and bounces. The fade between themes is set by the
-     page while it switches; see app/theme/schedule.ts. */
+     page while it switches; see shared/lib/day-night.ts. */
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   --press: 120ms;

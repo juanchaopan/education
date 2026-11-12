@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { nextSwitch, themeAt, themeSchedule } from './schedule';
+import { nextSwitch, themeAt, themeSchedule } from './day-night';
 
 const at = (hours: number, minutes = 0, seconds = 0) =>
   new Date(2026, 10, 7, hours, minutes, seconds);

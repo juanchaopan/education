@@ -1,6 +1,6 @@
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { themeFade } from './schedule';
+import { themeFade } from '../../shared/lib/day-night';
 import { useDayNightTheme } from './useDayNightTheme';
 
 const root = document.documentElement;

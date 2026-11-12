@@ -1,5 +1,5 @@
 import type { Plugin } from 'vite';
-import { themeAt, themeSchedule } from '../src/app/theme/schedule.ts';
+import { themeAt, themeSchedule } from '../src/shared/lib/day-night.ts';
 
 // A classic script for <head>: it runs before the page's body is drawn and
 // sets the theme for the device's local time, so the very first paint already

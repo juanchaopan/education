@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { nextSwitch, themeAt, themeFade, themeSchedule } from './schedule';
+import { nextSwitch, themeAt, themeFade, themeSchedule } from '../../shared/lib/day-night';
 
 const prefersLessMotion = () =>
   window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
