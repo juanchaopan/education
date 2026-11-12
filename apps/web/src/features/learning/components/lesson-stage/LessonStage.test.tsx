@@ -1,13 +1,13 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ComponentProps } from 'react';
-import { expect, it, vi } from 'vitest';
-import { LessonStage, StagePlace } from './LessonStage';
+import { afterEach, expect, it, vi } from 'vitest';
+import { BoardPlace, LessonStage, StagePlace } from './LessonStage';
 import { storyLook } from './story-look';
 
 function stage(props: Partial<ComponentProps<typeof LessonStage>> = {}) {
   const callbacks = { onEnter: vi.fn(), onActivate: vi.fn() };
-  render(
+  const view = render(
     <LessonStage
       look={storyLook}
       shot="first"
@@ -25,8 +25,27 @@ function stage(props: Partial<ComponentProps<typeof LessonStage>> = {}) {
       <g data-place="box" role="button" tabIndex={0} aria-label="盒子" />
     </LessonStage>,
   );
-  return { ...callbacks, film: screen.getByRole('region', { name: storyLook.label }) };
+  return { ...callbacks, view, film: screen.getByRole('region', { name: storyLook.label }) };
 }
+
+// A board place the browser measures this tall once it is laid out.
+const boardHeight = 48;
+
+class MeasuringObserver {
+  readonly measured: ResizeObserverCallback;
+  constructor(measured: ResizeObserverCallback) {
+    this.measured = measured;
+  }
+  observe(target: HTMLElement) {
+    Object.defineProperty(target, 'offsetHeight', { value: boardHeight });
+    this.measured([], this as unknown as ResizeObserver);
+  }
+  disconnect() {}
+}
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
 
 it('opens on the title card, whose button starts the film, with no controls yet', async () => {
   const { onEnter } = stage({ shot: 'opening' });
@@ -46,6 +65,29 @@ it('lays the controls into the picture once the film has started', () => {
   const { film } = stage();
   expect(film).toContainElement(screen.getByRole('button', { name: '重听这一句' }));
   expect(screen.queryByRole('heading')).not.toBeInTheDocument();
+});
+
+it('keeps the height of the conclusion board, while it is there, for the props to clear', () => {
+  vi.stubGlobal('ResizeObserver', MeasuringObserver);
+  const board = (
+    <BoardPlace>
+      <ol aria-label="记住的结论" />
+    </BoardPlace>
+  );
+  const { film, view } = stage({ controls: board });
+  expect(film).toContainElement(screen.getByRole('list', { name: '记住的结论' }));
+  expect(film.style.getPropertyValue('--board-block')).toBe(`${boardHeight}px`);
+  view.rerender(
+    <LessonStage
+      look={storyLook}
+      shot="opening"
+      speaking={false}
+      entryLabel="开始短片"
+      controls={board}
+      onActivate={vi.fn()}
+    />,
+  );
+  expect(film.style.getPropertyValue('--board-block')).toBe('');
 });
 
 it('marks a line that did not come out on the film', () => {

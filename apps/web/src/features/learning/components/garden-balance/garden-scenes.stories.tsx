@@ -4,10 +4,12 @@ import type { Handling } from '../../interaction/stage-activation';
 import { gardenLesson } from '../../lessons/garden-balance/definition';
 import { arrive, type GardenState } from '../../lessons/garden-balance/garden-story';
 import { lines } from '../../lessons/garden-balance/script';
+import { boardFacts } from '../../lessons/lesson-board';
 import { stageLook } from '../../lessons/lesson-definition';
 import { backdrops } from '../../media/backdrops/backdrops';
 import { ClearingOutline } from '../lesson-stage/ClearingOutline';
-import { LessonStage, StagePlace } from '../lesson-stage/LessonStage';
+import { ConclusionBoard } from '../lesson-stage/ConclusionBoard';
+import { BoardPlace, LessonStage, StagePlace } from '../lesson-stage/LessonStage';
 import { establishing, framed } from '../lesson-stage/stage-look';
 import { StoryFrame, type FrameShape } from '../lesson-stage/StoryFrame';
 import { Subtitle } from '../lesson-stage/Subtitle';
@@ -18,14 +20,19 @@ type FilmArgs = Omit<ComponentProps<typeof LessonStage>, 'look' | 'shot' | 'chil
   handling: Handling;
   // The rabbit's line in its subtitle.
   line?: string;
+  // The child has said the count right.
+  answered?: boolean;
   frame?: FrameShape;
 };
 
 const look = stageLook(gardenLesson);
+const scenes = { shots: gardenLesson.script.shots, answer: gardenLesson.answer.shot };
 
 // The garden scenes on the lesson stage, as the lesson page shows them, with
-// the rabbit's line in its subtitle.
-function GardenFilm({ state, handling, line, frame, ...stage }: FilmArgs) {
+// the conclusions found so far on the board and the rabbit's line in its
+// subtitle.
+function GardenFilm({ state, handling, line, answered = false, frame, ...stage }: FilmArgs) {
+  const facts = boardFacts(gardenLesson.board, scenes, state, { answered });
   return (
     <StoryFrame shape={frame}>
       <LessonStage
@@ -35,9 +42,14 @@ function GardenFilm({ state, handling, line, frame, ...stage }: FilmArgs) {
         defs={gardenLesson.defs}
         ambience={gardenLesson.ambience}
         controls={
-          <StagePlace at="subtitle">
-            <Subtitle teacher={look.teacher} text={line} />
-          </StagePlace>
+          <>
+            <BoardPlace>
+              <ConclusionBoard facts={facts} />
+            </BoardPlace>
+            <StagePlace at="subtitle">
+              <Subtitle teacher={look.teacher} text={line} />
+            </StagePlace>
+          </>
         }
       >
         <GardenScene state={state} handling={handling} />
@@ -81,12 +93,21 @@ export const OneAppleThreeCucumbers: Story = {
 export const CountTheCucumbers: Story = {
   args: { state: arrive('answer').state, line: lines.bridgeDone.text },
 };
+// The count said right is written on the board.
+export const NineCucumbers: Story = {
+  args: { state: arrive('answer').state, line: lines.bridgeDone.text, answered: true },
+};
 export const TwoEachInstead: Story = {
   args: { state: arrive('end').state, line: lines.changeDone.text },
 };
 // A phone held upright: the painting fills it, and the scale spans its width.
 export const OnAnUprightPhone: Story = {
   args: { state: arrive('answer').state, line: lines.bridgeDone.text, frame: 'phone' },
+};
+// On a phone the board wraps onto a second line once the variation sets its
+// condition beside the one it changes.
+export const TwoEachOnAnUprightPhone: Story = {
+  args: { state: arrive('end').state, line: lines.changeDone.text, frame: 'phone' },
 };
 
 // The backdrop's clearing and the part of the world the props take up, over

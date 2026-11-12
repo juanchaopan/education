@@ -13,6 +13,7 @@ import type { Handling } from '../interaction/stage-activation';
 import type { StageProps } from '../interaction/useStageDrag';
 import { backdrops, type BackdropId } from '../media/backdrops/backdrops';
 import { teachers, type TeacherId } from '../media/teachers/teachers';
+import type { LessonBoard } from './lesson-board';
 
 // The problem version a lesson teaches, as the catalog lists it.
 export type ProblemVersion = Readonly<{ id: string; version: number }>;
@@ -79,7 +80,9 @@ type Looks = Readonly<{
 
 // Everything one problem gives the shared lesson page: its version, how its
 // film looks, its script and scene rules, its props, its final count and its
-// own scene, drawn on the stage's 1200×675 world. The page is built for one
+// own scene, drawn on the stage's 1200×675 world. A lesson whose way of
+// teaching keeps its conclusions on the conclusion board declares them in
+// `board`, drawn with the lesson's own symbols. The page is built for one
 // definition at a time, so each lesson's own types hold all the way through.
 export type LessonDefinition<
   State extends FilmState<Shot>,
@@ -95,6 +98,7 @@ export type LessonDefinition<
     story: Story<State, Shot, Line, Move>;
     props: LessonProps<Move, Piece, Look>;
     answer: LessonAnswer<Shot>;
+    board?: LessonBoard<State, Shot, string>;
     Scene: ComponentType<SceneProps<State>>;
   }>;
 

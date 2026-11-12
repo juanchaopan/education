@@ -48,6 +48,14 @@ export type Ellipse = Readonly<{ cx: number; cy: number; rx: number; ry: number 
 // the whole of it.
 export const world: Box = { x: 0, y: 0, width: 1200, height: 675 };
 
+// How far down the world, in world units, the conclusion board along the top
+// of a wide picture can reach: the tenth of the world's height a wide frame
+// may cut off at its top and bottom, and one row of the board, which grows
+// with the picture's width, at its largest against the world, on a frame
+// about 21:9. A lesson that keeps a board stands its props below this line;
+// an upright frame keeps the board clear of the props by itself.
+export const boardReach = 120;
+
 // Whether a box lies wholly inside another.
 export function inside(box: Box, frame: Box) {
   return (

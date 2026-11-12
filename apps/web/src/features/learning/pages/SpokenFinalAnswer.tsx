@@ -4,7 +4,7 @@ import { AnswerCapsule } from '../components/lesson-stage/AnswerCapsule';
 import { FireflyHint } from '../components/lesson-stage/FireflyHint';
 import { StagePlace } from '../components/lesson-stage/LessonStage';
 import type { LearningScope } from '../data-access/learning-request';
-import { useLessonAnswer, type Judgement } from '../data-access/useLessonAnswer';
+import { useLessonAnswer, type AnswerEvents, type Judgement } from '../data-access/useLessonAnswer';
 import { useVoiceInput } from '../data-access/useVoiceInput';
 import { chimeMs, type Chime } from '../interaction/chime';
 import type { NarrationFailure } from '../interaction/narration';
@@ -36,6 +36,8 @@ type Props = {
   film: Film;
   turn: MicrophoneTurn;
   subtitle: Subtitle;
+  // What the page hears of the hints received and a count judged right.
+  events?: AnswerEvents;
   onDone: () => void;
 };
 
@@ -94,7 +96,7 @@ function useListening(voice: ReturnType<typeof useVoiceInput>, film: Film, open:
 // one; the teacher says each hint, and every step of the answer, in its
 // subtitle.
 export function SpokenFinalAnswer({ scope, words, choices, hintIds, subtitle, ...on }: Props) {
-  const answer = useLessonAnswer(scope, hintIds);
+  const answer = useLessonAnswer(scope, hintIds, on.events);
   const voice = useVoiceInput(scope, 'answer', 'listen', {
     turn: on.turn,
     audio: on.film.chime.audio,

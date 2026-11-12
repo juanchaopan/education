@@ -16,6 +16,13 @@ export type Judgement =
   | { status: 'judged'; outcome: AttemptReceipt['outcome']; count: number }
   | { status: 'failed'; message: string };
 
+// What the rest of the page hears of the answer as it happens: an authored
+// hint the child received, by its id, and a count judged right.
+export type AnswerEvents = Readonly<{
+  onHint?: (hintId: string) => void;
+  onCorrect?: () => void;
+}>;
+
 // One count on its way to the server. `sent` tells an attempt that reached the
 // network, which a retry repeats as it is, from one that never had a round.
 type Attempt = { count: number; sent: boolean; submit: () => Promise<AttemptReceipt> };
@@ -48,20 +55,35 @@ function judgementOf({ isPending, error, data, variables }: Submission): Judgeme
   return { status: 'open' };
 }
 
+const correct = ({ outcome }: AttemptReceipt) =>
+  outcome === 'independent' || outcome === 'assisted';
+
 // The final answer of one problem: a counted number sent once per attempt, so
 // retrying after a lost reply never counts twice, and the authored hints in
 // their order, each recorded so that a later correct answer counts as helped.
 // An answer given before the round is known is not lost: it fails visibly and
 // is sent again once the round arrives. A round that changed elsewhere starts
 // over with a fresh round instead of repeating a refused attempt.
-export function useLessonAnswer(scope: LearningScope, hintIds: readonly string[]) {
+export function useLessonAnswer(
+  scope: LearningScope,
+  hintIds: readonly string[],
+  events: AnswerEvents = {},
+) {
   const round = useQuery(answerRound(scope));
-  const submit = useMutation({ mutationFn: (attempt: Attempt) => attempt.submit() });
+  const submit = useMutation({
+    mutationFn: (attempt: Attempt) => attempt.submit(),
+    onSuccess: (receipt) => {
+      if (correct(receipt)) events.onCorrect?.();
+    },
+  });
   const [hints, setHints] = useState<readonly string[]>([]);
   const hint = useMutation({
     mutationFn: ({ round: id, hintId }: { round: string; hintId: string }) =>
       requestHint(scope, id, hintId),
-    onSuccess: ({ hint: text }) => setHints((shown) => [...shown, text]),
+    onSuccess: ({ hint: text }, { hintId }) => {
+      setHints((shown) => [...shown, text]);
+      events.onHint?.(hintId);
+    },
   });
   const next = hintIds[hints.length];
 

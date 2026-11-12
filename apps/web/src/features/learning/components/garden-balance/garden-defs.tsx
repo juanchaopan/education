@@ -1,10 +1,12 @@
 // The garden's paints and props as vector art: gradients, a shadow, and one
-// symbol per object so every copy on the scale stays identical.
+// symbol per object so every copy on the scale and on the conclusion board
+// stays identical.
 export function GardenDefs() {
   return (
     <defs>
       <GardenPaints />
       <ProduceSymbols />
+      <GroupSymbol />
       <BasketSymbol />
     </defs>
   );
@@ -119,6 +121,28 @@ function ProduceSymbols() {
         <circle cx="20" cy="1" r="1.4" fill="#386447" />
       </symbol>
     </>
+  );
+}
+
+// A group of cucumbers in its frame, as the swaps leave them on the scale,
+// drawn small for the conclusion board.
+function GroupSymbol() {
+  return (
+    <symbol id="garden-group" viewBox="-28 -66 56 70">
+      <rect
+        x="-26"
+        y="-63"
+        width="52"
+        height="64"
+        rx="11"
+        fill="#a0c47855"
+        stroke="#e4dea0"
+        strokeWidth="2.4"
+      />
+      <use href="#garden-cucumber" x="-22" y="-56" width="44" height="23" />
+      <use href="#garden-cucumber" x="-22" y="-42" width="44" height="23" />
+      <use href="#garden-cucumber" x="-22" y="-28" width="44" height="23" />
+    </symbol>
   );
 }
 

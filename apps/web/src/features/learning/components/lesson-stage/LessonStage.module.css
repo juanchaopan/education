@@ -4,9 +4,10 @@
 .stage {
   /* What an upright frame keeps clear for the controls along its top and
      its bottom, so the props never sit under them: the tools, a subtitle
-     and a notice, and the microphone with an answer of two rows of
-     numbers. */
-  --reserve-top: 14.5rem;
+     and a notice, with the conclusion board when the lesson keeps one, as
+     tall as the stage measured it (`--board-block`), and the microphone
+     with an answer of two rows of numbers. */
+  --reserve-top: calc(14.5rem + var(--board-block, 0px) + var(--board-gap, 0px));
   --reserve-bottom: 14rem;
   position: relative;
   isolation: isolate;
@@ -21,6 +22,12 @@
   background: var(--stage-sky);
   color: var(--stage-text);
   font-weight: 600;
+}
+
+/* The conclusion board takes a row of its own on an upright frame, with the
+   gap before the next. */
+.stage:has([data-at='board']) {
+  --board-gap: var(--space-3);
 }
 
 /* Where the painting and the world lie, in pixels of the frame, from
@@ -47,13 +54,14 @@
 /* An upright frame is filled by the painting alone, as tall as the frame
    and moved across so the middle of the props lies in the middle of the
    frame, as far as its edges allow. The world is scaled so the props span
-   the frame's width, never larger than the painting is drawn, and moved
+   the frame's width, never larger than the painting is drawn; it is moved
    down so the props' middle lies on the same line of the painting, unless
    that would put them under the controls. */
 @container (orientation: portrait) {
   .canvas {
     --paint: calc(100cqh / 675);
-    --unit: min(100cqw / (var(--staging-width) * 1.08), var(--paint));
+    --width-fit: calc(100cqw / (var(--staging-width) * 1.08));
+    --unit: min(var(--width-fit), var(--paint), var(--height-fit, var(--paint)));
     --centre: calc(var(--staging-x) + var(--staging-width) / 2);
     --middle: calc(var(--staging-y) + var(--staging-height) / 2);
     --half: calc(var(--staging-height) / 2 * var(--unit));
@@ -72,6 +80,14 @@
       0px
     );
     --painting-top: 0px;
+  }
+
+  /* The conclusion board's rows take height from the props: they shrink to
+     fit between the controls, down to three quarters of the width they
+     would span. */
+  .stage:has([data-at='board']) .canvas {
+    --between: calc(100cqh - var(--reserve-top) - var(--reserve-bottom));
+    --height-fit: max(var(--between) / var(--staging-height), var(--width-fit) * 0.75);
   }
 
   /* The teacher is seen in the portrait beside its subtitles instead. */
@@ -262,13 +278,19 @@
 /* The controls lie over the picture along its edges, in places named on
    each `StagePlace`; the picture shows through everywhere between them, and
    the middle stays the scene's. On a wide frame the tools take the top
-   right with a notice under them, and the bottom row holds the subtitle,
-   the answer or the question box, and the microphone, with the hint above
-   the microphone. The question box takes the answer's place while the child
-   asks. An on-screen keyboard lifts the bottom of the controls above it.
-   Their words grow with the picture, as a film's subtitles do. */
+   right with a notice under them, the conclusion board runs along the top
+   between the back button and the tools, and the bottom row holds the
+   subtitle, the answer or the question box, and the microphone, with the
+   hint above the microphone. The question box takes the answer's place
+   while the child asks. An on-screen keyboard lifts the bottom of the
+   controls above it. Their words grow with the picture, as a film's
+   subtitles do. */
 .controls {
   --subtitle-size: clamp(var(--text-base), 2.1cqi, 2.4rem);
+  --board-size: clamp(var(--text-base), 2.2cqi, 2.4rem);
+  /* What a top corner holds: the three tool drops and the gaps beside
+     them, or the back button on the other side. */
+  --corner: calc(3 * max(var(--touch-target) + var(--space-2), 6.5cqmin) + 3 * var(--space-3));
   position: absolute;
   z-index: 4;
   inset: 0;
@@ -312,6 +334,15 @@
   max-inline-size: min(30rem, 60cqw);
 }
 
+.place[data-at='board'] {
+  grid-row: 1;
+  grid-column: 1 / -1;
+  align-self: start;
+  justify-self: center;
+  max-inline-size: calc(100% - 2 * var(--corner));
+  pointer-events: none;
+}
+
 .place[data-at='subtitle'] {
   grid-area: subtitle;
   justify-self: start;
@@ -348,12 +379,13 @@
   max-inline-size: min(26rem, 70cqw);
 }
 
-/* An upright frame stacks them: the tools at the top, the subtitle across
-   the width under them and a notice under that; at the bottom the answer
-   or the question box across the width, above the hint on the left and the
-   microphone on the right. While a keyboard covers the bottom, the question
-   box moves up under the subtitle, so the words being typed, the send drop
-   and the props between them all stay in sight. */
+/* An upright frame stacks them: the tools at the top, the conclusion board
+   across the width under them when the lesson keeps one, the subtitle
+   across the width under that and a notice under the subtitle; at the
+   bottom the answer or the question box across the width, above the hint
+   on the left and the microphone on the right. While a keyboard covers the
+   bottom, the question box moves up under the subtitle, so the words being
+   typed, the send drop and the props between them all stay in sight. */
 @container (orientation: portrait) {
   .controls {
     grid-template-columns: auto minmax(0, 1fr) auto;
@@ -366,6 +398,26 @@
       'answer answer answer'
       'hint . microphone';
     padding-inline: var(--space-3);
+  }
+
+  .controls:has([data-at='board']) {
+    grid-template-rows: auto auto auto auto minmax(0, 1fr) auto auto;
+    grid-template-areas:
+      '. . tools'
+      'board board board'
+      'subtitle subtitle subtitle'
+      'notice notice notice'
+      '. . .'
+      'answer answer answer'
+      'hint . microphone';
+  }
+
+  /* The board's row is kept from the first scene, as tall as one line of
+     capsules, so the first conclusion found moves nothing below it. */
+  .place[data-at='board'] {
+    grid-area: board;
+    max-inline-size: none;
+    min-block-size: calc(var(--board-size) * 1.62 + 3px);
   }
 
   .place[data-at='subtitle'],
@@ -394,6 +446,10 @@
   .place[data-at='corner'] {
     grid-column: 1 / 4;
     grid-row: 6;
+  }
+
+  .controls:has([data-at='board']) [data-at='corner'] {
+    grid-row: 7;
   }
 
   .controls[data-keyboard] [data-at='question'] {
