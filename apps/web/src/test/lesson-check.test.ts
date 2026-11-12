@@ -1,3 +1,4 @@
+import { pictureThingsMax } from '@education/contracts';
 import { describe, expect, it } from 'vitest';
 import {
   boardReach,
@@ -5,7 +6,7 @@ import {
   framed,
 } from '../features/learning/components/lesson-stage/stage-look';
 import type { TeacherRole } from '../features/learning/lessons/lesson-definition';
-import type { LessonOutline } from '../features/learning/lessons/registry';
+import { lessonOutline, type LessonOutline } from '../features/learning/lessons/registry';
 import { backdrops, type BackdropId } from '../features/learning/media/backdrops/backdrops';
 import {
   lessonProblems,
@@ -17,9 +18,10 @@ import {
 import { fixtureLesson } from './lesson-fixture';
 
 const listed = { id: 'fixture', version: 1 };
-const outline: LessonOutline = fixtureLesson;
-const { script, content } = outline;
 const plugin: PluginOutline = { steps: ['look', 'count', 'after'], hints: ['look-again'] };
+const outline: LessonOutline = lessonOutline(fixtureLesson);
+const { script, content } = outline;
+const { backdrop } = content;
 
 // The lesson changed as given, checked against a plugin that carries the
 // same content unless the case says otherwise.
@@ -29,7 +31,7 @@ function problems(change: Partial<LessonOutline>, against = plugin) {
 }
 
 const outside = (shot: string) =>
-  `the props stand outside the clearing of ${fixtureLesson.backdrop} in scene ${shot}`;
+  `the props stand outside the clearing of ${backdrop} in scene ${shot}`;
 
 describe('the lesson definition check', () => {
   it('passes a lesson that agrees with its registry line, its content and its plugin', () => {
@@ -82,7 +84,7 @@ describe('the lesson definition check', () => {
   });
 
   it('finds props that stand outside the backdrop clearing, even by a little', () => {
-    const clearing = framed(backdrops[fixtureLesson.backdrop].clearZone, establishing);
+    const clearing = framed(backdrops[backdrop].clearZone, establishing);
     expect(problems({ staging: clearing })).toEqual([]);
     expect(problems({ staging: { ...clearing, width: clearing.width + 1 } })).toEqual([
       outside('look'),
@@ -101,10 +103,10 @@ describe('the lesson definition check', () => {
   // the library, the type check would fail on the unused expectation.
   it('lets a lesson pick only backdrops and teachers in the library', () => {
     // @ts-expect-error moon-base is not in the backdrop library
-    const backdrop: BackdropId = 'moon-base';
+    const unknown: BackdropId = 'moon-base';
     // @ts-expect-error unicorn is not in the teacher library
     const teacher: TeacherRole['id'] = 'unicorn';
-    expect([backdrop in backdrops, teacher]).toEqual([false, 'unicorn']);
+    expect([unknown in backdrops, teacher]).toEqual([false, 'unicorn']);
   });
 
   it('finds scenes and plugin steps that do not match', () => {
@@ -139,6 +141,47 @@ describe('the lesson definition check', () => {
   it('finds a version the server keeps no plugin for', () => {
     expect(lessonProblems(listed, outline, undefined)).toEqual([
       'the server has no plugin for fixture/1',
+    ]);
+  });
+});
+
+describe('the record check', () => {
+  const pebble = { place: 'table', thing: 'pebble', count: 1 };
+
+  it("reads each scene's picture as the scene first shows it", () => {
+    expect(outline.pictures).toEqual({
+      look: { things: [pebble], states: [] },
+      count: { things: [pebble], states: [] },
+      after: { things: [pebble], states: [] },
+    });
+  });
+
+  it('finds a picture told in words the content does not declare', () => {
+    const pictures = {
+      ...outline.pictures,
+      count: { things: [{ ...pebble, place: 'bowl' }], states: ['level'] },
+    };
+    expect(problems({ pictures })).toEqual([
+      'the picture of count: place bowl is not declared',
+      'the picture of count: state level is not declared',
+    ]);
+  });
+
+  it('finds a scene with no picture, and one too large for a question to carry', () => {
+    const { look, after } = outline.pictures;
+    const crowded = { things: Array(pictureThingsMax + 1).fill(pebble), states: [] };
+    expect(problems({ pictures: { look: look!, after: after! } })).toEqual([
+      'scene count has no picture',
+    ]);
+    expect(problems({ pictures: { ...outline.pictures, after: crowded } })).toEqual([
+      'the picture of after is too large',
+    ]);
+  });
+
+  it('finds a record word named by no id a question can carry', () => {
+    const recordWords = { ...content.recordWords, actions: { 'Pebble Tapped': '点了点小石子' } };
+    expect(problems({ content: { ...content, recordWords } })).toEqual([
+      'record word Pebble Tapped is no id a question carries',
     ]);
   });
 });

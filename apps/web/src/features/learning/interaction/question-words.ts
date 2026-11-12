@@ -19,6 +19,11 @@ type Question = Readonly<{
 // sends the child back to the scene.
 const carryOn: Alternative = { instead: '我们接着做题吧。' };
 
+// A question the server could not take, as when the page no longer matches
+// the lesson the server keeps after the site changed: opening the problem
+// again lets the child ask once more.
+const notTaken = '这个问题小兔这次没法回答，重新打开题目再问吧。';
+
 // What the question box beside the microphone shows, if anything: the voice
 // while the child holds it, the words being heard, the words to read over,
 // or the question sent, while its reply is on the way.
@@ -37,7 +42,9 @@ function replyWords(reply: QuestionReplyState, guidance: string): Words {
     case 'ready':
       return { text: reply.reply };
     case 'fallback':
-      return { text: `${fallbackMessage(reply.reason)}${guidance}` };
+      return {
+        text: `${reply.reason === 'invalid-input' ? notTaken : fallbackMessage(reply.reason)}${guidance}`,
+      };
     case 'guidance':
       return { text: `好的，不等了。${guidance}` };
     default:

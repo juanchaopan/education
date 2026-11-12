@@ -16,6 +16,7 @@ type Move = 'tap';
 export const fixtureContent = lessonContent({
   problem: { id: 'fixture', version: 1 },
   flow: 'scene-by-scene',
+  backdrop: 'garden-morning',
   vocabulary: ['小石子'],
   shots: ['look', 'count', 'after'],
   answerScene: 'count',
@@ -30,6 +31,12 @@ export const fixtureContent = lessonContent({
     after: { prompt: '孩子数完了。', entry: ['bye'] },
   },
   conclusions: [],
+  recordWords: {
+    places: { table: '桌上' },
+    things: { pebble: { name: '小石子', unit: '颗' } },
+    states: {},
+    actions: { 'pebble-tapped': '点了点小石子' },
+  },
 });
 
 const script = narratedScript(fixtureContent, {
@@ -51,7 +58,6 @@ export const fixtureLesson = {
   title: storyLook.title,
   theater: storyLook.theater,
   labels: { film: storyLook.label, world: storyLook.worldLabel },
-  backdrop: 'garden-morning',
   teacher: { id: 'rabbit', place, ground },
   // The pebble, round its centre.
   staging: { x: 570, y: 370, width: 60, height: 60 },
@@ -63,6 +69,10 @@ export const fixtureLesson = {
     respond: (state, move) =>
       state.shot === 'look' && move === 'tap' ? arrive('count') : undefined,
     savesProgress: (shot) => shot !== 'after',
+  },
+  record: {
+    picture: () => ({ things: [{ place: 'table', thing: 'pebble', count: 1 }], states: [] }),
+    action: (_state, _move, taken) => (taken ? 'pebble-tapped' : undefined),
   },
   props: {
     lifts: {},

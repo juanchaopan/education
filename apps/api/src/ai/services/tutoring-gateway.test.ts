@@ -5,13 +5,14 @@ import {
   credentials,
   encoder,
   event,
+  questionInput,
   setupGateway,
   settings,
   stream,
 } from './gateway-fixtures.js';
 import { questionTask } from './question-task.js';
 
-const input = { step: '观察两组物体的数量。', question: '先数哪一组？' };
+const input = questionInput('观察两组物体的数量。', '先数哪一组？');
 const answer = '先看看左边有几个。';
 const done = completion(JSON.stringify({ reply: answer, injection: false }));
 

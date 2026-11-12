@@ -1,8 +1,8 @@
+import type { ScenePicture } from '@education/contracts';
 import type { AnyLessonContent } from '@education/problems/lesson-content';
 import type { ComponentType } from 'react';
 import type { Box } from '../components/lesson-stage/stage-look';
 import type { FilmState } from '../interaction/lesson-film';
-import type { BackdropId } from '../media/backdrops/backdrops';
 import type { LessonBoard } from './lesson-board';
 import type {
   LessonAnswer,
@@ -13,20 +13,37 @@ import type {
 } from './lesson-definition';
 
 // What the checks read of a lesson's definition: its content, with its
-// version, flow, scenes, answer scene, lines and conclusions; its script's
-// lines, scenes, entry lines and each scene's framing; its answer's hints;
-// the library backdrop and teacher it picks; where its props stand; and how
-// its board draws the conclusions. Every lesson's definition is one,
-// whatever its own types.
+// version, flow, backdrop, scenes, answer scene, lines, conclusions and
+// record words; its script's lines, scenes, entry lines and each scene's
+// framing; its answer's hints; the library teacher it picks; where its props
+// stand; how its board draws the conclusions; and the picture each scene
+// first shows, as a question would carry it. Every lesson's definition gives
+// one, whatever its own types.
 export type LessonOutline = Readonly<{
   content: AnyLessonContent;
   script: Pick<Script<string, string>, 'lines' | 'shots' | 'entryLines' | 'cameras'>;
   answer: Pick<LessonAnswer, 'hints'>;
-  backdrop: BackdropId;
   teacher: Pick<TeacherRole, 'id'>;
   staging: Box;
   board?: LessonBoard<never, string>;
+  pictures: Readonly<Record<string, ScenePicture>>;
 }>;
+
+// A lesson's definition as the checks read it.
+export function lessonOutline<
+  State extends FilmState<Shot>,
+  Shot extends string,
+  Line extends string,
+  Move,
+  Piece extends string,
+  Look extends object,
+>(lesson: LessonDefinition<State, Shot, Line, Move, Piece, Look>): LessonOutline {
+  const { script, story, record } = lesson;
+  const pictures = Object.fromEntries(
+    script.shots.map((shot) => [shot, record.picture(story.arrive(shot).state)]),
+  );
+  return { ...lesson, pictures };
+}
 
 // A maintained problem version, its lesson's definition and the lesson's
 // page, both loaded only when asked for.
@@ -51,7 +68,7 @@ function lesson<
 ): LessonEntry {
   return {
     problem,
-    definition,
+    definition: async () => lessonOutline(await definition()),
     async page() {
       const [{ lessonPage }, loaded] = await Promise.all([
         import('../pages/LessonPage'),

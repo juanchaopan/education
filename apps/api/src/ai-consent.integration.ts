@@ -8,6 +8,7 @@ import { createAiTutoring } from './ai-tutoring-application.js';
 import { largestReservationCost } from './ai/domain/ai-budget.js';
 import { reservationCost } from './ai/domain/tutoring-cost.js';
 import { createTutoringUsage } from './ai/repositories/postgres-tutoring-usage.js';
+import { questionInput } from './ai/services/gateway-fixtures.js';
 import { questionTask } from './ai/services/question-task.js';
 import { csrfToken, tokenHash } from './identity/services/session-security.js';
 import { readConfig } from './shared/config.js';
@@ -230,7 +231,7 @@ it('limits repeated requests even with no monetary cap', async () => {
 });
 
 const tutoringEnv = { OPENAI_API_KEY: 'synthetic-key', OPENAI_TUTORING_ELIGIBLE: 'true' };
-const tutoringContext = { step: '数一数左边的物体。', question: '从哪里开始？' };
+const tutoringContext = questionInput('数一数左边的物体。', '从哪里开始？');
 
 function questionGateway(db: pg.Pool, env: NodeJS.ProcessEnv, send: typeof fetch) {
   const gateway = createAiTutoring(db, env, send);
@@ -388,7 +389,7 @@ it('holds the family lock during dispatch and denies further sends after revocat
 it('commits consent dispatch before upstream headers arrive and denies new tutoring after withdrawal', async () => {
   const owner = await household();
   const child = { token: owner.child, csrf: csrfToken(owner.child) };
-  const context = { step: '观察左边的物体。', question: '从哪里开始？' };
+  const context = questionInput('观察左边的物体。', '从哪里开始？');
   let entered!: () => void;
   let release!: (response: Response) => void;
   const started = new Promise<void>((resolve) => {

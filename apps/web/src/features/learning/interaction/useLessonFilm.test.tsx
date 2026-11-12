@@ -80,7 +80,7 @@ it('starts at the first scene with its lines and tells the page it arrived', asy
   expect(result.current.caption).toBe('数一数');
   expect(result.current.speaking).toBe(true);
   expect(playing()).toBe('/hello.mp3');
-  expect(onArrive).toHaveBeenCalledExactlyOnceWith('count');
+  expect(onArrive).toHaveBeenCalledExactlyOnceWith('count', result.current.state);
 });
 
 it('moves to the following scene only once the lines of a move are heard', async () => {
@@ -96,7 +96,8 @@ it('moves to the following scene only once the lines of a move are heard', async
   await sound('ended');
   expect(result.current.state.shot).toBe('done');
   expect(result.current.caption).toBe('数完了');
-  expect(onArrive.mock.calls).toEqual([['count'], ['done']]);
+  expect(onArrive.mock.calls.map(([shot]) => shot)).toEqual(['count', 'done']);
+  expect(onArrive).toHaveBeenLastCalledWith('done', result.current.state);
 });
 
 it('holds the scene on a line that did not come out until the child hears it again', async () => {
@@ -146,7 +147,7 @@ it('goes straight to a scene, such as a saved one, and starts there', async () =
   expect(result.current.state.shot).toBe('done');
   expect(playing()).toBe('/bye.mp3');
   await act(async () => result.current.go('count'));
-  expect(onArrive.mock.calls).toEqual([['done'], ['count']]);
+  expect(onArrive.mock.calls.map(([shot]) => shot)).toEqual(['done', 'count']);
 });
 
 it('stops the voice and says nothing more once the lesson is left', async () => {

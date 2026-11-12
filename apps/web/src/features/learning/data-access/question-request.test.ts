@@ -1,12 +1,18 @@
+import { recordActionsMax } from '@education/contracts';
 import { afterEach, expect, it, vi } from 'vitest';
 import { requestTeacherReply } from './question-request';
 
 const scope = { id: 'garden-balance', version: 1, csrf: 'session-token' };
 const ready = { status: 'ready', source: 'ai', reply: '篮子在天平旁边。' };
-const question = { stepId: 'leaves', text: '篮子在哪里？' };
+const record = {
+  now: { things: [{ place: 'left-pan', thing: 'cabbage', count: 2 }], states: ['level'] },
+  ended: [],
+  actions: [],
+};
+const question = { stepId: 'leaves', text: '篮子在哪里？', record };
 afterEach(() => vi.unstubAllGlobals());
 
-it('posts the scene and the question with the session headers', async () => {
+it('posts the scene, the question and the lesson record with the session headers', async () => {
   const fetch = vi.fn().mockResolvedValue(Response.json(ready));
   vi.stubGlobal('fetch', fetch);
   await expect(requestTeacherReply(scope, question)).resolves.toEqual(ready);
@@ -21,17 +27,26 @@ it('posts the scene and the question with the session headers', async () => {
   expect(JSON.parse(init.body)).toEqual(question);
 });
 
-it('sends only the scene and the question, whatever else the caller holds', async () => {
+it('sends only the scene, the question and the record, whatever else the caller holds', async () => {
   const fetch = vi.fn().mockResolvedValue(Response.json(ready));
   vi.stubGlobal('fetch', fetch);
   await requestTeacherReply(scope, { ...question, childId: 'other' } as typeof question);
   expect(JSON.parse(fetch.mock.calls[0]![1].body)).toEqual(question);
 });
 
+const action = { stepId: 'leaves', action: 'cabbage-to-basket', times: 1 };
 it.each([
-  ['an empty question', { stepId: 'leaves', text: '' }],
-  ['too long a question', { stepId: 'leaves', text: '问'.repeat(501) }],
-  ['a bad step name', { stepId: 'Leaves', text: '为什么？' }],
+  ['an empty question', { ...question, text: '' }],
+  ['too long a question', { ...question, text: '问'.repeat(501) }],
+  ['a bad step name', { ...question, stepId: 'Leaves' }],
+  [
+    'words in the record',
+    { ...question, record: { ...record, now: { things: [], states: ['平'] } } },
+  ],
+  [
+    'too many actions',
+    { ...question, record: { ...record, actions: Array(recordActionsMax + 1).fill(action) } },
+  ],
 ])('does not send %s', async (_name, invalid) => {
   const fetch = vi.fn();
   vi.stubGlobal('fetch', fetch);

@@ -1,5 +1,6 @@
 import { vi } from 'vitest';
 import type { Admission, Authorize, Meter } from './metered-call.js';
+import type { QuestionModelInput } from './question-task.js';
 import { createTutoringGateway } from './tutoring-gateway.js';
 
 export const settings = { paidAiEnabled: true, eligible: true, apiKey: 'synthetic-key' };
@@ -10,6 +11,15 @@ export const webmRecording = Buffer.concat([
   Buffer.from([0x1a, 0x45, 0xdf, 0xa3]),
   Buffer.alloc(96),
 ]);
+
+// A question asked in the first scene of a lesson, which the scene's
+// description alone tells.
+export function questionInput(step: string, question: string): QuestionModelInput {
+  return {
+    lesson: { earlier: [], now: { scene: 1, step, said: [] }, found: [], done: [], scenery: '' },
+    question,
+  };
+}
 
 export function event(data: object) {
   return 'data: ' + JSON.stringify(data) + '\r\n\r\n';

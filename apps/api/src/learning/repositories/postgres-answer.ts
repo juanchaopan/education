@@ -10,6 +10,16 @@ type Submission = Omit<SubmitAnswer, 'action' | 'input'>;
 const initialRound = '00000000-0000-0000-0000-000000000000';
 const slot = 'child_id=$1 AND problem_id=$2 AND problem_version=$3';
 
+// Whether the child has answered the problem version right at least once, on
+// their own or after help, in any round.
+export async function answeredRight(client: pg.PoolClient, child: string, problem: Problem) {
+  const { rows } = await client.query<{ answered: boolean }>(
+    `SELECT independent + assisted > 0 AS answered FROM progress WHERE ${slot}`,
+    [child, problem.id, problem.version],
+  );
+  return rows[0]?.answered ?? false;
+}
+
 export function answersFor(client: pg.PoolClient, child: string, problem: Problem, secret: string) {
   const key = [child, problem.id, problem.version];
   return {

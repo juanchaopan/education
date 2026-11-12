@@ -21,18 +21,19 @@ export function authoredStep<P extends Pick<ProblemPlugin, 'feedback'>>(
   return { plugin, step };
 }
 
-// A step opened to AI help, with the scene of the problem's lesson it is, as a
-// question about it needs both; a problem version without lesson content, or
-// a step that is no scene of its lesson, is refused like a step the author
-// did not open.
+// A step opened to AI help, with the problem's lesson and the scene of it the
+// step is, as a question about it needs them; a problem version without
+// lesson content, or a step that is no scene of its lesson, is refused like a
+// step the author did not open.
 export function authoredScene<P extends Pick<ProblemPlugin, 'feedback' | 'lesson'>>(
   candidate: P | undefined,
   stepId: string,
 ) {
   const { plugin, step } = authoredStep(candidate, stepId);
-  const scene = own(plugin.lesson?.scenes, stepId);
-  if (!scene) throw refused();
-  return { plugin, step, scene };
+  const { lesson } = plugin;
+  const scene = own(lesson?.scenes, stepId);
+  if (!lesson || !scene) throw refused();
+  return { plugin, step, lesson, scene };
 }
 
 // What the author's own rules say about the child's words, when they settle

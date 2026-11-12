@@ -9,10 +9,11 @@ import type {
   Teacher,
 } from '../components/lesson-stage/stage-look';
 import type { FilmLine, FilmState, FilmStory, Reaction } from '../interaction/lesson-film';
+import type { LessonRecording } from '../interaction/lesson-record';
 import type { CountWords } from '../interaction/spoken-answer';
 import type { Handling } from '../interaction/stage-activation';
 import type { StageProps } from '../interaction/useStageDrag';
-import { backdrops, type BackdropId } from '../media/backdrops/backdrops';
+import { backdrops } from '../media/backdrops/backdrops';
 import { teachers, type TeacherId } from '../media/teachers/teachers';
 import type { LessonBoard } from './lesson-board';
 
@@ -64,14 +65,13 @@ export type TeacherRole = Readonly<{ id: TeacherId; place: Box; ground: Ellipse 
 
 // How a lesson's film looks: its title and series, for example 菜园小剧场, the
 // names a screen reader gives the film and the props inside it, the library
-// backdrop and teacher it picks, the part of the world its props take up in
-// every scene, which lies in the backdrop's clearing, its palette, and the
-// lesson's paints and symbols and what drifts over its scenes.
+// teacher it picks, the part of the world its props take up in every scene,
+// which lies in the clearing of the backdrop its content names, its palette,
+// and the lesson's paints and symbols and what drifts over its scenes.
 type Looks = Readonly<{
   title: string;
   theater: string;
   labels: Readonly<{ film: string; world: string }>;
-  backdrop: BackdropId;
   teacher: TeacherRole;
   staging: Box;
   palette: StagePalette;
@@ -81,14 +81,16 @@ type Looks = Readonly<{
 
 // Everything one problem gives the shared lesson page: its content, declared
 // in @education/problems and read by the server too, with its version, the
-// lesson flow it follows, its scenes, the scene that asks for the answer and
-// the conclusions its scenes find; how its film looks; its script, which
-// pairs the content's lines with their recordings, and its scene rules; its
-// props, its final count and its own scene, drawn on the stage's 1200×675
-// world. A lesson whose way of teaching keeps its conclusions on the
-// conclusion board says in `board` how they are drawn, with the lesson's own
-// symbols. The page is built for one definition at a time, so each lesson's
-// own types hold all the way through.
+// lesson flow it follows, its backdrop, its scenes, the scene that asks for
+// the answer, the conclusions its scenes find and the words its scenes are
+// told in; how its film looks; its script, which pairs the content's lines
+// with their recordings, and its scene rules; how its scenes and the child's
+// key actions are recorded for the questions the child asks; its props, its
+// final count and its own scene, drawn on the stage's 1200×675 world. A
+// lesson whose way of teaching keeps its conclusions on the conclusion board
+// says in `board` how they are drawn, with the lesson's own symbols. The page
+// is built for one definition at a time, so each lesson's own types hold all
+// the way through.
 export type LessonDefinition<
   State extends FilmState<Shot>,
   Shot extends string,
@@ -101,6 +103,7 @@ export type LessonDefinition<
     content: LessonContent<Shot, Line, string>;
     script: Script<Shot, Line>;
     story: Story<State, Shot, Line, Move>;
+    record: LessonRecording<State, Move>;
     props: LessonProps<Move, Piece, Look>;
     answer: LessonAnswer;
     board?: LessonBoard<State, string>;
@@ -136,10 +139,14 @@ export function lessonTeacher({ id, place, ground }: TeacherRole): Teacher {
 // The lesson's film as the stage draws it: the library pictures it picks, each
 // scene in its own framing, and the part of the world its props take up.
 export function stageLook(
-  lesson: Looks & Readonly<{ script: Pick<Script<string, string>, 'cameras'> }>,
+  lesson: Looks &
+    Readonly<{
+      content: Pick<LessonContent<string, string, string>, 'backdrop'>;
+      script: Pick<Script<string, string>, 'cameras'>;
+    }>,
 ): StageLook {
   const { title, theater, labels, palette, script, staging } = lesson;
-  const { image, focus } = backdrops[lesson.backdrop];
+  const { image, focus } = backdrops[lesson.content.backdrop];
   return {
     label: labels.film,
     worldLabel: labels.world,

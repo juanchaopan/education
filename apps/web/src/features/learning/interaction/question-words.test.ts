@@ -52,6 +52,12 @@ describe("the teacher's words about the question", () => {
     ).toMatch(/碰一碰这个苹果。$/);
   });
 
+  it('asks the child to open the problem again when the server could not take the question', () => {
+    expect(
+      questionWords({ ...quiet, reply: { status: 'fallback', reason: 'invalid-input' } }, guidance),
+    ).toEqual({ text: '这个问题小兔这次没法回答，重新打开题目再问吧。碰一碰这个苹果。' });
+  });
+
   it('says why speech could not be used, and sends the child back to the scene', () => {
     expect(
       questionWords({ ...quiet, voice: { status: 'unavailable', reason: 'denied' } }, guidance)

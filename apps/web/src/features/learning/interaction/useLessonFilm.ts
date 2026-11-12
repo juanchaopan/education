@@ -9,9 +9,13 @@ import { useNarration } from './useNarration';
 // The rising tones that open every film.
 const startTones = [392, 494, 587];
 
-type Options<Shot extends string> = {
-  // Hears of every scene the child reaches, as it is reached.
-  onArrive?: (shot: Shot) => void;
+type Options<State, Shot extends string, Line extends string, Move> = {
+  // Hears of every scene the child reaches, as it is reached, with the state
+  // the film shows there.
+  onArrive?: (shot: Shot, state: State) => void;
+  // Hears of every move the child makes, before the film follows it, with
+  // what the scene on screen made of it, or nothing when it took no notice.
+  onMove?: (state: State, move: Move, reaction?: Reaction<State, Shot, Line>) => void;
   createAudio?: () => HTMLAudioElement;
   // The lesson's sound is off: the lines and tones play without it.
   muted?: boolean;
@@ -90,7 +94,12 @@ export function useLessonFilm<
   Move,
 >(
   story: FilmStory<State, Shot, Line, Move>,
-  { onArrive = () => {}, createAudio, muted = false }: Options<Shot> = {},
+  {
+    onArrive = () => {},
+    onMove = () => {},
+    createAudio,
+    muted = false,
+  }: Options<State, Shot, Line, Move> = {},
 ): LessonFilm<State, Shot, Move> {
   const [state, setState] = useState<State>(story.opening);
   const [caption, setCaption] = useState<string>();
@@ -99,9 +108,10 @@ export function useLessonFilm<
   const { chime, begin } = useFilmRuns(muted);
   const shown = useRef<FilmScene<Shot>>('opening');
   const arrived = useLatest(onArrive);
+  const moved = useLatest(onMove);
 
   function apply({ state: next, chime: tones, say, then }: Reaction<State, Shot, Line>) {
-    if (next.shot !== shown.current && next.shot !== 'opening') arrived.current(next.shot);
+    if (next.shot !== shown.current && next.shot !== 'opening') arrived.current(next.shot, next);
     shown.current = next.shot;
     setState(next);
     chime.play(tones);
@@ -132,6 +142,7 @@ export function useLessonFilm<
     },
     act(move) {
       const reaction = story.respond(state, move);
+      moved.current(state, move, reaction);
       if (reaction) apply(reaction);
     },
     go: (shot) => apply(story.arrive(shot)),
