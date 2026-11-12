@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import type { AiHelpFallback, QuestionResult } from '@education/contracts';
+import type { AiHelpFallback, QuestionRequest, QuestionResult } from '@education/contracts';
 import { useReloadReadiness } from '../../../shared/lib/reload-readiness';
 import { createAiHelpRequest } from './ai-help-request';
 import type { LearningScope } from './learning-request';
-import { requestTeacherReply, type Question } from './question-request';
+import { requestTeacherReply } from './question-request';
 
 type Ready = Extract<QuestionResult, { status: 'ready' }>;
 export type QuestionReplyState =
@@ -21,7 +21,7 @@ export function useQuestionReply(scope: LearningScope) {
 
   return {
     state,
-    ask: (question: Question) =>
+    ask: (question: QuestionRequest) =>
       requests.request((signal) => requestTeacherReply(scope, question, signal)),
     guide: requests.guide,
   };

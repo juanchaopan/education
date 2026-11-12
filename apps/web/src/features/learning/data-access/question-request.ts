@@ -1,23 +1,18 @@
-import { questionBodyLimit, QuestionRequest, QuestionResult } from '@education/contracts';
+import { QuestionRequest, QuestionResult } from '@education/contracts';
 import { Value } from '@sinclair/typebox/value';
 import { postLearning, type LearningScope } from './learning-request';
 
-export type Question = { stepId: string; text: string };
-
 // Asks the teacher a question about one scene. A question the server would
-// refuse never leaves the browser, and the reply is checked against the shared
-// schema before the page sees it.
+// refuse never leaves the browser; any question the schema allows fits the
+// server's body limit. The reply is checked against the shared schema before
+// the page sees it.
 export async function requestTeacherReply(
   scope: LearningScope,
-  { stepId, text }: Question,
+  { stepId, text }: QuestionRequest,
   cancel?: AbortSignal,
 ): Promise<QuestionResult> {
   const question = { stepId, text };
-  const body = JSON.stringify(question);
-  if (
-    !Value.Check(QuestionRequest, question) ||
-    new TextEncoder().encode(body).length > questionBodyLimit
-  )
+  if (!Value.Check(QuestionRequest, question))
     return { status: 'fallback', reason: 'invalid-input' };
-  return postLearning(scope, 'question', body, QuestionResult, cancel);
+  return postLearning(scope, 'question', JSON.stringify(question), QuestionResult, cancel);
 }

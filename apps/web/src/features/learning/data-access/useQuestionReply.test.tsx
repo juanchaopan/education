@@ -11,6 +11,7 @@ const scope = { id: 'garden-balance', version: 1, csrf: 'session-token' };
 const question = { stepId: 'leaves', text: '篮子在哪里？' };
 const ready = { status: 'ready', source: 'ai', reply: '篮子在天平旁边。' } as const;
 
+// A reply that stays on its way until the returned function delivers it.
 function waiting() {
   let finish!: (value: typeof ready) => void;
   vi.mocked(requestTeacherReply).mockReturnValue(
@@ -18,7 +19,7 @@ function waiting() {
       finish = resolve;
     }),
   );
-  return (value: typeof ready) => finish(value);
+  return finish;
 }
 
 afterEach(() => vi.resetAllMocks());
