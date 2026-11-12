@@ -32,6 +32,11 @@ export function arrange(books: readonly ShelvedBook[], order: ShelfOrder) {
   );
 }
 
+// The ids of every problem in the books, each once.
+export const problemIds = (books: readonly ShelvedBook[]) => [
+  ...new Set(books.flatMap(({ problems }) => problems.map(({ id }) => id))),
+];
+
 // A child's progress in a book: how many of its problems the child has done,
 // of any version, out of how many it holds now; finished once all are done.
 export function progress(book: ShelvedBook, done: ReadonlySet<string>) {

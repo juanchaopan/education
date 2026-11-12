@@ -19,14 +19,14 @@ const sameSite = {
 const file: FamilyExport = {
   format: {
     name: 'education-family-export',
-    version: 1,
+    version: 2,
     generatedAt: '2026-11-07T12:00:00.000Z',
     includes: ['孩子的昵称'],
     excludes: ['密码和 PIN 的哈希'],
   },
   parent: { email: 'parent@example.test', emailVerified: true },
   aiConsents: [],
-  children: [{ nickname: '小鹿', learning: [], practice: [], drafts: [] }],
+  children: [{ nickname: '小鹿', learning: [], books: [], drafts: [] }],
 };
 
 function exportWith(service?: FamilyExportService, headers: Record<string, string> = sameSite) {

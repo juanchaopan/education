@@ -11,6 +11,7 @@ import {
 import {
   assignable,
   browse,
+  problemIds,
   progress,
   type ShelfOrder,
   type ShelvedBook,
@@ -57,16 +58,24 @@ const card = ({ id, name, grade, subject, cover, status, problems }: ShelvedBook
   problems: problems.length,
 });
 
-const problemIds = (books: readonly ShelvedBook[]) => [
-  ...new Set(books.flatMap(({ problems }) => problems.map(({ id }) => id))),
-];
-
 // Whom each book was given to, by book id.
 async function holders(client: pg.PoolClient, childIds: readonly string[]) {
   const given = new Map<string, Set<string>>();
   for (const { bookId, childId } of await readBookAssignments(client, childIds))
     given.set(bookId, (given.get(bookId) ?? new Set()).add(childId));
   return given as ReadonlyMap<string, ReadonlySet<string>>;
+}
+
+// The books given to a child, newest first, with when each was given, and the
+// problems of those books the child has done. A book the catalogue no longer
+// lists is left out.
+export async function readChildBooks(shelf: Shelf, client: pg.PoolClient, childId: string) {
+  const books = (await readBookAssignments(client, [childId])).flatMap(({ bookId, assignedAt }) => {
+    const book = shelf.books.find(({ id }) => id === bookId);
+    return book ? [{ book, assignedAt }] : [];
+  });
+  const done = await readDoneProblems(client, [childId], problemIds(books.map(({ book }) => book)));
+  return { books, done: done.get(childId) ?? nothingDone };
 }
 
 // The library holds the books no child of the family has that can be given;
@@ -133,18 +142,14 @@ function practiceRank(book: ShelvedBook, finished: boolean) {
 
 // The signed-in child's books, with every problem in them.
 async function practice(
-  byId: ReadonlyMap<string, ShelvedBook>,
+  shelf: Shelf,
   client: pg.PoolClient,
   childId: string,
   offset?: string,
 ): Promise<PracticeBookPage> {
-  const books = (await readBookAssignments(client, [childId])).flatMap(({ bookId }) => {
-    const book = byId.get(bookId);
-    return book ? [book] : [];
-  });
-  const done = (await readDoneProblems(client, [childId], problemIds(books))).get(childId);
+  const { books, done } = await readChildBooks(shelf, client, childId);
   const ranked = books
-    .map((book) => ({ book, progress: progress(book, done ?? nothingDone) }))
+    .map(({ book }) => ({ book, progress: progress(book, done) }))
     .sort(
       (a, b) =>
         practiceRank(a.book, a.progress.finished) - practiceRank(b.book, b.progress.finished),
@@ -154,7 +159,7 @@ async function practice(
     books: ranked.slice(from, from + size).map(({ book, progress: { done: count } }) => ({
       ...card(book),
       done: count,
-      items: book.problems.map((problem) => ({ ...problem, done: !!done?.has(problem.id) })),
+      items: book.problems.map((problem) => ({ ...problem, done: done.has(problem.id) })),
     })),
     hasMore: from + size < ranked.length,
   };
@@ -178,7 +183,7 @@ export function createBookshelfService({
     childShelf: (credentials: Credentials, childId: string, query: ChildShelfQuery) =>
       parent(credentials, childId, (client) => childShelf(shelf, client, childId, query)),
     practice: (credentials: Credentials, offset?: string) =>
-      child(credentials, (client, childId) => practice(byId, client, childId, offset)),
+      child(credentials, (client, childId) => practice(shelf, client, childId, offset)),
     assign: (credentials: Credentials, childId: string, bookId: string) =>
       parent(credentials, childId, async (client) => {
         if (!assignable(byId.get(bookId)))

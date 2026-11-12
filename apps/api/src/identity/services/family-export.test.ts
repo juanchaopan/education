@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import type pg from 'pg';
-import { familyExportScope } from '@education/contracts';
+import { familyExportScope, type ExportedBook } from '@education/contracts';
 import type { AuthorizedParent } from '../repositories/session-transaction.js';
 import { createFamilyExportService } from './family-export.js';
 
@@ -17,11 +17,23 @@ const parent: AuthorizedParent = {
   recent: true,
 };
 
+const book = (childId: string): ExportedBook => ({
+  id: `${childId}-book`,
+  grade: '一年级',
+  subject: '数学',
+  name: '规律',
+  status: 'available',
+  assignedAt: '2026-11-06T08:00:00.000Z',
+  done: 1,
+  total: 2,
+  finished: false,
+});
+
 function exporter(signedIn: Partial<AuthorizedParent> = {}, account = familyAccount()) {
   const readAccount = vi.fn().mockResolvedValue(account);
   const childLearning = vi.fn(async (_client: pg.PoolClient, childId: string) => ({
     learning: [],
-    practice: [{ id: `${childId}-problem`, version: 1, title: null }],
+    books: [book(childId)],
     drafts: [],
   }));
   const service = createFamilyExportService(
@@ -66,7 +78,7 @@ describe('family export', () => {
     expect(file).toEqual({
       format: {
         name: 'education-family-export',
-        version: 1,
+        version: 2,
         generatedAt: '2026-11-07T12:00:00.000Z',
         includes: [...familyExportScope.includes],
         excludes: [...familyExportScope.excludes],
@@ -74,18 +86,8 @@ describe('family export', () => {
       parent: { email: 'parent@example.test', emailVerified: true },
       aiConsents: familyAccount().aiConsents,
       children: [
-        {
-          nickname: '小鹿',
-          learning: [],
-          practice: [{ id: 'deer-problem', version: 1, title: null }],
-          drafts: [],
-        },
-        {
-          nickname: '小兔',
-          learning: [],
-          practice: [{ id: 'rabbit-problem', version: 1, title: null }],
-          drafts: [],
-        },
+        { nickname: '小鹿', learning: [], books: [book('deer')], drafts: [] },
+        { nickname: '小兔', learning: [], books: [book('rabbit')], drafts: [] },
       ],
     });
     expect(JSON.stringify(file)).not.toContain('private-password-hash');
