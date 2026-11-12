@@ -1,5 +1,6 @@
 import type { QueryClient } from '@tanstack/react-query';
 import type { ParentSession } from '@education/contracts';
+import { bookshelfQueryKey } from './useBookshelf';
 import { practiceQueryKey } from './usePractice';
 
 export async function clearFamilyManagement(client: QueryClient) {
@@ -9,6 +10,7 @@ export async function clearFamilyManagement(client: QueryClient) {
     ['parent-learning-summary'],
     ['parent-ai-consent'],
     practiceQueryKey,
+    bookshelfQueryKey,
   ];
   await Promise.all(keys.map((queryKey) => client.cancelQueries({ queryKey })));
   for (const queryKey of keys) client.removeQueries({ queryKey });

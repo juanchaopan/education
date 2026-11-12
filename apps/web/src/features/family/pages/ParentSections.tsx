@@ -4,8 +4,8 @@ import { ChildAccessPanel } from './ChildAccessPanel';
 import { FamilyDeletionPanel } from './FamilyDeletionPanel';
 import { FamilyExportPanel } from './FamilyExportPanel';
 import { LearningSummaryPanel } from './LearningSummaryPanel';
-import { ParentPracticePanel } from './ParentPracticePanel';
 import { RegistrationKeyPanel } from './RegistrationKeyPanel';
+import { ShelfPage } from './ShelfPage';
 
 // The parts of the parent space past the overview. Their panels start over
 // with each renewed session; export and deletion renew the session themselves
@@ -23,7 +23,7 @@ export function ChildrenSection({ csrf }: { csrf: string }) {
 export function PracticeSection({ csrf }: { csrf: string }) {
   return (
     <ParentSection titleId="practice-title" title="练习安排">
-      <ParentPracticePanel key={`practice-${csrf}`} csrf={csrf} />
+      <ShelfPage key={`shelf-${csrf}`} csrf={csrf} />
     </ParentSection>
   );
 }

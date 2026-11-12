@@ -1,0 +1,28 @@
+/* The card never grows wider than the page: its rows of choices scroll
+   sideways inside it instead. */
+.filters {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-3);
+  min-inline-size: 0;
+  padding: var(--space-4) var(--space-5);
+}
+/* The subjects and, on a child's shelf, the states share a line, with a thin
+   line between them; they wrap onto two lines when the line is too narrow. */
+.line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+}
+.divider {
+  align-self: stretch;
+  inline-size: 1px;
+  margin-block: var(--space-2);
+  background: var(--line);
+}
+@media (max-width: 56rem) {
+  .filters {
+    padding: var(--space-3) var(--space-4);
+  }
+}
