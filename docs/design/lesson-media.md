@@ -206,7 +206,7 @@ Transparent full-body character sprite for a polished family animated movie. One
 - **中间一个主体**：一件代表这本书内容的东西，例如算盘和积木、翻开的书和毛笔、地球仪，占画面中间约六成；四周是柔和、简单的底色和很少的小道具，不画成一整个场景。
 - **底色按科目**：数学偏苔绿和蜂蜜黄，语文偏杏色和陶土橙，英语偏天青和灰蓝，其他科目偏米色和麦色，和默认封面的科目色一致，书架上一眼分得出科目。
 - **按年龄段调整**：和背景一样，低年级更像玩具、更暖更亮，高年级更精致、配色更沉稳。
-- **给书卡留位置**：左上角干净，书卡在那里放「学完」的勾；外圈约 8% 不放重要的东西，书卡的圆角会裁掉一点。
+- **给书卡留位置**：右上角和右下角干净、没有高光，书卡在那里放孩子的进度小签；主光从左上方来；外圈约 8% 不放重要的东西，书卡的圆角会裁掉一点。
 - **不画**：人物和动物、文字、字母、数字、符号、书名、界面、边框、水印。书名由页面写在封面下面。
 
 ### 出图和交付
@@ -220,7 +220,7 @@ Transparent full-body character sprite for a polished family animated movie. One
 
 - [ ] 缩到书卡大小（约 180px 宽）时主体还认得出。
 - [ ] 画面里没有人物、动物、文字、乱码字母、数字和符号。
-- [ ] 左上角干净，放得下「学完」的勾。
+- [ ] 右上角和右下角干净，叠上进度小签以后仍然看得清。
 - [ ] 和书架上其他封面放在一起风格一致，科目的颜色分得出。
 
 | id              | 科目 | 年龄段 | 主体                       | 用于的书          |
@@ -233,7 +233,7 @@ Transparent full-body character sprite for a polished family animated movie. One
 - 用于「一年级 / 数学 / 学而思」。
 
 ```text
-Portrait 3:4 book cover illustration for a Chinese children's learning app, made like a still from a carefully lit 3D family animated feature: tactile sculpted clay, painted wood, felt and paper materials, soft rounded shapes, gentle depth of field, one warm key light from the upper right with soft cool shadows. One centered hero object: a small wooden abacus with chunky round clay beads in honey yellow, leaf green and coral, standing slightly angled, with three plain toy building blocks at its foot and a tiny potted sprout beside it. Behind it, a calm, simple backdrop of soft sage green with a faint paper texture and a gentle glow, no scenery. The group fills about the middle 60 percent of the frame; keep the upper left corner plain and empty, and keep anything important out of the outer 8 percent so rounded card corners never cut it. Palette of sage, honey yellow, warm wood and coral with soft teal shadows. Big simple toy-like shapes, bright, cheerful and cozy for ages 6 to 8. No characters or animals, no text, letters, numbers or symbols on the blocks or anywhere, no title, no UI, no frames, borders or split panels, no watermark.
+Portrait 3:4 book cover illustration for a Chinese children's learning app, made like a still from a carefully lit 3D family animated feature: tactile sculpted clay, painted wood, felt and paper materials, soft rounded shapes, gentle depth of field, one warm key light from the upper left with soft cool shadows. One centered hero object: a small wooden abacus with chunky round clay beads in honey yellow, leaf green and coral, standing slightly angled, with three plain toy building blocks at its foot and a tiny potted sprout beside it. Behind it, a calm, simple backdrop of soft sage green with a faint paper texture and a gentle glow, no scenery. The group fills about the middle 60 percent of the frame; keep the upper right and lower right corners plain, calm and free of highlights, and keep anything important out of the outer 8 percent so rounded card corners never cut it. Palette of sage, honey yellow, warm wood and coral with soft teal shadows. Big simple toy-like shapes, bright, cheerful and cozy for ages 6 to 8. No characters or animals, no text, letters, numbers or symbols on the blocks or anywhere, no title, no UI, no frames, borders or split panels, no watermark.
 ```
 
 ## 以后加图
