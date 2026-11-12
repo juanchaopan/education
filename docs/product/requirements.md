@@ -45,7 +45,7 @@
 - 用户故事：作为儿童，我希望下次能继续学习；作为家长，我希望知道自己孩子的完成情况和需要帮助之处。
 - 验收标准：Given 已保存的进度，When 重新登录，Then 可恢复该儿童的记录。Given 使用提示完成，When 家长查看，Then 能区分提示后完成与独立完成。Given 多个孩子，Then 各自学习记录隔离。
 - 已确认：家长查看进度、独立成功、提示使用、反复困难、建议复习；可选择练习及重置儿童访问。默认不保留原始音频与绘图。待确认：掌握判定、数据保留与删除规则。
-- 2026-11-12 澄清（维护者在 [#209](https://github.com/juanchaopan/education/issues/209) 确认）：变化题也留下学习证据。逐幕探究里，猜的数是首答，独立答对、提示后答对、答错和无法判定分开记；理由单独记一项：说清了、没说清、说反了。只存结果，不存孩子的原话。记录由 [#217](https://github.com/juanchaopan/education/issues/217) 实现，家长摘要显示变化题结果由 [#219](https://github.com/juanchaopan/education/issues/219) 先出样稿再做。
+- 2026-11-12 澄清（维护者在 [#209](https://github.com/juanchaopan/education/issues/209) 和 [#217](https://github.com/juanchaopan/education/issues/217) 确认）：变化题也留下学习证据。逐幕探究里，猜的数是首答，独立答对、提示后答对和答错分开记，判为无法判定时不记、请孩子再说一次。理由单独记一项，结果只有说清了和没说清，说反了和说的不是这回事都算没说清；没说清以后孩子得到提示可以再说，记第一次的结果和最后的结果（独立说清、提示后说清、没说清）。只存结果，不存孩子的原话。家庭导出按题目列出变化题做到了什么、还缺什么，下面是每一次的明细；收回一本书时变化题记录保留。记录由 [#217](https://github.com/juanchaopan/education/issues/217) 实现，家长摘要显示变化题结果由 [#219](https://github.com/juanchaopan/education/issues/219) 先出样稿再做。
 
 ## REQ-006 AI 不可用时继续引导教学
 
