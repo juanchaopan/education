@@ -13,21 +13,18 @@ const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
 const families: string[] = [];
 const env = { OPENAI_API_KEY: 'synthetic-key', OPENAI_TRANSCRIPTION_ELIGIBLE: 'true' };
 const problem = { id: 'share-sweets', version: 1 };
-const registry = createProblemRegistry([
-  {
-    summary: {
-      ...problem,
-      title: 'fixture',
-      grade: '1年级',
-      subject: '数学',
-      category: '数与运算',
-      sequence: 1,
+const book = { id: 'fixture-numbers', grade: '一年级', subject: '数学', category: '数与运算' };
+const registry = createProblemRegistry(
+  [
+    {
+      summary: { ...problem, title: 'fixture', book: book.id, sequence: 1 },
+      feedback: {
+        'split-evenly': { prompt: '把十二颗糖平均分给三个人。', vocabulary: ['平均分', '每份'] },
+      },
     },
-    feedback: {
-      'split-evenly': { prompt: '把十二颗糖平均分给三个人。', vocabulary: ['平均分', '每份'] },
-    },
-  },
-]);
+  ],
+  [book],
+);
 const webm = Buffer.concat([Buffer.from([0x1a, 0x45, 0xdf, 0xa3]), Buffer.alloc(96)]);
 const request = { stepId: 'split-evenly', format: 'webm', audio: webm.toString('base64') } as const;
 

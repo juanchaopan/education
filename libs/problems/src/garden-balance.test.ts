@@ -7,7 +7,7 @@ const { answering, checkStep } = gardenBalance;
 describe('garden balance', () => {
   it('is a first grade 学而思 maths problem in the maintained registry', () => {
     expect(problemRegistry.find('garden-balance', 1)).toBe(gardenBalance);
-    expect(gardenBalance.summary).toMatchObject({
+    expect(problemRegistry.summary('garden-balance', 1)).toMatchObject({
       grade: '一年级',
       subject: '数学',
       category: '学而思',

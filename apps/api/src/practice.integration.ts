@@ -11,16 +11,15 @@ if (!process.env.DATABASE_URL?.endsWith('/education_test'))
 const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
 const families: string[] = [];
 const origin = 'https://education.example';
+const book = { id: 'fixture-patterns', grade: '一年级', subject: '数学', category: '规律' };
 const summary = {
   id: 'fixture-pattern',
   version: 2,
   title: '辨认规律',
-  grade: '一年级',
-  subject: '数学',
-  category: '规律',
+  book: book.id,
   sequence: 1,
 };
-const registry = createProblemRegistry([{ summary }]);
+const registry = createProblemRegistry([{ summary }], [book]);
 const app = buildApp({ origin, practice: createPracticeAssignments(pool, registry) });
 
 afterAll(async () => {
