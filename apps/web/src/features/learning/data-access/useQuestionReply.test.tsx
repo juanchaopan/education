@@ -44,13 +44,16 @@ it('turns server fallbacks and failures into guidance states', async () => {
   expect(result.current.state).toEqual({ status: 'fallback', reason: 'unavailable' });
 });
 
-it('ignores a late reply once the child stops waiting', async () => {
+it('asks once while waiting and ignores a late reply once the child stops waiting', async () => {
   const finish = waiting();
   const { result } = renderHook(() => useQuestionReply(scope));
-  act(() => {
+  const ask = () => {
     void result.current.ask(question);
-  });
+  };
+  act(ask);
   await waitFor(() => expect(result.current.state).toEqual({ status: 'pending' }));
+  act(ask);
+  expect(requestTeacherReply).toHaveBeenCalledOnce();
   act(() => result.current.guide());
   await act(async () => finish(ready));
   expect(result.current.state).toEqual({ status: 'guidance' });
@@ -69,4 +72,19 @@ it('holds a reload while a reply is on its way', async () => {
   await waitFor(() => expect(result.current.page).toBe('saving'));
   await act(async () => finish(ready));
   await waitFor(() => expect(result.current.page).toBe('ready'));
+});
+
+it('releases a pending question when the lesson closes', async () => {
+  let signal: AbortSignal | undefined;
+  vi.mocked(requestTeacherReply).mockImplementation((_scope, _question, cancel) => {
+    signal = cancel;
+    return new Promise(() => {});
+  });
+  const { result, unmount } = renderHook(() => useQuestionReply(scope));
+  act(() => {
+    void result.current.ask(question);
+  });
+  await waitFor(() => expect(signal).toBeDefined());
+  unmount();
+  expect(signal?.aborted).toBe(true);
 });
