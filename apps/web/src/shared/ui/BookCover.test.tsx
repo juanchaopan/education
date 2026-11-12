@@ -38,6 +38,15 @@ describe('a book cover', () => {
     expect(thumb.container).not.toHaveTextContent('一年级');
   });
 
+  it('stands a small book with its page edges, greyed but without a band when unavailable', () => {
+    const { container } = render(
+      <BookCover subject="数学" grade="一年级" cover={null} size="standing" unavailable />,
+    );
+    expect(container.querySelector('[data-size="standing"]')).toHaveAttribute('data-unavailable');
+    expect(container).not.toHaveTextContent('暂时不可用');
+    expect(container).not.toHaveTextContent('一年级');
+  });
+
   it('lays marks in the corner asked for', () => {
     const { container } = render(
       <BookCover subject="数学" grade="一年级" cover={null} marks="5/12" corner="bottom" />,
