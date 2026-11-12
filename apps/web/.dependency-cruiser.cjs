@@ -7,6 +7,7 @@ const lessonFiles = `${lessonFolder}[^/]+/`;
 
 // 题目包里网站可以读的部分：课堂内容的类型（lesson-content）和每道题的课堂内容（lessons/<题目>）。
 const problemPackage = '(^|/)(@education|libs)/problems';
+const lessonContents = `${problemPackage}/((dist|src)/)?lessons/`;
 const lessonContent = `${problemPackage}/((dist|src)/)?(lesson-content|lessons/[^/]+?)([.](js|ts|d[.]ts))?$`;
 
 module.exports = {
@@ -58,18 +59,18 @@ module.exports = {
       severity: 'error',
       from: { path: `${lessonFolder}([^/]+)/` },
       to: {
-        path: `${problemPackage}/((dist|src)/)?lessons/`,
+        path: lessonContents,
         pathNot: `${problemPackage}/((dist|src)/)?lessons/$1([.](js|ts|d[.]ts))?$`,
       },
     },
     {
       name: 'lessons-loaded-on-demand',
       comment:
-        '题目的文件和公共题目页只在孩子打开题目时加载：题目以外的代码只能用动态 import 引用它们，题库页因此不带题目的代码。',
+        '题目的文件、它们的课堂内容和公共题目页只在孩子打开题目时加载：题目以外的代码只能用动态 import 引用它们，题库页因此不带题目的代码。',
       severity: 'error',
       from: { pathNot: lessonFiles },
       to: {
-        path: `(${lessonFiles}|^src/features/learning/pages/LessonPage[.]tsx$)`,
+        path: `(${lessonFiles}|${lessonContents}|^src/features/learning/pages/LessonPage[.]tsx$)`,
         dependencyTypesNot: ['dynamic-import', 'type-only'],
       },
     },
