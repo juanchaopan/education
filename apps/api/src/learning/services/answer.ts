@@ -1,6 +1,7 @@
 import type { AnswerCommand, AskForHint, AttemptReceipt, SubmitAnswer } from '@education/contracts';
 import type { AnsweringPolicy } from '@education/problems/server';
 import { RequestError } from '../../shared/request-error.js';
+import { outcomeOf } from '../domain/outcome.js';
 
 type Credentials = { token?: string; csrf?: string };
 type Problem = { id: string; version: number };
@@ -79,19 +80,11 @@ async function submit(store: AnswerStore, policy: AnsweringPolicy, command: Subm
     return { attemptId, outcome: previous.outcome };
   }
   await requireRound(store, round);
-  const checked = policy.checkCompletion(input);
-  const outcome = await classify(store, round, checked);
+  const judgement = policy.checkCompletion(input);
+  const helped = judgement === 'correct' && (await store.usedHelp(round));
+  const outcome = outcomeOf(judgement, helped);
   await store.commit({ attemptId, round, draftRevision }, fingerprint, outcome);
   return { attemptId, outcome };
-}
-
-async function classify(
-  store: AnswerStore,
-  round: string,
-  checked: ReturnType<AnsweringPolicy['checkCompletion']>,
-): Promise<Outcome> {
-  if (checked === 'correct') return (await store.usedHelp(round)) ? 'assisted' : 'independent';
-  return checked === 'incorrect' ? 'incorrect' : 'uncertain';
 }
 
 export type AnswerService = ReturnType<typeof createAnswerService>;
