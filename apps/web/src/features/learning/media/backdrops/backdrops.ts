@@ -1,5 +1,5 @@
+import { catalog, type Age } from '../../../../shared/lib/media-library';
 import type { Box } from '../../components/lesson-stage/stage-look';
-import { catalog, type Age } from '../library';
 
 // The shape of the clean, darker clearing a backdrop leaves for a lesson's
 // props: a table in the lower middle, a band across the middle, or most of

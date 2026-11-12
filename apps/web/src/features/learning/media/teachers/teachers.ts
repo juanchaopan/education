@@ -1,5 +1,5 @@
+import { catalog, type Age } from '../../../../shared/lib/media-library';
 import type { Face } from '../../components/lesson-stage/stage-look';
-import { catalog, type Age } from '../library';
 
 // One character who tells lessons: its name, which the captions and the
 // question panel use, the school years it suits, its manner as the lines
