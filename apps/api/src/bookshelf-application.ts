@@ -9,7 +9,7 @@ import {
 import { childSessionTransaction } from './child-session-transaction.js';
 import { arrange } from './learning/domain/bookshelf.js';
 import { createBookshelfService, type Shelf } from './learning/services/bookshelf.js';
-import { parentFamilyTransactions } from './parent-child-transaction.js';
+import { parentFamilyTransactions } from './parent-family-transactions.js';
 
 // The catalogue's books as the shelves show them, in shelf order and by id.
 export function shelfOf(registry: ProblemRegistry): Shelf {
