@@ -1,5 +1,6 @@
-import { defineConfig, devices } from '@playwright/test';
+import { defineConfig } from '@playwright/test';
 import { apiServer, origin } from './e2e/api-server';
+import { reviewBrowser } from './scripts/lesson-review-capture.mjs';
 
 // The review recording of one lesson (`npm run lesson:review -- <lesson>`):
 // desktop Chromium, whose screencast and media recorder the capture uses,
@@ -18,10 +19,9 @@ export default defineConfig({
   workers: 1,
   reporter: 'list',
   use: {
-    ...devices['Desktop Chrome'],
+    ...reviewBrowser,
     baseURL: origin(port),
     locale: 'zh-CN',
-    launchOptions: { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH },
   },
   webServer: apiServer(port, false),
 });

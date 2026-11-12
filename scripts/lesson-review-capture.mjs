@@ -1,12 +1,27 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { devices } from '@playwright/test';
 
 // Records a lesson as a child plays it in Chromium: the picture through the
 // DevTools screencast and the page's own sound (narration and Web Audio
 // chimes) through a MediaRecorder on the page, never the microphone. The
 // two are put together into an MP4 with FFmpeg, beside a timeline of every
 // media event with the recording it came from.
+
+// The browser lessons are recorded in: desktop Chromium whose window has the
+// size of its viewport. A lesson goes full screen when the child starts it,
+// and the screencast of a full-screen page captures the browser window
+// rather than the emulated viewport; headless Chromium's window is 800×600
+// unless told otherwise.
+const desktop = devices['Desktop Chrome'];
+export const reviewBrowser = {
+  ...desktop,
+  launchOptions: {
+    executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH,
+    args: [`--window-size=${desktop.viewport.width},${desktop.viewport.height}`],
+  },
+};
 
 function captureAudio() {
   const NativeAudio = window.Audio;
@@ -74,25 +89,49 @@ export async function prepareLessonCapture(page) {
   await page.addInitScript(captureAudio);
 }
 
-async function startScreencast(page) {
+// Captures the page's picture at the size of its viewport until `stop`. Each
+// frame keeps the size, in CSS pixels, of the area it shows.
+export async function screencast(page) {
+  const viewport = page.viewportSize();
   const session = await page.context().newCDPSession(page);
   const frames = [];
   session.on('Page.screencastFrame', ({ data, metadata, sessionId }) => {
     void session.send('Page.screencastFrameAck', { sessionId }).catch(() => {});
-    if (metadata.timestamp) frames.push({ data, at: metadata.timestamp });
+    if (metadata.timestamp)
+      frames.push({
+        data,
+        at: metadata.timestamp,
+        width: metadata.deviceWidth,
+        height: metadata.deviceHeight,
+      });
   });
   await session.send('Page.startScreencast', {
     format: 'jpeg',
     quality: 86,
-    maxWidth: 1080,
-    maxHeight: 640,
+    maxWidth: viewport.width,
+    maxHeight: viewport.height,
   });
-  return { session, frames };
+  return {
+    frames,
+    viewport,
+    async stop() {
+      await session.send('Page.stopScreencast').catch(() => {});
+      await session.detach();
+    },
+  };
 }
 
-// The frames of the recorded interval, and a 25 fps playlist that shows each
-// frame until the next one arrived.
-async function writeFrames(dir, frames, began, end) {
+// The size, as `<width>×<height>`, of the first frame that shows another
+// area than the viewport, which would not be what the child saw; none when
+// every frame shows the whole viewport.
+export function otherFrameSize(frames, { width, height }) {
+  const other = frames.find((frame) => frame.width !== width || frame.height !== height);
+  return other && `${other.width}×${other.height}`;
+}
+
+// The frames of the recorded interval: the one on screen when it began, from
+// that moment, and every one that arrived before it ended.
+function recordedFrames(frames, began, end) {
   frames.sort((a, b) => a.at - b.at);
   const first = Math.max(
     0,
@@ -101,14 +140,20 @@ async function writeFrames(dir, frames, began, end) {
   const selected = frames.slice(first).filter((frame) => frame.at < end);
   if (!selected.length) throw new Error('Lesson recording has no frames in the recorded interval');
   selected[0].at = began;
-  for (const [index, frame] of selected.entries()) {
+  return selected;
+}
+
+// The frames, and a 25 fps playlist that shows each frame until the next one
+// arrived.
+async function writeFrames(dir, frames, began, end) {
+  for (const [index, frame] of frames.entries()) {
     await writeFile(join(dir, 'frame-' + index + '.jpg'), Buffer.from(frame.data, 'base64'));
   }
   const playlist = [];
   let index = 0;
   for (let tick = 0; tick / 25 < end - began; tick++) {
     const at = began + tick / 25;
-    while (selected[index + 1]?.at <= at) index++;
+    while (frames[index + 1]?.at <= at) index++;
     playlist.push("file 'frame-" + index + ".jpg'", 'duration 0.04');
   }
   playlist.push("file 'frame-" + index + ".jpg'");
@@ -135,13 +180,15 @@ function muxLesson(dir, audioOffset) {
   return video;
 }
 
-// Records the page while `interact` plays the lesson, and writes the MP4 and
-// the timeline into `outputDirectory`. A failure while playing still leaves
-// the recording up to that moment, then is thrown.
+// Records the page while `interact` plays the lesson, and writes the MP4 of
+// the whole viewport and the timeline into `outputDirectory`. A failure while
+// playing still leaves the recording up to that moment, then is thrown. A
+// recording with a frame that is not the whole viewport is not written; its
+// error carries the failure while playing, if there was one.
 export async function recordLesson(page, outputDirectory, interact) {
   const dir = resolve(outputDirectory);
   await mkdir(dir, { recursive: true });
-  const { session, frames } = await startScreencast(page);
+  const { frames, viewport, stop } = await screencast(page);
   let result;
   let failure;
   try {
@@ -153,13 +200,20 @@ export async function recordLesson(page, outputDirectory, interact) {
     }
     result = await page.evaluate(() => window.lessonCapture.stop());
   } finally {
-    await session.send('Page.stopScreencast').catch(() => {});
-    await session.detach();
+    await stop();
   }
   const { audio, began, audioBegan, end, events } = result;
   if (!audio || !frames.length)
     throw new Error('Lesson recording is missing picture or audio data');
-  await writeFrames(dir, frames, began, end);
+  const recorded = recordedFrames(frames, began, end);
+  const other = otherFrameSize(recorded, viewport);
+  if (other)
+    throw new Error(
+      `A lesson recording frame shows ${other} of the ${viewport.width}×${viewport.height} viewport; ` +
+        'record in reviewBrowser',
+      { cause: failure },
+    );
+  await writeFrames(dir, recorded, began, end);
   await writeFile(join(dir, 'browser-audio.webm'), Buffer.from(audio, 'base64'));
   const timeline = join(dir, 'playback-events.json');
   await writeFile(timeline, JSON.stringify({ began, audioBegan, end, events }, null, 2));
