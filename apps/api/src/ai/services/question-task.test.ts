@@ -44,6 +44,12 @@ it('tells the model to answer what it understood from the lesson so far and give
   expect(instructions()).toContain('只有完全听不懂孩子想问什么时，才只问一个澄清问题');
 });
 
+it('tells the model to remind a child who forgot what was found, rather than ask back', () => {
+  expect(instructions()).toContain(
+    '孩子说忘了前面得出的结论或做过的事，直接把它告诉孩子，不要反问',
+  );
+});
+
 it('tells the model to place things as the picture does and never to say it cannot see', () => {
   expect(instructions()).toContain('位置只用 picture 里写的地方');
   expect(instructions()).toContain('不说「我看不到图」');
@@ -53,7 +59,9 @@ it('turns a question about a detail beside the problem back to what matters, mak
   expect(instructions()).toContain('跟这道题有关的事材料里都有');
   expect(instructions()).toContain('再把孩子带回这一幕要看的东西或已经得出的结论');
   expect(instructions()).toContain('不编材料里没有的事、数和位置');
-  expect(instructions()).toContain('也不说「我不记得了」「我们回到那一幕看看吧」');
+  expect(instructions()).toContain(
+    '也不说「我不记得了」「没有提到」「没有说明」「我们回到那一幕看看吧」这类话',
+  );
   expect(instructions()).toContain('背景装饰按 scenery 说');
 });
 
