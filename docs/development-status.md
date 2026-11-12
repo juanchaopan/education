@@ -10,7 +10,7 @@
 
 #19 实现：独立迁移、数据库/迁移就绪检查及隔离的双实例 HTTPS Compose 账号测试；验证跨实例登录、轮换、撤销、共享限流和数据库中断恢复。范围和实际检查结果见 [#19](evidence/19/README.md)，未部署至 Vercel 或生产。
 
-账号、儿童关联、学习摘要、练习安排、草稿、家庭导出和删除，以及 AI 解题提示和语音转写的服务端都已实现，并按家庭授权。题库有第一道真实题目「一棵青菜有多重」（一年级 / 数学 / 学而思）：#48 的菜园天平短片原样搬进正式页面，登录的孩子保存做到的场景，最后说出答案并确认，家长看到独立完成、提示后完成和答错，见 [#49 验收记录](evidence/49/README.md)。尚未实现：彩铅配对（[#125](https://github.com/juanchaopan/education/issues/125)）和数轴追及（[#126](https://github.com/juanchaopan/education/issues/126)）两道题、进题后不用按键就能和老师对话（待 `/change` 评估）、新版本发布后已打开页面先保存草稿再刷新（[#118](https://github.com/juanchaopan/education/issues/118)）、生产发布（#52）。
+账号、儿童关联、学习摘要、按书安排练习（家长书架）、草稿、家庭导出和删除，以及 AI 解题提示和语音转写的服务端都已实现，并按家庭授权。题库有第一道真实题目「一棵青菜有多重」（一年级 / 数学 / 学而思）：#48 的菜园天平短片原样搬进正式页面，登录的孩子保存做到的场景，最后说出答案并确认，家长看到独立完成、提示后完成和答错，见 [#49 验收记录](evidence/49/README.md)。尚未实现：彩铅配对（[#125](https://github.com/juanchaopan/education/issues/125)）和数轴追及（[#126](https://github.com/juanchaopan/education/issues/126)）两道题、进题后不用按键就能和老师对话（待 `/change` 评估）、新版本发布后已打开页面先保存草稿再刷新（[#118](https://github.com/juanchaopan/education/issues/118)）、生产发布（#52）。
 
 不能把本阶段称为完整产品。题库不展示演示问题，不伪造学习进度。家庭框架的流程由 #47 验收，见 [#47 验收记录](evidence/47/README.md)。
 
