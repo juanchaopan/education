@@ -1,6 +1,7 @@
 import type { AnswerCommand, AskForHint, AttemptReceipt, SubmitAnswer } from '@education/contracts';
 import type { AnsweringPolicy } from '@education/problems/server';
 import { RequestError } from '../../shared/request-error.js';
+import { authoredHint } from '../domain/hints.js';
 import { outcomeOf } from '../domain/outcome.js';
 
 type Credentials = { token?: string; csrf?: string };
@@ -57,9 +58,8 @@ async function requireRound(store: AnswerStore, expected: string) {
 
 async function hint(store: AnswerStore, policy: AnsweringPolicy, command: AskForHint) {
   await requireRound(store, command.round);
-  const text =
-    policy.hints && Object.hasOwn(policy.hints, command.hintId) && policy.hints[command.hintId];
-  if (!text || text.length > 2000) throw new RequestError(404, '这条提示暂时不可用。');
+  const text = authoredHint(policy.hints, command.hintId);
+  if (!text) throw new RequestError(404, '这条提示暂时不可用。');
   await store.help(command.round, command.hintId);
   return { hint: text };
 }
