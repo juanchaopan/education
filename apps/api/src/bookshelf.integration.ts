@@ -1,16 +1,11 @@
-import { randomBytes, randomUUID } from 'node:crypto';
-import pg from 'pg';
+import { randomUUID } from 'node:crypto';
 import { afterAll, describe, expect, it } from 'vitest';
 import { createProblemRegistry, type Book, type ProblemPlugin } from '@education/problems/server';
 import { buildApp } from './app.js';
 import { createBookshelf } from './bookshelf-application.js';
-import { csrfToken, tokenHash } from './identity/services/session-security.js';
+import { familyFixtures, fixtureOrigin, sessionHeaders } from './family-fixtures.js';
 
-if (!process.env.DATABASE_URL?.endsWith('/education_test'))
-  throw new Error('Use isolated education_test');
-const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
-const families: string[] = [];
-const origin = 'https://education.example';
+const { pool, household, learner, close } = familyFixtures();
 
 // In shelf order the first grade's maths books are 规律, 旧书 and 图形.
 const shelfBooks: Book[] = [
@@ -41,46 +36,12 @@ const registry = createProblemRegistry(
   ],
   shelfBooks,
 );
-const app = buildApp({ origin, bookshelf: createBookshelf(pool, registry) });
+const app = buildApp({ origin: fixtureOrigin, bookshelf: createBookshelf(pool, registry) });
 
 afterAll(async () => {
   await app.close();
-  await pool.query('DELETE FROM families WHERE id=ANY($1::uuid[])', [families]);
-  await pool.end();
+  await close();
 });
-
-async function household(verified = true) {
-  const family = randomUUID();
-  const token = randomBytes(32).toString('base64url');
-  families.push(family);
-  await pool.query('INSERT INTO families(id) VALUES($1)', [family]);
-  await pool.query(
-    `WITH parent AS (
-       INSERT INTO parents(family_id,email,password_hash,email_verified)
-       VALUES($1,$2,'fixture',$3) RETURNING id
-     )
-     INSERT INTO parent_sessions(token_hash,parent_id,credential_version,family_epoch,expires_at,verified)
-     SELECT $4,id,1,1,now()+interval '1 day',$3 FROM parent`,
-    [family, `${family}@example.test`, verified, tokenHash(token)],
-  );
-  return { family, token };
-}
-
-async function learner(family: string, nickname: string) {
-  const id = randomUUID(),
-    token = randomBytes(32).toString('base64url');
-  await pool.query(
-    `INSERT INTO children(id,family_id,nickname,canonical_nickname,pin_hash,pin_pepper_version)
-     VALUES($1,$2,$3,$3,'fixture',1)`,
-    [id, family, nickname],
-  );
-  await pool.query(
-    `INSERT INTO child_sessions(token_hash,child_id,credential_version,family_epoch,expires_at)
-     VALUES($1,$2,1,1,now()+interval '1 day')`,
-    [tokenHash(token), id],
-  );
-  return { id, token };
-}
 
 // A family with two children, listed by nickname: 小猫, then 小鹿.
 async function familyOfTwo() {
@@ -111,14 +72,7 @@ async function held(childId: string, bookId: string) {
   ]);
 }
 
-const headers = (token: string) => ({
-  cookie: `__Host-education_session=${token}`,
-  origin,
-  'content-type': 'application/json',
-  'x-education-request': 'session',
-  'x-csrf-token': csrfToken(token),
-});
-const read = (url: string, token: string) => app.inject({ url, headers: headers(token) });
+const read = (url: string, token: string) => app.inject({ url, headers: sessionHeaders(token) });
 const change = (
   method: 'PUT' | 'DELETE',
   childId: string,
@@ -129,7 +83,7 @@ const change = (
   app.inject({
     method,
     url: `/api/v1/parents/children/${childId}/assignments/${bookId}`,
-    headers: { ...headers(token), ...extra },
+    headers: { ...sessionHeaders(token), 'content-type': 'application/json', ...extra },
     payload: {},
   });
 const give = (childId: string, bookId: string, token: string, extra = {}) =>
@@ -310,11 +264,11 @@ describe("a child's shelf and progress", () => {
       [problem('shape-a', 'fixture-shapes', 1), problem('shape-b', 'fixture-shapes', 2)],
       shelfBooks,
     );
-    const larger = buildApp({ origin, bookshelf: createBookshelf(pool, grown) });
+    const larger = buildApp({ origin: fixtureOrigin, bookshelf: createBookshelf(pool, grown) });
     try {
       const reply = await larger.inject({
         url: '/api/v1/children/assignments',
-        headers: headers(fawn.token),
+        headers: sessionHeaders(fawn.token),
       });
       expect(reply.json().books).toMatchObject([{ id: 'fixture-shapes', problems: 2, done: 1 }]);
     } finally {
@@ -368,14 +322,14 @@ describe('pages', () => {
       many.map((book, index) => problem(`problem-${index}`, book.id, 1)),
       many,
     );
-    const shelf = buildApp({ origin, bookshelf: createBookshelf(pool, large) });
+    const shelf = buildApp({ origin: fixtureOrigin, bookshelf: createBookshelf(pool, large) });
     const { parent } = await familyOfTwo();
     try {
       const page = async (offset: number) =>
         (
           await shelf.inject({
             url: `/api/v1/parents/books?shelf=library&offset=${offset}`,
-            headers: headers(parent.token),
+            headers: sessionHeaders(parent.token),
           })
         ).json();
       const first = await page(0);
