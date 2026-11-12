@@ -13,12 +13,14 @@ type CueProps =
   // Rings spreading from a spot to look at.
   | { kind: 'pulse'; at: Point; radius?: number };
 
+// The route is quoted with double quotes, the quote mark CSS serializes
+// strings with, so the style reads back with the quote it was set with.
 function Arrow({ from, to, shadow }: { from: Point; to: Point; shadow?: string }) {
   const [fromX, fromY] = from;
   const [toX, toY] = to;
   const path = `M ${fromX} ${fromY} Q ${(fromX + toX) / 2} ${Math.min(fromY, toY) - 35} ${toX} ${toY}`;
   return (
-    <g className={styles.arrow} style={{ offsetPath: `path('${path}')` }}>
+    <g className={styles.arrow} style={{ offsetPath: `path("${path}")` }}>
       <path d="M0-12L9 0L0 12L2 2L-13 3V-3L2-2Z" strokeWidth="2" filter={shadow} />
     </g>
   );

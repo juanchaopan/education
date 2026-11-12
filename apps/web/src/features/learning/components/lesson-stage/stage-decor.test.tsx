@@ -16,7 +16,7 @@ describe('AttentionCue', () => {
   it('sends the arrow along a curve from the prop to where it goes', () => {
     const svg = world(<AttentionCue kind="arrow" from={[100, 200]} to={[300, 220]} />);
     const arrow = svg.querySelector('g')!;
-    expect(arrow.style.offsetPath).toBe("path('M 100 200 Q 200 165 300 220')");
+    expect(arrow.style.offsetPath).toBe('path("M 100 200 Q 200 165 300 220")');
   });
 
   it('casts the shadow the lesson gives it', () => {
