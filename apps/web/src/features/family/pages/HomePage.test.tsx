@@ -34,15 +34,20 @@ function books(filter: string | null): ChildBookPage {
   return { counts, books: [fresh, going, finished], hasMore: false };
 }
 
-// The server: the child signed in until signing out, with three books.
-function serve({ signedIn = true, shelf = books } = {}) {
-  let session = signedIn;
+type Session = 'in' | 'out' | 'unknown';
+
+// The server: the child signed in until signing out, with three books, or
+// nobody signed in, or a session that cannot be checked just now.
+function serve({ session = 'in' as Session, shelf = books } = {}) {
+  let state = session;
   const fetch = vi.fn(async (address: string) => {
     const url = new URL(address, 'https://education.example');
-    if (url.pathname === '/api/v1/children/session')
-      return session ? Response.json(child) : new Response(null, { status: 401 });
+    if (url.pathname === '/api/v1/children/session') {
+      if (state === 'unknown') return new Response(null, { status: 503 });
+      return state === 'in' ? Response.json(child) : new Response(null, { status: 401 });
+    }
     if (url.pathname === '/api/v1/children/logout') {
-      session = false;
+      state = 'out';
       return new Response(null, { status: 204 });
     }
     if (url.pathname === '/api/v1/children/assignments')
@@ -140,8 +145,16 @@ it('turns into the sign-in once the child signs out', async () => {
 });
 
 it('shows the sign-in to anyone else', async () => {
-  serve({ signedIn: false });
+  serve({ session: 'out' });
   open();
   expect(await screen.findByRole('tab', { name: '孩子登录' })).toBeInTheDocument();
   expect(screen.queryByText('我的书')).not.toBeInTheDocument();
+  expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+});
+
+it('lets a child sign in when the session cannot be checked, saying the account is safe', async () => {
+  serve({ session: 'unknown' });
+  open();
+  expect(await screen.findByRole('alert')).toHaveTextContent('暂时无法确认登录状态');
+  expect(screen.getByLabelText('我的家庭码')).toBeInTheDocument();
 });

@@ -4,6 +4,7 @@ import { returnPath } from '../../../shared/lib/problem-path';
 import { Icon } from '../../../shared/ui/Icon';
 import { LinkButton } from '../../../shared/ui/LinkButton';
 import { Loading } from '../../../shared/ui/Loading';
+import { Notice } from '../../../shared/ui/Notice';
 import { StandaloneLink } from '../../../shared/ui/StandaloneLink';
 import { AccountLayout, type AccountArt } from '../components/AccountLayout';
 import { ChildLoginForm, type ChildLoginFields } from '../components/ChildLoginForm';
@@ -15,10 +16,17 @@ import { useParentSession } from '../data-access/useParentSession';
 import { LoginPanel } from './LoginPanel';
 import styles from './SignInPage.module.css';
 
+type Props = {
+  art: AccountArt;
+  // Whether it could not be found out if a child is signed in; the child can
+  // still sign in, and is told the account is safe.
+  failed?: boolean;
+};
+
 // The home page for someone not signed in as a child: the child's sign-in and
 // the parent's, as two tabs. The tab chosen is kept in the address, the
 // child's by default. A sign-in on the way to a problem returns to it.
-export function SignInPage({ art }: { art: AccountArt }) {
+export function SignInPage({ art, failed }: Props) {
   const [query, setQuery] = useSearchParams();
   const tab: SignInTab = query.get('tab') === 'parent' ? 'parent' : 'child';
   const choose = (chosen: SignInTab) =>
@@ -40,7 +48,16 @@ export function SignInPage({ art }: { art: AccountArt }) {
       footer={tab === 'child' ? <ChildWaysOn /> : <ParentWaysOn />}
     >
       <SignInTabs tab={tab} onTab={choose}>
-        {tab === 'child' ? <ChildSignIn /> : <ParentSignIn next={returnPath(query.get('next'))} />}
+        {tab === 'child' ? (
+          <>
+            {failed && (
+              <Notice tone="error">暂时无法确认登录状态，请稍后刷新。你的账号不会丢失。</Notice>
+            )}
+            <ChildSignIn />
+          </>
+        ) : (
+          <ParentSignIn next={returnPath(query.get('next'))} />
+        )}
       </SignInTabs>
     </AccountLayout>
   );

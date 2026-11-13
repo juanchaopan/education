@@ -21,7 +21,7 @@ export function HomePage({ art, childArt }: { art: AccountArt; childArt: ChildHo
         <Loading label="正在打开你的空间…" />
       </div>
     );
-  if (!session.data) return <SignInPage art={art} />;
+  if (!session.data) return <SignInPage art={art} failed={session.isError} />;
   if (next) return <Navigate to={next} replace />;
   return <ChildHome key={session.data.csrfToken} session={session.data} art={childArt} />;
 }
