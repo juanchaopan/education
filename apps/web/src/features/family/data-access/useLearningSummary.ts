@@ -4,17 +4,13 @@ import { sessionRead } from './session-request';
 
 const key = 'parent-learning-summary';
 const unavailable = '暂时无法查看学习摘要，请重试。';
-const messages = {
-  failed: unavailable,
-  401: '登录状态已失效，请重新登录家长账号。',
-  404: '没有找到这位孩子，请刷新孩子列表。',
-};
+const reading = { failed: unavailable, 401: '登录状态已失效，请重新登录家长账号。' };
 
 async function readSummary(childId: string, offset: number) {
   const data = await sessionRead(
     `parents/children/${encodeURIComponent(childId)}/learning-summary?offset=${offset}`,
     LearningSummary,
-    messages,
+    { ...reading, 404: '没有找到这位孩子，请刷新孩子列表。' },
   );
   if (data.childId !== childId) throw new Error(unavailable);
   return data;
@@ -37,6 +33,6 @@ export function useFamilyOverview(csrf: string) {
     retry: false,
     gcTime: 0,
     refetchOnWindowFocus: false,
-    queryFn: () => sessionRead('parents/overview', FamilyOverview, messages),
+    queryFn: () => sessionRead('parents/overview', FamilyOverview, reading),
   });
 }
