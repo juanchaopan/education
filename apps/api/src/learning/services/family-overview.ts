@@ -9,6 +9,7 @@ import {
   type LearningRangeItem,
   type ProblemState,
   type ReviewIdea,
+  type StudyDay,
   type StudyDays,
 } from '@education/contracts';
 import { problemTotals, reviewSuggested } from '../domain/review.js';
@@ -60,6 +61,19 @@ const stretch = (timeZone: string, from: CalendarDate, to: CalendarDate) => ({
   window: { start: startOfDay(timeZone, from), end: startOfDay(timeZone, addDays(to, 1)) },
 });
 
+// Each child's days over a stretch, every day with its seconds and the state
+// each problem reached on it.
+async function daysOf(
+  family: FamilyLearning,
+  timeZone: string,
+  childIds: readonly string[],
+  from: CalendarDate,
+  to: CalendarDate,
+): Promise<Map<string, StudyDay[]>> {
+  const facts = await family.dayFacts(childIds, timeZone, stretch(timeZone, from, to));
+  return new Map(childIds.map((childId) => [childId, studyDays(from, to, facts.get(childId)!)]));
+}
+
 const stateOrder: Record<ProblemState, number> = { independent: 0, assisted: 1, open: 2 };
 
 // The problems of a stretch of the record: finished alone first, then after
@@ -81,9 +95,20 @@ async function familyToday(family: FamilyLearning, now: Date) {
   return { timeZone, today: localDate(timeZone, now) };
 }
 
-async function requireChild(family: FamilyLearning, childId: string) {
+// The family's zone for days of one of its children that the request names,
+// once the days make sense and the child is the family's.
+async function childDaysAsked(
+  family: FamilyLearning,
+  childId: string,
+  now: Date,
+  issueOf: (today: CalendarDate) => string | undefined,
+) {
+  const { timeZone, today } = await familyToday(family, now);
+  const issue = issueOf(today);
+  if (issue) throw new RequestError(400, issue);
   if (!(await family.hasChild(childId)))
     throw new RequestError(404, '没有找到这个孩子，请刷新孩子列表。');
+  return timeZone;
 }
 
 // Every child with the block of days ending today, the first day with any
@@ -96,15 +121,14 @@ async function overviewOf(
   const { timeZone, today } = await familyToday(family, now);
   const evidence = await family.evidence();
   const ids = evidence.map(({ childId }) => childId);
-  const days = stretch(timeZone, blockEnding(today).from, today);
-  const facts = await family.dayFacts(ids, timeZone, days);
+  const days = await daysOf(family, timeZone, ids, blockEnding(today).from, today);
   const earliest = await family.earliest(ids, timeZone);
   return {
     timeZone,
     today,
     children: evidence.map(({ childId, problems }) => ({
       id: childId,
-      days: studyDays(days.from, days.to, facts.get(childId)!),
+      days: days.get(childId)!,
       earliest: earliest.get(childId) ?? null,
       review: reviewIdeas(problems, latest),
     })),
@@ -118,34 +142,29 @@ async function blockOf(
   end: string,
   now: Date,
 ): Promise<StudyDays> {
-  const { timeZone, today } = await familyToday(family, now);
-  const issue = blockIssue(end, today);
-  if (issue) throw new RequestError(400, issue);
-  await requireChild(family, childId);
-  const days = stretch(timeZone, blockEnding(end).from, end);
-  const facts = await family.dayFacts([childId], timeZone, days);
-  return { days: studyDays(days.from, days.to, facts.get(childId)!) };
+  const timeZone = await childDaysAsked(family, childId, now, (today) => blockIssue(end, today));
+  const days = await daysOf(family, timeZone, [childId], blockEnding(end).from, end);
+  return { days: days.get(childId)! };
 }
 
 // One child's learning over one to seven days, and the whole record's totals.
+// The figures add up the same days the card shows, so the two agree.
 async function rangeOf(
   family: FamilyLearning,
-  request: { childId: string; from: string; to: string },
+  { childId, from, to }: { childId: string; from: string; to: string },
   title: Title,
   now: Date,
 ): Promise<LearningRange> {
-  const { childId, from, to } = request;
-  const { timeZone, today } = await familyToday(family, now);
-  const issue = rangeIssue(from, to, today);
-  if (issue) throw new RequestError(400, issue);
-  await requireChild(family, childId);
-  const days = stretch(timeZone, from, to);
-  const facts = await family.dayFacts([childId], timeZone, days);
+  const timeZone = await childDaysAsked(family, childId, now, (today) =>
+    rangeIssue(from, to, today),
+  );
+  const days = await daysOf(family, timeZone, [childId], from, to);
+  const rows = await family.rangeRows(childId, stretch(timeZone, from, to).window);
   return {
     from,
     to,
-    ...addUpDays(studyDays(from, to, facts.get(childId)!)),
-    items: rangeItems(await family.rangeRows(childId, days.window), title),
+    ...addUpDays(days.get(childId)!),
+    items: rangeItems(rows, title),
     total: await family.totals(childId),
   };
 }
