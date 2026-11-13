@@ -48,15 +48,21 @@ export async function readDoneProblems(
 }
 
 // When the child last handed in an answer to each of `problemIds`, at any
-// version; a problem never answered is left out.
+// version: the final answer, or a guess or reason of its variation, whichever
+// came last. A problem never answered is left out.
 export async function readStudyTimes(
   client: pg.PoolClient,
   childId: string,
   problemIds: readonly string[],
 ): Promise<ReadonlyMap<string, Date>> {
   const { rows } = await client.query<{ problemId: string; studiedAt: Date }>(
-    `SELECT problem_id AS "problemId",max(updated_at) AS "studiedAt" FROM progress
-     WHERE child_id=$1 AND problem_id=ANY($2::text[]) GROUP BY problem_id`,
+    `SELECT problem_id AS "problemId",max(at) AS "studiedAt" FROM (
+       SELECT problem_id,updated_at AS at FROM progress
+       WHERE child_id=$1 AND problem_id=ANY($2::text[])
+       UNION ALL
+       SELECT problem_id,submitted_at FROM variation_answers
+       WHERE child_id=$1 AND problem_id=ANY($2::text[])
+     ) answered GROUP BY problem_id`,
     [childId, problemIds],
   );
   return new Map(rows.map(({ problemId, studiedAt }) => [problemId, studiedAt]));

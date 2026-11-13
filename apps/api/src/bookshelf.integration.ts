@@ -376,6 +376,34 @@ describe("the order of the child's books", () => {
       Date.parse(books.books[1].studiedAt),
     );
   });
+
+  it('counts a guess or reason of a variation as studying its book', async () => {
+    const { parent, fawn } = await familyOfTwo();
+    await give(fawn.id, 'fixture-patterns', parent.token);
+    await give(fawn.id, 'fixture-reading', parent.token);
+    await opened(fawn.id, 'fixture-patterns');
+    await opened(fawn.id, 'fixture-reading');
+    await answered(fawn.id, 'pattern-b', 'incorrect');
+    await answered(fawn.id, 'reading-a', 'incorrect');
+    await pool.query(`UPDATE progress SET updated_at=now()-interval '2 days' WHERE child_id=$1`, [
+      fawn.id,
+    ]);
+    await pool.query(
+      `UPDATE progress SET updated_at=now()-interval '3 days'
+       WHERE child_id=$1 AND problem_id='pattern-b'`,
+      [fawn.id],
+    );
+    expect(ids(await childBooks(fawn.token))).toEqual(['fixture-reading', 'fixture-patterns']);
+    await pool.query(
+      `INSERT INTO variation_answers(child_id,problem_id,problem_version,attempt_id,round,part,
+         fingerprint,outcome)
+       VALUES($1,'pattern-b',1,$2,$3,'reason',NULL,'incorrect')`,
+      [fawn.id, randomUUID(), randomUUID()],
+    );
+    const books = await childBooks(fawn.token);
+    expect(ids(books)).toEqual(['fixture-patterns', 'fixture-reading']);
+    expect(Date.now() - Date.parse(books.books[0].studiedAt)).toBeLessThan(60_000);
+  });
 });
 
 describe('pages', () => {
