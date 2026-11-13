@@ -7,6 +7,8 @@ import { registerFamilyExport } from './identity/routes/family-export.js';
 import type { FamilyExportService } from './identity/services/family-export.js';
 import { registerFamilyDeletion } from './identity/routes/family-deletion.js';
 import type { FamilyDeletionService } from './identity/services/family-deletion.js';
+import { registerFamilyTimeZone } from './identity/routes/family-time-zone.js';
+import type { FamilyTimeZoneService } from './identity/services/family-time-zone.js';
 import { registerChildRegistration } from './identity/routes/child-registration.js';
 import { registerChildSessions } from './identity/routes/child-session.js';
 import type { ChildSessionService } from './identity/services/child-session.js';
@@ -62,6 +64,7 @@ type AppOptions = {
   aiConsent?: AiConsentService;
   familyExport?: FamilyExportService;
   familyDeletion?: FamilyDeletionService;
+  familyTimeZone?: FamilyTimeZoneService;
   drafts?: DraftService;
   answering?: AnswerService;
   variation?: VariationService;
@@ -206,6 +209,7 @@ function registerIdentity(app: FastifyInstance, options: AppOptions) {
   registerAiConsent(app, origin, options.aiConsent);
   registerFamilyExport(app, origin, options.familyExport);
   registerFamilyDeletion(app, origin, options.familyDeletion);
+  registerFamilyTimeZone(app, origin, options.familyTimeZone);
   registerParentSessions(app, origin, options.sessions);
   registerVerification(app, {
     origin: origin,

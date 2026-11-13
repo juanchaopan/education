@@ -2,6 +2,8 @@ import type {
   AiConsentView,
   FamilyChildren,
   FamilyOverview,
+  FamilyTimeZone,
+  FamilyTimeZoneSetting,
   LearningSummary,
   ParentSession,
   ProblemLearningSummary,
@@ -58,8 +60,14 @@ const policy = (
   availability: 'unavailable',
 });
 
+// The family keeps China time, as the screenshots' browser does.
 const signedIn: Api = {
   'GET /api/v1/session': ok(session),
+  'GET /api/v1/family/time-zone': ok<FamilyTimeZone>({ timeZone: 'Asia/Shanghai' }),
+  'GET /api/v1/parents/family/time-zone': ok<FamilyTimeZoneSetting>({
+    timeZone: 'Asia/Shanghai',
+    set: true,
+  }),
   'GET /api/v1/parents/ai-consent': ok<AiConsentView>({
     reauthenticationRequired: false,
     tutoringBudget: 'unset',

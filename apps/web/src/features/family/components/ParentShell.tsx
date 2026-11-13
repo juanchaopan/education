@@ -12,7 +12,7 @@ type Place = { to: string; icon: IconName; label: string; end?: boolean };
 // The parts of the parent space, in the order a parent looks after them.
 const places: Place[] = [
   { to: '/family', icon: 'home', label: '总览', end: true },
-  { to: '/family/children', icon: 'users', label: '孩子' },
+  { to: '/family/profile', icon: 'users', label: '家庭' },
   { to: '/family/practice', icon: 'calendar', label: '练习安排' },
   { to: '/family/learning', icon: 'chart', label: '学习记录' },
   { to: '/family/privacy', icon: 'shield', label: '隐私与数据' },

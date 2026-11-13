@@ -6,11 +6,11 @@ import { LinkButton } from './LinkButton';
 it('stays a link to where it leads', () => {
   render(
     <MemoryRouter>
-      <LinkButton to="/family/children#invite">邀请孩子</LinkButton>
+      <LinkButton to="/family/profile#invite">邀请孩子</LinkButton>
     </MemoryRouter>,
   );
   expect(screen.getByRole('link', { name: '邀请孩子' })).toHaveAttribute(
     'href',
-    '/family/children#invite',
+    '/family/profile#invite',
   );
 });

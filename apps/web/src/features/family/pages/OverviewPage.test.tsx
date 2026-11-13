@@ -107,7 +107,7 @@ it('shows each child with totals from their record, never mixing hints into fini
   expect(await within(theirs).findByText('还没有学习记录。')).toBeVisible();
   expect(screen.getByRole('link', { name: '邀请孩子' })).toHaveAttribute(
     'href',
-    '/family/children#registration-key-title',
+    '/family/profile#registration-key-title',
   );
   const asked = fetcher.mock.calls.map(([url]) => url);
   expect(asked.filter((url) => url.includes('learning-summary'))).toEqual([]);

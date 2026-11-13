@@ -33,7 +33,7 @@ export function OverviewPage({ csrf }: { csrf: string }) {
             loading={registration.isPending}
             failed={registration.isError}
           />
-          <LinkButton to="/family/children#registration-key-title">
+          <LinkButton to="/family/profile#registration-key-title">
             <Icon name="key" />
             邀请孩子
           </LinkButton>

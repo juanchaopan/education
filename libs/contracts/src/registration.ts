@@ -1,4 +1,5 @@
 import { Type, type Static } from '@sinclair/typebox';
+import { TimeZoneName } from './calendar.js';
 
 // How long a parent's password may be, counted in Unicode code points: a
 // Chinese character or a single emoji is one, an emoji joined from several
@@ -12,10 +13,14 @@ export const ParentPassword = Type.String({
   maxLength: parentPasswordLength.longest,
 });
 
+// The sign-up page sends the browser's time zone for the new family. A page
+// that predates it sends none, and a name the server does not know is taken
+// as none; the family then gets its zone from a parent's device later.
 export const ParentRegistration = Type.Object(
   {
     email: Type.String({ minLength: 3, maxLength: 254 }),
     password: ParentPassword,
+    timeZone: Type.Optional(TimeZoneName),
   },
   { additionalProperties: false },
 );

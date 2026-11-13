@@ -1,6 +1,7 @@
 import type pg from 'pg';
 import type { ChildAccount } from '../domain/child-session.js';
 import type { ChildSessionRepository } from './child-session.js';
+import { currentChildSession } from './session-query.js';
 import { transaction } from './transaction.js';
 
 const columns = `c.id,c.family_id AS "familyId",c.nickname,c.pin_hash AS "pinHash",
@@ -79,10 +80,8 @@ export function withChildSession<T>(
       await client.query<{ id: string; nickname: string }>(
         `UPDATE child_sessions s
       SET last_seen_at=clock_timestamp(),expires_at=clock_timestamp()+interval '180 days'
-      FROM children c,families f WHERE s.token_hash=$1 AND s.child_id=c.id AND c.family_id=f.id
-      AND c.family_id=$2 AND c.pin_pepper_version=1 AND s.credential_version=c.credential_version
-      AND s.family_epoch=f.auth_epoch AND s.expires_at>clock_timestamp()
-      AND s.last_seen_at>clock_timestamp()-interval '180 days' RETURNING c.id,c.nickname`,
+      FROM children c,families f WHERE s.token_hash=$1 AND c.family_id=$2
+      AND ${currentChildSession} RETURNING c.id,c.nickname`,
         [hash, owner.family_id],
       )
     ).rows[0];

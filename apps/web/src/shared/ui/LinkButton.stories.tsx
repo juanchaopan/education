@@ -14,7 +14,7 @@ const meta = {
     ),
   ],
   args: {
-    to: '/family/children#invite',
+    to: '/family/profile#invite',
     children: (
       <>
         <Icon name="key" />

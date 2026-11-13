@@ -16,12 +16,21 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core';
 
-export const families = pgTable('families', {
-  code: text('code').unique(),
-  authEpoch: integer('auth_epoch').default(1).notNull(),
-  id: uuid('id').defaultRandom().primaryKey(),
-  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-});
+// A family's time zone is an IANA name, such as Asia/Shanghai, so its days
+// follow the zone's changes between winter and summer time. It is empty
+// until a parent's device fills it in; the deployment's default zone counts
+// the family's days meanwhile.
+export const families = pgTable(
+  'families',
+  {
+    code: text('code').unique(),
+    authEpoch: integer('auth_epoch').default(1).notNull(),
+    id: uuid('id').defaultRandom().primaryKey(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    timeZone: text('time_zone'),
+  },
+  (table) => [check('family_time_zone_length', sql`char_length(${table.timeZone}) <= 64`)],
+);
 
 export const aiConsents = pgTable(
   'ai_consents',

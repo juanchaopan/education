@@ -6,11 +6,11 @@ import type { RegistrationRepository } from './registration.js';
 class DuplicateEmail extends Error {}
 
 export function createRegistrationStore(pool: pg.Pool): RegistrationRepository['save'] {
-  return async (email, passwordHash) => {
+  return async (email, passwordHash, timeZone = null) => {
     try {
       await drizzle(pool).transaction(async (tx) => {
         const family = await tx.execute<{ id: string }>(
-          sql`INSERT INTO families DEFAULT VALUES RETURNING id`,
+          sql`INSERT INTO families (time_zone) VALUES (${timeZone}) RETURNING id`,
         );
         const parent = await tx.execute(sql`
           INSERT INTO parents (family_id, email, password_hash)

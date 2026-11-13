@@ -63,7 +63,7 @@ function Invite() {
         <Icon name="users" />
       </span>
       <p>孩子加入家庭以后，就能给孩子安排书</p>
-      <LinkButton to="/family/children#registration-key-title">
+      <LinkButton to="/family/profile#registration-key-title">
         <Icon name="key" />
         邀请孩子
       </LinkButton>

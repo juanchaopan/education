@@ -1,9 +1,10 @@
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { themeFade } from './schedule';
+import { themeFade } from '../../shared/lib/day-night';
 import { useDayNightTheme } from './useDayNightTheme';
 
 const root = document.documentElement;
+const minute = 60_000;
 
 function preferLessMotion(reduce: boolean) {
   vi.stubGlobal('matchMedia', (query: string) => ({ matches: reduce, media: query }));
@@ -45,7 +46,7 @@ it('switches at once for a child who asks for less motion', () => {
 
 it('keeps switching the next morning without a reload', () => {
   renderHook(() => useDayNightTheme());
-  act(() => vi.advanceTimersByTime(2000 + 12 * 60 * 60 * 1000));
+  act(() => vi.advanceTimersByTime(2000 + 12 * 60 * minute));
   expect(root.dataset.theme).toBe('day');
 });
 
@@ -55,6 +56,25 @@ it('catches up when the page comes back into view after its timers slept', () =>
   act(() => {
     document.dispatchEvent(new Event('visibilitychange'));
   });
+  expect(root.dataset.theme).toBe('night');
+});
+
+it("follows the family's clock and moves to a new zone as soon as it is given", () => {
+  vi.setSystemTime(new Date('2026-11-12T12:15:00Z'));
+  const { rerender } = renderHook(({ zone }) => useDayNightTheme(zone), {
+    initialProps: { zone: 'America/Toronto' },
+  });
+  expect(root.dataset.theme).toBe('day');
+  rerender({ zone: 'Asia/Shanghai' });
+  expect(root.dataset.theme).toBe('night');
+});
+
+it('switches at 18:00 on the family clock, not the device clock', () => {
+  // 17:59:58 in Toronto on the day the clocks fall back.
+  vi.setSystemTime(new Date('2026-11-01T22:59:58Z'));
+  renderHook(() => useDayNightTheme('America/Toronto'));
+  expect(root.dataset.theme).toBe('day');
+  act(() => vi.advanceTimersByTime(2000));
   expect(root.dataset.theme).toBe('night');
 });
 
@@ -72,6 +92,6 @@ it('sets a first theme without fading and paints the browser bar to match', () =
 it('stops switching once the page lets go of it', () => {
   const { unmount } = renderHook(() => useDayNightTheme());
   unmount();
-  act(() => vi.advanceTimersByTime(2000));
+  act(() => vi.advanceTimersByTime(minute));
   expect(root.dataset.theme).toBe('day');
 });

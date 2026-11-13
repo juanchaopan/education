@@ -107,10 +107,10 @@ const dayStates: PageState[] = [
     api: emptyParentSpaceApi,
   },
   {
-    name: 'family-children',
-    path: '/family/children',
+    name: 'family-profile',
+    path: '/family/profile',
     ready: '孩子登录管理',
-    last: '一个很长很长的昵称乐乐',
+    last: '每天的学习从这个时区的 0 点算起，家里每个人的页面也按它的时间换白天和晚上的样子。',
     api: parentSpaceApi,
   },
   {
@@ -179,13 +179,14 @@ const dayStates: PageState[] = [
 ];
 
 // The key pages are also seen in the night theme: the catalogue, the child's
-// and the parent's sign-in, the parent space's overview and bookshelf, a
+// and the parent's sign-in, the parent space's overview, family page and bookshelf, a
 // lesson's title card and the page for a path that leads nowhere.
 const nightPages = [
   'explore-empty',
   'child-signed-out',
   'family-signed-out',
   'family-overview',
+  'family-profile',
   'family-practice',
   'family-practice-family',
   'lesson-title-card',

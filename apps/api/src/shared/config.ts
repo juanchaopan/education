@@ -1,5 +1,6 @@
 import { Type } from '@sinclair/typebox';
 import { Value } from '@sinclair/typebox/value';
+import { canonicalTimeZone } from '@education/contracts';
 import { databaseOptions } from './database-config.js';
 
 const schema = Type.Object({
@@ -19,7 +20,20 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env) {
   checkBoolean(env, 'REGISTRATION_ENABLED');
   if (env.PIN_PEPPER && !/^[a-fA-F0-9]{64}$/.test(env.PIN_PEPPER))
     throw new Error('PIN_PEPPER must contain 64 hexadecimal characters');
-  return { ...config, ...readRegistrationConfig(env), ai: readAiConfig(env) };
+  return {
+    ...config,
+    ...readRegistrationConfig(env),
+    defaultTimeZone: readDefaultTimeZone(env.DEFAULT_TIME_ZONE),
+    ai: readAiConfig(env),
+  };
+}
+
+// The time zone a family's days are counted in until a parent's device has
+// filled in the family's own.
+function readDefaultTimeZone(value = 'Asia/Shanghai') {
+  const zone = canonicalTimeZone(value);
+  if (!zone) throw new Error('DEFAULT_TIME_ZONE must be an IANA time zone name');
+  return zone;
 }
 
 // The paid AI switch, the backend key, each service's own eligibility, which

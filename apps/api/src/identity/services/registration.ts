@@ -1,4 +1,8 @@
-import type { ParentRegistration, RegistrationReceipt } from '@education/contracts';
+import {
+  canonicalTimeZone,
+  type ParentRegistration,
+  type RegistrationReceipt,
+} from '@education/contracts';
 import { registrationIssue } from '../domain/registration.js';
 import type { RegistrationRepository } from '../repositories/registration.js';
 import { RequestError } from '../../shared/request-error.js';
@@ -9,15 +13,19 @@ type Dependencies = RegistrationRepository & {
   mail?: RegistrationMail;
 };
 
+// A time zone the server does not know never stops a sign-up: the family
+// starts without one and gets it from a parent's device later.
 export function createRegistrationService(dependencies: Dependencies) {
   return async (input: ParentRegistration, source: string): Promise<RegistrationReceipt> => {
     const email = input.email.trim().toLowerCase();
     const issue = registrationIssue(email, input.password);
     if (issue) throw new RequestError(400, issue);
+    const timeZone =
+      input.timeZone === undefined ? null : (canonicalTimeZone(input.timeZone) ?? null);
     return dependencies.admit(
       async () => {
         const hash = await dependencies.hash(input.password);
-        await dependencies.save(email, hash);
+        await dependencies.save(email, hash, timeZone);
         const mail = await (dependencies.mail ?? isolatedMail).requestVerification(email);
         return { status: 'pending-verification', mail };
       },

@@ -39,6 +39,11 @@ describe('registration HTTP boundary', () => {
       (await app.inject({ method: 'POST', url: '/api/v1/registration-keys' })).statusCode,
     ).toBe(404);
   });
+  it("passes the browser's time zone on with the sign-up", async () => {
+    const { send, submit } = setup();
+    expect((await send({ ...input, timeZone: 'Asia/Shanghai' })).statusCode).toBe(202);
+    expect(submit).toHaveBeenCalledWith({ ...input, timeZone: 'Asia/Shanghai' }, '127.0.0.1');
+  });
   it.each(['https://other.example', 'null', ''])(
     'rejects untrusted origin %s before processing',
     async (bad) => {
@@ -60,6 +65,8 @@ describe('registration HTTP boundary', () => {
     { ...input, familyId: 'untrusted' },
     { email: 123, password: input.password },
     { ...input, password: 'short' },
+    { ...input, timeZone: `Asia/${'x'.repeat(60)}` },
+    { ...input, timeZone: 8 },
   ])('rejects invalid schemas without coercion', async (payload) => {
     const { send, submit } = setup();
     expect((await send(payload)).statusCode).toBe(400);

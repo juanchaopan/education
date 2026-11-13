@@ -25,7 +25,7 @@ import { createSessionRepository } from './identity/repositories/postgres-sessio
 import { fileURLToPath } from 'node:url';
 import { existsSync } from 'node:fs';
 import { buildApp } from './app.js';
-import { readConfig, type AiConfig, type Config } from './shared/config.js';
+import { readConfig, type Config } from './shared/config.js';
 import pg from 'pg';
 import { createRegistrationService } from './identity/services/registration.js';
 import { hashParentPassword, verifyParentPassword } from './identity/services/password.js';
@@ -49,6 +49,7 @@ import { createBookshelf } from './bookshelf-application.js';
 import { createAiConsent } from './ai-consent-application.js';
 import { createFamilyExport } from './family-export-application.js';
 import { createFamilyDeletion } from './family-deletion-application.js';
+import { createFamilyTimeZone } from './family-time-zone-application.js';
 import { createTeachingFeedback } from './teaching-feedback-application.js';
 import { createTeacherQuestion } from './teacher-question-application.js';
 import { createVoiceTranscription } from './voice-transcription-application.js';
@@ -79,7 +80,7 @@ export async function createApplication(env: NodeJS.ProcessEnv = process.env) {
     childSessions,
     ...childServices,
     childAccess: createChildAccess(pool, sessions, admit, config),
-    ...createFamilyManagement({ pool, ledgerPool, sessions, admit, ai: config.ai }),
+    ...createFamilyManagement({ pool, ledgerPool, sessions, admit, config }),
     verification: createVerification(pool, mailConfig, admit),
     recovery: createRecovery(pool, mailConfig, admit),
     ready: pool ? await createReadinessCheck(pool) : undefined,
@@ -229,22 +230,23 @@ function createFamilyManagement({
   ledgerPool,
   sessions,
   admit,
-  ai,
+  config,
 }: {
   pool?: pg.Pool;
   ledgerPool?: pg.Pool;
   sessions?: ReturnType<typeof createSessionService>;
   admit?: ReturnType<typeof createAuthAdmission>;
-  ai: AiConfig;
+  config: Pick<Config, 'ai' | 'defaultTimeZone'>;
 }) {
   if (!pool || !sessions || !admit) return {};
   return {
     learningSummary: createLearningSummary(pool),
     familyOverview: createFamilyOverview(pool),
     bookshelf: createBookshelf(pool),
-    aiConsent: createAiConsent(pool, ai),
+    aiConsent: createAiConsent(pool, config.ai),
     familyExport: createFamilyExport(pool),
     familyDeletion: createFamilyDeletion(pool, ledgerPool),
+    familyTimeZone: createFamilyTimeZone(pool, config.defaultTimeZone),
     registrationKeys: createRegistrationKeyService({
       sessions,
       repository: createRegistrationKeyRepository(pool),

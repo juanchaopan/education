@@ -12,15 +12,11 @@ import { AccountLayout, type AccountArt } from '../components/AccountLayout';
 import { AccountNotices } from '../components/AccountNotices';
 import { FamilyDeleted } from '../components/FamilyDeleted';
 import { ParentShell } from '../components/ParentShell';
+import { useFillFamilyTimeZone } from '../data-access/useFamilyTimeZoneSetting';
 import { useParentLogout, useParentSession } from '../data-access/useParentSession';
 import { LoginPanel } from './LoginPanel';
 import { OverviewPage } from './OverviewPage';
-import {
-  ChildrenSection,
-  LearningSection,
-  PracticeSection,
-  PrivacySection,
-} from './ParentSections';
+import { LearningSection, PracticeSection, PrivacySection, ProfileSection } from './ParentSections';
 import { RegistrationPanel } from './RegistrationPanel';
 import { VerificationPanel } from './VerificationPanel';
 import styles from './FamilyPage.module.css';
@@ -164,7 +160,8 @@ function Unverified({
 // The verified parent's space: the overview at /family and a page for each
 // part of it. An address under /family that names no part leads back to the
 // overview. Each part opens at its top, or at the card its address names
-// after a "#", as the overview's links do.
+// after a "#", as the overview's links do. A family without a time zone of
+// its own takes this device's.
 function ParentSpace({
   session,
   leaving,
@@ -175,12 +172,13 @@ function ParentSpace({
 }: Account & { onDeleted: () => void }) {
   useArrivalScroll();
   const csrf = session.csrfToken;
+  useFillFamilyTimeZone(csrf);
   return (
     <ParentShell email={session.email} leaving={leaving} onLogout={onLogout}>
       <AccountNotices refreshing={refreshing} error={error} />
       <Routes>
         <Route index element={<OverviewPage key={`overview-${csrf}`} csrf={csrf} />} />
-        <Route path="children" element={<ChildrenSection csrf={csrf} />} />
+        <Route path="profile" element={<ProfileSection csrf={csrf} />} />
         <Route path="practice" element={<PracticeSection csrf={csrf} />} />
         <Route path="learning" element={<LearningSection csrf={csrf} />} />
         <Route path="privacy" element={<PrivacySection csrf={csrf} onDeleted={onDeleted} />} />
