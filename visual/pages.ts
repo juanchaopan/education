@@ -6,6 +6,8 @@ import {
   gardenLessonApi,
   going,
   noBooksApi,
+  refusedApi,
+  refusedPath,
   unavailable,
   unavailableBooksApi,
 } from './child-home';
@@ -72,6 +74,18 @@ const dayStates: PageState[] = [
     name: 'problem-guest',
     path: '/problems/garden-balance/1',
     ready: '登录后才能打开这道题',
+  },
+  {
+    name: 'problem-unassigned',
+    path: refusedPath,
+    ready: '请家长安排这本书',
+    api: refusedApi('unassigned'),
+  },
+  {
+    name: 'problem-book-unavailable',
+    path: refusedPath,
+    ready: '这本书暂时不可用',
+    api: refusedApi('unavailable'),
   },
   {
     name: 'problem-unavailable',

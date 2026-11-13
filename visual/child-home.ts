@@ -1,4 +1,10 @@
-import type { ChildBook, ChildBookPage, ChildSession, ProblemSummary } from '@education/contracts';
+import type {
+  ChildBook,
+  ChildBookPage,
+  ChildSession,
+  ProblemAccessReason,
+  ProblemOpening,
+} from '@education/contracts';
 import type { Api } from './api';
 
 // Test fixtures only: these books and problems never enter the problem list.
@@ -92,7 +98,7 @@ export const noBooksApi: Api = {
 };
 
 // The garden lesson, opened by a child given its book, at its title card.
-const garden: ProblemSummary = {
+const garden: ProblemOpening = {
   id: 'garden-balance',
   version: 1,
   title: '一棵青菜有多重',
@@ -100,9 +106,24 @@ const garden: ProblemSummary = {
   subject: '数学',
   category: '学而思',
   sequence: 1,
+  mode: 'practice',
+  book: 'g1-math-xueersi',
 };
 export const gardenLessonApi: Api = {
   'GET /api/v1/children/session': ok(child),
   'GET /api/v1/problems/garden-balance/1': ok(garden),
   'GET /api/v1/problems/garden-balance/1/draft': ok({ draft: null }),
 };
+
+// The path of a problem the server refuses the child, and how it answers.
+export const refusedPath = '/problems/visual-fixture-refused/1';
+export const refusedApi = (reason: ProblemAccessReason): Api => ({
+  'GET /api/v1/children/session': ok(child),
+  'GET /api/v1/problems/visual-fixture-refused/1': {
+    status: 403,
+    json: {
+      message: reason === 'unassigned' ? '这本书还没有安排给你。' : '这本书暂时不可用。',
+      reason,
+    },
+  },
+});
