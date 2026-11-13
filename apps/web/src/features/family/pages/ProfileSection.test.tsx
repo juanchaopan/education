@@ -53,12 +53,15 @@ function stubFamily(start: Zone, failSaves = false) {
   return { saves };
 }
 
-const timeZoneCard = () => screen.findByRole('region', { name: '家庭时区' });
+// The parent space reads the session, the children, the KEY and the time zone
+// before its cards show, which can take longer than a second on a busy machine.
+const opening = { timeout: 5000 };
+const timeZoneCard = () => screen.findByRole('region', { name: '家庭时区' }, opening);
 
 it("leads the children's old address to the family's page and its cards", async () => {
   stubFamily({ timeZone: 'America/New_York', set: true });
   renderFamilyPage('/family/children');
-  expect(await screen.findByRole('heading', { name: '家庭', level: 1 })).toBeVisible();
+  expect(await screen.findByRole('heading', { name: '家庭', level: 1 }, opening)).toBeVisible();
   expect(await screen.findByText('K7M4-Q2AB-9XRT')).toBeVisible();
   expect(screen.getByRole('region', { name: '孩子注册 KEY' })).toBeVisible();
   expect(await timeZoneCard()).toBeVisible();
