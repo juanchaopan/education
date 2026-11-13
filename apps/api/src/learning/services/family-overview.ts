@@ -1,6 +1,7 @@
 import type { ChildOverview, FamilyOverview, ReviewIdea } from '@education/contracts';
+import { reviewSuggested } from '../domain/review.js';
 import type { ChildEvidence, ProblemEvidence } from '../repositories/postgres-family-overview.js';
-import { reviewSuggested, type Title } from './learning-summary.js';
+import type { Title } from './learning-summary.js';
 
 const sum = (problems: readonly ProblemEvidence[], count: (problem: ProblemEvidence) => number) =>
   problems.reduce((total, problem) => total + count(problem), 0);
