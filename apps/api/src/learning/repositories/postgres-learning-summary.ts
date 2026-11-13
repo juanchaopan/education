@@ -18,7 +18,7 @@ export async function readLearningEvidence(
     }
   >(
     `WITH problem_page AS (
-      ${triedProblems('=$1')}
+      ${triedProblems('$1')}
       ORDER BY problem_id,problem_version LIMIT $2 OFFSET $3
     )
     SELECT page.problem_id AS id,page.problem_version AS version,
