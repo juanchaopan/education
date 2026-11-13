@@ -17,6 +17,13 @@ const titles: Record<string, string> = {
   'trains@1': '小火车',
 };
 const title = (id: string, version: number) => titles[`${id}@${version}`];
+// The current version of a problem is the newest one with a title.
+const latest = (id: string) =>
+  Object.entries(titles)
+    .map(([key, name]) => ({ key: key.split('@'), title: name }))
+    .filter(({ key }) => key[0] === id)
+    .map(({ key, title: name }) => ({ version: Number(key[1]), title: name }))
+    .sort((a, b) => b.version - a.version)[0];
 // 20:30 on 12 November in China is still 12 November in Toronto.
 const now = () => new Date('2026-11-12T12:30:00Z');
 
@@ -56,7 +63,11 @@ function family(
     rangeRows: vi.fn(async () => rangeRows),
     totals: vi.fn(async () => ({ problems: 38, seconds: 22_800 })),
   } satisfies FamilyLearning;
-  const service = createFamilyOverviewService((_token, work) => work(store), title, clock);
+  const service = createFamilyOverviewService(
+    (_token, work) => work(store),
+    { title, latest },
+    clock,
+  );
   return { service, store };
 }
 
@@ -109,12 +120,31 @@ describe('the overview', () => {
             problem('pattern', 1, { incorrect: 1 }),
             problem('pattern', 2, { incorrect: 3 }),
             problem('lesson', 1, { incorrect: 4, independent: 1 }),
+            problem('lost', 1, { incorrect: 2 }),
           ],
         },
       ],
     });
     const [child] = (await service.overview('session')).children;
-    expect(child!.review).toEqual([{ id: 'garden', version: 2, title: '菜园天平', incorrect: 2 }]);
+    expect(child!.review).toEqual([
+      { id: 'garden', version: 2, title: '菜园天平', incorrect: 2 },
+      { id: 'pattern', version: 1, title: '辨认规律', incorrect: 4 },
+    ]);
+  });
+
+  it('judges a problem over all its versions, so a new version never brings it back', async () => {
+    const review = async (problems: ProblemEvidence[]) =>
+      (await family({ evidence: [{ childId: mi, problems }] }).service.overview('session'))
+        .children[0]!.review;
+    expect(
+      await review([
+        problem('garden', 1, { incorrect: 2 }),
+        problem('garden', 2, { independent: 1 }),
+      ]),
+    ).toEqual([]);
+    expect(await review([problem('garden', 1, { incorrect: 2 })])).toEqual([
+      { id: 'garden', version: 2, title: '菜园天平', incorrect: 2 },
+    ]);
   });
 });
 

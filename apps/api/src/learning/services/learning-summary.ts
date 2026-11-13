@@ -13,8 +13,13 @@ export function withTitle<T extends { id: string; version: number }>(problem: T,
   return { ...problem, title: title(problem.id, problem.version) ?? null };
 }
 
-export function summarizeProblem(row: LearningEvidence, title: Title): ProblemLearningSummary {
-  return { ...withTitle(row, title), reviewSuggested: reviewSuggested(row) };
+// One version's record as the parent sees it. Whether it is worth another
+// try is decided for the whole problem, so every version of it agrees.
+export function summarizeProblem(
+  { problem, ...row }: LearningEvidence,
+  title: Title,
+): ProblemLearningSummary {
+  return { ...withTitle(row, title), reviewSuggested: reviewSuggested(problem) };
 }
 
 export function createLearningSummaryService(

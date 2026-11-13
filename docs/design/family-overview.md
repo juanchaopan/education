@@ -110,7 +110,7 @@ Outcome  = [problemId, 'independent' | 'assisted' | 'open']   // 这一天每道
 ```
 
 - 一次给 28 天：默认显示最后 7 天，往前挪 21 次以内都不用再请求。
-- `children` 是家里的每个孩子，顺序和孩子列表一样；`review` 是学习摘要标为建议复习的题，和现在「值得再练」的规则一样，题目清单里找不到的版本不列。
+- `children` 是家里的每个孩子，顺序和孩子列表一样；`review` 是值得再练的题，按 [REQ-005 的规则](../product/requirements.md)按题目判断，每道题一项，`version` 和 `title` 是题目现在的版本，`incorrect` 是所有版本答错次数的和；题目清单里已经没有的题不列。
 - 第一个 PR 先只给 `id`、按全部记录累计的 `total` 和 `review`，页面不变；C2 换成上面的形状。
 
 ### 家长：更早的日子

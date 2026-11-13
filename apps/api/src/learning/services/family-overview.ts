@@ -11,7 +11,7 @@ import {
   type ReviewIdea,
   type StudyDays,
 } from '@education/contracts';
-import { reviewSuggested } from '../domain/review.js';
+import { problemTotals, reviewSuggested } from '../domain/review.js';
 import {
   blockEnding,
   blockIssue,
@@ -27,17 +27,28 @@ import type {
 import { RequestError } from '../../shared/request-error.js';
 import { withTitle, type Title } from './learning-summary.js';
 
+// The problem catalogue as the parent space reads it: the title of a version
+// the child tried, or nothing for one it no longer lists, and the current
+// version of a problem with its title.
+type Latest = (id: string) => { version: number; title: string } | undefined;
+export type Catalogue = { title: Title; latest: Latest };
+
 type WithFamily = <T>(
   token: string | undefined,
   work: (family: FamilyLearning) => Promise<T>,
 ) => Promise<T>;
 
-// A version the catalogue no longer lists has nothing to open, so it is not
-// suggested.
-function reviewIdea(problem: ProblemEvidence, title: Title): ReviewIdea[] {
-  if (!reviewSuggested(problem)) return [];
-  const { id, version, title: name, incorrect } = withTitle(problem, title);
-  return name === null ? [] : [{ id, version, title: name, incorrect }];
+// The problems worth another try, each once, judged over every version the
+// child tried with the wrong answers on all of them added up. Each opens at
+// the problem's current version, the one the books give; a problem the
+// catalogue no longer lists has nothing to open, so it is not suggested.
+function reviewIdeas(problems: readonly ProblemEvidence[], latest: Latest): ReviewIdea[] {
+  return [...problemTotals(problems)].flatMap(([id, total]) => {
+    const current = reviewSuggested(total) ? latest(id) : undefined;
+    return current
+      ? [{ id, version: current.version, title: current.title, incorrect: total.incorrect }]
+      : [];
+  });
 }
 
 // A stretch of the family's days with the instants it starts and ends at,
@@ -79,7 +90,7 @@ async function requireChild(family: FamilyLearning, childId: string) {
 // record, and the problems worth another try.
 async function overviewOf(
   family: FamilyLearning,
-  title: Title,
+  latest: Latest,
   now: Date,
 ): Promise<FamilyOverview> {
   const { timeZone, today } = await familyToday(family, now);
@@ -95,7 +106,7 @@ async function overviewOf(
       id: childId,
       days: studyDays(days.from, days.to, facts.get(childId)!),
       earliest: earliest.get(childId) ?? null,
-      review: problems.flatMap((problem) => reviewIdea(problem, title)),
+      review: reviewIdeas(problems, latest),
     })),
   };
 }
@@ -144,12 +155,12 @@ async function rangeOf(
 // family's time zone.
 export function createFamilyOverviewService(
   withFamily: WithFamily,
-  title: Title,
+  { title, latest }: Catalogue,
   now = () => new Date(),
 ) {
   return {
     overview: (token: string | undefined) =>
-      withFamily(token, (family) => overviewOf(family, title, now())),
+      withFamily(token, (family) => overviewOf(family, latest, now())),
     days: (token: string | undefined, childId: string, end: string) =>
       withFamily(token, (family) => blockOf(family, childId, end, now())),
     range: (token: string | undefined, childId: string, from: string, to: string) =>

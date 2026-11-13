@@ -13,7 +13,10 @@ const app = buildApp({
   familyOverview: createFamilyOverview(
     pool,
     'Asia/Shanghai',
-    (id, version) => (id === 'garden' && version === 2 ? '菜园天平' : undefined),
+    {
+      title: (id, version) => (id === 'garden' && version === 2 ? '菜园天平' : undefined),
+      latest: (id) => (id === 'garden' ? { version: 2, title: '菜园天平' } : undefined),
+    },
     () => now,
   ),
 });
