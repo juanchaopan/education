@@ -33,11 +33,11 @@ export function registerFamilyTimeZone(
     {
       bodyLimit: 1024,
       onRequest: sessionWriteGuard(origin),
-      schema: { body: FamilyTimeZoneChange },
+      schema: { body: FamilyTimeZoneChange, response: { 200: FamilyTimeZoneSetting } },
     },
-    async (request, reply) => {
-      await available().change(readSessionCredentials(request), request.body);
-      return reply.code(204).send();
+    (request, reply) => {
+      reply.header('Cache-Control', 'no-store');
+      return available().change(readSessionCredentials(request), request.body);
     },
   );
   app.get(

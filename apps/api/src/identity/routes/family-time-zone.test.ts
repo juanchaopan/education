@@ -19,7 +19,7 @@ const parentPath = '/api/v1/parents/family/time-zone';
 function setup() {
   const service = {
     read: vi.fn(async () => ({ timeZone: 'Asia/Shanghai', set: false })),
-    change: vi.fn(async () => {}),
+    change: vi.fn(async () => ({ timeZone: 'America/Toronto', set: true })),
     forSession: vi.fn(async () => ({ timeZone: 'America/Toronto' })),
   } satisfies FamilyTimeZoneService;
   return { service, app: buildApp({ origin, familyTimeZone: service }) };
@@ -36,7 +36,7 @@ describe('family time zone routes', () => {
     expect(service.read).toHaveBeenCalledWith({ token, csrf: csrfToken(token) });
   });
 
-  it('saves a new zone and answers with no content', async () => {
+  it('saves a new zone and answers with the zone saved', async () => {
     const { app, service } = setup();
     const reply = await app.inject({
       method: 'PUT',
@@ -44,27 +44,31 @@ describe('family time zone routes', () => {
       headers: sameSite,
       payload: { timeZone: 'America/Toronto' },
     });
-    expect(reply.statusCode).toBe(204);
+    expect(reply.statusCode).toBe(200);
+    expect(reply.json()).toEqual({ timeZone: 'America/Toronto', set: true });
     expect(service.change).toHaveBeenCalledWith(
       { token, csrf: csrfToken(token) },
       { timeZone: 'America/Toronto' },
     );
   });
 
-  it.each([{}, { timeZone: '' }, { timeZone: 8 }, { timeZone: 'UTC', family: 'other' }])(
-    'turns away the body %j before the service',
-    async (payload) => {
-      const { app, service } = setup();
-      const reply = await app.inject({
-        method: 'PUT',
-        url: parentPath,
-        headers: sameSite,
-        payload,
-      });
-      expect(reply.statusCode).toBe(400);
-      expect(service.change).not.toHaveBeenCalled();
-    },
-  );
+  it.each([
+    {},
+    { timeZone: '' },
+    { timeZone: 8 },
+    { timeZone: 'UTC', family: 'other' },
+    { timeZone: 'UTC', fill: 'yes' },
+  ])('turns away the body %j before the service', async (payload) => {
+    const { app, service } = setup();
+    const reply = await app.inject({
+      method: 'PUT',
+      url: parentPath,
+      headers: sameSite,
+      payload,
+    });
+    expect(reply.statusCode).toBe(400);
+    expect(service.change).not.toHaveBeenCalled();
+  });
 
   it('refuses a change from another site', async () => {
     const { app, service } = setup();

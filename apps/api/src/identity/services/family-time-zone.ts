@@ -28,12 +28,16 @@ export function createFamilyTimeZoneService(
         const zone = await readFamilyTimeZone(client, parent.familyId);
         return { timeZone: zone ?? defaultTimeZone, set: zone !== null };
       }),
-    change: (credentials: Credentials, input: FamilyTimeZoneChange) => {
-      const zone = canonicalTimeZone(input.timeZone);
+    change: (
+      credentials: Credentials,
+      { timeZone, fill = false }: FamilyTimeZoneChange,
+    ): Promise<FamilyTimeZoneSetting> => {
+      const zone = canonicalTimeZone(timeZone);
       if (!zone) throw new RequestError(400, '没有找到这个时区，请重新选择。');
-      return transaction(credentials, (client, parent) =>
-        saveFamilyTimeZone(client, parent.familyId, zone),
-      );
+      return transaction(credentials, async (client, parent) => ({
+        timeZone: await saveFamilyTimeZone(client, parent.familyId, zone, fill),
+        set: true,
+      }));
     },
     forSession: async (token: string | undefined): Promise<FamilyTimeZone> => ({
       timeZone: (await sessionTimeZone(token)) ?? defaultTimeZone,

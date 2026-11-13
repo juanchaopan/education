@@ -11,7 +11,13 @@ export const FamilyTimeZoneSetting = Type.Object(
   closed,
 );
 
-export const FamilyTimeZoneChange = Type.Object({ timeZone: TimeZoneName }, closed);
+// A zone the parent chose, or with `fill` a device's own zone, which only
+// fills in a family that has none yet and leaves a zone already set alone.
+// The reply is the family's zone as saved.
+export const FamilyTimeZoneChange = Type.Object(
+  { timeZone: TimeZoneName, fill: Type.Optional(Type.Boolean()) },
+  closed,
+);
 
 // The zone a signed-in parent's or child's pages follow for day and night.
 export const FamilyTimeZone = Type.Object({ timeZone: TimeZoneName }, closed);

@@ -32,12 +32,25 @@ describe('the family time zone', () => {
   });
 
   it('saves a known zone in its usual spelling for the parent’s own family', async () => {
-    const { service, query } = family(null);
-    await service.change(credentials, { timeZone: 'europe/london' });
+    const { service, query } = family('Europe/London');
+    expect(await service.change(credentials, { timeZone: 'europe/london' })).toEqual({
+      timeZone: 'Europe/London',
+      set: true,
+    });
     expect(query).toHaveBeenLastCalledWith(expect.stringMatching(/^UPDATE families/), [
       'family',
       'Europe/London',
+      false,
     ]);
+  });
+
+  it("fills in a device's zone only as a fill, and answers with the zone the family keeps", async () => {
+    const { service, query } = family('America/Toronto');
+    expect(await service.change(credentials, { timeZone: 'Europe/London', fill: true })).toEqual({
+      timeZone: 'America/Toronto',
+      set: true,
+    });
+    expect(query).toHaveBeenLastCalledWith(expect.any(String), ['family', 'Europe/London', true]);
   });
 
   it('turns away a name it does not know, or an offset, before opening the family', async () => {

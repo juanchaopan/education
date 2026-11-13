@@ -16,9 +16,12 @@ const saveStates = {
 } as const satisfies Record<string, SaveState>;
 
 // Every zone the browser knows, with the family's and the device's own in
-// case the browser lists them under another name.
+// case the browser lists them under another name. A browser that cannot list
+// its zones offers just those two.
 function knownZones(...more: (string | undefined)[]) {
-  return [...Intl.supportedValuesOf('timeZone'), ...more.filter((zone) => zone !== undefined)];
+  const listed =
+    typeof Intl.supportedValuesOf === 'function' ? Intl.supportedValuesOf('timeZone') : [];
+  return [...listed, ...more.filter((zone) => zone !== undefined)];
 }
 
 // The family's time zone on the 「家庭」 page. The list keeps the parent's
@@ -50,7 +53,7 @@ export function TimeZonePanel({ csrf }: { csrf: string }) {
         setChoice(zone);
       }}
       onSave={() => {
-        if (choice && choice !== current) change.mutate(choice);
+        if (choice && choice !== current) change.mutate({ timeZone: choice });
       }}
       onRetry={() => void setting.refetch()}
     />
