@@ -6,6 +6,9 @@ import { ChildRegistrationForm } from '../components/ChildRegistrationForm';
 import { ChildRegistrationSuccess } from '../components/ChildRegistrationSuccess';
 import { useChildRegistration } from '../data-access/useChildRegistration';
 
+// A child joins the family with the KEY a parent gave. Once registered, the
+// way on is the home page's sign-in, already holding the family code and the
+// nickname.
 export function ChildRegistrationPage() {
   const [fields, setFields] = useState({ registrationKey: '', nickname: '', pin: '' });
   const requestId = useRef(crypto.randomUUID());
@@ -44,7 +47,7 @@ export function ChildRegistrationPage() {
           <ChildRegistrationSuccess receipt={receipt} />
           <p>
             <StandaloneLink
-              to="/child"
+              to="/"
               state={{ familyCode: receipt.familyCode, nickname: receipt.nickname }}
             >
               去孩子登录

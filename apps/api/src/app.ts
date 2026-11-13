@@ -32,7 +32,7 @@ import Fastify, {
   type FastifyRequest,
 } from 'fastify';
 import { Type } from '@sinclair/typebox';
-import { registerCatalog } from './catalog/routes/catalog.js';
+import { registerCatalog, type ProblemOpening } from './catalog/routes/catalog.js';
 import { registerParentRegistration } from './identity/routes/registration.js';
 import type { RegistrationService } from './identity/services/registration.js';
 import { RequestError } from './shared/request-error.js';
@@ -74,6 +74,7 @@ type AppOptions = {
   familyOverview?: FamilyOverviewService;
   studyTime?: StudyTimeService;
   bookshelf?: BookshelfService;
+  problemOpening?: ProblemOpening;
   teachingFeedback?: TeachingFeedbackService;
   teacherQuestion?: TeacherQuestionService;
   voiceTranscription?: VoiceTranscriptionService;
@@ -119,7 +120,7 @@ export function buildApp(options: AppOptions = {}) {
       .send({ status: ready ? 'ready' : 'unavailable' });
   });
   registerServiceGate(app, options.ready);
-  registerCatalog(app);
+  registerCatalog(app, undefined, options.problemOpening);
   registerLearning(app, options);
   registerTeachingFeedback(app, options.origin ?? localOrigin, options.teachingFeedback);
   registerTeacherQuestion(app, options.origin ?? localOrigin, options.teacherQuestion);

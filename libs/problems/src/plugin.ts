@@ -116,11 +116,17 @@ export function createProblemRegistry(plugins: readonly ProblemPlugin[], shelf: 
     if (!current || version > current.summary.version) latest.set(id, registered);
   }
   const byBook = shelve(latest.values());
+  const registered = (id: string, version: number) => versions.get(`${id}/${version}`);
   return {
     current: [...latest.values()].map(({ summary }) => summary),
     books: shelf,
-    find: (id: string, version: number) => versions.get(`${id}/${version}`)?.plugin,
-    summary: (id: string, version: number) => versions.get(`${id}/${version}`)?.summary,
+    find: (id: string, version: number) => registered(id, version)?.plugin,
+    summary: (id: string, version: number) => registered(id, version)?.summary,
+    // The book a problem version is filed in.
+    bookOf: (id: string, version: number) => {
+      const bookId = registered(id, version)?.book;
+      return bookId === undefined ? undefined : booksById.get(bookId);
+    },
     // The latest version of every problem filed in the book, in the book's order.
     problemsOf: (bookId: string) => byBook.get(bookId) ?? [],
   };

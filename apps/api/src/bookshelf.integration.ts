@@ -72,6 +72,14 @@ async function held(childId: string, bookId: string) {
   ]);
 }
 
+// The child opens a problem of the book, as opening it in practice records.
+async function opened(childId: string, bookId: string) {
+  await pool.query('UPDATE book_assignments SET opened_at=now() WHERE child_id=$1 AND book_id=$2', [
+    childId,
+    bookId,
+  ]);
+}
+
 const read = (url: string, token: string) => app.inject({ url, headers: sessionHeaders(token) });
 const change = (
   method: 'PUT' | 'DELETE',
@@ -93,6 +101,8 @@ const takeBack = (childId: string, bookId: string, token: string) =>
 const ids = (page: { books: { id: string }[] }) => page.books.map(({ id }) => id);
 const shelfOf = async (name: 'library' | 'family', token: string) =>
   (await read(`/api/v1/parents/books?shelf=${name}`, token)).json();
+const childBooks = async (token: string, filter = '') =>
+  (await read(`/api/v1/children/assignments${filter}`, token)).json();
 
 describe('the library and the family shelf', () => {
   it('moves a given book from the library to the family shelf and back when taken back', async () => {
@@ -277,8 +287,8 @@ describe("a child's shelf and progress", () => {
   });
 });
 
-describe("the child's practice", () => {
-  it("lists only the child's books, with every problem, unfinished first and withdrawn last", async () => {
+describe("the child's books", () => {
+  it("lists only the child's books, new ones first, with every problem and the counts", async () => {
     const { parent, kitten, fawn } = await familyOfTwo();
     await answered(fawn.id, 'shape-a', 'independent');
     await give(fawn.id, 'fixture-shapes', parent.token);
@@ -288,21 +298,31 @@ describe("the child's practice", () => {
     const reply = await read('/api/v1/children/assignments', fawn.token);
     expect(reply.headers['cache-control']).toBe('no-store');
     expect(reply.json()).toEqual({
+      counts: { all: 3, learning: 2, finished: 0, unavailable: 1, fresh: 2 },
       hasMore: false,
       books: [
         expect.objectContaining({
           id: 'fixture-patterns',
           done: 0,
+          fresh: true,
+          studiedAt: null,
+          assignedAt: expect.any(String),
           items: [
             { id: 'pattern-a', version: 2, title: '题目 pattern-a', done: false },
             { id: 'pattern-b', version: 1, title: '题目 pattern-b', done: false },
           ],
         }),
-        expect.objectContaining({ id: 'fixture-shapes', done: 1 }),
-        expect.objectContaining({ id: 'fixture-withdrawn', status: 'unavailable' }),
+        expect.objectContaining({
+          id: 'fixture-shapes',
+          done: 1,
+          fresh: true,
+          studiedAt: expect.any(String),
+        }),
+        expect.objectContaining({ id: 'fixture-withdrawn', status: 'unavailable', fresh: false }),
       ],
     });
-    expect((await read('/api/v1/children/assignments', kitten.token)).json()).toEqual({
+    expect(await childBooks(kitten.token)).toEqual({
+      counts: { all: 0, learning: 0, finished: 0, unavailable: 0, fresh: 0 },
       books: [],
       hasMore: false,
     });
@@ -310,8 +330,56 @@ describe("the child's practice", () => {
   });
 });
 
+describe('new books', () => {
+  it('stops counting a book as new once the child opened one of its problems, until given again', async () => {
+    const { parent, fawn } = await familyOfTwo();
+    await answered(fawn.id, 'shape-a', 'independent');
+    await give(fawn.id, 'fixture-shapes', parent.token);
+    await give(fawn.id, 'fixture-patterns', parent.token);
+    await opened(fawn.id, 'fixture-shapes');
+    expect(await childBooks(fawn.token)).toMatchObject({
+      counts: { all: 2, learning: 1, finished: 1, fresh: 1 },
+      books: [
+        { id: 'fixture-patterns', fresh: true },
+        { id: 'fixture-shapes', fresh: false },
+      ],
+    });
+    expect(ids(await childBooks(fawn.token, '?books=finished'))).toEqual(['fixture-shapes']);
+    expect(ids(await childBooks(fawn.token, '?books=learning'))).toEqual(['fixture-patterns']);
+    await takeBack(fawn.id, 'fixture-shapes', parent.token);
+    await give(fawn.id, 'fixture-shapes', parent.token);
+    expect((await childBooks(fawn.token)).counts).toMatchObject({
+      learning: 2,
+      finished: 0,
+      fresh: 2,
+    });
+  });
+});
+
+describe("the order of the child's books", () => {
+  it('lists books studied most recently first, by their latest answer', async () => {
+    const { parent, fawn } = await familyOfTwo();
+    await give(fawn.id, 'fixture-patterns', parent.token);
+    await give(fawn.id, 'fixture-reading', parent.token);
+    await opened(fawn.id, 'fixture-patterns');
+    await opened(fawn.id, 'fixture-reading');
+    await answered(fawn.id, 'reading-a', 'incorrect');
+    await answered(fawn.id, 'pattern-b', 'incorrect');
+    await pool.query(
+      `UPDATE progress SET updated_at=now()-interval '2 days'
+       WHERE child_id=$1 AND problem_id='reading-a'`,
+      [fawn.id],
+    );
+    const books = await childBooks(fawn.token);
+    expect(ids(books)).toEqual(['fixture-patterns', 'fixture-reading']);
+    expect(Date.parse(books.books[0].studiedAt)).toBeGreaterThan(
+      Date.parse(books.books[1].studiedAt),
+    );
+  });
+});
+
 describe('pages', () => {
-  it('holds 24 books a page and says whether more follow', async () => {
+  it('holds 24 books a shelf page and six books a page of the child books', async () => {
     const many: Book[] = Array.from({ length: 30 }, (_, index) => ({
       id: `fixture-book-${index}`,
       grade: '三年级',
@@ -323,22 +391,27 @@ describe('pages', () => {
       many,
     );
     const shelf = buildApp({ origin: fixtureOrigin, bookshelf: createBookshelf(pool, large) });
-    const { parent } = await familyOfTwo();
+    const { parent, fawn } = await familyOfTwo();
+    const page = async (url: string, token: string) =>
+      (await shelf.inject({ url, headers: sessionHeaders(token) })).json();
     try {
-      const page = async (offset: number) =>
-        (
-          await shelf.inject({
-            url: `/api/v1/parents/books?shelf=library&offset=${offset}`,
-            headers: sessionHeaders(parent.token),
-          })
-        ).json();
-      const first = await page(0);
+      const library = (offset: number) =>
+        page(`/api/v1/parents/books?shelf=library&offset=${offset}`, parent.token);
+      const first = await library(0);
       expect(first).toMatchObject({ total: 30, hasMore: true });
       expect(first.books).toHaveLength(24);
-      const last = await page(24);
+      const last = await library(24);
       expect(last).toMatchObject({ total: 30, hasMore: false });
       expect(last.books).toHaveLength(6);
-      expect(await page(60)).toMatchObject({ total: 30, books: [], hasMore: false });
+      expect(await library(60)).toMatchObject({ total: 30, books: [], hasMore: false });
+
+      for (const book of many.slice(0, 8)) await held(fawn.id, book.id);
+      const own = (offset: number) =>
+        page(`/api/v1/children/assignments?offset=${offset}`, fawn.token);
+      const firstOwn = await own(0);
+      expect(firstOwn).toMatchObject({ counts: { all: 8 }, hasMore: true });
+      expect(firstOwn.books).toHaveLength(6);
+      expect(await own(6)).toMatchObject({ hasMore: false, books: [{}, {}] });
     } finally {
       await shelf.close();
     }

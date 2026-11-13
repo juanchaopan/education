@@ -134,6 +134,13 @@
       "when": 1794556478158,
       "tag": "0018_study_time",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1794609513564,
+      "tag": "0019_book_opened",
+      "breakpoints": true
     }
   ]
 }
