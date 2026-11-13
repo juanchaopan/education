@@ -7,6 +7,7 @@ import { ResetPasswordPage } from '../features/family/pages/ResetPasswordPage';
 import { VerifyEmailPage } from '../features/family/pages/VerifyEmailPage';
 import { LibraryPage } from '../features/library/pages/LibraryPage';
 import { ProblemPage } from '../features/library/pages/ProblemPage';
+import { useFamilyTimeZone } from '../shared/lib/useFamilyTimeZone';
 import { Page } from '../shared/ui/Page';
 import { StandaloneLink } from '../shared/ui/StandaloneLink';
 import { accountArt } from './account-art';
@@ -22,9 +23,9 @@ import styles from './App.module.css';
 // beside their card and the parent space has its own navigation for the
 // parts under /family; and a problem's page, which fills the screen on its
 // own with a back button in place of the header. The update notice lies over
-// all of them.
+// all of them. Every page keeps to the day and night of the family's clock.
 export function App() {
-  useDayNightTheme();
+  useDayNightTheme(useFamilyTimeZone());
   return (
     <>
       <Routes>

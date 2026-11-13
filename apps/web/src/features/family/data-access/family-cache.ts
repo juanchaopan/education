@@ -1,17 +1,23 @@
 import type { QueryClient } from '@tanstack/react-query';
 import type { ParentSession } from '@education/contracts';
+import { familyTimeZoneKey } from '../../../shared/lib/useFamilyTimeZone';
 import { bookshelfQueryKey } from './useBookshelf';
 
+// Drops every cached view of a family's management on a change of session,
+// and reads the family time zone again, so the pages take on the day and
+// night of the family now signed in.
 export async function clearFamilyManagement(client: QueryClient) {
   const keys = [
     ['parent-registration-key'],
     ['parent-children'],
     ['parent-learning-summary'],
     ['parent-ai-consent'],
+    ['parent-family-time-zone'],
     bookshelfQueryKey,
   ];
   await Promise.all(keys.map((queryKey) => client.cancelQueries({ queryKey })));
   for (const queryKey of keys) client.removeQueries({ queryKey });
+  void client.invalidateQueries({ queryKey: familyTimeZoneKey });
 }
 
 // Signs the parent space into a new session, or out with null. Every cached

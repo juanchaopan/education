@@ -3,7 +3,7 @@ export type Theme = 'day' | 'night';
 export type ThemeSchedule = { readonly dayStarts: number; readonly nightStarts: number };
 
 // When the site switches between its two themes, as whole hours of the
-// device's local time: the day theme from `dayStarts` until `nightStarts`,
+// family's local time: the day theme from `dayStarts` until `nightStarts`,
 // the night theme for the rest. This is the only place the times are set; the
 // script that picks the theme before the first paint is built from it.
 export const themeSchedule: ThemeSchedule = { dayStarts: 6, nightStarts: 18 };
@@ -12,26 +12,37 @@ export const themeSchedule: ThemeSchedule = { dayStarts: 6, nightStarts: 18 };
 // milliseconds. The page hands it to the stylesheet while it switches.
 export const themeFade = 1200;
 
-// The theme for a moment. It reads nothing but its arguments, so the page can
+// Where this device keeps the time zone of the family last signed in on it,
+// so the very first paint already follows the family's clock.
+export const familyTimeZoneStorage = 'education-family-time-zone';
+
+// The theme for a moment on the clock of a time zone, which follows the zone's
+// summer time, or on the device's own clock without one or for a zone the
+// browser does not know. It reads nothing but its arguments, so the page can
 // also run it as a standalone script before anything else loads.
-export function themeAt(date: Date, schedule: ThemeSchedule): Theme {
-  const hour = date.getHours();
+export function themeAt(date: Date, schedule: ThemeSchedule, timeZone?: string): Theme {
+  let hour = date.getHours();
+  if (timeZone) {
+    try {
+      const clock = new Intl.DateTimeFormat('en-US', {
+        timeZone,
+        hour: 'numeric',
+        hourCycle: 'h23',
+      });
+      hour = Number(clock.format(date));
+    } catch {
+      hour = date.getHours();
+    }
+  }
   return hour >= schedule.dayStarts && hour < schedule.nightStarts ? 'day' : 'night';
 }
 
-// The next moment the theme changes after `date`, in local time, so a
-// daylight-saving change moves it with the clock on the wall.
-export function nextSwitch(date: Date, schedule: ThemeSchedule): Date {
-  const next = new Date(date);
-  next.setMinutes(0, 0, 0);
-  const hour = date.getHours();
-  if (hour < schedule.dayStarts) {
-    next.setHours(schedule.dayStarts);
-  } else if (hour < schedule.nightStarts) {
-    next.setHours(schedule.nightStarts);
-  } else {
-    next.setDate(next.getDate() + 1);
-    next.setHours(schedule.dayStarts);
+// The family time zone this device keeps, if any. Like `themeAt` it stands
+// alone, and storage a browser refuses reads as nothing kept.
+export function storedTimeZone(key: string): string | undefined {
+  try {
+    return localStorage.getItem(key) ?? undefined;
+  } catch {
+    return undefined;
   }
-  return next;
 }

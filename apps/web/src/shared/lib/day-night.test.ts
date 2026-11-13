@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { nextSwitch, themeAt, themeSchedule } from './day-night';
+import { themeAt, themeSchedule } from './day-night';
 
 const at = (hours: number, minutes = 0, seconds = 0) =>
   new Date(2026, 10, 7, hours, minutes, seconds);
 
-describe('themeAt', () => {
+describe('themeAt on the device clock', () => {
   it('uses the day theme from 6:00 until just before 18:00', () => {
     expect(themeAt(at(6), themeSchedule)).toBe('day');
     expect(themeAt(at(12), themeSchedule)).toBe('day');
@@ -17,24 +17,32 @@ describe('themeAt', () => {
     expect(themeAt(at(0), themeSchedule)).toBe('night');
     expect(themeAt(at(5, 59, 59), themeSchedule)).toBe('night');
   });
+
+  it('falls back to the device clock for a zone the browser does not know', () => {
+    expect(themeAt(at(12), themeSchedule, 'Mars/Olympus_Mons')).toBe('day');
+  });
 });
 
-describe('nextSwitch', () => {
-  it('is the coming 6:00 before dawn', () => {
-    expect(nextSwitch(at(2, 15), themeSchedule)).toEqual(at(6));
+describe("themeAt on the family's clock", () => {
+  it('reads the hour in the family time zone, whatever the device says', () => {
+    const instant = new Date('2026-11-12T12:15:00Z');
+    expect(themeAt(instant, themeSchedule, 'Asia/Shanghai')).toBe('night');
+    expect(themeAt(instant, themeSchedule, 'America/Toronto')).toBe('day');
   });
 
-  it('is 18:00 during the day, even a second before it', () => {
-    expect(nextSwitch(at(6), themeSchedule)).toEqual(at(18));
-    expect(nextSwitch(at(17, 59, 59), themeSchedule)).toEqual(at(18));
+  it('switches at 6:00 local time on the day the clocks spring forward', () => {
+    // America/Toronto is on UTC-4 from 2:00 on 2026-03-08.
+    expect(themeAt(new Date('2026-03-08T09:59:00Z'), themeSchedule, 'America/Toronto')).toBe(
+      'night',
+    );
+    expect(themeAt(new Date('2026-03-08T10:00:00Z'), themeSchedule, 'America/Toronto')).toBe('day');
   });
 
-  it('is 6:00 the next morning in the evening', () => {
-    expect(nextSwitch(at(18), themeSchedule)).toEqual(new Date(2026, 10, 8, 6));
-    expect(nextSwitch(at(23, 59), themeSchedule)).toEqual(new Date(2026, 10, 8, 6));
-  });
-
-  it('crosses the end of a month', () => {
-    expect(nextSwitch(new Date(2026, 10, 30, 20), themeSchedule)).toEqual(new Date(2026, 11, 1, 6));
+  it('switches at 18:00 local time on the day the clocks fall back', () => {
+    // America/Toronto is on UTC-5 from 2:00 on 2026-11-01.
+    expect(themeAt(new Date('2026-11-01T22:59:00Z'), themeSchedule, 'America/Toronto')).toBe('day');
+    expect(themeAt(new Date('2026-11-01T23:00:00Z'), themeSchedule, 'America/Toronto')).toBe(
+      'night',
+    );
   });
 });

@@ -31,12 +31,13 @@ export const longCatalog: CatalogResponse = {
 };
 
 // What a family that has not signed in sees: the empty catalog, open
-// registration and no parent or child session.
+// registration and no parent or child session, so no family time zone either.
 export const signedOutApi: Api = {
   'GET /api/v1/problems': { status: 200, json: { problems: [] } satisfies CatalogResponse },
   'GET /api/v1/registration-status': { status: 200, json: { enabled: true } },
   'GET /api/v1/session': signedOut,
   'GET /api/v1/children/session': signedOut,
+  'GET /api/v1/family/time-zone': signedOut,
 };
 
 // A parent signed in with a long synthetic address that is not verified yet,
