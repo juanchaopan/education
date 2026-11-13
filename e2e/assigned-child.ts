@@ -1,4 +1,4 @@
-import type { ChildBook, ChildBookPage, ProblemSummary } from '@education/contracts';
+import type { ChildBook, ChildBookPage, ProblemOpening } from '@education/contracts';
 import type { Page } from '@playwright/test';
 
 // The child the test's server answers for: signed in, with books given to
@@ -7,9 +7,10 @@ export const child = { role: 'child', nickname: '小鹿', csrfToken: 'a'.repeat(
 
 // What a test names of a book; the rest of it is as a parent has just given it.
 type BookName = Pick<ChildBook, 'id' | 'name' | 'grade' | 'subject'>;
+type BookProblem = Pick<ProblemOpening, 'id' | 'version' | 'title'>;
 
 // A book given to the child and not opened yet, holding `problems`.
-export function givenBook(book: BookName, problems: readonly ProblemSummary[]): ChildBook {
+export function givenBook(book: BookName, problems: readonly BookProblem[]): ChildBook {
   return {
     ...book,
     cover: null,
@@ -23,7 +24,8 @@ export function givenBook(book: BookName, problems: readonly ProblemSummary[]): 
   };
 }
 
-export const garden: ProblemSummary = {
+// The garden lesson as it opens for the child, filed in its book.
+export const garden: ProblemOpening = {
   id: 'garden-balance',
   version: 1,
   title: '一棵青菜有多重',
@@ -31,11 +33,13 @@ export const garden: ProblemSummary = {
   subject: '数学',
   category: '学而思',
   sequence: 1,
+  mode: 'practice',
+  book: 'g1-math-xueersi',
 };
 
 // The book that holds the garden lesson.
 export const gardenBook = givenBook(
-  { id: 'g1-math-xueersi', name: '学而思', grade: '一年级', subject: '数学' },
+  { id: garden.book, name: '学而思', grade: '一年级', subject: '数学' },
   [garden],
 );
 
@@ -58,9 +62,10 @@ export function bookPage(books: readonly ChildBook[]): ChildBookPage {
   };
 }
 
-// The child's books and the problems the child opens from them. A lesson's
-// test or review recording passes its own problem and the book it is in.
-type Given = Readonly<{ books?: readonly ChildBook[]; opens?: readonly ProblemSummary[] }>;
+// The child's books and the problems the child opens from them, as each
+// opens for the child. A lesson's test or review recording passes its own
+// problem and the book it is in.
+type Given = Readonly<{ books?: readonly ChildBook[]; opens?: readonly ProblemOpening[] }>;
 
 // A signed-in child with `books`, who may open each problem of `opens`; the
 // garden lesson and its book unless others are named.

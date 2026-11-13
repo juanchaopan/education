@@ -83,13 +83,16 @@ test('goes back to the open book on the home page, scrolled as it was, out of fu
   expect(await inFullscreen(page)).toBe(false);
 });
 
-test("goes back from a link opened directly to the child's home", async ({ page }) => {
+test("goes back from a link opened directly to the child's home, the problem's book open", async ({
+  page,
+}) => {
   await signInAtTheGardenStart(page);
   await page.goto(lesson);
   await expect(page.getByRole('button', { name: /开始短片/ })).toBeVisible({ timeout: 30_000 });
   await back(page).click();
-  await expect.poll(() => address(page)).toBe('/');
+  await expect.poll(() => address(page)).toBe('/?open=g1-math-xueersi');
   await expect(page.getByRole('heading', { name: '我的书' })).toBeVisible();
+  await expect(gardenLink(page)).toBeVisible();
 });
 
 test("the browser's own back button still leaves the problem, and full screen", async ({
