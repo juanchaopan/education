@@ -1,7 +1,7 @@
 import type { ChildOverview, FamilyOverview, ReviewIdea } from '@education/contracts';
 import { reviewSuggested } from '../domain/review.js';
 import type { ChildEvidence, ProblemEvidence } from '../repositories/postgres-family-overview.js';
-import type { Title } from './learning-summary.js';
+import { withTitle, type Title } from './learning-summary.js';
 
 const sum = (problems: readonly ProblemEvidence[], count: (problem: ProblemEvidence) => number) =>
   problems.reduce((total, problem) => total + count(problem), 0);
@@ -10,10 +10,8 @@ const sum = (problems: readonly ProblemEvidence[], count: (problem: ProblemEvide
 // suggested.
 function reviewIdea(problem: ProblemEvidence, title: Title): ReviewIdea[] {
   if (!reviewSuggested(problem)) return [];
-  const name = title(problem.id, problem.version);
-  return name === undefined
-    ? []
-    : [{ id: problem.id, version: problem.version, title: name, incorrect: problem.incorrect }];
+  const { id, version, title: name, incorrect } = withTitle(problem, title);
+  return name === null ? [] : [{ id, version, title: name, incorrect }];
 }
 
 // A problem counts once however many of its versions the child has tried;
