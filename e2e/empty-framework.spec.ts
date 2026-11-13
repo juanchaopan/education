@@ -3,7 +3,6 @@ import { randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import pg from 'pg';
 import { removeFamilies } from './family-cleanup.js';
-import type { CatalogResponse } from '@education/contracts';
 import { familyDeletionPhrase } from '../libs/contracts/src/family-deletion.js';
 import {
   openParentPart,
@@ -14,10 +13,10 @@ import {
 } from './password-parent.js';
 
 // The family framework as two families use it: real parent sign-in, a real
-// KEY, a child who joins and signs in, the catalog of maintained problems,
-// data controls and family isolation, against the production entry point with
-// no AI key configured. Both children use the same nickname, which only the
-// family code tells apart.
+// KEY, a child who joins and signs in, the home page that shows a visitor
+// nothing but the sign-in, data controls and family isolation, against the
+// production entry point with no AI key configured. Both children use the
+// same nickname, which only the family code tells apart.
 
 // Every signed-out page load and every sign-in counts against the address's
 // sign-in budget of its server, and one run uses most of the fifteen-minute
@@ -41,8 +40,9 @@ async function submitChildLogin(page: Page, { code, pin }: ChildLogin) {
   await page.getByRole('button', { name: '进入我的空间' }).click();
 }
 
-const welcome = (page: Page) => page.getByRole('heading', { name: `${nickname}，欢迎回来！` });
-const childLogin = (page: Page) => page.getByRole('heading', { name: '孩子登录', exact: true });
+// A signed-in child's home is 我的书; signed out, the home page is the sign-in.
+const welcome = (page: Page) => page.getByRole('heading', { name: '我的书', level: 1 });
+const childLogin = (page: Page) => page.getByRole('tab', { name: '孩子登录' });
 const resetPin = (page: Page) => page.getByRole('button', { name: `为${nickname}重置 PIN` });
 
 // Reloads a child's page that should have lost its session and signs in again.
@@ -106,10 +106,11 @@ async function joinChild(browser: Browser, pool: pg.Pool, family: PasswordParent
     family.family,
   ]);
 
-  await child.goto('/child');
+  await child.getByRole('link', { name: '去孩子登录' }).click();
+  await expect(childLogin(child)).toBeVisible();
   await submitChildLogin(child, { code, pin });
   await expect(welcome(child)).toBeVisible();
-  await expect(child.getByText('家长还没有给你安排练习。')).toBeVisible();
+  await expect(child.getByText('家长还没有给你安排书')).toBeVisible();
   await parent.reload();
   await expectNothingRecorded(parent);
   return { parent, child, code, childId: rows[0]!.id };
@@ -163,16 +164,11 @@ test('two families use the framework and stay apart through reset, sign-in again
     const a = await joinChild(browser, pool, first, '018274');
     const b = await joinChild(browser, pool, second, '640193');
 
-    // The catalog holds only maintained problems, with no demonstrations.
-    const explore = await browser.newPage();
-    await explore.goto(new URL('/', a.parent.url()).href);
-    await expect(explore.getByRole('list', { name: '题目顺序' }).getByRole('link')).toHaveText([
-      '一棵青菜有多重',
-    ]);
-    const catalog = (await (
-      await explore.request.get('/api/v1/problems')
-    ).json()) as CatalogResponse;
-    expect(catalog.problems.map(({ id }) => id)).toEqual(['garden-balance']);
+    // A visitor's home page is the sign-in, with no problem on it.
+    const visitor = await browser.newPage();
+    await visitor.goto(new URL('/', a.parent.url()).href);
+    await expect(childLogin(visitor)).toBeVisible();
+    await expect(visitor.getByText('一棵青菜有多重')).toHaveCount(0);
 
     // Paid AI is switched on by default, but with no key nothing can be sent,
     // and the parent is told so whatever they consent to.

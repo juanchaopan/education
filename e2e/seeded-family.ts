@@ -4,6 +4,9 @@ import { tokenHash } from '../apps/api/src/identity/services/session-security.js
 
 const token = () => randomBytes(32).toString('base64url');
 
+// The maintained book that holds the garden lesson.
+export const gardenBookId = 'g1-math-xueersi';
+
 // A family with a verified parent and the named children, each signed in with
 // a session of their own. The caller deletes the family when done.
 export async function seedSignedInFamily(pool: pg.Pool, nicknames: readonly string[]) {
@@ -33,4 +36,13 @@ export async function seedSignedInFamily(pool: pg.Pool, nicknames: readonly stri
     );
   }
   return { family, parent, children };
+}
+
+// Gives a child a book, as the parent would on the shelf; the garden's book
+// unless another is named.
+export async function giveBook(pool: pg.Pool, childId: string, bookId = gardenBookId) {
+  await pool.query('INSERT INTO book_assignments(child_id,book_id) VALUES($1,$2)', [
+    childId,
+    bookId,
+  ]);
 }

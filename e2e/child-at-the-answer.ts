@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { DraftCommand } from '@education/contracts';
 import type { Page } from '@playwright/test';
+import { signInAsAssignedChild } from './assigned-child.js';
 
 // The garden lesson's part of the API, and the answer round the test's server
 // keeps open in it.
@@ -9,14 +10,6 @@ export const round = '11111111-1111-1111-1111-111111111111';
 
 const expiresAt = '2099-01-01T00:00:00.000Z';
 
-// A signed-in child, as the server would answer for one. The test answers for
-// the server, so no database is needed.
-async function signInAsAChild(page: Page) {
-  await page.route('**/api/v1/children/session', (route) =>
-    route.fulfill({ json: { role: 'child', nickname: '小鹿', csrfToken: 'a'.repeat(43) } }),
-  );
-}
-
 // A signed-in child whose saved place in the garden lesson is the answer scene.
 export async function signInAtTheGardenAnswer(page: Page) {
   const savedAnswer = {
@@ -24,7 +17,7 @@ export async function signInAtTheGardenAnswer(page: Page) {
     expiresAt,
     content: { stepId: 'answer', drawing: [] },
   };
-  await signInAsAChild(page);
+  await signInAsAssignedChild(page);
   await page.route(`**${gardenApi}/draft`, (route) =>
     route.fulfill({ json: { draft: savedAnswer } }),
   );
@@ -33,7 +26,7 @@ export async function signInAtTheGardenAnswer(page: Page) {
 // A signed-in child who has not started the garden lesson: the draft the
 // lesson saves at each scene is kept, as the server would keep it.
 export async function signInAtTheGardenStart(page: Page) {
-  await signInAsAChild(page);
+  await signInAsAssignedChild(page);
   await page.route(`**${gardenApi}/draft`, (route) => {
     const write = route.request().postDataJSON() as DraftCommand | null;
     const draft =

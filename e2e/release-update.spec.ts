@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import pg from 'pg';
 import { removeFamilies } from './family-cleanup.js';
+import { signInAtTheGardenStart } from './child-at-the-answer.js';
 import { draftSaved } from './draft-save.js';
 import { gardenFilm, movesToTheAnswer } from './garden-film.js';
 import { listenToNarration } from './narration-check.js';
@@ -33,10 +34,12 @@ async function startFilm(page: Page, narration: Narration) {
   await expect.poll(() => narration.told().length).toBeGreaterThan(0);
 }
 
-// Opens the garden lesson as a visitor and starts the film; while the teacher
-// speaks, the deployment moves to the newer release and the page checks it.
+// Opens the garden lesson as a child given its book, whose place the test's
+// server keeps, and starts the film; while the teacher speaks, the deployment
+// moves to the newer release and the page checks it.
 async function newReleaseWhileTheFilmPlays(page: Page) {
   const narration = await listenToNarration(page);
+  await signInAtTheGardenStart(page);
   const site = await serveReleases(page, older);
   await open(page, lesson);
   await startFilm(page, narration);
@@ -135,7 +138,9 @@ test.describe('a lesson page', () => {
       'question ended',
     ]);
     await expect(releaseName(page)).toHaveAttribute('content', newer);
-    await expect(page.getByRole('button', { name: /开始短片/ })).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByRole('button', { name: /开始短片|接着上次的地方/ })).toBeVisible({
+      timeout: 30_000,
+    });
   });
 
   test('takes the new release at once when the child leaves a playing film', async ({ page }) => {
@@ -145,7 +150,7 @@ test.describe('a lesson page', () => {
     expect(narration.told()).not.toContain('question ended');
     await page.getByRole('button', { name: '返回', exact: true }).click();
     await expect.poll(() => site.loads).toBe(2);
-    await expect(page).toHaveURL(/\/\?grade=/);
+    await expect(page).toHaveURL(/\/$/);
     await expect(releaseName(page)).toHaveAttribute('content', newer);
   });
 });
