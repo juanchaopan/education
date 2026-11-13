@@ -5,13 +5,12 @@ import { HomePage } from '../features/family/pages/HomePage';
 import { RecoveryPage } from '../features/family/pages/RecoveryPage';
 import { ResetPasswordPage } from '../features/family/pages/ResetPasswordPage';
 import { VerifyEmailPage } from '../features/family/pages/VerifyEmailPage';
-import { ProblemPage } from '../features/library/pages/ProblemPage';
 import { useFamilyTimeZone } from '../shared/lib/useFamilyTimeZone';
 import { Page } from '../shared/ui/Page';
 import { StandaloneLink } from '../shared/ui/StandaloneLink';
 import { accountArt, childHomeArt } from './account-art';
-import { lessonPages } from './lesson-pages';
 import { PlainLayout } from './PlainLayout';
+import { ProblemRoute } from './ProblemRoute';
 import { ReleaseUpdate } from './release/ReleaseUpdate';
 import { SiteLayout } from './SiteLayout';
 import { useDayNightTheme } from './theme/useDayNightTheme';
@@ -54,7 +53,7 @@ export function App() {
             }
           />
         </Route>
-        <Route path="/problems/:id/:version?" element={<ProblemPage pages={lessonPages} />} />
+        <Route path="/problems/:id/:version?" element={<ProblemRoute />} />
       </Routes>
       <ReleaseUpdate />
     </>

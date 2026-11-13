@@ -1,0 +1,112 @@
+/* The note fills the problem's frame like the lesson it stands in for. */
+.frame {
+  position: relative;
+  display: grid;
+  place-items: center;
+  block-size: 100%;
+  min-block-size: 100dvh;
+  padding: var(--space-5);
+  overflow: hidden;
+}
+.backdrop {
+  position: absolute;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+  filter: blur(3px) saturate(0.9);
+  scale: 1.04;
+}
+.shade {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 55%, transparent, var(--dew-depth));
+}
+
+.note {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: end;
+}
+.teacher {
+  block-size: 18.75rem;
+  margin-inline-end: -1.625rem;
+}
+
+/* Smoked glass, as every part laid into a lesson's painting. */
+.pane {
+  inline-size: 26.25rem;
+  margin-block-end: var(--space-8);
+  padding: var(--space-6) var(--space-6);
+  border: 1px solid var(--dew-pane-edge);
+  border-radius: var(--radius-lg);
+  color: var(--dew-ink);
+  background: var(--dew-pane);
+  box-shadow: var(--dew-pane-shadow);
+  backdrop-filter: var(--glass-filter);
+  text-align: center;
+}
+.glyph {
+  display: grid;
+  place-items: center;
+  inline-size: 3.75rem;
+  block-size: 3.75rem;
+  margin: 0 auto var(--space-3);
+  border: 1px solid var(--dew-rim);
+  border-radius: 50%;
+  color: var(--dew-gold);
+  background:
+    radial-gradient(circle at 35% 30%, var(--dew-shine), transparent 20%), var(--dew-face);
+  font-size: var(--text-lg);
+}
+.title {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-lg);
+  letter-spacing: 0.08em;
+}
+.description {
+  margin: 0 0 var(--space-5);
+  color: color-mix(in srgb, var(--dew-ink) 80%, transparent);
+}
+
+/* The way on is a raised golden pill. */
+.action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-block-size: 3rem;
+  padding: var(--space-3) var(--space-6);
+  border: 1px solid var(--dew-gold-edge);
+  border-radius: var(--radius-pill);
+  color: var(--dew-gold-ink);
+  background: linear-gradient(var(--dew-gold-hi), var(--dew-gold));
+  box-shadow:
+    0 var(--raised-depth) 0 var(--dew-gold-edge),
+    var(--dew-pane-shadow);
+  font-weight: 700;
+  text-decoration: none;
+}
+.action:active {
+  translate: 0 calc(var(--raised-depth) - 1px);
+  box-shadow: 0 1px 0 var(--dew-gold-edge);
+}
+.action:focus-visible {
+  outline: var(--dew-focus-ring);
+  outline-offset: 3px;
+}
+
+@media (max-width: 40rem) {
+  .note {
+    flex-direction: column;
+    align-items: center;
+  }
+  .teacher {
+    block-size: 11.875rem;
+    margin: 0 0 -1.125rem;
+  }
+  .pane {
+    inline-size: 100%;
+    margin: 0;
+  }
+}
