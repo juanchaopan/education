@@ -4,7 +4,7 @@ import { Avatar } from '../../../shared/ui/Avatar';
 import type { CardBook } from '../../../shared/ui/BookCard';
 import { BookCover } from '../../../shared/ui/BookCover';
 import { Icon } from '../../../shared/ui/Icon';
-import { ProgressPill } from './ProgressPill';
+import { BookProgress } from './BookProgress';
 import styles from './BookRows.module.css';
 
 export type BookRow = Readonly<{
@@ -19,8 +19,8 @@ export type BookRow = Readonly<{
 }>;
 
 // Books in rows: a small cover, the name and a short detail, and at the end
-// the progress as "n / m" or a green 学完 with a tick. An unavailable book's
-// row is greyed and ends in its action instead.
+// the progress as "n / m" over a thin bar, or a green 学完 with a tick. An
+// unavailable book's row is greyed and ends in its action instead.
 export function BookRows({ rows }: { rows: readonly BookRow[] }) {
   return (
     <ul className={styles.rows}>
@@ -39,7 +39,7 @@ export function BookRows({ rows }: { rows: readonly BookRow[] }) {
               <span className={styles.name}>{book.name}</span>
               <span className={styles.detail}>{detail}</span>
             </span>
-            {action ?? <ProgressPill done={done} total={book.problems} />}
+            {action ?? <BookProgress done={done} total={book.problems} />}
           </li>
         );
       })}
