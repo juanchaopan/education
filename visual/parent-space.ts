@@ -1,13 +1,16 @@
-import type {
-  AiConsentView,
-  FamilyChildren,
-  FamilyOverview,
-  FamilyTimeZone,
-  FamilyTimeZoneSetting,
-  LearningSummary,
-  ParentSession,
-  ProblemLearningSummary,
-  RegistrationKeyStatus,
+import {
+  addDays,
+  type AiConsentView,
+  type FamilyChildren,
+  type FamilyOverview,
+  type FamilyTimeZone,
+  type FamilyTimeZoneSetting,
+  type LearningSummary,
+  type ParentSession,
+  type ProblemLearningSummary,
+  type ProblemOutcome,
+  type RegistrationKeyStatus,
+  type StudyDay,
 } from '@education/contracts';
 import type { Api } from './api';
 import { childShelf, familyShelf, givenBooks, lele, libraryShelf, xiaomi } from './bookshelf';
@@ -78,6 +81,29 @@ const signedIn: Api = {
   }),
 };
 
+// The day the screenshots are taken, in the family's China time.
+const screenshotDay = '2026-11-07';
+
+// The 28 days ending on the screenshots' day, with the minutes and the problem
+// states of the days given; every other day is quiet.
+function studyBlock(studied: Record<string, [number, ProblemOutcome[]]>): StudyDay[] {
+  return Array.from({ length: 28 }, (_, place) => {
+    const date = addDays(screenshotDay, place - 27);
+    const [minutes, ids] = studied[date] ?? [0, []];
+    const count = (state: string) => ids.filter(([, outcome]) => outcome === state).length;
+    return {
+      date,
+      seconds: minutes * 60,
+      problems: {
+        independent: count('independent'),
+        assisted: count('assisted'),
+        open: count('open'),
+      },
+      ids,
+    };
+  });
+}
+
 // Two children, both given books: one with a record and a problem worth
 // another try; one with a long nickname and no record.
 export const parentSpaceApi: Api = {
@@ -108,13 +134,29 @@ export const parentSpaceApi: Api = {
     problems: [],
   }),
   'GET /api/v1/parents/overview': ok<FamilyOverview>({
+    timeZone: 'Asia/Shanghai',
+    today: screenshotDay,
     children: [
       {
         id: xiaomi,
-        total: { problems: 2, independent: 2, assisted: 1 },
+        days: studyBlock({
+          '2026-11-01': [22, []],
+          '2026-11-03': [38, [['visual-fixture-one', 'assisted']]],
+          '2026-11-04': [16, []],
+          '2026-11-05': [18, [['visual-fixture-two', 'open']]],
+          '2026-11-06': [30, []],
+          [screenshotDay]: [
+            12,
+            [
+              ['visual-fixture-one', 'independent'],
+              ['visual-fixture-three', 'open'],
+            ],
+          ],
+        }),
+        earliest: '2026-10-01',
         review: [{ id: 'visual-fixture-two', version: 1, title: '测试用的第二道题', incorrect: 1 }],
       },
-      { id: lele, total: { problems: 0, independent: 0, assisted: 0 }, review: [] },
+      { id: lele, days: studyBlock({}), earliest: null, review: [] },
     ],
   }),
   [`GET /api/v1/parents/children/${xiaomi}/books`]: ok(givenBooks(xiaomi)),

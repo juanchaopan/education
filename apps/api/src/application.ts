@@ -243,7 +243,7 @@ function createFamilyManagement({
   if (!pool || !sessions || !admit) return {};
   return {
     learningSummary: createLearningSummary(pool),
-    familyOverview: createFamilyOverview(pool),
+    familyOverview: createFamilyOverview(pool, config.defaultTimeZone),
     bookshelf: createBookshelf(pool),
     aiConsent: createAiConsent(pool, config.ai),
     familyExport: createFamilyExport(pool, config.defaultTimeZone),

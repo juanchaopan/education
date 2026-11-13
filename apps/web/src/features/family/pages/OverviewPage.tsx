@@ -4,7 +4,6 @@ import { Icon } from '../../../shared/ui/Icon';
 import { LinkButton } from '../../../shared/ui/LinkButton';
 import { Loading } from '../../../shared/ui/Loading';
 import { Notice } from '../../../shared/ui/Notice';
-import { ChildDigest } from '../components/ChildDigest';
 import { ParentSection } from '../components/ParentSection';
 import { SettingsList } from '../components/SettingsList';
 import { useAiConsent } from '../data-access/useAiConsent';
@@ -12,12 +11,13 @@ import { useChildrenAssigned } from '../data-access/useBookshelf';
 import { useFamilyChildren } from '../data-access/useChildAccess';
 import { useFamilyOverview } from '../data-access/useLearningSummary';
 import { useRegistrationKey } from '../data-access/useRegistrationKey';
+import { ChildDayPanel } from './ChildDayPanel';
 import { FamilyCodePanel } from './FamilyCodePanel';
 import { AssignedBooks, ReviewIdeas, type ChildActivity } from './OverviewPractice';
 import styles from './OverviewPage.module.css';
 
 // The first page of the parent space: the family code and the way to invite a
-// child, each child at a glance, the problems worth another try and the
+// child, each child's days at a glance, the problems worth another try and the
 // books already given, then the family's settings.
 export function OverviewPage({ csrf }: { csrf: string }) {
   const family = useFamilyChildren(csrf);
@@ -58,11 +58,11 @@ export function OverviewPage({ csrf }: { csrf: string }) {
 }
 
 // Each child's card, then what is worth practising again beside what is
-// already given. The family's record comes in one reply; each child's books
-// are read side by side and kept together with the child. A record read
-// again after a failure shows as being read until it arrives, on the cards
-// and in the review ideas alike. A child the reply leaves out, such as one
-// removed meanwhile, shows that the record could not be read, with a retry.
+// already given. The family's days come in one reply; each child's books are
+// read side by side and kept together with the child. A record read again
+// after a failure shows as being read until it arrives, on the cards and in
+// the review ideas alike. A child the reply leaves out, such as one removed
+// meanwhile, shows that the record could not be read, with a retry.
 function FamilyActivity({ csrf, family }: { csrf: string; family: readonly ChildAccess[] }) {
   const childIds = family.map(({ id }) => id);
   const overview = useFamilyOverview(csrf, childIds);
@@ -79,13 +79,14 @@ function FamilyActivity({ csrf, family }: { csrf: string; family: readonly Child
     <>
       <div className={styles.children}>
         {activity.map(({ child, record }, place) => (
-          <ChildDigest
+          <ChildDayPanel
             key={child.id}
+            csrf={csrf}
             childId={child.id}
             nickname={child.nickname}
             place={place}
-            totals={record?.total}
-            loading={reading}
+            today={overview.data?.today}
+            record={record}
             failed={failed || (!!overview.data && !record && !overview.isFetching)}
             onRetry={() => void overview.refetch()}
           />

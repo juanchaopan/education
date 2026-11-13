@@ -1,7 +1,7 @@
 import { afterEach, expect, it, vi } from 'vitest';
 import { cleanup, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { ChildShelfBook } from '@education/contracts';
+import { addDays, type ChildShelfBook, type StudyDay } from '@education/contracts';
 import { renderFamilyPage } from '../../../test/family-page';
 
 const csrf = 'a'.repeat(43);
@@ -14,15 +14,29 @@ const session = {
   access: 'verified',
   csrfToken: csrf,
 };
-const nothing = { problems: 0, independent: 0, assisted: 0 };
+const today = '2026-11-12';
+// The days of a block ending on `to`, with minutes on the days given.
+const block = (to: string, minutes: Record<string, number> = {}): StudyDay[] =>
+  Array.from({ length: 28 }, (_, place) => {
+    const date = addDays(to, place - 27);
+    return {
+      date,
+      seconds: (minutes[date] ?? 0) * 60,
+      problems: { independent: 0, assisted: 0, open: 0 },
+      ids: date === today ? [['fixture-one', 'independent']] : [],
+    };
+  });
 const overview = {
+  timeZone: 'Asia/Shanghai',
+  today,
   children: [
     {
       id: mi,
-      total: { problems: 2, independent: 2, assisted: 1 },
+      days: block(today, { [today]: 12, '2026-11-06': 30 }),
+      earliest: '2026-09-01',
       review: [{ id: 'fixture-two', version: 1, title: '第二道', incorrect: 2 }],
     },
-    { id: le, total: nothing, review: [] },
+    { id: le, days: block(today), earliest: null, review: [] },
   ],
 };
 // Test fixtures only: these books never enter the problem list.
@@ -92,19 +106,18 @@ const family: Replies = {
   [`GET parents/children/${le}/books`]: () => shelf([book('book-songs', '儿歌', 3)]),
 };
 
-it('shows each child with totals from their record, never mixing hints into finishing alone', async () => {
+it("shows each child's last seven days from the family overview", async () => {
   const fetcher = stubFetch(family);
   renderFamilyPage();
   expect(await screen.findByRole('heading', { name: '总览' })).toBeVisible();
   expect(await screen.findByLabelText('家庭码')).toHaveTextContent('ABCD-EFGH-JKMN');
   const mine = await screen.findByRole('region', { name: '小米' });
-  expect(await within(mine).findByText('次独立完成')).toBeVisible();
-  const tiles = within(mine)
-    .getAllByRole('definition')
-    .map((tile) => tile.textContent);
-  expect(tiles).toEqual(['2', '2', '1']);
+  expect(await within(mine).findByText('11月6日 – 今天')).toBeVisible();
+  expect(mine).toHaveTextContent('已学 42 分钟');
+  expect(mine).toHaveTextContent('1 道题：独立完成 1 道');
   const theirs = screen.getByRole('region', { name: '乐乐' });
-  expect(await within(theirs).findByText('还没有学习记录。')).toBeVisible();
+  expect(theirs).toHaveTextContent('这几天没有学习');
+  expect(within(theirs).getByRole('button', { name: '往前看一天' })).toBeDisabled();
   expect(screen.getByRole('link', { name: '邀请孩子' })).toHaveAttribute(
     'href',
     '/family/profile#registration-key-title',
@@ -127,7 +140,33 @@ it('reads the record again when the first reading failed', async () => {
   );
   failing = false;
   await userEvent.click(within(mine).getByRole('button', { name: '重试' }));
-  expect(await within(mine).findByText('次独立完成')).toBeVisible();
+  expect(await within(mine).findByText('11月6日 – 今天')).toBeVisible();
+});
+
+it('picks a day for the figures and the record, and moves back reading earlier days ahead', async () => {
+  const fetcher = stubFetch({
+    ...family,
+    [`GET parents/children/${mi}/days`]: () => ({ days: block('2026-10-15') }),
+  });
+  renderFamilyPage();
+  const mine = await screen.findByRole('region', { name: '小米' });
+  await userEvent.click(await within(mine).findByRole('button', { name: '11 月 12 日 12 分钟' }));
+  expect(mine).toHaveTextContent('2026年11月12日已学 12 分钟');
+  expect(within(mine).getByRole('link', { name: '看学习记录' })).toHaveAttribute(
+    'href',
+    `/family/learning?child=${mi}&from=2026-11-12&to=2026-11-12`,
+  );
+  const back = within(mine).getByRole('button', { name: '往前看一天' });
+  for (let step = 0; step < 15; step++) await userEvent.click(back);
+  expect(mine).toHaveTextContent('10月22日 – 10月28日已学 0 分钟');
+  const asked = fetcher.mock.calls.map(([url]) => url);
+  await vi.waitFor(() =>
+    expect(asked.filter((url) => url.includes('/days?'))).toEqual([
+      `/api/v1/parents/children/${mi}/days?to=2026-10-15`,
+    ]),
+  );
+  await userEvent.click(within(mine).getByRole('button', { name: '往后看一天' }));
+  expect(mine).toHaveTextContent('10月23日 – 10月29日');
 });
 
 it('shows a child the record leaves out as not read, and reads it again', async () => {
@@ -135,16 +174,18 @@ it('shows a child the record leaves out as not read, and reads it again', async 
   stubFetch({
     ...family,
     'GET parents/overview': () =>
-      leftOut ? { children: overview.children.filter(({ id }) => id !== le) } : overview,
+      leftOut
+        ? { ...overview, children: overview.children.filter(({ id }) => id !== le) }
+        : overview,
   });
   renderFamilyPage();
   const mine = await screen.findByRole('region', { name: '小米' });
-  expect(await within(mine).findByText('次独立完成')).toBeVisible();
+  expect(await within(mine).findByText('11月6日 – 今天')).toBeVisible();
   const theirs = screen.getByRole('region', { name: '乐乐' });
   expect(within(theirs).getByRole('alert')).toHaveTextContent('学习记录没有读出来');
   leftOut = false;
   await userEvent.click(within(theirs).getByRole('button', { name: '重试' }));
-  expect(await within(theirs).findByText('还没有学习记录。')).toBeVisible();
+  expect(await within(theirs).findByText('11月6日 – 今天')).toBeVisible();
 });
 
 it('lists problems worth another try without planning them one by one', async () => {
