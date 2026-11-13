@@ -1,6 +1,7 @@
-/* The row of children above the record. */
+/* The row of children above the record. It may be narrower than the pills,
+   which then scroll sideways inside it rather than widen the page. */
 .children {
-  margin-bottom: var(--space-4);
+  min-inline-size: 0;
 }
 
 /* The whole record's totals on a soft band at the top of the summary. */
