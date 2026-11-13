@@ -25,7 +25,8 @@ export function studyClockFor(client: pg.PoolClient, childId: string, defaultTim
         timeZone: rows[0]!.time_zone,
       };
     },
-    record: async (now: Date, stretches: readonly StudyStretch[]) => {
+    // Adds the stretches and moves the clock on to the moment counted up to.
+    record: async (countedTo: Date, stretches: readonly StudyStretch[]) => {
       for (const { date, seconds } of stretches)
         await client.query(
           `INSERT INTO study_days(child_id,day,seconds) VALUES($1,$2,$3)
@@ -35,7 +36,7 @@ export function studyClockFor(client: pg.PoolClient, childId: string, defaultTim
       await client.query(
         `INSERT INTO study_beats(child_id,beat_at) VALUES($1,$2)
         ON CONFLICT (child_id) DO UPDATE SET beat_at=greatest(study_beats.beat_at,excluded.beat_at)`,
-        [childId, now],
+        [childId, countedTo],
       );
     },
   };
