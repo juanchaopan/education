@@ -44,7 +44,20 @@ describe('previewing an answer', () => {
     );
   });
 
-  it('takes a write only from the site, and only a submit or a hint with nothing else', async () => {
+  it('passes a variation’s guess, reason or hint on as it came', async () => {
+    const preview = vi.fn<PreviewService>(async () => ({ outcome: 'independent' }));
+    const app = setup(preview);
+    const commands = [
+      { action: 'variation', guess: 6 },
+      { action: 'variation', reason: { choose: { kept: ['groups'], changed: [] } } },
+      { action: 'variation', hintId: 'count-again' },
+    ];
+    for (const payload of commands)
+      expect((await app.inject({ method: 'POST', url, headers, payload })).statusCode).toBe(200);
+    expect(preview.mock.calls.map(([, , command]) => command)).toEqual(commands);
+  });
+
+  it('takes a write only from the site, and only a submit, a hint or a variation with nothing else', async () => {
     const preview = vi.fn<PreviewService>(async () => ({ hint: '先数左边。' }));
     const app = setup(preview);
     const send = (payload: object, from = headers) =>
@@ -62,6 +75,11 @@ describe('previewing an answer', () => {
       (await send({ action: 'submit', input: 9, round: crypto.randomUUID() })).statusCode,
     ).toBe(400);
     expect((await send({ action: 'hint', hintId: 'not an id' })).statusCode).toBe(400);
+    expect((await send({ action: 'variation' })).statusCode).toBe(400);
+    expect((await send({ action: 'variation', guess: 6, hintId: 'count' })).statusCode).toBe(400);
+    expect(
+      (await send({ action: 'variation', reason: { say: '组'.repeat(501) } })).statusCode,
+    ).toBe(400);
     expect(preview).not.toHaveBeenCalled();
   });
 

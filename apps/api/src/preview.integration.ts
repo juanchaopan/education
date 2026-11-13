@@ -12,6 +12,12 @@ const problem = (id: string, book: string): ProblemPlugin => ({
     hints: { count: '先数左边。' },
     checkCompletion: (input) => (input === 9 ? 'correct' : 'incorrect'),
   },
+  variation: {
+    hints: { 'count-again': '数一数，现在有几组？' },
+    checkGuess: (input) => (input === 6 ? 'correct' : 'incorrect'),
+    checkReason: (reason) =>
+      'say' in reason && reason.say.includes('还是三组') ? 'correct' : 'incorrect',
+  },
 });
 const registry = createProblemRegistry(
   [problem('preview-a', 'preview-open'), problem('preview-b', 'preview-closed')],
@@ -48,6 +54,7 @@ const learningRows = async (family: string) => {
     `SELECT count(*)::int AS rows FROM (
        SELECT child_id FROM attempts UNION ALL SELECT child_id FROM progress
        UNION ALL SELECT child_id FROM help_events UNION ALL SELECT child_id FROM drafts
+       UNION ALL SELECT child_id FROM variation_answers UNION ALL SELECT child_id FROM variation_help
        UNION ALL SELECT child_id FROM book_assignments UNION ALL SELECT child_id FROM ai_usage
      ) kept JOIN children c ON c.id=kept.child_id WHERE c.family_id=$1`,
     [family],
@@ -69,6 +76,23 @@ describe('a parent previewing a problem', () => {
     expect(
       (await send('preview-a', parent.token, { action: 'hint', hintId: 'count' })).json(),
     ).toEqual({ hint: '先数左边。' });
+    expect(await learningRows(parent.family)).toBe(before);
+  });
+
+  it('is judged and given hints on the variation like a child, and nothing is kept', async () => {
+    const parent = await household();
+    await learner(parent.family, '小鹿');
+    const before = await learningRows(parent.family);
+    const variation = (payload: object) =>
+      send('preview-a', parent.token, { action: 'variation', ...payload });
+    expect((await variation({ guess: 6 })).json()).toEqual({ outcome: 'independent' });
+    expect((await variation({ guess: 5 })).json()).toEqual({ outcome: 'incorrect' });
+    expect((await variation({ reason: { say: '还是三组，每组两根' } })).json()).toEqual({
+      outcome: 'independent',
+    });
+    expect((await variation({ hintId: 'count-again' })).json()).toEqual({
+      hint: '数一数，现在有几组？',
+    });
     expect(await learningRows(parent.family)).toBe(before);
   });
 
