@@ -1,6 +1,7 @@
 import { Type, type Static } from '@sinclair/typebox';
 import { AiConsentChange } from './ai-consent.js';
 import { BookStatus } from './bookshelf.js';
+import { CalendarDate, TimeZoneName } from './calendar.js';
 import { ProblemId, ProblemSummary, ProblemVersion } from './catalog.js';
 import { ChildAccess } from './child-access.js';
 import { SavedDraft } from './draft.js';
@@ -17,16 +18,18 @@ const draftProblem = {
   title: Type.Union([ProblemSummary.properties.title, Type.Null()]),
 };
 
-export const familyExportVersion = 3;
+export const familyExportVersion = 4;
 
 // What a family export holds and leaves out. The file carries the same lists
 // so it explains itself after it leaves the parent space.
 export const familyExportScope = {
   includes: [
     '家长邮箱和邮箱验证状态',
+    '家庭时区',
     '孩子的昵称',
     '每道题的学习摘要：独立完成、提示后完成、未答对和不确定的次数，提示次数和复习建议',
     '每道题的变化题：猜数和说理由各自做到了哪一步（独立做到、提示后做到、还没做到）、还缺哪些没有独立做到，以及每一次变化题的猜数结果、理由第一次和最后的结果、用过的帮助次数和时间',
+    '每天的学习时长',
     '家长安排的书，以及导出时每本书的状态、已做的题数、题数和是否学完',
     '尚未过期的当前草稿，包括做到的步骤和绘图笔迹',
     '外部 AI 授权的用途、政策版本、是否授权和修改时间',
@@ -34,11 +37,11 @@ export const familyExportScope = {
   excludes: [
     '密码和 PIN 的哈希',
     '孩子注册 KEY 和家庭码',
-    '家庭时区',
     '登录会话和会话密钥',
     '原始录音（应用不保存录音）',
     '孩子说的理由和它的转写文字（应用只保存判定结果）',
     '逐次作答的内部记录（已汇总在学习摘要中）',
+    '学习计时的心跳时刻',
     'AI 用量和费用记录',
     '已过期的草稿',
   ],
@@ -63,6 +66,9 @@ export const ExportedBook = Type.Object(
   closed,
 );
 
+// The seconds a child studied on one day of the family's time zone.
+export const ExportedStudyDay = Type.Object({ date: CalendarDate, seconds: Count }, closed);
+
 export const FamilyExportRequest = Type.Object({}, closed);
 export const FamilyExport = Type.Object(
   {
@@ -77,6 +83,9 @@ export const FamilyExport = Type.Object(
       closed,
     ),
     parent: Type.Object({ email: Type.String(), emailVerified: Type.Boolean() }, closed),
+    // The zone the family's days are counted in; `set` is false while the
+    // family has none of its own and the deployment's default counts them.
+    timeZone: Type.Object({ name: TimeZoneName, set: Type.Boolean() }, closed),
     aiConsents: Type.Array(
       Type.Object(
         {
@@ -94,6 +103,7 @@ export const FamilyExport = Type.Object(
           nickname: ChildAccess.properties.nickname,
           learning: Type.Array(ProblemLearningSummary),
           variations: Type.Array(ProblemVariations),
+          studyTime: Type.Array(ExportedStudyDay),
           books: Type.Array(ExportedBook),
           drafts: Type.Array(Type.Object({ ...draftProblem, expiresAt, content }, closed)),
         },
@@ -105,6 +115,7 @@ export const FamilyExport = Type.Object(
 );
 
 export type ExportedBook = Static<typeof ExportedBook>;
+export type ExportedStudyDay = Static<typeof ExportedStudyDay>;
 export type FamilyExportRequest = Static<typeof FamilyExportRequest>;
 export type FamilyExport = Static<typeof FamilyExport>;
 export type ChildExport = FamilyExport['children'][number];

@@ -4,6 +4,7 @@ import { StagePlace } from '../components/lesson-stage/LessonStage';
 import type { LearningScope } from '../data-access/learning-request';
 import type { AnswerEvents } from '../data-access/useLessonAnswer';
 import type { useLessonDraft } from '../data-access/useLessonDraft';
+import { useStudyTime } from '../data-access/useStudyTime';
 import type { FilmState } from '../interaction/lesson-film';
 import type { Subtitle } from '../interaction/subtitle';
 import type { LessonFilm } from '../interaction/useLessonFilm';
@@ -72,6 +73,8 @@ function useDraftMoment<Shot extends string>(
 // itself, and the hints; in every scene a question about it, which in the
 // answer scene counts as help. A correct answer ends the saved work, so its
 // draft is discarded, and the film plays on from the scene after the answer.
+// The time the child works on the lesson page, its opening film included,
+// counts as study time.
 export function LessonPanels<Shot extends string>({
   lesson,
   teacher,
@@ -86,6 +89,7 @@ export function LessonPanels<Shot extends string>({
 }: Props<Shot>) {
   const { shot } = film.state;
   const moment = useDraftMoment(draft, shot, resumed);
+  useStudyTime(scope.csrf);
   if (shot === 'opening') return null;
   const { answer, script } = lesson;
   const FlowAnswer = flowAnswers[lesson.content.flow];

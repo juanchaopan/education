@@ -48,6 +48,8 @@ import { registerLearningSummary } from './learning/routes/learning-summary.js';
 import type { LearningSummaryService } from './learning/services/learning-summary.js';
 import { registerFamilyOverview } from './learning/routes/family-overview.js';
 import type { FamilyOverviewService } from './learning/services/family-overview.js';
+import { registerStudyTime } from './learning/routes/study-time.js';
+import type { StudyTimeService } from './learning/services/study-time.js';
 import { registerBookshelf } from './learning/routes/bookshelf.js';
 import type { BookshelfService } from './learning/services/bookshelf.js';
 import { registerTeachingFeedback } from './ai/routes/teaching-feedback.js';
@@ -70,6 +72,7 @@ type AppOptions = {
   variation?: VariationService;
   learningSummary?: LearningSummaryService;
   familyOverview?: FamilyOverviewService;
+  studyTime?: StudyTimeService;
   bookshelf?: BookshelfService;
   teachingFeedback?: TeachingFeedbackService;
   teacherQuestion?: TeacherQuestionService;
@@ -197,6 +200,7 @@ function registerLearning(app: FastifyInstance, options: AppOptions) {
   registerVariation(app, origin, options.variation);
   registerLearningSummary(app, options.learningSummary);
   registerFamilyOverview(app, options.familyOverview);
+  registerStudyTime(app, origin, options.studyTime);
   registerBookshelf(app, origin, options.bookshelf);
 }
 

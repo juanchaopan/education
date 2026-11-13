@@ -12,7 +12,7 @@ if (!process.env.DATABASE_URL?.endsWith('/education_test'))
 const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
 const families: string[] = [];
 const origin = 'https://education.example';
-const app = buildApp({ origin, familyExport: createFamilyExport(pool) });
+const app = buildApp({ origin, familyExport: createFamilyExport(pool, 'Asia/Shanghai') });
 const drawing = [[{ x: 0.25, y: 0.5 }]];
 
 afterAll(async () => {
@@ -25,7 +25,10 @@ async function household(nickname: string | null = '小鹿') {
   const family = randomUUID();
   const token = randomBytes(32).toString('base64url');
   families.push(family);
-  await pool.query(`INSERT INTO families(id,code) VALUES($1,$2)`, [family, `CODE-${family}`]);
+  await pool.query(`INSERT INTO families(id,code,time_zone) VALUES($1,$2,'America/Toronto')`, [
+    family,
+    `CODE-${family}`,
+  ]);
   await pool.query(
     `WITH parent AS (
        INSERT INTO parents(family_id,email,password_hash,email_verified)
@@ -63,6 +66,11 @@ async function learner(family: string, nickname: string) {
     [child, round],
   );
   await variationRounds(child);
+  await pool.query(
+    `INSERT INTO study_days(child_id,day,seconds) VALUES($1,'2026-11-12',90),($1,'2026-11-10',600)`,
+    [child],
+  );
+  await pool.query(`INSERT INTO study_beats(child_id,beat_at) VALUES($1,now())`, [child]);
   // The maintained book, and a book id the catalogue does not list.
   await pool.query(
     `INSERT INTO book_assignments(child_id,book_id)
@@ -104,8 +112,9 @@ async function variationRounds(child: string) {
 }
 
 // What the export holds for a child made by `learner`: its learning summary,
-// its variations by problem, the maintained book without the one the
-// catalogue does not list, and the draft that has not expired.
+// its variations by problem, its study time day by day from the earliest, the
+// maintained book without the one the catalogue does not list, and the draft
+// that has not expired.
 const exportedLearner = {
   nickname: '小鹿',
   learning: [
@@ -146,6 +155,10 @@ const exportedLearner = {
         },
       ],
     },
+  ],
+  studyTime: [
+    { date: '2026-11-10', seconds: 600 },
+    { date: '2026-11-12', seconds: 90 },
   ],
   books: [
     {
@@ -194,10 +207,11 @@ it('exports only the signed-in family, its books, its live drafts and no credent
   const file = response.json<FamilyExport>();
   expect(file.format).toMatchObject({
     name: 'education-family-export',
-    version: 3,
+    version: 4,
     includes: [...familyExportScope.includes],
   });
   expect(file.parent).toEqual({ email: `${owner.family}@example.test`, emailVerified: true });
+  expect(file.timeZone).toEqual({ name: 'America/Toronto', set: true });
   expect(file.aiConsents).toEqual([
     { scope: 'openai-tutoring', policyVersion: 1, granted: true, changedAt: expect.any(String) },
   ]);

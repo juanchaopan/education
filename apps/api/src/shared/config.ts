@@ -29,9 +29,10 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env) {
 }
 
 // The time zone a family's days are counted in until a parent's device has
-// filled in the family's own.
-function readDefaultTimeZone(value = 'Asia/Shanghai') {
-  const zone = canonicalTimeZone(value);
+// filled in the family's own. Left empty, as a deployment's template may
+// leave it, it is China time like when it is not set.
+function readDefaultTimeZone(value: string | undefined) {
+  const zone = canonicalTimeZone(value || 'Asia/Shanghai');
   if (!zone) throw new Error('DEFAULT_TIME_ZONE must be an IANA time zone name');
   return zone;
 }

@@ -10,12 +10,13 @@ const renewed = 'b'.repeat(43);
 const file: FamilyExport = {
   format: {
     name: 'education-family-export',
-    version: 3,
+    version: 4,
     generatedAt: '2026-11-07T12:00:00.000Z',
     includes: [],
     excludes: [],
   },
   parent: { email: 'parent@example.test', emailVerified: true },
+  timeZone: { name: 'Asia/Shanghai', set: true },
   aiConsents: [],
   children: [],
 };

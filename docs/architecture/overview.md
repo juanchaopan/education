@@ -94,7 +94,7 @@ sequenceDiagram
 
 ## 数据与一致性（数据库已确认，细节设计）
 
-PostgreSQL 经 Drizzle 访问，保存 families、parents、children、sessions、registration_keys、book_assignments、attempts、progress、help_events、variation_answers、variation_help、drafts、consents、ai_usage。身份模块拥有账号与家庭，学习模块拥有作答、变化题记录与进度，AI 模块仅拥有用量账本；跨模块经服务接口访问。家庭删除清单放在另一个 PostgreSQL 数据库里，不进入应用库的备份，见 [ADR-0005](../adr/0005-data-consistency.md)。
+PostgreSQL 经 Drizzle 访问，保存 families（含家庭时区）、parents、children、sessions、registration_keys、book_assignments、attempts、progress、help_events、variation_answers、variation_help、study_days、study_beats、drafts、consents、ai_usage。身份模块拥有账号与家庭，学习模块拥有作答、变化题记录、学习时长与进度，AI 模块仅拥有用量账本；跨模块经服务接口访问。家庭删除清单放在另一个 PostgreSQL 数据库里，不进入应用库的备份，见 [ADR-0005](../adr/0005-data-consistency.md)。
 
 - 服务端从会话确定家庭和儿童，不信任客户端传入的 family_id；所有读写、导出和删除按家庭授权。
 - 作答使用请求幂等键及唯一约束；草稿使用版本号做乐观并发控制，冲突提示选择而不静默覆盖。
@@ -102,7 +102,7 @@ PostgreSQL 经 Drizzle 访问，保存 families、parents、children、sessions�
 - 家长密码与儿童 PIN 使用适合部署运行时的密码哈希；会话使用安全随机令牌、哈希存储、HttpOnly/Secure/SameSite cookie，并校验写请求来源。
 - 数据库迁移版本控制，先扩展后收缩。应用库每日加密备份并演练恢复，见 [备份与恢复](../deployment/backup.md)；免费数据库自带的恢复窗口不能当作备份。
 - 应用库的服务开关 `service_gate` 有一行时 API 才回答。备份不带这一行，恢复出来的库一开始是关闭的，按删除清单清理并检查通过后才打开。
-- 用户确认草稿最后编辑后 7 天过期，提交或明确放弃立即清除；不保留原始音频，进度摘要保留至家庭删除。已过期草稿读取时也必须失效，不能只依赖定时清理。备份保留 14 天，删除清单的条目在删除完成 15 天后销毁；在线删除 24 小时内完成。
+- 用户确认草稿最后编辑后 7 天过期，提交或明确放弃立即清除；不保留原始音频，进度摘要和每天的学习时长保留至家庭删除。已过期草稿读取时也必须失效，不能只依赖定时清理。备份保留 14 天，删除清单的条目在删除完成 15 天后销毁；在线删除 24 小时内完成。
 
 ## AI、语音与成本
 

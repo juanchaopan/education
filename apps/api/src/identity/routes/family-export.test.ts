@@ -19,12 +19,13 @@ const sameSite = {
 const file: FamilyExport = {
   format: {
     name: 'education-family-export',
-    version: 3,
+    version: 4,
     generatedAt: '2026-11-07T12:00:00.000Z',
     includes: ['孩子的昵称'],
     excludes: ['密码和 PIN 的哈希'],
   },
   parent: { email: 'parent@example.test', emailVerified: true },
+  timeZone: { name: 'Asia/Shanghai', set: true },
   aiConsents: [],
   children: [
     {
@@ -48,6 +49,7 @@ const file: FamilyExport = {
           ],
         },
       ],
+      studyTime: [{ date: '2026-11-06', seconds: 600 }],
       books: [],
       drafts: [],
     },
