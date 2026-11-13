@@ -39,7 +39,7 @@ function ProblemEvidence({ problem }: { problem: ProblemLearningSummary }) {
     <li className={styles.problem}>
       <h3>{problem.title ?? problem.id}</h3>
       <p className={styles.version}>第 {problem.version} 版</p>
-      <StatTiles size="small" tiles={stats} />
+      <StatTiles tiles={stats} />
       {problem.reviewSuggested && (
         <p className={styles.review}>
           <strong>优先复习</strong> · 这个版本确认答错 {problem.incorrect} 次，尚无独立完成记录。
