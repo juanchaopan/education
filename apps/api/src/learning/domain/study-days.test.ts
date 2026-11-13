@@ -67,6 +67,8 @@ describe('the days a parent may ask for', () => {
     expect(blockIssue('2026-11-12', today)).toBeUndefined();
     expect(blockIssue('2026-11-13', today)).toBe('还没有到这一天。');
     expect(blockIssue('2026-02-30', today)).toBe('日期不对，请刷新页面。');
+    expect(blockIssue('0000-01-05', today)).toBe('日期不对，请刷新页面。');
+    expect(blockIssue('1999-12-31', today)).toBe('日期不对，请刷新页面。');
   });
 
   it('takes one to seven days up to today for the learning record', () => {

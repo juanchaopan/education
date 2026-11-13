@@ -45,10 +45,14 @@ export function studyDays(from: CalendarDate, to: CalendarDate, facts: DayFacts)
   return days;
 }
 
-// Why a day cannot end a block of days: it is not a real date or it is still
-// to come.
+// The earliest day the record can be asked about, long before the app
+// existed; a far older date is a mistake, not a day to read.
+const firstDay = '2000-01-01';
+
+// Why a day cannot end a block of days: it is not a real date, it is far too
+// early or it is still to come.
 export function blockIssue(to: string, today: CalendarDate) {
-  if (!isCalendarDate(to)) return '日期不对，请刷新页面。';
+  if (!isCalendarDate(to) || to < firstDay) return '日期不对，请刷新页面。';
   if (to > today) return '还没有到这一天。';
   return undefined;
 }
