@@ -1,5 +1,6 @@
 import type pg from 'pg';
 import type { LearningEvidence } from './postgres-learning-summary.js';
+import { triedProblems } from './tried-problems.js';
 
 export type ProblemEvidence = Pick<
   LearningEvidence,
@@ -22,13 +23,7 @@ export async function readFamilyEvidence(
 ): Promise<ChildEvidence[]> {
   const { rows } = await client.query<Row>(
     `WITH family AS (SELECT id,nickname FROM children WHERE family_id=$1),
-    tried AS (
-      SELECT child_id,problem_id,problem_version FROM progress
-      WHERE child_id IN (SELECT id FROM family)
-      UNION
-      SELECT child_id,problem_id,problem_version FROM help_events
-      WHERE child_id IN (SELECT id FROM family)
-    )
+    tried AS (${triedProblems('IN (SELECT id FROM family)')})
     SELECT family.id AS child_id,tried.problem_id AS id,tried.problem_version AS version,
       coalesce(p.independent,0) AS independent,coalesce(p.assisted,0) AS assisted,
       coalesce(p.incorrect,0) AS incorrect
