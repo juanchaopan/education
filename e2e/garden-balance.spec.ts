@@ -79,7 +79,7 @@ test('a child places the garden problem, resumes it and is judged on the counted
     await signInWithToken(page, baseURL!, parent);
     await page.goto('/family/learning');
     const summary = page.locator('section[aria-labelledby=learning-summary-title]');
-    await summary.getByLabel('选择孩子').selectOption({ label: '小鹿' });
+    await page.getByRole('radio', { name: '小鹿' }).click();
     const problem = summary.getByRole('listitem').filter({ hasText: '一棵青菜有多重' });
     await expect(problem.getByText('提示后完成').locator('..')).toHaveText(/1 次/);
     await expect(problem.getByText('确认答错').locator('..')).toHaveText(/1 次/);

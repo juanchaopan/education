@@ -1,0 +1,49 @@
+.body {
+  display: grid;
+  gap: var(--space-4);
+}
+.failed {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-3);
+}
+
+/* Each problem tried in the days shown, in the rows the parent space lists
+   problems in, with its state as a badge at the end. */
+.items {
+  composes: rows from './ProblemRows.module.css';
+}
+.item {
+  composes: row from './ProblemRows.module.css';
+}
+.text {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+.title {
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.detail {
+  color: var(--ink-soft);
+  font-size: var(--text-sm);
+}
+.state {
+  flex: none;
+  padding: 0.1875rem var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  font-weight: 700;
+  font-size: var(--text-sm);
+  white-space: nowrap;
+}
+.state[data-state='independent'] {
+  border-color: color-mix(in srgb, var(--ok) 40%, transparent);
+  background: color-mix(in srgb, var(--ok) 18%, var(--surface));
+}
+.state[data-state='assisted'] {
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  background: var(--accent-soft);
+}

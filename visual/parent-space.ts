@@ -5,6 +5,7 @@ import {
   type FamilyOverview,
   type FamilyTimeZone,
   type FamilyTimeZoneSetting,
+  type LearningRange,
   type LearningSummary,
   type ParentSession,
   type ProblemLearningSummary,
@@ -82,7 +83,7 @@ const signedIn: Api = {
 };
 
 // The day the screenshots are taken, in the family's China time.
-const screenshotDay = '2026-11-07';
+export const screenshotDay = '2026-11-07';
 
 // The 28 days ending on the screenshots' day, with the minutes and the problem
 // states of the days given; every other day is quiet.
@@ -127,6 +128,31 @@ export const parentSpaceApi: Api = {
       problem('visual-fixture-one', '测试用的第一道题', { independent: 2, assisted: 1, hints: 2 }),
       problem('visual-fixture-two', '测试用的第二道题', { incorrect: 1, reviewSuggested: true }),
     ],
+  }),
+  [`GET /api/v1/parents/children/${xiaomi}/learning`]: ok<LearningRange>({
+    from: screenshotDay,
+    to: screenshotDay,
+    seconds: 720,
+    problems: { independent: 1, assisted: 0, open: 1 },
+    items: [
+      {
+        id: 'visual-fixture-one',
+        version: 1,
+        title: '测试用的第一道题',
+        state: 'independent',
+        attempts: 2,
+        hints: 0,
+      },
+      {
+        id: 'visual-fixture-three',
+        version: 1,
+        title: '测试用的第三道题',
+        state: 'open',
+        attempts: 3,
+        hints: 2,
+      },
+    ],
+    total: { problems: 3, seconds: 22_800 },
   }),
   [`GET /api/v1/parents/children/${lele}/learning-summary`]: ok<LearningSummary>({
     childId: lele,

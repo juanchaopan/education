@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import type { StudyDay } from '@education/contracts';
-import { canGoBack, daysShown, earlierBlocks, recordAddress, shownDates } from './day-window';
+import {
+  canGoBack,
+  chosenDays,
+  daysShown,
+  earlierBlocks,
+  recordAddress,
+  shownDates,
+} from './day-window';
 
 const today = '2026-11-12';
 // The overview's block: the 28 days from 16 October to today.
@@ -74,5 +81,24 @@ describe("the record's address", () => {
       `/family/learning?child=${child}&from=2026-11-08&to=2026-11-08`,
     );
     expect(recordAddress(child)).toBe(`/family/learning?child=${child}`);
+  });
+});
+
+describe('the days the learning record opens on', () => {
+  it('keeps one to seven real days up to today', () => {
+    expect(chosenDays('2026-11-12', '2026-11-12', today)).toEqual({ from: today, to: today });
+    expect(chosenDays('2026-11-01', '2026-11-07', today)).toEqual({
+      from: '2026-11-01',
+      to: '2026-11-07',
+    });
+  });
+
+  it('opens on today and the six days before it for anything else', () => {
+    const week = { from: '2026-11-06', to: today };
+    expect(chosenDays(null, null, today)).toEqual(week);
+    expect(chosenDays('2026-11-01', '2026-11-08', today)).toEqual(week);
+    expect(chosenDays('2026-11-08', '2026-11-07', today)).toEqual(week);
+    expect(chosenDays('2026-11-12', '2026-11-13', today)).toEqual(week);
+    expect(chosenDays('2026-02-30', '2026-03-01', today)).toEqual(week);
   });
 });

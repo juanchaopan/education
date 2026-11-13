@@ -64,7 +64,8 @@ async function chooseShelf(parent: Page, name: string) {
 async function expectNothingRecorded(parent: Page) {
   await openParentPart(parent, '学习记录');
   const summary = parent.getByRole('region', { name: '学习摘要' });
-  await summary.getByLabel('选择孩子').selectOption({ label: nickname });
+  await chooseShelf(parent, nickname);
+  await expect(parent.getByRole('region', { name: /今天/ })).toContainText('没有做题');
   await expect(summary.getByText('还没有这位孩子的学习记录。')).toBeVisible();
   await openParentPart(parent, '练习安排');
   await chooseShelf(parent, nickname);
