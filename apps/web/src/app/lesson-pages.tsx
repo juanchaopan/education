@@ -11,7 +11,7 @@ export const lessonPages: ProblemPages = new Map(
     const screen = lazy(async () => ({ default: await page() }));
     return [
       problemPath(problem.id, problem.version),
-      (_problem, csrf) => <LessonRoute lesson={screen} csrf={csrf} />,
+      (_problem, access) => <LessonRoute lesson={screen} {...access} />,
     ];
   }),
 );

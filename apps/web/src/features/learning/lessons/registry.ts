@@ -2,6 +2,7 @@ import type { ScenePicture } from '@education/contracts';
 import type { AnyLessonContent } from '@education/problems/lesson-content';
 import type { ComponentType } from 'react';
 import type { Box } from '../components/lesson-stage/stage-look';
+import type { LessonAccess } from '../data-access/learning-request';
 import type { FilmState } from '../interaction/lesson-film';
 import type { LessonBoard } from './lesson-board';
 import type {
@@ -50,7 +51,7 @@ export function lessonOutline<
 export type LessonEntry = Readonly<{
   problem: ProblemVersion;
   definition: () => Promise<LessonOutline>;
-  page: () => Promise<ComponentType<{ csrf?: string }>>;
+  page: () => Promise<ComponentType<LessonAccess>>;
 }>;
 
 // One registry line: the shared page is built for the lesson's own

@@ -1,7 +1,7 @@
 import { useState, type ComponentType, type ReactNode } from 'react';
 import type { LessonRecord } from '@education/contracts';
 import { StagePlace } from '../components/lesson-stage/LessonStage';
-import type { LearningScope } from '../data-access/learning-request';
+import type { LearningScope, LessonAccess } from '../data-access/learning-request';
 import type { AnswerEvents } from '../data-access/useLessonAnswer';
 import { useLessonDraft } from '../data-access/useLessonDraft';
 import { useLessonPreferences } from '../data-access/useLessonPreferences';
@@ -111,7 +111,8 @@ type BodyProps<State, Shot extends string, Move> = {
 // One problem's lesson page, built once for its own definition, so the page
 // holds the lesson to its own state, scenes, lines, moves and props. Anyone
 // can watch and play the scenes; saving, questions and the answer need a
-// signed-in child, whose session token the page takes.
+// signed-in child, whose session token the page takes with what to do when
+// the server refuses the problem partway through.
 export function lessonPage<
   State extends FilmState<Shot>,
   Shot extends string,
@@ -119,9 +120,7 @@ export function lessonPage<
   Move,
   Piece extends string,
   Look extends object,
->(
-  lesson: LessonDefinition<State, Shot, Line, Move, Piece, Look>,
-): ComponentType<{ csrf?: string }> {
+>(lesson: LessonDefinition<State, Shot, Line, Move, Piece, Look>): ComponentType<LessonAccess> {
   const { script, story } = lesson;
   const look = stageLook(lesson);
   const played = {
@@ -210,8 +209,8 @@ export function lessonPage<
     );
   }
 
-  return function LessonPage({ csrf }) {
+  return function LessonPage({ csrf, onRefused }) {
     if (!csrf) return <Body controls={visitorControls} />;
-    return <SignedIn scope={{ ...lesson.content.problem, csrf }} />;
+    return <SignedIn scope={{ ...lesson.content.problem, csrf, refused: onRefused }} />;
   };
 }

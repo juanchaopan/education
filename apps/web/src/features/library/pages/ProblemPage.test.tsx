@@ -3,12 +3,12 @@ import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Link, MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import type { ProblemSummary } from '@education/contracts';
-import { ProblemPage, type ProblemPages } from './ProblemPage';
+import type { ProblemOpening } from '@education/contracts';
+import { ProblemPage, type ProblemAccess, type ProblemPages } from './ProblemPage';
 import type { Viewer } from '../model';
 import { problemPath } from '../../../shared/lib/problem-path';
 
-const current: ProblemSummary = {
+const current: ProblemOpening = {
   id: 'fixture-review',
   version: 2,
   title: '练习新版',
@@ -16,29 +16,34 @@ const current: ProblemSummary = {
   subject: '语文',
   category: '阅读',
   sequence: 1,
+  mode: 'practice',
+  book: 'fixture-book',
 };
 const previous = { ...current, version: 1, title: '练习旧版' };
 const art = { backdrop: '/backdrop.webp', teacher: '/teacher.webp' };
 const child: Viewer = { kind: 'child', csrf: 'c'.repeat(43) };
 const parent: Viewer = { kind: 'parent', csrf: 'p'.repeat(43) };
 
-function FixturePage({ problem, csrf }: { problem: ProblemSummary; csrf?: string }) {
+function FixturePage({ problem, access }: { problem: ProblemOpening; access: ProblemAccess }) {
   return (
     <>
       <h1>{problem.title}</h1>
-      <p>{csrf ? '记下进度' : '只看'}</p>
+      <p>{access.csrf ? '记下进度' : '只看'}</p>
       <label>
         我的想法
         <input />
       </label>
       <Link to={problemPath(current.id, current.version)}>打开新版</Link>
       <Link to={problemPath(previous.id, previous.version)}>再看旧版</Link>
+      <button type="button" onClick={access.onRefused}>
+        被拒绝了
+      </button>
     </>
   );
 }
 
-const renderPage = (problem: ProblemSummary, csrf?: string) => (
-  <FixturePage problem={problem} csrf={csrf} />
+const renderPage = (problem: ProblemOpening, access: ProblemAccess) => (
+  <FixturePage problem={problem} access={access} />
 );
 const pages: ProblemPages = new Map([
   [problemPath(previous.id, previous.version), renderPage],
@@ -51,10 +56,17 @@ function Elsewhere() {
   return <h1>别处 {decodeURIComponent(`${pathname}${search}`)}</h1>;
 }
 
-function serve() {
+const refusal = (reason: string) =>
+  Response.json({ message: '这本书暂时不可用。', reason }, { status: 403 });
+
+// Answers each problem as the server would: missing, refused for a reason
+// named in the id, or opened.
+function serve(answer = (url: string) => Response.json(url.endsWith('/1') ? previous : current)) {
   const fetchProblem = vi.fn(async (url: string, _init?: RequestInit) => {
     if (url.includes('missing')) return new Response(null, { status: 404 });
-    return Response.json(url.endsWith('/1') ? previous : current);
+    if (url.includes('unassigned')) return refusal('unassigned');
+    if (url.includes('unavailable')) return refusal('unavailable');
+    return answer(url);
   });
   vi.stubGlobal('fetch', fetchProblem);
   return fetchProblem;
@@ -105,16 +117,16 @@ it('opens exact versions for a child and resets page state when switching versio
   });
 });
 
-it("goes back from a link opened directly to the child's home", async () => {
+it("goes back from a link opened directly to the child's home, with the problem's book open", async () => {
   serve();
   open(problemPath(current.id, current.version));
   await screen.findByRole('heading', { name: '练习新版' });
   await userEvent.click(screen.getByRole('button', { name: '返回' }));
-  expect(await screen.findByRole('heading', { name: '别处 /' })).toBeVisible();
+  expect(await screen.findByRole('heading', { name: '别处 /?open=fixture-book' })).toBeVisible();
 });
 
 it('shows a parent the problem without keeping anything, and goes back to the parent space', async () => {
-  serve();
+  serve(() => Response.json({ ...current, mode: 'preview' }));
   open(problemPath(current.id, current.version), parent);
   expect(await screen.findByText('只看')).toBeVisible();
   await userEvent.click(screen.getByRole('button', { name: '返回' }));
@@ -133,6 +145,12 @@ it('shows nobody signed in only the way to sign in and come back, asking nothing
   ).toBeVisible();
 });
 
+it('shows the way to sign in again when the session has ended', async () => {
+  serve(() => new Response(null, { status: 401 }));
+  open(problemPath(current.id, current.version));
+  expect(await screen.findByRole('heading', { name: '登录后才能打开这道题' })).toBeVisible();
+});
+
 it('waits without asking while it is not yet known who is signed in', () => {
   const fetchProblem = serve();
   open(problemPath(current.id, current.version), { kind: 'checking' });
@@ -146,4 +164,35 @@ it('goes back home from a problem that cannot be found', async () => {
   await screen.findByRole('heading', { name: '这道题暂时不可用' });
   await userEvent.click(screen.getByRole('button', { name: '返回' }));
   expect(await screen.findByRole('heading', { name: '别处 /' })).toBeVisible();
+});
+
+it('asks a child to have the book given, and leads back to the books', async () => {
+  serve();
+  open('/problems/unassigned/1');
+  expect(await screen.findByRole('heading', { name: '请家长安排这本书' })).toBeVisible();
+  await userEvent.click(screen.getByRole('link', { name: '回到我的书' }));
+  expect(await screen.findByRole('heading', { name: '别处 /' })).toBeVisible();
+});
+
+it('tells a child or a parent the book is unavailable for now, each with their own way back', async () => {
+  serve();
+  open('/problems/unavailable/1');
+  expect(await screen.findByRole('heading', { name: '这本书暂时不可用' })).toBeVisible();
+  expect(screen.getByRole('link', { name: '回到我的书' })).toHaveAttribute('href', '/');
+  cleanup();
+  open('/problems/unavailable/1', parent);
+  expect(await screen.findByRole('heading', { name: '这本书暂时不可用' })).toBeVisible();
+  expect(screen.getByRole('link', { name: '回到家长空间' })).toHaveAttribute('href', '/family');
+});
+
+it('asks again when the problem is refused partway through, and shows why', async () => {
+  let given = true;
+  const fetchProblem = serve(() => (given ? Response.json(current) : refusal('unassigned')));
+  open(problemPath(current.id, current.version));
+  await screen.findByRole('heading', { name: '练习新版' });
+  given = false;
+  await userEvent.click(screen.getByRole('button', { name: '被拒绝了' }));
+  expect(await screen.findByRole('heading', { name: '请家长安排这本书' })).toBeVisible();
+  expect(screen.queryByText('练习新版')).toBeNull();
+  expect(fetchProblem).toHaveBeenCalledTimes(2);
 });

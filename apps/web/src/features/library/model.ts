@@ -11,8 +11,11 @@ export type Viewer =
 // the teaching character beside the note.
 export type NoteArt = Readonly<{ backdrop: string; teacher: string }>;
 
-// Where the back button leads from a problem opened directly: a child's home
-// for a child, the parent space for a parent, the home page for anyone else.
-export function homeOf(viewer: Viewer) {
-  return viewer.kind === 'parent' ? '/family' : '/';
+// Where the back button leads from a problem opened directly: the parent
+// space for a parent; for a child, the home page with the problem's book
+// opened, once the book is known; the home page for anyone else.
+export function homeOf(viewer: Viewer, book?: string) {
+  if (viewer.kind === 'parent') return '/family';
+  if (viewer.kind === 'child' && book) return `/?open=${encodeURIComponent(book)}`;
+  return '/';
 }
