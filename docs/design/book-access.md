@@ -248,14 +248,14 @@
 
 | 状态 | 回答体                                                            | 什么时候               |
 | ---- | ----------------------------------------------------------------- | ---------------------- |
-| 200  | 题目摘要加 `mode: 'practice' \| 'preview'`                        | 打开一道题             |
+| 200  | 题目摘要加 `mode: 'practice' \| 'preview'` 和所在书的 `book`      | 打开一道题             |
 | 401  | `{ message: '登录已失效，请重新登录。' }`（和现在的孩子接口一样） | 没有能用这个接口的会话 |
 | 403  | `{ message: '请刷新页面后重试。' }`（照现在）                     | CSRF 不对              |
 | 403  | `{ message: '这本书还没有安排给你。', reason: 'unassigned' }`     | 书没安排给这个孩子     |
 | 403  | `{ message: '这本书暂时不可用。', reason: 'unavailable' }`        | 书暂时不可用           |
 | 404  | `{ message: '这道题或这个版本暂时不可用。' }`（照现在）           | 题目或版本不存在       |
 
-- 契约在 `libs/contracts`：`ProblemOpening`（题目摘要加 `mode`）、`ProblemAccessDenied`（`message` 和 `reason`）。页面按 `mode` 和 `reason` 选画法，不比较文字。`RequestError` 多一个可选的 `reason`，错误处理把它放进回答体。
+- 契约在 `libs/contracts`：`ProblemOpening`（题目摘要加 `mode` 和所在书的 `book`，直接打开链接的孩子返回时展开这本书）、`ProblemAccessDenied`（`message` 和 `reason`）。页面按 `mode` 和 `reason` 选画法，不比较文字。`RequestError` 多一个可选的 `reason`，错误处理把它放进回答体。
 - 拒绝时不说明书名，也不说明这本书安排给了谁。
 - 没有会话时先落到 401，题目存不存在都一样，访客不能用接口一道道试出题目清单。页面没登录时也不请求题目详情，不消耗登录的限流额度。
 
@@ -320,7 +320,7 @@ book_assignments
 
 ## 实现要点
 
-- `apps/api`：先做一个不改行为的重构，让题目下面的孩子接口（作答、草稿和三个 AI 接口）都从同一个「孩子 + 题目」入口进来，现在它只确认孩子会话；之后访问检查只加在这个入口里。打开一道题由外层的组装文件按会话选孩子或家长的判断，再交给 `catalog` 的路由；`catalog` 不依赖 `learning`。预览作答放在 `learning` 里，和孩子作答共用判定。孩子的书的筛选、计数、新书和排列是 `learning/domain/bookshelf.ts` 里的纯函数。
+- `apps/api`：先做一个不改行为的重构，让题目下面的孩子接口（作答、草稿和三个 AI 接口）都从同一个「孩子 + 题目」入口进来，现在它只确认孩子会话；之后访问检查只加在这个入口里。打开一道题由外层的组装文件按会话选孩子或家长的判断，再交给 `catalog` 的路由；`catalog` 不依赖 `learning`。预览作答放在 `learning` 里，和孩子作答共用判定。孩子的书的筛选、计数、新书和排列是 `learning/domain/child-books.ts` 里的纯函数。
 - `libs/contracts`：`ProblemOpening`、`ProblemAccessDenied`、预览作答的请求和回答；孩子的书的 `counts`、`studiedAt`、`fresh` 和 `books` 参数；去掉 `CatalogResponse`。
 - `apps/web`：凸起的按钮、筹码、卡片、列表块、进度条和立体封面做成 `shared/ui` 的公共部件；首页按会话选登录页或「我的书」，登录页复用 `AccountLayout`、孩子和家长的登录组件；孩子的顶栏替换现在的网站导航，`/child` 转到首页；加载方式按 `(pointer: coarse)` 选自动加载或按钮；`ProblemPage` 先看会话，再按 `mode` 和 `reason` 选画法；课堂页面收到的不再是可有可无的 `csrf`，而是「做题模式（孩子的 CSRF）」或「预览模式（家长的 CSRF）」两种之一：预览模式用同一个画面和同一套反馈，作答和提示走预览接口，不放话筒、提问和草稿，加上「预览」标记。
 - 书的卡片是一个展示组件，只收书和「展开 / 收起」「打开第几道题」的回调：展开按钮是卡片里唯一的 `<button>`（`aria-expanded`、`aria-controls`），放在题目列表之后，收起时整张卡片的点击也交给它；题目列表的展开用高度过渡，`prefers-reduced-motion` 时不过渡。
