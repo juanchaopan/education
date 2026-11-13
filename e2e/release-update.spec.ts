@@ -255,7 +255,7 @@ test.describe('a parent', () => {
     try {
       family = (await signInRecentParent(page, baseURL!, pool)).family;
       const site = await serveReleases(page, older);
-      await open(page, '/family/children');
+      await open(page, '/family/profile');
       await page.getByRole('button', { name: '生成注册 KEY', exact: true }).click();
       const raw = page.getByLabel('本次生成的注册 KEY');
       await expect(raw).toHaveText(/^[0-9A-HJKMNP-TV-Z]{4}(-[0-9A-HJKMNP-TV-Z]{4}){3}$/);

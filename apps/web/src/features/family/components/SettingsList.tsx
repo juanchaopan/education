@@ -11,14 +11,16 @@ type Setting = {
   to: string;
   icon: IconName;
   label: string;
+  // What the page holds, in small type at the row's end.
+  note?: string;
   badge?: ConsentBadge;
   danger?: boolean;
 };
 
-// The family's settings as rows on one card, each leading to the card where
-// it is changed. Deleting the family is drawn in the danger colour, apart
-// from the others. The AI row carries its consent badge once the consent has
-// been read.
+// The family's settings as rows on one card, each leading to the card or the
+// page where it is changed. Deleting the family is drawn in the danger colour,
+// apart from the others. The AI row carries its consent badge once the
+// consent has been read.
 export function SettingsList({ consent }: { consent?: AiConsentView }) {
   const settings: Setting[] = [
     {
@@ -27,6 +29,7 @@ export function SettingsList({ consent }: { consent?: AiConsentView }) {
       label: 'AI 老师',
       badge: consent && consentBadge(consent),
     },
+    { to: '/family/profile', icon: 'users', label: '家庭', note: '孩子、家庭码、时区' },
     { to: '/family/privacy#family-export-title', icon: 'download', label: '导出家庭数据' },
     {
       to: '/family/privacy#family-deletion-title',
@@ -39,11 +42,12 @@ export function SettingsList({ consent }: { consent?: AiConsentView }) {
     <Card className={styles.settings}>
       <nav aria-label="家庭设置">
         <ul className={styles.list}>
-          {settings.map(({ to, icon, label, badge, danger }) => (
+          {settings.map(({ to, icon, label, note, badge, danger }) => (
             <li key={to}>
               <Link to={to} className={styles.row} data-danger={danger}>
                 <Icon name={icon} className={styles.icon} />
                 <span className={styles.label}>{label}</span>
+                {note && <span className={styles.note}>{note}</span>}
                 {badge && <StatusBadge tone={badge.tone}>{badge.text}</StatusBadge>}
                 <Icon name="chevron" className={styles.chevron} />
               </Link>

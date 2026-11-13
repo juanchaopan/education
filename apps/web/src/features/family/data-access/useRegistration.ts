@@ -1,8 +1,12 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import type { ParentRegistration, RegistrationReceipt } from '@education/contracts';
+import { deviceTimeZone } from '../../../shared/lib/device-time-zone';
 
-async function register(input: ParentRegistration): Promise<RegistrationReceipt> {
-  const response = await requestRegistration(input);
+type Registration = Omit<ParentRegistration, 'timeZone'>;
+
+// A new family starts in the time zone of the browser it signs up from.
+async function register(input: Registration): Promise<RegistrationReceipt> {
+  const response = await requestRegistration({ ...input, timeZone: deviceTimeZone() });
   if (!response.ok) {
     if (response.status === 429) throw new Error('尝试较多，请稍后再试。');
     if (response.status === 400) throw new Error('请检查邮箱和密码格式后重试。');

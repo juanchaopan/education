@@ -28,8 +28,8 @@ test('parent confirms password, resets a child PIN and the old browser loses acc
       "INSERT INTO children(id,family_id,nickname,canonical_nickname,pin_hash,pin_pepper_version) VALUES($1,$2,'小鹿','小鹿',$3,1)",
       [child, family, await createChildPin('ab'.repeat(32))(family, child, pin)],
     );
-    // Signing in at the children's page opens that page.
-    await page.goto('/family/children');
+    // Signing in at the family's page opens that page.
+    await page.goto('/family/profile');
     await page.getByRole('button', { name: '已有账号？去登录' }).click();
     await page.getByLabel('登录邮箱').fill(email);
     await page.getByLabel('登录密码').fill(password);

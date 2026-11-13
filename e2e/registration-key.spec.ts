@@ -53,9 +53,9 @@ test('verified parent generates, refreshes, reauthenticates, replaces and revoke
     await expect(page.getByText('已复制家庭码。', { exact: true })).toHaveCount(0);
     await expect(page.getByLabel('家庭码', { exact: true })).toHaveText(displayedCode);
 
-    // Inviting a child opens the KEY on the children's page.
+    // Inviting a child opens the KEY on the family's page.
     await page.getByRole('link', { name: '邀请孩子' }).click();
-    await expect(page.getByRole('heading', { name: '孩子', level: 1 })).toBeVisible();
+    await expect(page.getByRole('heading', { name: '家庭', level: 1 })).toBeVisible();
     await page.getByRole('button', { name: '生成注册 KEY', exact: true }).click();
     const raw = page.getByLabel('本次生成的注册 KEY');
     await expect(raw).toHaveText(/^[0-9A-HJKMNP-TV-Z]{4}(-[0-9A-HJKMNP-TV-Z]{4}){3}$/);

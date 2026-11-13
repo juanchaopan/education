@@ -87,7 +87,7 @@ async function expectNothingRecorded(parent: Page) {
 async function joinChild(browser: Browser, pool: pg.Pool, family: PasswordParent, pin: string) {
   const parent = await browser.newPage();
   await signInWithPassword(parent, family);
-  await openParentPart(parent, '孩子');
+  await openParentPart(parent, '家庭');
   await expect(parent.getByText(/还没有关联的孩子/)).toBeVisible();
   await parent.getByRole('button', { name: '生成注册 KEY', exact: true }).click();
   const key = await parent.getByLabel('本次生成的注册 KEY').textContent();
@@ -215,7 +215,7 @@ test('two families use the framework and stay apart through reset, sign-in again
     // A PIN reset signs the first child out; the old PIN stops working and the
     // new one works. The other family's child is untouched.
     const nextPin = '937261';
-    await openParentPart(a.parent, '孩子');
+    await openParentPart(a.parent, '家庭');
     await resetPin(a.parent).click();
     await a.parent.getByLabel('新的六位 PIN', { exact: true }).fill(nextPin);
     await a.parent.getByLabel('再输入一次新 PIN').fill(nextPin);
@@ -233,7 +233,7 @@ test('two families use the framework and stay apart through reset, sign-in again
     await b.parent.getByRole('button', { name: '退出账号' }).click();
     await expect(b.parent.getByRole('heading', { name: '家长登录' })).toBeVisible();
     await submitParentLogin(b.parent, second);
-    await openParentPart(b.parent, '孩子');
+    await openParentPart(b.parent, '家庭');
     await expect(resetPin(b.parent)).toBeVisible();
     await b.child.context().clearCookies();
     await signInAgain(b.child, { code: b.code, pin: '640193' });
