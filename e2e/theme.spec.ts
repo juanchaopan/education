@@ -1,7 +1,8 @@
 import { expect, test, type Page } from '@playwright/test';
 
-// The site picks its theme by the device's local time: the day theme from
-// 6:00 to 18:00, the night theme for the rest.
+// On a device no family has signed in on, the site picks its theme by the
+// device's local time: the day theme from 6:00 to 18:00, the night theme for
+// the rest.
 test.use({ timezoneId: 'Asia/Shanghai' });
 
 const at = (time: string) => new Date(`2026-11-07T${time}+08:00`);

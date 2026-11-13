@@ -63,7 +63,8 @@ test('verified parent generates, refreshes, reauthenticates, replaces and revoke
     await page.reload();
     await expect(page.getByText('待使用', { exact: true })).toBeVisible();
     await expect(raw).toHaveCount(0);
-    await expect(page.getByLabel('家庭码', { exact: true })).toHaveText(
+    const codeCard = page.getByRole('region', { name: '家庭码' });
+    await expect(codeCard.getByLabel('家庭码', { exact: true })).toHaveText(
       familyCode.match(/.{4}/g)!.join('-'),
     );
     await pool.query(
