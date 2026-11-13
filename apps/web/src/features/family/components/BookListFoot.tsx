@@ -1,5 +1,4 @@
-import { useEffect, useRef } from 'react';
-import { useLatest } from '../../../shared/lib/useLatest';
+import { useReadAhead } from '../../../shared/lib/useReadAhead';
 import { Dots } from '../../../shared/ui/Loading';
 import { RaisedButton } from '../../../shared/ui/RaisedButton';
 import type { FootState } from './foot-state';
@@ -13,30 +12,13 @@ type Props = {
   onMore: () => void;
 };
 
-// Read the next batch this far ahead of the bottom of the screen.
-const ahead = '0px 0px 100% 0px';
-
 // The foot of the child's books. On a touch device the next six load about a
 // screen before the bottom, with a placeholder book and hopping dots; with a
 // mouse a raised 加载更多 sinks flat while they load. A batch that did not
 // load is said, with a way to try again, on either; once every book is shown
 // the foot says so.
 export function BookListFoot({ state, touch, onMore }: Props) {
-  const foot = useRef<HTMLDivElement>(null);
-  const more = useLatest(onMore);
-  useEffect(() => {
-    const target = foot.current;
-    if (!touch || state !== 'more' || !target || typeof IntersectionObserver === 'undefined')
-      return;
-    const watcher = new IntersectionObserver(
-      ([entry]) => {
-        if (entry?.isIntersecting) more.current();
-      },
-      { rootMargin: ahead },
-    );
-    watcher.observe(target);
-    return () => watcher.disconnect();
-  }, [touch, state, more]);
+  const foot = useReadAhead<HTMLDivElement>(touch && state === 'more', onMore);
   if (state === 'done') return <p className={styles.foot}>都在这里了</p>;
   if (state === 'failed')
     return (
