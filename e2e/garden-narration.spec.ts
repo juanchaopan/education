@@ -1,31 +1,20 @@
-import { expect, test, type Page } from '@playwright/test';
-import pg from 'pg';
-import { removeFamilies } from './family-cleanup.js';
+import { expect, test } from '@playwright/test';
 import { signInAtTheGardenStart } from './child-at-the-answer.js';
+import { play } from './film-play.js';
 import {
   answerAndHearTheVariation,
   gardenFilm,
   hearToTheAnswer,
   movesToTheAnswer,
-  play,
 } from './garden-film.js';
 import { listenToNarration, recording } from './narration-check.js';
-import { giveBook, seedSignedInFamily } from './seeded-family.js';
-import { signInWithToken } from './session-cookie.js';
+import { asSignedInChild, noLineFailed, signsIn } from './narration-runs.js';
+import { gardenBookId } from './seeded-family.js';
 
 // Every line of the garden film is heard to its end, in the order of the
 // script, by a child who waits for each before moving on: none is skipped,
 // none fails and none overlaps another. Runs in desktop Chromium, on a phone
 // and in WebKit.
-
-const database = process.env.DATABASE_URL;
-
-// The test servers answer over http, and WebKit sends no Secure cookie there,
-// so a child of the database can be signed in only in Chromium.
-const signsIn = (browserName: string) => !!database && browserName === 'chromium';
-
-const noLineFailed = (page: Page) =>
-  expect(page.locator('[data-narration-failure]')).toHaveCount(0);
 
 // Wherever a child of the database cannot be signed in, a child the test's
 // server answers for hears the film up to the answer; elsewhere the child of
@@ -93,24 +82,12 @@ test('a signed-in child hears every line of the film to its end', async ({
   browserName,
 }) => {
   test.skip(!signsIn(browserName), 'Needs an isolated database and Chromium');
-  if (!database?.endsWith('/education_test')) throw new Error('Use isolated education_test');
   test.setTimeout(300_000);
-  await expect
-    .poll(async () => (await page.request.get('/health/ready')).status(), { timeout: 15_000 })
-    .toBe(200);
-  const pool = new pg.Pool({ connectionString: database });
-  const { family, children } = await seedSignedInFamily(pool, ['小鹿']);
-  try {
-    await giveBook(pool, children[0]!.id);
-    await signInWithToken(page, baseURL!, children[0]!.token);
-    const narration = await listenToNarration(page);
-    await page.goto('/problems/garden-balance/1');
+  const lesson = { path: '/problems/garden-balance/1', book: gardenBookId };
+  await asSignedInChild(page, baseURL!, lesson, async (narration) => {
     await hearToTheAnswer(page, narration);
     await noLineFailed(page);
     await answerAndHearTheVariation(page, narration);
     await noLineFailed(page);
-  } finally {
-    await removeFamilies(pool, [family]);
-    await pool.end();
-  }
+  });
 });

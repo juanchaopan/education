@@ -5,7 +5,8 @@ import {
   signInAtTheGardenAnswer,
   signInAtTheGardenStart,
 } from './child-at-the-answer.js';
-import { gardenFilm, movesToTheAnswer, play } from './garden-film.js';
+import { play } from './film-play.js';
+import { gardenFilm, movesToTheAnswer } from './garden-film.js';
 
 // The garden keeps what each scene finds on the conclusion board along the
 // top of its picture: from the second scene on, the conclusions found so far
