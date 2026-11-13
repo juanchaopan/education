@@ -231,6 +231,66 @@ export const helpEvents = pgTable(
   ],
 ).enableRLS();
 
+export const variationPart = pgEnum('variation_part', ['guess', 'reason']);
+
+// The judged guesses and reasons of each variation, under the round whose
+// final answer was right. Only results are kept: an answer that could not be
+// judged leaves no row, and a reason keeps neither the words nor a digest of
+// them. A guess keeps a keyed digest of its number, which tells a retry from a
+// different guess reusing its id. A round has one guess at most and no reason
+// after a clear one. The time is the statement's, so the order of a round's
+// reasons is the order they were judged in.
+export const variationAnswers = pgTable(
+  'variation_answers',
+  {
+    ...learningSlot(),
+    attemptId: uuid('attempt_id').notNull(),
+    round: uuid('round').notNull(),
+    part: variationPart('part').notNull(),
+    fingerprint: text('fingerprint'),
+    outcome: attemptOutcome('outcome').notNull(),
+    submittedAt: timestamp('submitted_at', { withTimezone: true })
+      .default(sql`clock_timestamp()`)
+      .notNull(),
+  },
+  (table) => [
+    primaryKey({
+      columns: [table.childId, table.problemId, table.problemVersion, table.attemptId],
+    }),
+    uniqueIndex('variation_answers_one_guess')
+      .on(table.childId, table.problemId, table.problemVersion, table.round)
+      .where(sql`${table.part} = 'guess'`),
+    uniqueIndex('variation_answers_one_clear_reason')
+      .on(table.childId, table.problemId, table.problemVersion, table.round)
+      .where(sql`${table.part} = 'reason' AND ${table.outcome} IN ('independent', 'assisted')`),
+    check('variation_answers_judged', sql`${table.outcome} <> 'uncertain'`),
+    check(
+      'variation_answers_guess_digest',
+      sql`(${table.part} = 'guess') = (${table.fingerprint} IS NOT NULL)`,
+    ),
+  ],
+).enableRLS();
+
+// The help a child took during a variation, once per round for each hint and
+// for questions to the teacher. It counts only towards the variation's own
+// results, never the final answer's.
+export const variationHelp = pgTable(
+  'variation_help',
+  {
+    ...learningSlot(),
+    round: uuid('round').notNull(),
+    helpId: text('help_id').notNull(),
+    requestedAt: timestamp('requested_at', { withTimezone: true })
+      .default(sql`clock_timestamp()`)
+      .notNull(),
+  },
+  (table) => [
+    primaryKey({
+      columns: [table.childId, table.problemId, table.problemVersion, table.round, table.helpId],
+    }),
+  ],
+).enableRLS();
+
 export const parentSessions = pgTable(
   'parent_sessions',
   {

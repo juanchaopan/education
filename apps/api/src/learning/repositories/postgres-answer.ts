@@ -1,6 +1,7 @@
-import { createHmac, randomUUID } from 'node:crypto';
+import { randomUUID } from 'node:crypto';
 import type pg from 'pg';
 import type { AttemptReceipt, SubmitAnswer } from '@education/contracts';
+import { fingerprint, orderedInput } from './fingerprint.js';
 import { deleteDraftRevision } from './postgres-draft.js';
 
 type Problem = { id: string; version: number };
@@ -26,7 +27,15 @@ export function answersFor(client: pg.PoolClient, child: string, problem: Proble
       );
       return rows[0];
     },
-    fingerprint: (command: SubmitAnswer) => fingerprint(secret, key, command),
+    fingerprint: ({ attemptId, round, draftRevision, input }: SubmitAnswer) =>
+      fingerprint(secret, [
+        'lesson-answer',
+        ...key,
+        attemptId,
+        round,
+        draftRevision,
+        orderedInput(input),
+      ]),
     // Each kind of help is kept once per round, under the id of what helped.
     help: async (round: string, helpId: string) => {
       await client.query(
@@ -48,21 +57,6 @@ export function answersFor(client: pg.PoolClient, child: string, problem: Proble
         await deleteDraftRevision(client, child, problem, submission.draftRevision);
     },
   };
-}
-
-function fingerprint(secret: string, key: (string | number)[], command: SubmitAnswer) {
-  const { attemptId, round, draftRevision, input } = command;
-  const ordered =
-    typeof input === 'object' && !Array.isArray(input)
-      ? Object.fromEntries(
-          Object.keys(input)
-            .sort()
-            .map((key) => [key, input[key]]),
-        )
-      : input;
-  return createHmac('sha256', secret)
-    .update(JSON.stringify(['lesson-answer', ...key, attemptId, round, draftRevision, ordered]))
-    .digest('hex');
 }
 
 async function commitAttempt(

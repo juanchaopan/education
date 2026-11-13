@@ -94,7 +94,7 @@ sequenceDiagram
 
 ## 数据与一致性（数据库已确认，细节设计）
 
-PostgreSQL 经 Drizzle 访问，保存 families、parents、children、sessions、registration_keys、book_assignments、attempts、progress、drafts、consents、ai_usage。身份模块拥有账号与家庭，学习模块拥有作答与进度，AI 模块仅拥有用量账本；跨模块经服务接口访问。家庭删除清单放在另一个 PostgreSQL 数据库里，不进入应用库的备份，见 [ADR-0005](../adr/0005-data-consistency.md)。
+PostgreSQL 经 Drizzle 访问，保存 families、parents、children、sessions、registration_keys、book_assignments、attempts、progress、help_events、variation_answers、variation_help、drafts、consents、ai_usage。身份模块拥有账号与家庭，学习模块拥有作答、变化题记录与进度，AI 模块仅拥有用量账本；跨模块经服务接口访问。家庭删除清单放在另一个 PostgreSQL 数据库里，不进入应用库的备份，见 [ADR-0005](../adr/0005-data-consistency.md)。
 
 - 服务端从会话确定家庭和儿童，不信任客户端传入的 family_id；所有读写、导出和删除按家庭授权。
 - 作答使用请求幂等键及唯一约束；草稿使用版本号做乐观并发控制，冲突提示选择而不静默覆盖。

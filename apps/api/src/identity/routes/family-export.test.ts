@@ -19,14 +19,39 @@ const sameSite = {
 const file: FamilyExport = {
   format: {
     name: 'education-family-export',
-    version: 2,
+    version: 3,
     generatedAt: '2026-11-07T12:00:00.000Z',
     includes: ['孩子的昵称'],
     excludes: ['密码和 PIN 的哈希'],
   },
   parent: { email: 'parent@example.test', emailVerified: true },
   aiConsents: [],
-  children: [{ nickname: '小鹿', learning: [], books: [], drafts: [] }],
+  children: [
+    {
+      nickname: '小鹿',
+      learning: [],
+      variations: [
+        {
+          id: 'garden-balance',
+          version: 1,
+          title: '一棵青菜有多重',
+          status: { guess: 'independent', reason: 'assisted' },
+          missing: ['reason'],
+          attempts: [
+            {
+              guess: 'independent',
+              reason: { first: 'unclear', final: 'assisted' },
+              help: 1,
+              startedAt: '2026-11-07T11:00:00.000Z',
+              updatedAt: '2026-11-07T11:02:00.000Z',
+            },
+          ],
+        },
+      ],
+      books: [],
+      drafts: [],
+    },
+  ],
 };
 
 function exportWith(service?: FamilyExportService, headers: Record<string, string> = sameSite) {

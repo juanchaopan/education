@@ -33,6 +33,7 @@ function exporter(signedIn: Partial<AuthorizedParent> = {}, account = familyAcco
   const readAccount = vi.fn().mockResolvedValue(account);
   const childLearning = vi.fn(async (_client: pg.PoolClient, childId: string) => ({
     learning: [],
+    variations: [],
     books: [book(childId)],
     drafts: [],
   }));
@@ -78,7 +79,7 @@ describe('family export', () => {
     expect(file).toEqual({
       format: {
         name: 'education-family-export',
-        version: 2,
+        version: 3,
         generatedAt: '2026-11-07T12:00:00.000Z',
         includes: [...familyExportScope.includes],
         excludes: [...familyExportScope.excludes],
@@ -86,8 +87,8 @@ describe('family export', () => {
       parent: { email: 'parent@example.test', emailVerified: true },
       aiConsents: familyAccount().aiConsents,
       children: [
-        { nickname: '小鹿', learning: [], books: [book('deer')], drafts: [] },
-        { nickname: '小兔', learning: [], books: [book('rabbit')], drafts: [] },
+        { nickname: '小鹿', learning: [], variations: [], books: [book('deer')], drafts: [] },
+        { nickname: '小兔', learning: [], variations: [], books: [book('rabbit')], drafts: [] },
       ],
     });
     expect(JSON.stringify(file)).not.toContain('private-password-hash');

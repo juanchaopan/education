@@ -42,6 +42,7 @@ import { databaseErrorCode } from './shared/database-error.js';
 import { readRevision } from './shared/revision.js';
 import { createDrafts } from './draft-application.js';
 import { createAnswering } from './answer-application.js';
+import { createVariation } from './variation-application.js';
 import { createLearningSummary } from './learning-summary-application.js';
 import { createBookshelf } from './bookshelf-application.js';
 import { createAiConsent } from './ai-consent-application.js';
@@ -157,6 +158,7 @@ async function createIdentitySessions(
     ...(childSessions && {
       drafts: createDrafts(pool),
       answering: createAnswering(pool, config.rateLimitKey!),
+      variation: createVariation(pool, config.rateLimitKey!),
       teachingFeedback: createTeachingFeedback(pool, env),
       teacherQuestion: createTeacherQuestion(pool, env),
       voiceTranscription: createVoiceTranscription(pool, env),

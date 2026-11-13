@@ -40,6 +40,8 @@ import { registerDrafts } from './learning/routes/draft.js';
 import type { DraftService } from './learning/services/draft.js';
 import { registerAnswering } from './learning/routes/answer.js';
 import type { AnswerService } from './learning/services/answer.js';
+import { registerVariation } from './learning/routes/variation.js';
+import type { VariationService } from './learning/services/variation.js';
 import { registerLearningSummary } from './learning/routes/learning-summary.js';
 import type { LearningSummaryService } from './learning/services/learning-summary.js';
 import { registerBookshelf } from './learning/routes/bookshelf.js';
@@ -60,6 +62,7 @@ type AppOptions = {
   familyDeletion?: FamilyDeletionService;
   drafts?: DraftService;
   answering?: AnswerService;
+  variation?: VariationService;
   learningSummary?: LearningSummaryService;
   bookshelf?: BookshelfService;
   teachingFeedback?: TeachingFeedbackService;
@@ -185,6 +188,7 @@ function registerLearning(app: FastifyInstance, options: AppOptions) {
   const origin = options.origin ?? localOrigin;
   registerDrafts(app, origin, options.drafts);
   registerAnswering(app, origin, options.answering);
+  registerVariation(app, origin, options.variation);
   registerLearningSummary(app, options.learningSummary);
   registerBookshelf(app, origin, options.bookshelf);
 }

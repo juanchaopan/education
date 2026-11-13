@@ -62,6 +62,7 @@ async function learner(family: string, nickname: string) {
      VALUES($1,'apples',1,$2,'count'),($1,'shapes',2,$2,'look')`,
     [child, round],
   );
+  await variationRounds(child);
   // The maintained book, and a book id the catalogue does not list.
   await pool.query(
     `INSERT INTO book_assignments(child_id,book_id)
@@ -82,9 +83,29 @@ async function learner(family: string, nickname: string) {
   return child;
 }
 
+// Two variations of one problem: in the first the guess was wrong and the
+// reason, not clear at first, was made clear after a hint; in the later one
+// the guess was right and the child left before giving a reason.
+async function variationRounds(child: string) {
+  const [first, later] = [randomUUID(), randomUUID()];
+  await pool.query(
+    `INSERT INTO variation_answers(child_id,problem_id,problem_version,attempt_id,round,part,fingerprint,outcome,submitted_at)
+     VALUES($1,'apples',1,$4,$2,'guess','fixture','incorrect',now()-interval '3 hours'),
+       ($1,'apples',1,$5,$2,'reason',NULL,'incorrect',now()-interval '170 minutes'),
+       ($1,'apples',1,$6,$2,'reason',NULL,'assisted',now()-interval '160 minutes'),
+       ($1,'apples',1,$7,$3,'guess','fixture','independent',now()-interval '1 hour')`,
+    [child, first, later, randomUUID(), randomUUID(), randomUUID(), randomUUID()],
+  );
+  await pool.query(
+    `INSERT INTO variation_help(child_id,problem_id,problem_version,round,help_id,requested_at)
+     VALUES($1,'apples',1,$2,'count-again',now()-interval '165 minutes')`,
+    [child, first],
+  );
+}
+
 // What the export holds for a child made by `learner`: its learning summary,
-// the maintained book without the one the catalogue does not list, and the
-// draft that has not expired.
+// its variations by problem, the maintained book without the one the
+// catalogue does not list, and the draft that has not expired.
 const exportedLearner = {
   nickname: '小鹿',
   learning: [
@@ -100,6 +121,31 @@ const exportedLearner = {
       reviewSuggested: true,
     },
     expect.objectContaining({ id: 'shapes', version: 2, hints: 1, reviewSuggested: false }),
+  ],
+  variations: [
+    {
+      id: 'apples',
+      version: 1,
+      title: null,
+      status: { guess: 'independent', reason: 'assisted' },
+      missing: ['reason'],
+      attempts: [
+        {
+          guess: 'incorrect',
+          reason: { first: 'unclear', final: 'assisted' },
+          help: 1,
+          startedAt: expect.any(String),
+          updatedAt: expect.any(String),
+        },
+        {
+          guess: 'independent',
+          reason: { first: null, final: 'unclear' },
+          help: 0,
+          startedAt: expect.any(String),
+          updatedAt: expect.any(String),
+        },
+      ],
+    },
   ],
   books: [
     {
@@ -148,7 +194,7 @@ it('exports only the signed-in family, its books, its live drafts and no credent
   const file = response.json<FamilyExport>();
   expect(file.format).toMatchObject({
     name: 'education-family-export',
-    version: 2,
+    version: 3,
     includes: [...familyExportScope.includes],
   });
   expect(file.parent).toEqual({ email: `${owner.family}@example.test`, emailVerified: true });
@@ -156,6 +202,9 @@ it('exports only the signed-in family, its books, its live drafts and no credent
     { scope: 'openai-tutoring', policyVersion: 1, granted: true, changedAt: expect.any(String) },
   ]);
   expect(file.children).toEqual([exportedLearner]);
+  const [first, later] = file.children[0]!.variations[0]!.attempts;
+  expect(Date.parse(first!.startedAt)).toBeLessThan(Date.parse(first!.updatedAt));
+  expect(Date.parse(first!.updatedAt)).toBeLessThan(Date.parse(later!.startedAt));
   for (const secret of [
     'private-',
     owner.token,
@@ -165,6 +214,7 @@ it('exports only the signed-in family, its books, its live drafts and no credent
     other.family,
     '小兔',
     'fixture-missing-book',
+    'fixture',
   ])
     expect(response.body).not.toContain(secret);
 });
