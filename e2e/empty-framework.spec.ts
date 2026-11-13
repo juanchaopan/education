@@ -2,6 +2,7 @@ import { expect, test, type Browser, type Page } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import pg from 'pg';
+import { removeFamilies } from './family-cleanup.js';
 import type { CatalogResponse } from '@education/contracts';
 import { familyDeletionPhrase } from '../libs/contracts/src/family-deletion.js';
 import {
@@ -286,7 +287,7 @@ test('two families use the framework and stay apart through reset, sign-in again
     await expect(welcome(b.child)).toBeVisible();
     await b.child.screenshot({ path: info.outputPath('second-child-after.png'), fullPage: true });
   } finally {
-    await pool.query('DELETE FROM families WHERE id=ANY($1::uuid[])', [families]);
+    await removeFamilies(pool, families);
     await ledger.query('DELETE FROM family_deletions WHERE family_id=ANY($1::uuid[])', [families]);
     await Promise.all([pool.end(), ledger.end()]);
   }

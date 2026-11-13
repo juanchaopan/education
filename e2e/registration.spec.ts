@@ -1,15 +1,20 @@
 import { expect, test } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
 import pg from 'pg';
+import { removeFamilies } from './family-cleanup.js';
 
 const emails: string[] = [];
 test.afterAll(async () => {
   if (!process.env.DATABASE_URL || !emails.length) return;
   const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
   try {
-    await pool.query(
-      'DELETE FROM families WHERE id IN (SELECT family_id FROM parents WHERE email=ANY($1))',
+    const { rows } = await pool.query<{ family_id: string }>(
+      'SELECT family_id FROM parents WHERE email=ANY($1)',
       [emails],
+    );
+    await removeFamilies(
+      pool,
+      rows.map(({ family_id }) => family_id),
     );
   } finally {
     await pool.end();

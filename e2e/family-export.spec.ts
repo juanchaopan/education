@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 import pg from 'pg';
+import { removeFamilies } from './family-cleanup.js';
 import { signInRecentParent } from './recent-parent.js';
 
 test('parent confirms the password and downloads only their family’s data', async ({
@@ -33,7 +34,7 @@ test('parent confirms the password and downloads only their family’s data', as
     await expect(panel.getByText(/已下载 family-data-/)).toBeVisible();
     await panel.screenshot({ path: info.outputPath('family-export.png') });
   } finally {
-    if (family) await pool.query('DELETE FROM families WHERE id=$1', [family]);
+    if (family) await removeFamilies(pool, [family]);
     await pool.end();
   }
 });

@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { randomBytes, randomUUID } from 'node:crypto';
 import pg from 'pg';
+import { removeFamilies } from './family-cleanup.js';
 import { tokenHash } from '../apps/api/src/identity/services/session-security.js';
 
 async function verifiedParentSession(pool: pg.Pool, family: string) {
@@ -94,7 +95,7 @@ test('parent can switch children and see the evidence for a review suggestion', 
     await page.getByRole('button', { name: '退出账号' }).click();
     await expect(panel).toHaveCount(0);
   } finally {
-    await pool.query('DELETE FROM families WHERE id=$1', [family]);
+    await removeFamilies(pool, [family]);
     await pool.end();
   }
 });

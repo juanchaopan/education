@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
 import pg from 'pg';
+import { removeFamilies } from './family-cleanup.js';
 import { hashParentPassword } from '../apps/api/src/identity/services/password.js';
 import { createChildPin } from '../apps/api/src/identity/services/child-pin.js';
 
@@ -79,7 +80,7 @@ test('parent confirms password, resets a child PIN and the old browser loses acc
     await expect(page.getByRole('button', { name: '为小鹿重置 PIN' })).toBeEnabled();
   } finally {
     await childContext.close();
-    await pool.query('DELETE FROM families WHERE id=$1', [family]);
+    await removeFamilies(pool, [family]);
     await pool.end();
   }
 });

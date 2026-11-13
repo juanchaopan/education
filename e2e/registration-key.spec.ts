@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
 import pg from 'pg';
+import { removeFamilies } from './family-cleanup.js';
 import { hashParentPassword } from '../apps/api/src/identity/services/password.js';
 const families: string[] = [];
 const password = 'a real database synthetic key parent password';
@@ -8,7 +9,7 @@ test.afterAll(async () => {
   if (!process.env.DATABASE_URL || !families.length) return;
   const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
   try {
-    await pool.query('DELETE FROM families WHERE id=ANY($1::uuid[])', [families]);
+    await removeFamilies(pool, families);
   } finally {
     await pool.end();
   }

@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import pg from 'pg';
+import { removeFamilies } from './family-cleanup.js';
 import { familyDeletionPhrase } from '../libs/contracts/src/family-deletion.js';
 import { signInRecentParent } from './recent-parent.js';
 
@@ -42,7 +43,7 @@ test('parent types the phrase, confirms the password and deletes the family', as
     await expect(page.getByRole('button', { name: '已有账号？去登录' })).toBeVisible();
   } finally {
     if (family) {
-      await pool.query('DELETE FROM families WHERE id=$1', [family]);
+      await removeFamilies(pool, [family]);
       await ledger.query('DELETE FROM family_deletions WHERE family_id=$1', [family]);
     }
     await Promise.all([pool.end(), ledger.end()]);

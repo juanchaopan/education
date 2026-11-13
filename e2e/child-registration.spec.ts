@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
 import pg from 'pg';
+import { removeFamilies } from './family-cleanup.js';
 import { tokenHash } from '../apps/api/src/identity/services/session-security.js';
 import { generateRegistrationKey } from '../apps/api/src/identity/services/registration-key.js';
 
@@ -55,7 +56,7 @@ test('child joins using a real key, sees a family code, and cannot reuse it for 
         .rows[0].n,
     ).toBe(1);
   } finally {
-    await pool.query('DELETE FROM families WHERE id=$1', [family]);
+    await removeFamilies(pool, [family]);
     await pool.end();
   }
 });
