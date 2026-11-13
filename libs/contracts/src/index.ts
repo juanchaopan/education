@@ -21,6 +21,7 @@ export * from './child-access.js';
 export * from './draft.js';
 export * from './answer.js';
 export * from './variation.js';
+export * from './preview.js';
 export * from './learning-summary.js';
 export * from './family-overview.js';
 export * from './family-time-zone.js';
