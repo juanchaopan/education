@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
 import pg from 'pg';
+import { removeFamilies } from './family-cleanup.js';
 import { createChildPin } from '../apps/api/src/identity/services/child-pin.js';
 
 test('child signs in, returns across browser contexts, remembers only the locator, and logs out everywhere for that token', async ({
@@ -61,7 +62,7 @@ test('child signs in, returns across browser contexts, remembers only the locato
       await restored.close();
     }
   } finally {
-    await pool.query('DELETE FROM families WHERE id=$1', [family]);
+    await removeFamilies(pool, [family]);
     await pool.end();
   }
 });

@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import pg from 'pg';
+import { removeFamilies } from './family-cleanup.js';
 import {
   answerAndHearTheVariation,
   gardenFilm,
@@ -103,7 +104,7 @@ test('a signed-in child hears every line of the film to its end', async ({
     await answerAndHearTheVariation(page, narration);
     await noLineFailed(page);
   } finally {
-    await pool.query('DELETE FROM families WHERE id=$1', [family]);
+    await removeFamilies(pool, [family]);
     await pool.end();
   }
 });

@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import pg from 'pg';
+import { removeFamilies } from './family-cleanup.js';
 import { seedSignedInFamily } from './seeded-family.js';
 import { signInWithToken } from './session-cookie.js';
 
@@ -53,7 +54,7 @@ test('the time a child studies shows on the parent card and the record of that d
   } finally {
     await childContext.close();
     await parentContext.close();
-    await pool.query('DELETE FROM families WHERE id=$1', [family]);
+    await removeFamilies(pool, [family]);
     await pool.end();
   }
 });

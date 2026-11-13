@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import pg from 'pg';
+import { removeFamilies } from './family-cleanup.js';
 import { draftSaved } from './draft-save.js';
 import { gardenFilm, movesToTheAnswer, play } from './garden-film.js';
 import { holdWhile } from './hold.js';
@@ -85,7 +86,7 @@ test('a child places the garden problem, resumes it and is judged on the counted
     await expect(problem.getByText('确认答错').locator('..')).toHaveText(/1 次/);
     await expect(problem.getByText('独立完成').locator('..')).toHaveText(/0 次/);
   } finally {
-    await pool.query('DELETE FROM families WHERE id=$1', [family]);
+    await removeFamilies(pool, [family]);
     await pool.end();
   }
 });

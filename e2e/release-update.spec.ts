@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import pg from 'pg';
+import { removeFamilies } from './family-cleanup.js';
 import { draftSaved } from './draft-save.js';
 import { gardenFilm, movesToTheAnswer } from './garden-film.js';
 import { listenToNarration } from './narration-check.js';
@@ -165,7 +166,7 @@ test.describe('a signed-in child', () => {
     await signInWithToken(page, baseURL!, seeded.children[0]!.token);
   });
   test.afterEach(async () => {
-    await pool.query('DELETE FROM families WHERE id=$1', [family]);
+    await removeFamilies(pool, [family]);
     await pool.end();
   });
 
@@ -272,7 +273,7 @@ test.describe('a parent', () => {
       await expect.poll(() => site.loads).toBe(2);
       await expect(releaseName(page)).toHaveAttribute('content', newer);
     } finally {
-      if (family) await pool.query('DELETE FROM families WHERE id=$1', [family]);
+      if (family) await removeFamilies(pool, [family]);
       await pool.end();
     }
   });

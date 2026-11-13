@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { randomBytes, randomUUID } from 'node:crypto';
 import pg from 'pg';
+import { removeFamilies } from './family-cleanup.js';
 import { tokenHash } from '../apps/api/src/identity/services/session-security.js';
 import { hashParentPassword } from '../apps/api/src/identity/services/password.js';
 
@@ -63,7 +64,7 @@ test('parent reads both disclosures, confirms their password, grants and revokes
       true,
     );
   } finally {
-    await pool.query('DELETE FROM families WHERE id=$1', [family]);
+    await removeFamilies(pool, [family]);
     await pool.end();
   }
 });
