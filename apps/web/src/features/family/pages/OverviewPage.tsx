@@ -60,18 +60,22 @@ export function OverviewPage({ csrf }: { csrf: string }) {
 // Each child's card, then what is worth practising again beside what is
 // already given. The family's record comes in one reply; each child's books
 // are read side by side and kept together with the child. A record read
-// again after a failure shows as being read until it arrives.
+// again after a failure shows as being read until it arrives, on the cards
+// and in the review ideas alike.
 function FamilyActivity({ csrf, family }: { csrf: string; family: readonly ChildAccess[] }) {
   const overview = useFamilyOverview(csrf);
   const books = useChildrenAssigned(
     csrf,
     family.map(({ id }) => id),
   );
+  const records = new Map(overview.data?.children.map((record) => [record.id, record]));
   const activity: ChildActivity[] = family.map((child, place) => ({
     child,
-    record: overview.data?.children.find(({ id }) => id === child.id),
+    record: records.get(child.id),
     books: books[place]!,
   }));
+  const failed = overview.isError && !overview.isFetching;
+  const reading = !overview.data && !failed;
   return (
     <>
       <div className={styles.children}>
@@ -82,14 +86,14 @@ function FamilyActivity({ csrf, family }: { csrf: string; family: readonly Child
             nickname={child.nickname}
             place={place}
             totals={record?.total}
-            loading={overview.isFetching && !overview.data}
-            failed={overview.isError && !overview.isFetching}
+            loading={reading}
+            failed={failed}
             onRetry={() => void overview.refetch()}
           />
         ))}
       </div>
       <div className={styles.pair}>
-        <ReviewIdeas activity={activity} reading={overview.isPending} failed={overview.isError} />
+        <ReviewIdeas activity={activity} reading={reading} failed={failed} />
         <AssignedBooks csrf={csrf} activity={activity} />
       </div>
     </>
