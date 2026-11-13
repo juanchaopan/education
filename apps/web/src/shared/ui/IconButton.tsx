@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes } from 'react';
+import type { ButtonHTMLAttributes, Ref } from 'react';
 import { Icon } from './Icon';
 import type { IconName } from './icons';
 import styles from './IconButton.module.css';
@@ -10,6 +10,7 @@ type Props = Omit<
   icon: IconName;
   // A button with only an icon still needs a name for screen readers.
   label: string;
+  ref?: Ref<HTMLButtonElement>;
 };
 
 // A round card with only an icon, for the site's pages. A button laid into a

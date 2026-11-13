@@ -32,10 +32,12 @@ export function longDate(date: CalendarDate) {
 export const rangeName = (from: CalendarDate, to: CalendarDate, today: CalendarDate) =>
   `${shortDate(from)} – ${to === today ? '今天' : shortDate(to)}`;
 
-// What a screen reader hears for a day's column: 11 月 5 日 12 分钟.
-export function spokenDay(date: CalendarDate, seconds: number) {
+// What a screen reader hears for a day's column: 11 月 5 日 12 分钟, with 今天
+// first for today, which the column marks with 「今」 only to the eye.
+export function spokenDay(date: CalendarDate, seconds: number, today: CalendarDate) {
   const { month, day } = parts(date);
-  return `${month} 月 ${day} 日 ${minutesOf(seconds)} 分钟`;
+  const spoken = `${month} 月 ${day} 日 ${minutesOf(seconds)} 分钟`;
+  return date === today ? `今天 ${spoken}` : spoken;
 }
 
 // A long stretch of study time: 6 小时 20 分, or 45 分钟 under an hour.

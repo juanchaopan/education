@@ -150,7 +150,9 @@ it('picks a day for the figures and the record, and moves back reading earlier d
   });
   renderFamilyPage();
   const mine = await screen.findByRole('region', { name: '小米' });
-  await userEvent.click(await within(mine).findByRole('button', { name: '11 月 12 日 12 分钟' }));
+  await userEvent.click(
+    await within(mine).findByRole('button', { name: '今天 11 月 12 日 12 分钟' }),
+  );
   expect(mine).toHaveTextContent('2026年11月12日已学 12 分钟');
   expect(within(mine).getByRole('link', { name: '看学习记录' })).toHaveAttribute(
     'href',

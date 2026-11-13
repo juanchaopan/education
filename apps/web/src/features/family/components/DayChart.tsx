@@ -1,4 +1,4 @@
-import { useRef, type PointerEvent } from 'react';
+import { useEffect, useRef, type PointerEvent } from 'react';
 import type { CalendarDate, StudyDay } from '@education/contracts';
 import { IconButton } from '../../../shared/ui/IconButton';
 import { columnLabel, spokenDay } from './study-day-text';
@@ -23,7 +23,8 @@ const swipe = 40;
 // height. Every column is a toggle for its whole height, so a day without a
 // bar is as easy to pick. Today's bar has the accent colour; a picked day
 // stands out and the others fade. The round buttons, or a swipe on a touch
-// screen, move the days one at a time.
+// screen, move the days one at a time. Once the days reach today the forward
+// button goes, so a keyboard that pressed it lands on the back button.
 export function DayChart({
   days,
   today,
@@ -35,6 +36,13 @@ export function DayChart({
   onPick,
 }: DayChartProps) {
   const start = useRef<number | undefined>(undefined);
+  const back = useRef<HTMLButtonElement>(null);
+  const pressedForward = useRef(false);
+  useEffect(() => {
+    if (canGoForward || !pressedForward.current) return;
+    pressedForward.current = false;
+    if (document.activeElement === document.body) back.current?.focus();
+  }, [canGoForward]);
   const most = Math.max(...days.map(({ seconds }) => seconds));
   const swiped = (event: PointerEvent) => {
     if (start.current === undefined) return;
@@ -48,7 +56,13 @@ export function DayChart({
       <div className={styles.chart}>
         {most === 0 && <p className={styles.quiet}>这几天没有学习</p>}
         <div className={styles.back}>
-          <IconButton icon="back" label="往前看一天" disabled={!canGoBack} onClick={onBack} />
+          <IconButton
+            ref={back}
+            icon="back"
+            label="往前看一天"
+            disabled={!canGoBack}
+            onClick={onBack}
+          />
         </div>
         <div
           className={styles.days}
@@ -65,7 +79,7 @@ export function DayChart({
               type="button"
               className={styles.day}
               aria-pressed={picked === date}
-              aria-label={spokenDay(date, seconds)}
+              aria-label={spokenDay(date, seconds, today)}
               data-today={date === today || undefined}
               onClick={() => onPick(date)}
             >
@@ -83,7 +97,16 @@ export function DayChart({
           ))}
         </div>
         <div className={styles.forward}>
-          {canGoForward && <IconButton icon="chevron" label="往后看一天" onClick={onForward} />}
+          {canGoForward && (
+            <IconButton
+              icon="chevron"
+              label="往后看一天"
+              onClick={() => {
+                pressedForward.current = true;
+                onForward();
+              }}
+            />
+          )}
         </div>
       </div>
     </div>

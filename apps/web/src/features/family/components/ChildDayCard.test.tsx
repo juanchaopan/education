@@ -80,7 +80,7 @@ it('shows only the picked day, and passes a press on any column on', async () =>
   expect(region()).toHaveTextContent('2026年11月7日已学 0 分钟');
   expect(region()).toHaveTextContent('这一天没有做题');
   await userEvent.click(screen.getByRole('button', { name: '11 月 7 日 0 分钟' }));
-  await userEvent.click(screen.getByRole('button', { name: '11 月 12 日 12 分钟' }));
+  await userEvent.click(screen.getByRole('button', { name: '今天 11 月 12 日 12 分钟' }));
   expect(onPick.mock.calls).toEqual([['2026-11-07'], [today]]);
 });
 
