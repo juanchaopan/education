@@ -61,13 +61,12 @@ export function OverviewPage({ csrf }: { csrf: string }) {
 // already given. The family's record comes in one reply; each child's books
 // are read side by side and kept together with the child. A record read
 // again after a failure shows as being read until it arrives, on the cards
-// and in the review ideas alike.
+// and in the review ideas alike. A child the reply leaves out, such as one
+// removed meanwhile, shows that the record could not be read, with a retry.
 function FamilyActivity({ csrf, family }: { csrf: string; family: readonly ChildAccess[] }) {
-  const overview = useFamilyOverview(csrf);
-  const books = useChildrenAssigned(
-    csrf,
-    family.map(({ id }) => id),
-  );
+  const childIds = family.map(({ id }) => id);
+  const overview = useFamilyOverview(csrf, childIds);
+  const books = useChildrenAssigned(csrf, childIds);
   const records = new Map(overview.data?.children.map((record) => [record.id, record]));
   const activity: ChildActivity[] = family.map((child, place) => ({
     child,
@@ -87,7 +86,7 @@ function FamilyActivity({ csrf, family }: { csrf: string; family: readonly Child
             place={place}
             totals={record?.total}
             loading={reading}
-            failed={failed}
+            failed={failed || (!!overview.data && !record && !overview.isFetching)}
             onRetry={() => void overview.refetch()}
           />
         ))}

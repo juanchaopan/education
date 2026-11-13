@@ -130,6 +130,23 @@ it('reads the record again when the first reading failed', async () => {
   expect(await within(mine).findByText('次独立完成')).toBeVisible();
 });
 
+it('shows a child the record leaves out as not read, and reads it again', async () => {
+  let leftOut = true;
+  stubFetch({
+    ...family,
+    'GET parents/overview': () =>
+      leftOut ? { children: overview.children.filter(({ id }) => id !== le) } : overview,
+  });
+  renderFamilyPage();
+  const mine = await screen.findByRole('region', { name: '小米' });
+  expect(await within(mine).findByText('次独立完成')).toBeVisible();
+  const theirs = screen.getByRole('region', { name: '乐乐' });
+  expect(within(theirs).getByRole('alert')).toHaveTextContent('学习记录没有读出来');
+  leftOut = false;
+  await userEvent.click(within(theirs).getByRole('button', { name: '重试' }));
+  expect(await within(theirs).findByText('还没有学习记录。')).toBeVisible();
+});
+
 it('lists problems worth another try without planning them one by one', async () => {
   stubFetch(family);
   renderFamilyPage();

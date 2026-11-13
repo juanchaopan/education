@@ -26,10 +26,12 @@ export function useLearningSummary(csrf: string, childId: string, offset: number
 }
 
 // Every child's record as the overview shows it, added up by the server in
-// one request. The overview reads it afresh whenever it opens.
-export function useFamilyOverview(csrf: string) {
+// one request. The overview reads it afresh whenever it opens, and again
+// whenever the family's children it shows change, so a child who just joined
+// gets a record too.
+export function useFamilyOverview(csrf: string, childIds: readonly string[]) {
   return useQuery({
-    queryKey: [key, 'overview', csrf],
+    queryKey: [key, 'overview', csrf, [...childIds].sort()],
     retry: false,
     gcTime: 0,
     refetchOnWindowFocus: false,
