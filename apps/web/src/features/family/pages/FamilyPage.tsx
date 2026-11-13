@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { preload } from 'react-dom';
 import type { ParentSession } from '@education/contracts';
-import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import { Navigate, Route, Routes } from 'react-router-dom';
 import { useArrivalScroll } from '../../../shared/lib/useArrivalScroll';
 import { Button } from '../../../shared/ui/Button';
 import { Icon } from '../../../shared/ui/Icon';
@@ -159,10 +159,9 @@ function Unverified({
 
 // The verified parent's space: the overview at /family and a page for each
 // part of it. An address under /family that names no part leads back to the
-// overview, and the children's old address leads to the family's page. Each
-// part opens at its top, or at the card its address names after a "#", as
-// the overview's links do. A family without a time zone of its own takes
-// this device's.
+// overview. Each part opens at its top, or at the card its address names
+// after a "#", as the overview's links do. A family without a time zone of
+// its own takes this device's.
 function ParentSpace({
   session,
   leaving,
@@ -180,7 +179,6 @@ function ParentSpace({
       <Routes>
         <Route index element={<OverviewPage key={`overview-${csrf}`} csrf={csrf} />} />
         <Route path="profile" element={<ProfileSection csrf={csrf} />} />
-        <Route path="children" element={<MovedToProfile />} />
         <Route path="practice" element={<PracticeSection csrf={csrf} />} />
         <Route path="learning" element={<LearningSection csrf={csrf} />} />
         <Route path="privacy" element={<PrivacySection csrf={csrf} onDeleted={onDeleted} />} />
@@ -188,11 +186,4 @@ function ParentSpace({
       </Routes>
     </ParentShell>
   );
-}
-
-// /family/children, kept for links saved before the page became 「家庭」,
-// with the card its address names.
-function MovedToProfile() {
-  const { hash } = useLocation();
-  return <Navigate to={{ pathname: '/family/profile', hash }} replace />;
 }

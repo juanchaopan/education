@@ -174,7 +174,7 @@ Outcome  = [problemId, 'independent' | 'assisted' | 'open']   // 这一天每道
 
 ### 家庭（`/family/profile`）
 
-侧栏和标签栏的「孩子」改名「家庭」，地址从 `/family/children` 换成 `/family/profile`，旧地址转过来。这一页是家庭的资料：
+侧栏和标签栏里叫「家庭」，地址是 `/family/profile`。这一页是家庭的资料：
 
 1. **孩子**：每个孩子一行和「重置 PIN」，不变。
 2. **家庭码**：大字的家庭码和复制按钮，一行「孩子登录时填，不是注册 KEY。」。总览右上角的家庭码筹码照旧。
