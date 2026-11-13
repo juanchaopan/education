@@ -1,6 +1,7 @@
 import type pg from 'pg';
 import type { ProblemLearningSummary } from '@education/contracts';
 import type { Page } from './page.js';
+import { triedProblems } from './tried-problems.js';
 
 export type LearningEvidence = Omit<ProblemLearningSummary, 'title' | 'reviewSuggested'>;
 
@@ -17,9 +18,7 @@ export async function readLearningEvidence(
     }
   >(
     `WITH problem_page AS (
-      SELECT problem_id,problem_version FROM progress WHERE child_id=$1
-      UNION
-      SELECT problem_id,problem_version FROM help_events WHERE child_id=$1
+      ${triedProblems('$1')}
       ORDER BY problem_id,problem_version LIMIT $2 OFFSET $3
     )
     SELECT page.problem_id AS id,page.problem_version AS version,

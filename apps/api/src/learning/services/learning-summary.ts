@@ -3,6 +3,7 @@ import {
   type LearningSummary,
   type ProblemLearningSummary,
 } from '@education/contracts';
+import { reviewSuggested } from '../domain/review.js';
 import type { LearningEvidence } from '../repositories/postgres-learning-summary.js';
 
 export type Title = (problemId: string, version: number) => string | undefined;
@@ -13,10 +14,7 @@ export function withTitle<T extends { id: string; version: number }>(problem: T,
 }
 
 export function summarizeProblem(row: LearningEvidence, title: Title): ProblemLearningSummary {
-  return {
-    ...withTitle(row, title),
-    reviewSuggested: row.incorrect >= 2 && row.independent === 0,
-  };
+  return { ...withTitle(row, title), reviewSuggested: reviewSuggested(row) };
 }
 
 export function createLearningSummaryService(

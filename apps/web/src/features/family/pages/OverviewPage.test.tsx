@@ -14,18 +14,17 @@ const session = {
   access: 'verified',
   csrfToken: csrf,
 };
-const problem = (id: string, title: string, counts: object) => ({
-  id,
-  version: 1,
-  title,
-  independent: 0,
-  assisted: 0,
-  incorrect: 0,
-  uncertain: 0,
-  hints: 0,
-  reviewSuggested: false,
-  ...counts,
-});
+const nothing = { problems: 0, independent: 0, assisted: 0 };
+const overview = {
+  children: [
+    {
+      id: mi,
+      total: { problems: 2, independent: 2, assisted: 1 },
+      review: [{ id: 'fixture-two', version: 1, title: '第二道', incorrect: 2 }],
+    },
+    { id: le, total: nothing, review: [] },
+  ],
+};
 // Test fixtures only: these books never enter the problem list.
 const book = (id: string, name: string, done: number, fields: Partial<ChildShelfBook> = {}) =>
   ({
@@ -87,22 +86,14 @@ const family: Replies = {
       { id: le, nickname: '乐乐', credentialVersion: 1 },
     ],
   },
-  [`GET parents/children/${mi}/learning-summary`]: {
-    childId: mi,
-    hasMore: false,
-    problems: [
-      problem('fixture-one', '第一道', { independent: 2, assisted: 1 }),
-      problem('fixture-two', '第二道', { incorrect: 2, reviewSuggested: true }),
-    ],
-  },
-  [`GET parents/children/${le}/learning-summary`]: { childId: le, hasMore: false, problems: [] },
+  'GET parents/overview': () => overview,
   [`GET parents/children/${mi}/books`]: () =>
     shelf([book('book-patterns', '找规律', 5), book('book-shapes', '认图形', 10)]),
   [`GET parents/children/${le}/books`]: () => shelf([book('book-songs', '儿歌', 3)]),
 };
 
 it('shows each child with totals from their record, never mixing hints into finishing alone', async () => {
-  stubFetch(family);
+  const fetcher = stubFetch(family);
   renderFamilyPage();
   expect(await screen.findByRole('heading', { name: '总览' })).toBeVisible();
   expect(await screen.findByLabelText('家庭码')).toHaveTextContent('ABCD-EFGH-JKMN');
@@ -118,6 +109,42 @@ it('shows each child with totals from their record, never mixing hints into fini
     'href',
     '/family/children#registration-key-title',
   );
+  const asked = fetcher.mock.calls.map(([url]) => url);
+  expect(asked.filter((url) => url.includes('learning-summary'))).toEqual([]);
+});
+
+it('reads the record again when the first reading failed', async () => {
+  let failing = true;
+  stubFetch({
+    ...family,
+    'GET parents/overview': () => (failing ? Response.json({}, { status: 503 }) : overview),
+  });
+  renderFamilyPage();
+  const mine = await screen.findByRole('region', { name: '小米' });
+  expect(await within(mine).findByRole('alert')).toHaveTextContent('学习记录没有读出来');
+  expect(screen.getByRole('region', { name: '值得再练' })).toHaveTextContent(
+    '有的学习记录没有读出来',
+  );
+  failing = false;
+  await userEvent.click(within(mine).getByRole('button', { name: '重试' }));
+  expect(await within(mine).findByText('次独立完成')).toBeVisible();
+});
+
+it('shows a child the record leaves out as not read, and reads it again', async () => {
+  let leftOut = true;
+  stubFetch({
+    ...family,
+    'GET parents/overview': () =>
+      leftOut ? { children: overview.children.filter(({ id }) => id !== le) } : overview,
+  });
+  renderFamilyPage();
+  const mine = await screen.findByRole('region', { name: '小米' });
+  expect(await within(mine).findByText('次独立完成')).toBeVisible();
+  const theirs = screen.getByRole('region', { name: '乐乐' });
+  expect(within(theirs).getByRole('alert')).toHaveTextContent('学习记录没有读出来');
+  leftOut = false;
+  await userEvent.click(within(theirs).getByRole('button', { name: '重试' }));
+  expect(await within(theirs).findByText('还没有学习记录。')).toBeVisible();
 });
 
 it('lists problems worth another try without planning them one by one', async () => {
