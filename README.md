@@ -1,6 +1,6 @@
 # 小小探索家
 
-中文儿童交互式解题网站。家长注册、邮箱验证、登录、退出及密码恢复，家长 KEY 管理、儿童兑换注册、PIN 持久登录和家长重置儿童 PIN，家长的学习摘要、按书安排练习、外部 AI 授权、家庭导出和删除都已实现。首页是孩子和家长的登录页；孩子登录后首页就是「我的书」，只列家长安排给自己的书。第一道真实题目是一年级 / 数学 / 学而思的「一棵青菜有多重」，孩子在菜园天平的互动短片里操作，最后说出答案（见 [#49](docs/evidence/49/README.md)）；没有演示题或伪造的学习进度。彩铅配对和数轴追及两道题、进题后不用按键就能和老师对话、已打开页面在新版本发布后的自动刷新和生产部署尚未实现。各项真实 staging 验收范围与限制见文档，家庭框架的整体验收见 [#47](docs/evidence/47/README.md)。
+中文儿童交互式解题网站。家长注册、邮箱验证、登录、退出及密码恢复，家长 KEY 管理、儿童兑换注册、PIN 持久登录和家长重置儿童 PIN，家长的学习摘要、按书安排练习、外部 AI 授权、家庭导出和删除都已实现。首页是孩子和家长的登录页；孩子登录后首页就是「我的书」，只列家长安排给自己的书。有两道真实题目：一年级 / 数学 / 学而思的「一棵青菜有多重」，孩子在菜园天平的互动短片里操作，最后说出答案（见 [#49](docs/evidence/49/README.md)）；六年级 / 数学 / 学而思的「两车的中点什么时候相距 4 格」，孩子推着两辆车一步步列出 |10 − t| = 4，说出两个时刻（见 [#126](docs/evidence/126/README.md)）。没有演示题或伪造的学习进度。彩铅配对一道题、进题后不用按键就能和老师对话、已打开页面在新版本发布后的自动刷新和生产部署尚未实现。各项真实 staging 验收范围与限制见文档，家庭框架的整体验收见 [#47](docs/evidence/47/README.md)。
 
 ## 本地开发
 
@@ -101,7 +101,7 @@ npm run test:visual
 npm run storybook
 ```
 
-端到端测试前需 `npm run build`，并安装匹配的 Playwright Chromium 和 WebKit：`npx playwright install chromium webkit`。本机已有兼容 Chromium 时可临时设置 `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH`；WebKit 仍需安装。测试由 Playwright 启动 6 个 API 服务，端口从 `E2E_PORT`（默认 4173）起连续 6 个；几个工作区同时跑时，各给一个空闲的起始端口。`e2e/empty-framework.spec.ts` 用两个家庭走通家庭框架，需要 `DATABASE_URL` 和 `DELETION_LEDGER_URL`；它和家长账号测试各有自己的 API 服务，登录预算不和其他测试相加。`e2e/garden-balance.spec.ts` 让家长安排了书的孩子从首页「我的书」打开菜园天平、走完并交答案，需要 `DATABASE_URL`。`e2e/garden-narration.spec.ts` 逐句检查菜园短片的每句旁白都完整播放、没有被跳过，也检查录音下载失败和一句放不出来时短片会停下等孩子重试；它也在 WebKit 里运行，有 `DATABASE_URL` 时由数据库里登录的孩子听完整部短片，没有时由测试代答的孩子听到作答那一幕。不需要数据库的题目用例由 `e2e/assigned-child.ts` 代答孩子会话、孩子的书和打开一道题。
+端到端测试前需 `npm run build`，并安装匹配的 Playwright Chromium 和 WebKit：`npx playwright install chromium webkit`。本机已有兼容 Chromium 时可临时设置 `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH`；WebKit 仍需安装。测试由 Playwright 启动 6 个 API 服务，端口从 `E2E_PORT`（默认 4173）起连续 6 个；几个工作区同时跑时，各给一个空闲的起始端口。`e2e/empty-framework.spec.ts` 用两个家庭走通家庭框架，需要 `DATABASE_URL` 和 `DELETION_LEDGER_URL`；它和家长账号测试各有自己的 API 服务，登录预算不和其他测试相加。`e2e/garden-balance.spec.ts` 让家长安排了书的孩子从首页「我的书」打开菜园天平、走完并交答案，需要 `DATABASE_URL`。`e2e/garden-narration.spec.ts` 逐句检查菜园短片的每句旁白都完整播放、没有被跳过，也检查录音下载失败和一句放不出来时短片会停下等孩子重试；它也在 WebKit 里运行，有 `DATABASE_URL` 时由数据库里登录的孩子听完整部短片，没有时由测试代答的孩子听到作答那一幕；`e2e/rail-chase-narration.spec.ts` 同样逐句检查数轴追及短片。不需要数据库的题目用例由 `e2e/assigned-child.ts` 代答孩子会话、孩子的书和打开一道题。
 
 `npm run test:visual` 需要 Docker 正在运行：它在固定版本的官方 Playwright 镜像里构建应用和 Storybook，把每个 story 和关键页面在桌面、平板、手机三个视口下与经维护者评审的基准截图对比，并检查 WCAG 2.2 AA、键盘、减少动画、触摸目标和缩放。容器里的依赖装在 Docker 缓存卷里，`package-lock.json` 不变时下次直接复用。后面可加 `--grep <名字>` 或测试文件只跑部分测试。外观有意改变时用 `npm run test:visual -- --update` 重新生成基准（加筛选时只更新跑到的那些），随代码提交并由维护者评审。做法见 [视觉基准与可访问性检查](docs/design/visual-baselines.md)。
 
