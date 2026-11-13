@@ -28,15 +28,8 @@ const wait = (milliseconds: number) =>
     await vi.advanceTimersByTimeAsync(milliseconds);
   });
 
-it('sends nothing until the child does something on the page', async () => {
+it('starts with the press that opened the lesson, then beats every 30 seconds while working', async () => {
   renderHook(() => useStudyTime(csrf));
-  await wait(beatEvery * 3);
-  expect(fetcher).not.toHaveBeenCalled();
-});
-
-it('beats at once when the child starts, then every 30 seconds while working', async () => {
-  renderHook(() => useStudyTime(csrf));
-  press();
   expect(fetcher).toHaveBeenCalledOnce();
   expect(fetcher).toHaveBeenCalledWith(
     '/api/v1/children/study-time',
@@ -54,7 +47,6 @@ it('beats at once when the child starts, then every 30 seconds while working', a
 
 it('stops two minutes after the child last did something, and starts again at once', async () => {
   renderHook(() => useStudyTime(csrf));
-  press();
   await wait(idleAfter + beatEvery * 2);
   const sent = fetcher.mock.calls.length;
   expect(sent).toBe(1 + idleAfter / beatEvery);
@@ -65,25 +57,25 @@ it('stops two minutes after the child last did something, and starts again at on
 });
 
 it('does not count a page out of view', async () => {
-  renderHook(() => useStudyTime(csrf));
-  press();
   visibility = 'hidden';
+  renderHook(() => useStudyTime(csrf));
   await wait(beatEvery * 2);
-  expect(fetcher).toHaveBeenCalledOnce();
+  expect(fetcher).not.toHaveBeenCalled();
 });
 
 it('takes hovering for nothing but a drag for work', async () => {
   renderHook(() => useStudyTime(csrf));
+  await wait(idleAfter + beatEvery);
+  const sent = fetcher.mock.calls.length;
   act(() => document.dispatchEvent(new PointerEvent('pointermove', { buttons: 0 })));
-  expect(fetcher).not.toHaveBeenCalled();
+  expect(fetcher).toHaveBeenCalledTimes(sent);
   act(() => document.dispatchEvent(new PointerEvent('pointermove', { buttons: 1 })));
-  expect(fetcher).toHaveBeenCalledOnce();
+  expect(fetcher).toHaveBeenCalledTimes(sent + 1);
 });
 
 it('stops for good once the server says the child is signed out', async () => {
   reply = 401;
   renderHook(() => useStudyTime(csrf));
-  press();
   await wait(0);
   await wait(beatEvery * 2);
   press();
@@ -92,7 +84,6 @@ it('stops for good once the server says the child is signed out', async () => {
 
 it('stops when the page closes', async () => {
   const { unmount } = renderHook(() => useStudyTime(csrf));
-  press();
   unmount();
   await wait(beatEvery * 2);
   press();

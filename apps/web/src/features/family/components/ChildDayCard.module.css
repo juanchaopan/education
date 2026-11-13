@@ -1,0 +1,53 @@
+/* On a phone the card keeps a narrower edge, so each day's column stays wide
+   enough to tap. */
+.card {
+  display: grid;
+  gap: var(--space-4);
+  align-content: start;
+  padding: var(--space-5);
+}
+@media (max-width: 30rem) {
+  .card {
+    padding: var(--space-4);
+  }
+}
+.name {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: 0;
+  font-size: var(--text-lg);
+}
+.nickname {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.failed {
+  margin: 0;
+  color: var(--ink-soft);
+}
+.record {
+  justify-self: end;
+}
+
+/* While the days are read: soft shapes in their places. */
+.reading {
+  display: grid;
+  gap: var(--space-4);
+}
+.shape {
+  display: block;
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+.shape[data-shape='chart'] {
+  block-size: 7rem;
+}
+.shape[data-shape='pill'] {
+  inline-size: 60%;
+  block-size: var(--space-6);
+  border-radius: var(--radius-pill);
+}
+.shape[data-shape='bar'] {
+  block-size: var(--space-8);
+}

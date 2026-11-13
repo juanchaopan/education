@@ -73,8 +73,9 @@ function useDraftMoment<Shot extends string>(
 // itself, and the hints; in every scene a question about it, which in the
 // answer scene counts as help. A correct answer ends the saved work, so its
 // draft is discarded, and the film plays on from the scene after the answer.
-// The time the child works on the lesson page, its opening film included,
-// counts as study time.
+// The controls appear once the child pressed to start or resume the lesson;
+// from that press on, the time the child works on the page counts as study
+// time.
 export function LessonPanels<Shot extends string>({
   lesson,
   teacher,

@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { addDays, canonicalTimeZone, localDate, localTime, startOfDay } from './calendar.js';
+import {
+  addDays,
+  canonicalTimeZone,
+  daysBetween,
+  isCalendarDate,
+  localDate,
+  localTime,
+  startOfDay,
+  weekday,
+} from './calendar.js';
 
 const toronto = 'America/Toronto';
 const shanghai = 'Asia/Shanghai';
@@ -78,9 +87,23 @@ describe('day boundaries', () => {
 });
 
 describe('calendar dates', () => {
+  it('knows real days from impossible ones', () => {
+    expect(isCalendarDate('2028-02-29')).toBe(true);
+    expect(isCalendarDate('2026-02-29')).toBe(false);
+    expect(isCalendarDate('2026-13-01')).toBe(false);
+    expect(isCalendarDate('2026-1-01')).toBe(false);
+  });
+
   it('counts whole days across months, years and clock changes', () => {
     expect(addDays('2026-11-12', -6)).toBe('2026-11-06');
     expect(addDays('2026-12-31', 1)).toBe('2027-01-01');
     expect(addDays('2026-03-07', 2)).toBe('2026-03-09');
+    expect(daysBetween('2026-10-31', '2026-11-02')).toBe(2);
+    expect(daysBetween('2026-11-12', '2026-11-06')).toBe(-6);
+  });
+
+  it('names the weekday of a date', () => {
+    expect(weekday('2026-11-12')).toBe(4);
+    expect(weekday('2026-11-08')).toBe(0);
   });
 });

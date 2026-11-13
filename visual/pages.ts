@@ -9,6 +9,7 @@ import {
   libraryApi,
   parentSpaceApi,
   recordedChild,
+  screenshotDay,
 } from './parent-space';
 import { fixClock, waitForPicturesAndFonts, type Theme } from './render';
 
@@ -158,7 +159,7 @@ const dayStates: PageState[] = [
   },
   {
     name: 'family-learning',
-    path: `/family/learning?child=${recordedChild}`,
+    path: `/family/learning?child=${recordedChild}&from=${screenshotDay}&to=${screenshotDay}`,
     ready: '学习摘要',
     last: '测试用的第二道题',
     api: parentSpaceApi,

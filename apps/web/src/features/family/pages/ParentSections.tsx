@@ -4,7 +4,7 @@ import { ChildAccessPanel } from './ChildAccessPanel';
 import { FamilyCodeCardPanel } from './FamilyCodePanel';
 import { FamilyDeletionPanel } from './FamilyDeletionPanel';
 import { FamilyExportPanel } from './FamilyExportPanel';
-import { LearningSummaryPanel } from './LearningSummaryPanel';
+import { LearningRecordPanel } from './LearningRecordPanel';
 import { RegistrationKeyPanel } from './RegistrationKeyPanel';
 import { ShelfPage } from './ShelfPage';
 import { TimeZonePanel } from './TimeZonePanel';
@@ -37,7 +37,7 @@ export function PracticeSection({ csrf }: { csrf: string }) {
 export function LearningSection({ csrf }: { csrf: string }) {
   return (
     <ParentSection titleId="learning-title" title="学习记录">
-      <LearningSummaryPanel key={`summary-${csrf}`} csrf={csrf} />
+      <LearningRecordPanel key={`record-${csrf}`} csrf={csrf} />
     </ParentSection>
   );
 }

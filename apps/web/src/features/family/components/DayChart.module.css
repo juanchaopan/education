@@ -1,0 +1,106 @@
+/* On a wide card the round buttons stand on either side of the seven
+   columns, with the line for a quiet stretch of days above the columns. On
+   a narrow card the buttons move up beside that line, so the columns take
+   the whole width and each stays wide enough to tap. */
+.frame {
+  container-type: inline-size;
+}
+.chart {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  grid-template-areas:
+    'back quiet forward'
+    'days days days';
+  align-items: center;
+  gap: var(--space-2);
+}
+@container (min-width: 23rem) {
+  .chart {
+    grid-template-areas:
+      '. quiet .'
+      'back days forward';
+    row-gap: var(--space-1);
+  }
+}
+.quiet {
+  grid-area: quiet;
+  margin: 0;
+  color: var(--ink-soft);
+  font-weight: 700;
+  text-align: center;
+}
+.back {
+  grid-area: back;
+  inline-size: var(--space-8);
+}
+.forward {
+  grid-area: forward;
+  inline-size: var(--space-8);
+}
+.days {
+  grid-area: days;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 2px;
+  touch-action: pan-y;
+}
+
+/* Each column is a button for its whole height, with room above an empty
+   day's line so it is as easy to press as a full bar. */
+.day {
+  display: grid;
+  grid-template-rows: 5.5rem auto;
+  gap: var(--space-1);
+  justify-items: center;
+  min-inline-size: 0;
+  padding: var(--space-1) 0;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  color: var(--ink-soft);
+  background: none;
+  font: inherit;
+  cursor: pointer;
+}
+.day[aria-pressed='true'] {
+  border-color: var(--line);
+  background: var(--surface-2);
+  box-shadow: 0 3px 0 var(--line);
+}
+.day:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+.room {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  inline-size: 100%;
+  block-size: 100%;
+}
+.bar {
+  inline-size: min(70%, 2rem);
+  min-block-size: 3px;
+  border-radius: 0.5rem 0.5rem 0.25rem 0.25rem;
+  background: color-mix(in srgb, var(--primary) 35%, var(--surface-2));
+  transition: opacity var(--lift) var(--ease-out);
+}
+.bar[data-empty] {
+  block-size: 3px;
+  border-radius: var(--radius-pill);
+  background: var(--line);
+}
+.day[data-today] .bar {
+  background: var(--accent);
+}
+.label {
+  font-size: var(--text-sm);
+  font-weight: 700;
+}
+.day[data-today] .label {
+  color: var(--accent-ink);
+}
+
+/* With a day picked, the other days fade back. */
+.days[data-picked] .day[aria-pressed='false'] .bar {
+  opacity: 0.45;
+}

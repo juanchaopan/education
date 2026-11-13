@@ -45,6 +45,12 @@ test('parent can switch children and see the evidence for a review suggestion', 
        VALUES($1,'pattern-practice',1,$2,'observe')`,
       [learner, randomUUID()],
     );
+    for (const outcome of ['incorrect', 'incorrect', 'assisted'])
+      await pool.query(
+        `INSERT INTO attempts(child_id,problem_id,problem_version,attempt_id,round,fingerprint,outcome)
+         VALUES($1,'pattern-practice',1,$2,$3,'fixture',$4)`,
+        [learner, randomUUID(), randomUUID(), outcome],
+      );
     // Share the real session boundary without consuming the login suite's loopback budget.
     await page.context().addCookies([
       {
@@ -57,19 +63,22 @@ test('parent can switch children and see the evidence for a review suggestion', 
         sameSite: 'Lax',
       },
     ]);
-    // The overview adds up each child's record without counting a finish
-    // after a hint as finishing alone: one problem, none alone, one after a
-    // hint. The fixture problem is not in the catalogue, so it cannot be
-    // planned and is not offered for another try.
+    // The overview counts the child's problem once, finished after a hint
+    // and never as finishing alone. The fixture problem is not in the
+    // catalogue, so it cannot be planned and is not offered for another try.
     await page.goto('/family');
     const deer = page.getByRole('region', { name: '小鹿' });
-    await expect(deer.getByRole('definition')).toHaveText(['1', '0', '1']);
+    await expect(deer).toContainText('1 道题：提示后完成 1 道');
     await expect(page.getByRole('region', { name: '值得再练' })).toContainText('暂时没有。');
-    // The child's card opens that child's record.
+    // The child's card opens that child's record for the same seven days.
     await deer.getByRole('link', { name: '看学习记录' }).click();
+    await expect(page.getByRole('radio', { name: '小鹿' })).toBeChecked();
+    const days = page.getByRole('region', { name: /今天/ });
+    await expect(days.getByRole('listitem')).toHaveText(
+      /pattern-practice作答 3 次 · 提示 1 次提示后完成/,
+    );
     const panel = page.getByRole('region', { name: '学习摘要' });
-    const select = panel.getByLabel('选择孩子');
-    await expect(select).toHaveValue(learner);
+    await expect(panel).toContainText('一共做过 1 道题');
     await expect(panel.getByRole('heading', { name: 'pattern-practice' })).toBeVisible();
     await expect(panel.getByText('优先复习', { exact: true })).toBeVisible();
     await expect(panel.getByText(/这个版本确认答错 2 次/)).toBeVisible();
@@ -79,7 +88,7 @@ test('parent can switch children and see the evidence for a review suggestion', 
       true,
     );
     await panel.screenshot({ path: info.outputPath('learning-summary.png') });
-    await select.selectOption({ label: '小猫' });
+    await page.getByRole('radio', { name: '小猫' }).click();
     await expect(panel.getByText('还没有这位孩子的学习记录。')).toBeVisible();
     await expect(panel.getByText('pattern-practice')).toHaveCount(0);
     await page.getByRole('button', { name: '退出账号' }).click();

@@ -1,7 +1,16 @@
-/* The child choice puts its label close above its list. */
-.picker {
-  display: grid;
-  gap: var(--space-2);
+/* The row of children above the record. It may be narrower than the pills,
+   which then scroll sideways inside it rather than widen the page. */
+.children {
+  min-inline-size: 0;
+}
+
+/* The whole record's totals on a soft band at the top of the summary. */
+.total {
+  margin: 0 0 var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  font-weight: 700;
 }
 
 .caution {

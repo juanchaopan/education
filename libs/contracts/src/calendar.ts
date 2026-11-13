@@ -11,7 +11,9 @@ const timeZoneNameLength = 64;
 export const TimeZoneName = Type.String({ minLength: 1, maxLength: timeZoneNameLength });
 
 // A day of the calendar, written YYYY-MM-DD.
-export const CalendarDate = Type.String({ pattern: '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' });
+const datePattern = '^[0-9]{4}-[0-9]{2}-[0-9]{2}$';
+const dateShape = new RegExp(datePattern);
+export const CalendarDate = Type.String({ pattern: datePattern });
 export type CalendarDate = Static<typeof CalendarDate>;
 
 const zoneName = /^[A-Za-z][A-Za-z0-9_+\-/]*$/;
@@ -68,9 +70,25 @@ export const localDate = (timeZone: string, instant: Date) => localTime(timeZone
 const utcNoon = (date: CalendarDate) => Date.parse(`${date}T12:00:00Z`);
 const dayLength = 86_400_000;
 
+// A real day of the calendar, such as 2026-02-28 but not 2026-02-30.
+export function isCalendarDate(value: string) {
+  if (!dateShape.test(value)) return false;
+  const noon = utcNoon(value);
+  return Number.isFinite(noon) && new Date(noon).toISOString().startsWith(value);
+}
+
 // Calendar arithmetic on dates alone; no time zone is involved.
 export function addDays(date: CalendarDate, days: number): CalendarDate {
   return new Date(utcNoon(date) + days * dayLength).toISOString().slice(0, 10);
+}
+
+export function daysBetween(from: CalendarDate, to: CalendarDate) {
+  return Math.round((utcNoon(to) - utcNoon(from)) / dayLength);
+}
+
+// 0 for Sunday through 6 for Saturday.
+export function weekday(date: CalendarDate) {
+  return new Date(utcNoon(date)).getUTCDay();
 }
 
 // How far the zone's wall clock is ahead of UTC at an instant, in whole

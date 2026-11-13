@@ -95,7 +95,7 @@ async function lesson(token: string, version: number, id = 'test-pattern') {
   };
 }
 
-it('separates assisted and independent completion by version and removes the recommendation after independent success', async () => {
+it('separates completion by version and judges review for the whole problem across its versions', async () => {
   const owner = await parent();
   const learner = await child(owner.family);
   const first = await lesson(learner.token, 1);
@@ -107,6 +107,9 @@ it('separates assisted and independent completion by version and removes the rec
   expect((await first.hint()).statusCode).toBe(200);
   expect((await first.submit(false)).json().outcome).toBe('incorrect');
   expect((await first.submit(true)).json().outcome).toBe('assisted');
+  expect((await read(learner.id, owner.token)).json().problems).toEqual([
+    expect.objectContaining({ version: 1, incorrect: 2, reviewSuggested: true }),
+  ]);
   expect((await second.submit(true)).json().outcome).toBe('independent');
   const result = await read(learner.id, owner.token);
   expect(result.statusCode).toBe(200);
@@ -125,7 +128,7 @@ it('separates assisted and independent completion by version and removes the rec
         incorrect: 2,
         uncertain: 0,
         hints: 1,
-        reviewSuggested: true,
+        reviewSuggested: false,
       },
       {
         id: 'test-pattern',
