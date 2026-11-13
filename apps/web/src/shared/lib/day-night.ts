@@ -46,3 +46,39 @@ export function storedTimeZone(key: string): string | undefined {
     return undefined;
   }
 }
+
+const dayLength = 86_400_000;
+
+// The time of day on the zone's wall clock, or the device's, in milliseconds
+// since midnight.
+function timeOfDay(date: Date, timeZone?: string) {
+  let parts = [date.getHours(), date.getMinutes(), date.getSeconds()];
+  if (timeZone) {
+    try {
+      const clock = new Intl.DateTimeFormat('en-US', {
+        timeZone,
+        hourCycle: 'h23',
+        hour: 'numeric',
+        minute: 'numeric',
+        second: 'numeric',
+      });
+      parts = clock.format(date).split(':').map(Number);
+    } catch {
+      // A zone the browser does not know leaves the device's clock.
+    }
+  }
+  const [hours = 0, minutes = 0, seconds = 0] = parts;
+  return ((hours * 60 + minutes) * 60 + seconds) * 1000 + date.getMilliseconds();
+}
+
+// How long until the wall clock next reaches the start of the day or of the
+// night theme. On a day the clocks change it can be an hour off, so a page
+// also looks at the clock every minute.
+export function untilNextSwitch(date: Date, schedule: ThemeSchedule, timeZone?: string) {
+  const now = timeOfDay(date, timeZone);
+  return Math.min(
+    ...[schedule.dayStarts, schedule.nightStarts].map(
+      (hour) => (hour * 3_600_000 - now + dayLength) % dayLength || dayLength,
+    ),
+  );
+}

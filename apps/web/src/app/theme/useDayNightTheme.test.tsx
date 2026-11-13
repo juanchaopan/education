@@ -11,7 +11,7 @@ function preferLessMotion(reduce: boolean) {
 }
 
 beforeEach(() => {
-  vi.useFakeTimers({ now: new Date(2026, 10, 7, 17, 59, 30) });
+  vi.useFakeTimers({ now: new Date(2026, 10, 7, 17, 59, 58) });
   root.dataset.theme = 'day';
   preferLessMotion(false);
 });
@@ -24,10 +24,10 @@ afterEach(() => {
   document.head.innerHTML = '';
 });
 
-it('fades into the night theme within a minute of 18:00 and settles after the fade', () => {
+it('fades into the night theme at 18:00 and settles after the fade', () => {
   renderHook(() => useDayNightTheme());
   expect(root.dataset.theme).toBe('day');
-  act(() => vi.advanceTimersByTime(minute));
+  act(() => vi.advanceTimersByTime(2000));
   expect(root.dataset.theme).toBe('night');
   expect(root.dataset.themeSwitching).toBe('');
   expect(root.style.getPropertyValue('--theme-fade')).toBe(`${themeFade}ms`);
@@ -39,14 +39,14 @@ it('fades into the night theme within a minute of 18:00 and settles after the fa
 it('switches at once for a child who asks for less motion', () => {
   preferLessMotion(true);
   renderHook(() => useDayNightTheme());
-  act(() => vi.advanceTimersByTime(minute));
+  act(() => vi.advanceTimersByTime(2000));
   expect(root.dataset.theme).toBe('night');
   expect(root.dataset.themeSwitching).toBeUndefined();
 });
 
 it('keeps switching the next morning without a reload', () => {
   renderHook(() => useDayNightTheme());
-  act(() => vi.advanceTimersByTime(12 * 60 * minute + minute));
+  act(() => vi.advanceTimersByTime(2000 + 12 * 60 * minute));
   expect(root.dataset.theme).toBe('day');
 });
 
@@ -66,6 +66,15 @@ it("follows the family's clock and moves to a new zone as soon as it is given", 
   });
   expect(root.dataset.theme).toBe('day');
   rerender({ zone: 'Asia/Shanghai' });
+  expect(root.dataset.theme).toBe('night');
+});
+
+it('switches at 18:00 on the family clock, not the device clock', () => {
+  // 17:59:58 in Toronto on the day the clocks fall back.
+  vi.setSystemTime(new Date('2026-11-01T22:59:58Z'));
+  renderHook(() => useDayNightTheme('America/Toronto'));
+  expect(root.dataset.theme).toBe('day');
+  act(() => vi.advanceTimersByTime(2000));
   expect(root.dataset.theme).toBe('night');
 });
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { themeAt, themeSchedule } from './day-night';
+import { themeAt, themeSchedule, untilNextSwitch } from './day-night';
 
 const at = (hours: number, minutes = 0, seconds = 0) =>
   new Date(2026, 10, 7, hours, minutes, seconds);
@@ -44,5 +44,22 @@ describe("themeAt on the family's clock", () => {
     expect(themeAt(new Date('2026-11-01T23:00:00Z'), themeSchedule, 'America/Toronto')).toBe(
       'night',
     );
+  });
+});
+
+describe('untilNextSwitch', () => {
+  const hour = 3_600_000;
+
+  it('counts to the coming 6:00 or 18:00 on the device clock', () => {
+    expect(untilNextSwitch(at(2, 15), themeSchedule)).toBe(3.75 * hour);
+    expect(untilNextSwitch(at(17, 59, 59), themeSchedule)).toBe(1000);
+    expect(untilNextSwitch(at(18), themeSchedule)).toBe(12 * hour);
+  });
+
+  it("counts on the family's clock in its zone", () => {
+    // 20:15 in China, 7:15 in Toronto.
+    const instant = new Date('2026-11-12T12:15:00Z');
+    expect(untilNextSwitch(instant, themeSchedule, 'Asia/Shanghai')).toBe(9.75 * hour);
+    expect(untilNextSwitch(instant, themeSchedule, 'America/Toronto')).toBe(10.75 * hour);
   });
 });
