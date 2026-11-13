@@ -246,7 +246,7 @@ function createFamilyManagement({
     familyOverview: createFamilyOverview(pool),
     bookshelf: createBookshelf(pool),
     aiConsent: createAiConsent(pool, config.ai),
-    familyExport: createFamilyExport(pool),
+    familyExport: createFamilyExport(pool, config.defaultTimeZone),
     familyDeletion: createFamilyDeletion(pool, ledgerPool),
     familyTimeZone: createFamilyTimeZone(pool, config.defaultTimeZone),
     registrationKeys: createRegistrationKeyService({

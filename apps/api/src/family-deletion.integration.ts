@@ -31,7 +31,7 @@ const servers = pools.map((from) =>
   buildApp({
     origin,
     familyDeletion: createFamilyDeletion(from, ledgerPool),
-    familyExport: createFamilyExport(from),
+    familyExport: createFamilyExport(from, 'Asia/Shanghai'),
     drafts: createDrafts(from, (id) => id === 'test-deletion'),
   }),
 );
@@ -112,6 +112,10 @@ async function learning(family: string, child: string) {
   await pool.query(`INSERT INTO book_assignments(child_id,book_id) VALUES($1,'g1-math-xueersi')`, [
     child,
   ]);
+  await pool.query(`INSERT INTO study_days(child_id,day,seconds) VALUES($1,'2026-11-12',600)`, [
+    child,
+  ]);
+  await pool.query(`INSERT INTO study_beats(child_id,beat_at) VALUES($1,now())`, [child]);
   await pool.query(
     `INSERT INTO drafts(child_id,problem_id,problem_version,content,expires_at)
      VALUES($1,'test-deletion',1,$2,now()+interval '1 day')`,
@@ -170,6 +174,8 @@ async function remaining(family: string, child: string) {
        (SELECT count(*) FROM attempts WHERE child_id=$2)::int AS attempts,
        (SELECT count(*) FROM help_events WHERE child_id=$2)::int AS hints,
        (SELECT count(*) FROM book_assignments WHERE child_id=$2)::int AS "bookAssignments",
+       (SELECT count(*) FROM study_days WHERE child_id=$2)::int AS "studyDays",
+       (SELECT count(*) FROM study_beats WHERE child_id=$2)::int AS "studyBeats",
        (SELECT count(*) FROM drafts WHERE child_id=$2)::int AS drafts,
        (SELECT count(*) FROM registration_keys WHERE family_id=$1)::int AS keys,
        (SELECT count(*) FROM ai_consents WHERE family_id=$1)::int AS consents,
@@ -190,6 +196,8 @@ const nothingLeft = {
   attempts: 0,
   hints: 0,
   bookAssignments: 0,
+  studyDays: 0,
+  studyBeats: 0,
   drafts: 0,
   keys: 0,
   consents: 0,

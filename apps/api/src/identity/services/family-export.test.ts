@@ -28,19 +28,27 @@ const book = (childId: string): ExportedBook => ({
   total: 2,
   finished: false,
 });
+const studyTime = [{ date: '2026-11-06', seconds: 600 }];
 
-function exporter(signedIn: Partial<AuthorizedParent> = {}, account = familyAccount()) {
-  const readAccount = vi.fn().mockResolvedValue(account);
+type Family = { account?: ReturnType<typeof familyAccount>; timeZone?: string | null };
+
+function exporter(signedIn: Partial<AuthorizedParent> = {}, family: Family = {}) {
+  const readAccount = vi.fn().mockResolvedValue(family.account ?? familyAccount());
+  const readTimeZone = vi
+    .fn()
+    .mockResolvedValue(family.timeZone === undefined ? 'America/Toronto' : family.timeZone);
   const childLearning = vi.fn(async (_client: pg.PoolClient, childId: string) => ({
     learning: [],
     variations: [],
+    studyTime,
     books: [book(childId)],
     drafts: [],
   }));
   const service = createFamilyExportService(
     (_credentials, work) => work(client, { ...parent, ...signedIn }),
     childLearning,
-    readAccount,
+    'Asia/Shanghai',
+    { account: readAccount, timeZone: readTimeZone },
     () => new Date('2026-11-07T12:00:00.000Z'),
   );
   return { service, readAccount, childLearning };
@@ -79,23 +87,43 @@ describe('family export', () => {
     expect(file).toEqual({
       format: {
         name: 'education-family-export',
-        version: 3,
+        version: 4,
         generatedAt: '2026-11-07T12:00:00.000Z',
         includes: [...familyExportScope.includes],
         excludes: [...familyExportScope.excludes],
       },
       parent: { email: 'parent@example.test', emailVerified: true },
+      timeZone: { name: 'America/Toronto', set: true },
       aiConsents: familyAccount().aiConsents,
       children: [
-        { nickname: '小鹿', learning: [], variations: [], books: [book('deer')], drafts: [] },
-        { nickname: '小兔', learning: [], variations: [], books: [book('rabbit')], drafts: [] },
+        {
+          nickname: '小鹿',
+          learning: [],
+          variations: [],
+          studyTime,
+          books: [book('deer')],
+          drafts: [],
+        },
+        {
+          nickname: '小兔',
+          learning: [],
+          variations: [],
+          studyTime,
+          books: [book('rabbit')],
+          drafts: [],
+        },
       ],
     });
     expect(JSON.stringify(file)).not.toContain('private-password-hash');
   });
 
+  it('names the default time zone, marked as not set, for a family without its own', async () => {
+    const { service } = exporter({}, { timeZone: null });
+    expect((await service(credentials)).timeZone).toEqual({ name: 'Asia/Shanghai', set: false });
+  });
+
   it('exports a family with no children or AI decisions yet', async () => {
-    const { service, childLearning } = exporter({}, { children: [], aiConsents: [] });
+    const { service, childLearning } = exporter({}, { account: { children: [], aiConsents: [] } });
     const file = await service(credentials);
     expect(file.children).toEqual([]);
     expect(file.aiConsents).toEqual([]);
