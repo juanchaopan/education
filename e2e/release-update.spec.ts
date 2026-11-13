@@ -150,7 +150,7 @@ test.describe('a lesson page', () => {
     expect(narration.told()).not.toContain('question ended');
     await page.getByRole('button', { name: '返回', exact: true }).click();
     await expect.poll(() => site.loads).toBe(2);
-    await expect(page).toHaveURL(/\/$/);
+    await expect(page).toHaveURL(/\/\?open=g1-math-xueersi$/);
     await expect(releaseName(page)).toHaveAttribute('content', newer);
   });
 });
