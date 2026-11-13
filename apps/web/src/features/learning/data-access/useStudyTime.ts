@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { childRequest } from './learning-request';
 
 // How often a lesson page the child is working on sends a heartbeat, and how
 // long after the child last did something the page stops counting. The
@@ -10,21 +11,6 @@ export const idleAfter = 120_000;
 // speaking into the microphone, which starts with a press. Moving the mouse
 // over the page without pressing is not working on it.
 const actions = ['pointerdown', 'pointermove', 'keydown', 'input'] as const;
-
-function sendBeat(csrf: string) {
-  return fetch('/api/v1/children/study-time', {
-    method: 'POST',
-    credentials: 'same-origin',
-    cache: 'no-store',
-    signal: AbortSignal.timeout(10_000),
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Education-Request': 'session',
-      'X-CSRF-Token': csrf,
-    },
-    body: '{}',
-  });
-}
 
 // Counts a signed-in child's study time on a lesson page: while the page is
 // in view and the child did something within the last two minutes, it sends
@@ -40,7 +26,7 @@ export function useStudyTime(csrf: string) {
       document.visibilityState === 'visible' && now - lastAction <= idleAfter;
     const beat = () => {
       if (signedOut) return;
-      sendBeat(csrf)
+      childRequest('children/study-time', csrf, '{}')
         .then((response) => {
           if (response.status === 401) signedOut = true;
         })
