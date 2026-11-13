@@ -4,10 +4,11 @@ import { childSessionTransaction } from './child-session-transaction.js';
 type Credentials = { token?: string; csrf?: string };
 export type ChildProblem = { id: string; version: number };
 
-// The one way into a child's work on a problem: answers, drafts and the
-// teacher's AI help all come in here with the problem they are about, so the
-// rules for who may work on which problem live in this one place. Today it
-// confirms the signed-in child and the CSRF token, or throws 401 or 403.
+// The one way into a child's work on a problem: answers, variations, drafts
+// and the teacher's AI help all come in here with the problem they are about,
+// so the rules for who may work on which problem live in this one place. It
+// confirms the signed-in child and the CSRF token, or throws 401 or 403; the
+// problem is for the rules about which problems the child may work on.
 export function childProblemTransaction(pool: pg.Pool) {
   const authorized = childSessionTransaction(pool);
   return <T>(
