@@ -3,9 +3,25 @@ import { themeAt, themeSchedule } from '../../../shared/lib/day-night';
 
 export type ZoneOption = { zone: string; label: string; offset: number };
 
-function namePart(zone: string, now: Date, timeZoneName: 'longGeneric' | 'longOffset') {
+type NameStyle = 'longGeneric' | 'longOffset';
+
+// One formatter per zone and style, kept: the list of every zone names each
+// of them twice, and building a formatter is far slower than using one.
+const nameFormats = new Map<string, Intl.DateTimeFormat>();
+
+function nameFormat(zone: string, timeZoneName: NameStyle) {
+  const key = `${timeZoneName} ${zone}`;
+  let format = nameFormats.get(key);
+  if (!format) {
+    format = new Intl.DateTimeFormat('zh-CN', { timeZone: zone, timeZoneName });
+    nameFormats.set(key, format);
+  }
+  return format;
+}
+
+function namePart(zone: string, now: Date, timeZoneName: NameStyle) {
   try {
-    return new Intl.DateTimeFormat('zh-CN', { timeZone: zone, timeZoneName })
+    return nameFormat(zone, timeZoneName)
       .formatToParts(now)
       .find(({ type }) => type === 'timeZoneName')?.value;
   } catch {

@@ -1,3 +1,5 @@
+import { localTime } from '@education/contracts';
+
 export type Theme = 'day' | 'night';
 
 export type ThemeSchedule = { readonly dayStarts: number; readonly nightStarts: number };
@@ -49,26 +51,18 @@ export function storedTimeZone(key: string): string | undefined {
 
 const dayLength = 86_400_000;
 
-// The time of day on the zone's wall clock, or the device's, in milliseconds
-// since midnight.
+// The time of day on the zone's wall clock, or the device's for no zone or
+// one the browser does not know, in milliseconds since midnight.
 function timeOfDay(date: Date, timeZone?: string) {
-  let parts = [date.getHours(), date.getMinutes(), date.getSeconds()];
+  let clock = { hour: date.getHours(), minute: date.getMinutes(), second: date.getSeconds() };
   if (timeZone) {
     try {
-      const clock = new Intl.DateTimeFormat('en-US', {
-        timeZone,
-        hourCycle: 'h23',
-        hour: 'numeric',
-        minute: 'numeric',
-        second: 'numeric',
-      });
-      parts = clock.format(date).split(':').map(Number);
+      clock = localTime(timeZone, date);
     } catch {
       // A zone the browser does not know leaves the device's clock.
     }
   }
-  const [hours = 0, minutes = 0, seconds = 0] = parts;
-  return ((hours * 60 + minutes) * 60 + seconds) * 1000 + date.getMilliseconds();
+  return ((clock.hour * 60 + clock.minute) * 60 + clock.second) * 1000 + date.getMilliseconds();
 }
 
 // How long until the wall clock next reaches the start of the day or of the
