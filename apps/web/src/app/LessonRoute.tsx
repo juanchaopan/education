@@ -5,8 +5,9 @@ import { LessonBoundary } from './LessonBoundary';
 import { useReleaseCheck } from './release/useReleaseUpdate';
 
 // One lesson as the route shows it, loaded when opened: it receives the
-// signed-in child's session token, or nothing for someone only watching, and
-// what to do when the server refuses the problem partway through.
+// session it is opened under, a child's to practise or a parent's to
+// preview, and what to do when the server refuses the problem partway
+// through.
 export type LessonScreen = ComponentType<LessonAccess>;
 
 const opening = <EmptyState icon="clock" title="正在打开这道题" description="请稍等一下。" />;
@@ -26,18 +27,17 @@ const unopened = (
 );
 
 // Lessons are loaded only when opened, so the home page never carries their
-// scenes. The child's session token, when there is one, keeps the child's
-// place and answers.
+// scenes.
 export function LessonRoute({
   lesson: Lesson,
-  csrf,
+  session,
   onRefused,
 }: LessonAccess & { lesson: LessonScreen }) {
   const checkRelease = useReleaseCheck();
   return (
     <LessonBoundary fallback={unopened} onFailure={checkRelease}>
       <Suspense fallback={opening}>
-        <Lesson csrf={csrf} onRefused={onRefused} />
+        <Lesson session={session} onRefused={onRefused} />
       </Suspense>
     </LessonBoundary>
   );

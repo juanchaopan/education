@@ -43,14 +43,14 @@ export function answerRound(scope: LearningScope, enabled = true) {
   });
 }
 
-function judgementOf({ isPending, error, data, variables }: Submission): Judgement {
+export function judgementOf({ isPending, error, data, variables }: Submission): Judgement {
   if (isPending) return { status: 'judging' };
   if (error) return { status: 'failed', message: error.message };
   if (data && variables) return { status: 'judged', outcome: data.outcome, count: variables.count };
   return { status: 'open' };
 }
 
-const correct = ({ outcome }: { outcome: AttemptReceipt['outcome'] }) =>
+export const correct = ({ outcome }: { outcome: AttemptReceipt['outcome'] }) =>
   outcome === 'independent' || outcome === 'assisted';
 
 // The final answer of one problem: a counted number sent once per attempt, so

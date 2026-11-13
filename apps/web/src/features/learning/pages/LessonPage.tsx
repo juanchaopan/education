@@ -1,6 +1,6 @@
 import { useState, type ComponentType, type ReactNode } from 'react';
 import type { LessonRecord } from '@education/contracts';
-import { StagePlace } from '../components/lesson-stage/LessonStage';
+import type { StageLook } from '../components/lesson-stage/stage-look';
 import type { LearningScope, LessonAccess } from '../data-access/learning-request';
 import type { AnswerEvents } from '../data-access/useAnswerHints';
 import { useLessonDraft } from '../data-access/useLessonDraft';
@@ -17,16 +17,9 @@ import { createMicrophoneTurn, type MicrophoneTurn } from '../voice/microphone-t
 import { FilmControls } from './FilmControls';
 import { KeptConclusions } from './KeptConclusions';
 import { LessonPanels } from './LessonPanels';
-import { LessonSignInNotice } from './LessonSignInNotice';
+import { PreviewPanels } from './PreviewPanels';
 import { lessonScreen, type Start } from './lesson-screen';
 import styles from './LessonPage.module.css';
-
-// The sign-in notice a visitor sees where a child's microphone would be.
-const visitorControls = () => (
-  <StagePlace at="corner">
-    <LessonSignInNotice />
-  </StagePlace>
-);
 
 const unanswered: AnswerProgress = { answered: false };
 
@@ -108,36 +101,31 @@ type BodyProps<State, Shot extends string, Move> = {
   controls: (shared: Shared<State, Shot, Move>) => ReactNode;
 };
 
-// One problem's lesson page, built once for its own definition, so the page
-// holds the lesson to its own state, scenes, lines, moves and props. Anyone
-// can watch and play the scenes; saving, questions and the answer need a
-// signed-in child, whose session token the page takes with what to do when
-// the server refuses the problem partway through.
-export function lessonPage<
+// The body every lesson page has, built once for its own definition: the
+// playing film filling the screen, its recordings fetched as the page opens,
+// its sound and captions as chosen on this device, and the controls every
+// lesson has beside the page's own, with the conclusions it keeps when its
+// way of teaching uses the board.
+function lessonBody<
   State extends FilmState<Shot>,
   Shot extends string,
   Line extends string,
   Move,
   Piece extends string,
   Look extends object,
->(lesson: LessonDefinition<State, Shot, Line, Move, Piece, Look>): ComponentType<LessonAccess> {
-  const { script, story } = lesson;
-  const look = stageLook(lesson);
+>(lesson: LessonDefinition<State, Shot, Line, Move, Piece, Look>, look: StageLook) {
+  const { script } = lesson;
   const played = {
-    tale: filmStory(script, story),
+    tale: filmStory(script, lesson.story),
     recording: lesson.record,
     scenes: lesson.content,
   };
-  const firstScene = script.shots[0];
-  const first = { stepId: firstScene, drawing: [] };
   const Screen = lessonScreen(lesson, look);
-  type Film = LessonFilm<State, Shot, Move>;
-
-  // The playing film filling the screen, its recordings fetched as the page
-  // opens, its sound and captions as the child chose them on this device, and
-  // the controls every lesson has beside the page's own, with the conclusions
-  // it keeps when its way of teaching uses the board.
-  function Body({ start = {}, onArrive = () => {}, controls }: BodyProps<State, Shot, Move>) {
+  return function Body({
+    start = {},
+    onArrive = () => {},
+    controls,
+  }: BodyProps<State, Shot, Move>) {
     const recordings = useLessonRecordings(script.lines);
     const preferences = useLessonPreferences();
     const { film, answer, record } = usePlayingFilm(played, onArrive, !preferences.sound);
@@ -164,19 +152,41 @@ export function lessonPage<
         />
       </div>
     );
-  }
+  };
+}
 
-  // A signed-in child's lesson: each scene reached that is work in progress
-  // is saved, so coming back resumes at its start, and the answer, the
-  // questions and the draft all belong to this child. Starting over from a
-  // resumed scene plays the first scene, which saves over the place picked
-  // up when it is work in progress; otherwise the draft is dropped.
-  function SignedIn({ scope }: { scope: LearningScope }) {
+// One problem's lesson page, built once for its own definition, so the page
+// holds the lesson to its own state, scenes, lines, moves and props. A child
+// practises it: the place reached is saved, questions go to the teacher with
+// the lesson so far, and the answer is said out loud. A parent previews it:
+// the same film, tools and board, with the answer tapped and judged the same
+// way, and nothing kept. The page takes the session and what to do when the
+// server refuses the problem partway through.
+export function lessonPage<
+  State extends FilmState<Shot>,
+  Shot extends string,
+  Line extends string,
+  Move,
+  Piece extends string,
+  Look extends object,
+>(lesson: LessonDefinition<State, Shot, Line, Move, Piece, Look>): ComponentType<LessonAccess> {
+  const { script, story } = lesson;
+  const look = stageLook(lesson);
+  const Body = lessonBody(lesson, look);
+  const firstScene = script.shots[0];
+  const first = { stepId: firstScene, drawing: [] };
+
+  // A child's lesson: each scene reached that is work in progress is saved,
+  // so coming back resumes at its start, and the answer, the questions and
+  // the draft all belong to this child. Starting over from a resumed scene
+  // plays the first scene, which saves over the place picked up when it is
+  // work in progress; otherwise the draft is dropped.
+  function Practice({ scope }: { scope: LearningScope }) {
     const draft = useLessonDraft(scope, first);
     const [picked, setPicked] = useState<{ shot: Shot }>();
     const saved = draft.status === 'saved' ? draft.content.stepId : undefined;
     const resume = saved === undefined ? undefined : resumed(script, saved);
-    function startOver(film: Film) {
+    function startOver(film: LessonFilm<State, Shot, Move>) {
       film.go(firstScene);
       if (!story.savesProgress(firstScene)) void draft.discard();
     }
@@ -209,8 +219,27 @@ export function lessonPage<
     );
   }
 
-  return function LessonPage({ csrf, onRefused }) {
-    if (!csrf) return <Body controls={visitorControls} />;
-    return <SignedIn scope={{ ...lesson.content.problem, csrf, refused: onRefused }} />;
+  // A parent's preview: the film from its title card, and in the answer
+  // scene the answer to tap, with its hints; nothing is saved.
+  function Preview({ scope }: { scope: LearningScope }) {
+    return (
+      <Body
+        controls={({ film, subtitle, turn, answer }) => (
+          <PreviewPanels
+            lesson={lesson}
+            scope={scope}
+            film={film}
+            turn={turn}
+            subtitle={subtitle}
+            answerEvents={answer}
+          />
+        )}
+      />
+    );
+  }
+
+  return function LessonPage({ session, onRefused }) {
+    const scope = { ...lesson.content.problem, csrf: session.csrf, refused: onRefused };
+    return session.mode === 'practice' ? <Practice scope={scope} /> : <Preview scope={scope} />;
   };
 }

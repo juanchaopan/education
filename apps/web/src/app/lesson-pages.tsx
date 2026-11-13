@@ -5,13 +5,16 @@ import { problemPath } from '../shared/lib/problem-path';
 import { LessonRoute } from './LessonRoute';
 
 // Every registered problem version and the page that teaches it, by
-// problemPath. Each lesson's page is loaded when it is opened.
+// problemPath. Each lesson's page is loaded when it is opened, in the mode
+// the server opened the problem in.
 export const lessonPages: ProblemPages = new Map(
   lessons.map(({ problem, page }) => {
     const screen = lazy(async () => ({ default: await page() }));
     return [
       problemPath(problem.id, problem.version),
-      (_problem, access) => <LessonRoute lesson={screen} {...access} />,
+      (opened, { csrf, onRefused }) => (
+        <LessonRoute lesson={screen} session={{ mode: opened.mode, csrf }} onRefused={onRefused} />
+      ),
     ];
   }),
 );

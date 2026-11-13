@@ -19,6 +19,22 @@ it('puts a named back button first, before what the page shows', async () => {
   );
 });
 
+it('keeps the page’s mark beside the back button, while waiting too', () => {
+  const { rerender } = render(
+    <FullscreenFrame waiting={false} onBack={() => {}} mark={<span>预览</span>}>
+      <p>短片</p>
+    </FullscreenFrame>,
+  );
+  const button = screen.getByRole('button', { name: '返回' });
+  expect(button.parentElement).toContainElement(screen.getByText('预览'));
+  rerender(
+    <FullscreenFrame waiting onBack={() => {}} mark={<span>预览</span>}>
+      <p>短片</p>
+    </FullscreenFrame>,
+  );
+  expect(screen.getByText('预览')).toBeVisible();
+});
+
 it('says, to the eye and to a screen reader, that the page leaves once it has saved', () => {
   render(
     <FullscreenFrame waiting onBack={() => {}}>

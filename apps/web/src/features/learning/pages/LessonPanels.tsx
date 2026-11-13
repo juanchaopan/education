@@ -116,6 +116,7 @@ export function LessonPanels<Shot extends string>({
         />
       </StagePlace>
       <FlowAnswer
+        mode="practice"
         answer={answer}
         answerScene={answerScene}
         shot={shot}

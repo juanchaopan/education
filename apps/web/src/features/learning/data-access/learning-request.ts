@@ -1,15 +1,19 @@
-import { ProblemAccessDenied } from '@education/contracts';
+import { ProblemAccessDenied, type ProblemMode } from '@education/contracts';
 import type { Static, TSchema } from '@sinclair/typebox';
 import { Value } from '@sinclair/typebox/value';
 
-// What a lesson's page opens with: the signed-in child's session token, for a
-// child whose work is kept, and what to do when the server refuses the
-// problem partway through, because its book was taken back or made
-// unavailable.
-export type LessonAccess = Readonly<{ csrf?: string; onRefused?: () => void }>;
+// The session a lesson is opened under: a child's, who practises it and
+// whose work is kept, or a verified parent's, who previews it and keeps
+// nothing; with the session's CSRF token either way.
+export type LessonSession = Readonly<{ mode: ProblemMode; csrf: string }>;
 
-// The problem a lesson's requests are about, the child's session token they
-// carry, and what to do when the server refuses the problem.
+// What a lesson's page opens with: its session, and what to do when the
+// server refuses the problem partway through, because its book was taken
+// back or made unavailable.
+export type LessonAccess = Readonly<{ session: LessonSession; onRefused?: () => void }>;
+
+// The problem a lesson's requests are about, the session token they carry,
+// and what to do when the server refuses the problem.
 export type LearningScope = Readonly<{
   id: string;
   version: number;
@@ -17,7 +21,7 @@ export type LearningScope = Readonly<{
   refused?: () => void;
 }>;
 
-type Resource = 'draft' | 'answer' | 'question' | 'transcription';
+type Resource = 'draft' | 'answer' | 'question' | 'transcription' | 'preview';
 
 // A request to the API under the child's session, with its CSRF token. A body
 // makes it a JSON write by POST; it gives up after ten seconds, or sooner

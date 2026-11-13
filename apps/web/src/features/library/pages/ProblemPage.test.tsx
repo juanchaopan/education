@@ -28,7 +28,7 @@ function FixturePage({ problem, access }: { problem: ProblemOpening; access: Pro
   return (
     <>
       <h1>{problem.title}</h1>
-      <p>{access.csrf ? '记下进度' : '只看'}</p>
+      <p>{problem.mode === 'practice' ? '记下进度' : '只看'}</p>
       <label>
         我的想法
         <input />
@@ -125,10 +125,14 @@ it("goes back from a link opened directly to the child's home, with the problem'
   expect(await screen.findByRole('heading', { name: '别处 /?open=fixture-book' })).toBeVisible();
 });
 
-it('shows a parent the problem without keeping anything, and goes back to the parent space', async () => {
-  serve(() => Response.json({ ...current, mode: 'preview' }));
+it('shows a parent the preview, marked so, and goes back to the parent space', async () => {
+  const fetchProblem = serve(() => Response.json({ ...current, mode: 'preview' }));
   open(problemPath(current.id, current.version), parent);
   expect(await screen.findByText('只看')).toBeVisible();
+  expect(screen.getByText('预览')).toBeVisible();
+  expect(fetchProblem.mock.calls[0]![1]).toMatchObject({
+    headers: { 'X-CSRF-Token': 'p'.repeat(43) },
+  });
   await userEvent.click(screen.getByRole('button', { name: '返回' }));
   expect(await screen.findByRole('heading', { name: '别处 /family' })).toBeVisible();
 });

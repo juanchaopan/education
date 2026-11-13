@@ -25,3 +25,10 @@ export const Ready: Story = {};
 
 // The child pressed back while an answer was still being judged.
 export const WaitingToLeave: Story = { args: { waiting: true } };
+
+// A page with its mark beside the back button, as a parent's preview has.
+export const WithMark: Story = {
+  args: {
+    mark: <span style={{ color: 'var(--dew-gold)', fontWeight: 700 }}>预览</span>,
+  },
+};

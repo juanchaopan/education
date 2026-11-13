@@ -5,14 +5,16 @@ import { problemPath, signInPath } from '../../../shared/lib/problem-path';
 import { useLeave } from '../../../shared/lib/useLeave';
 import { EmptyState } from '../../../shared/ui/EmptyState';
 import { FullscreenFrame } from '../../../shared/ui/FullscreenFrame';
+import { PreviewMark } from '../components/PreviewMark';
 import { ProblemNote } from '../components/ProblemNote';
 import { useProblem, type ProblemAnswer } from '../data-access/useProblem';
 import { homeOf, type NoteArt, type Viewer } from '../model';
 
-// How a problem's page is opened: with a signed-in child's session token, so
-// the child's work is kept, or with none for a parent, who keeps nothing; and
-// what to do when the server refuses the problem partway through.
-export type ProblemAccess = Readonly<{ csrf?: string; onRefused: () => void }>;
+// How a problem's page is opened: with the session token of the viewer it
+// opened for, and what to do when the server refuses the problem partway
+// through. Whether the viewer practises or previews is the opened problem's
+// mode.
+export type ProblemAccess = Readonly<{ csrf: string; onRefused: () => void }>;
 
 // Each problem version's own page, keyed by problemPath. The app shell supplies
 // them, so a page can come from whichever feature teaches it.
@@ -24,11 +26,11 @@ export type ProblemPages = ReadonlyMap<
 // The full-screen frame and its way back. Leaving follows every write on its
 // way to the server, such as each hint and answer, so only the frame redraws
 // for them, never the problem's page it holds.
-function LeavingFrame({ fallback, children }: { fallback: string; children: ReactNode }) {
-  const back = useLeave(fallback);
+function LeavingFrame(props: { fallback: string; mark?: ReactNode; children: ReactNode }) {
+  const back = useLeave(props.fallback);
   return (
-    <FullscreenFrame waiting={back.waiting} onBack={back.leave}>
-      {children}
+    <FullscreenFrame waiting={back.waiting} onBack={back.leave} mark={props.mark}>
+      {props.children}
     </FullscreenFrame>
   );
 }
@@ -38,48 +40,55 @@ type Props = { pages: ProblemPages; viewer: Viewer; art: NoteArt };
 const tokenOf = (viewer: Viewer) =>
   viewer.kind === 'child' || viewer.kind === 'parent' ? viewer.csrf : undefined;
 
-// A problem fills the screen. Its back button returns to the page the viewer
-// came from, or, for a link opened directly, to the viewer's home, where a
-// child finds the problem's book opened. Nobody signed in sees only the way
-// to sign in and come back, and nothing of the problem is asked for.
-export function ProblemPage({ pages, viewer, art }: Props) {
+// Opening the problem of the address for the viewer: still waiting, failed
+// to ask, or what the server answered, which for nobody signed in is that
+// nobody is; and one way to ask again for the page's life, so the lesson's
+// requests keep their scope.
+function useOpening(viewer: Viewer) {
   const { id = '', version = '' } = useParams();
   const query = useProblem(id, version, tokenOf(viewer));
   const { refetch } = query;
-  // One callback for the page's life, so the lesson's requests keep their scope.
-  const onRefused = useCallback(() => {
+  const again = useCallback(() => {
     void refetch();
   }, [refetch]);
-  const answer = query.data;
-  const book = answer?.kind === 'opened' ? answer.problem.book : undefined;
+  const answer: ProblemAnswer = query.data ?? { kind: 'signed-out' };
+  return {
+    waiting: viewer.kind === 'checking' || (tokenOf(viewer) !== undefined && query.isPending),
+    failed: query.isError,
+    answer,
+    again,
+  };
+}
+
+// A problem fills the screen. Its back button returns to the page the viewer
+// came from, or, for a link opened directly, to the viewer's home, where a
+// child finds the problem's book opened; a parent's preview carries its mark
+// beside the button. Nobody signed in sees only the way to sign in and come
+// back, and nothing of the problem is asked for.
+export function ProblemPage(props: Props) {
+  const opening = useOpening(props.viewer);
+  const opened = opening.answer.kind === 'opened' ? opening.answer.problem : undefined;
   return (
-    <LeavingFrame fallback={homeOf(viewer, book)}>
-      {viewer.kind === 'checking' || (tokenOf(viewer) && query.isPending) ? (
-        <Opening />
-      ) : query.isError ? (
+    <LeavingFrame
+      fallback={homeOf(props.viewer, opened?.book)}
+      mark={opened?.mode === 'preview' && <PreviewMark />}
+    >
+      {opening.waiting ? (
+        <EmptyState icon="clock" title="正在打开这道题" description="请稍等一下。" />
+      ) : opening.failed ? (
         <EmptyState
           icon="alert"
           title="刚才没能打开这道题"
           description="可以再试一次。"
           actionLabel="再试一次"
-          onAction={() => {
-            void query.refetch();
-          }}
+          onAction={opening.again}
         />
       ) : (
-        <Answered
-          answer={answer ?? { kind: 'signed-out' }}
-          pages={pages}
-          viewer={viewer}
-          art={art}
-          onRefused={onRefused}
-        />
+        <Answered {...props} answer={opening.answer} onRefused={opening.again} />
       )}
     </LeavingFrame>
   );
 }
-
-const Opening = () => <EmptyState icon="clock" title="正在打开这道题" description="请稍等一下。" />;
 
 type AnsweredProps = Props & { answer: ProblemAnswer; onRefused: () => void };
 
@@ -96,8 +105,8 @@ function Answered({ answer, pages, viewer, art, onRefused }: AnsweredProps) {
       const { problem } = answer;
       const path = problemPath(problem.id, problem.version);
       const renderPage = pages.get(path);
-      if (!renderPage) return <Missing />;
-      const csrf = viewer.kind === 'child' ? viewer.csrf : undefined;
+      const csrf = tokenOf(viewer);
+      if (!renderPage || !csrf) return <Missing />;
       return <Fragment key={path}>{renderPage(problem, { csrf, onRefused })}</Fragment>;
     }
   }
