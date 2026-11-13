@@ -127,6 +127,13 @@
       "when": 1794556372096,
       "tag": "0017_family_time_zone",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1794556478158,
+      "tag": "0018_study_time",
+      "breakpoints": true
     }
   ]
 }

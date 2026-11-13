@@ -299,6 +299,31 @@ export const variationHelp = pgTable(
     }),
   ],
 ).enableRLS();
+// Study time: the seconds each child spent working on a lesson page, one
+// total for each day of the family's time zone, kept until the family is
+// deleted. The moment of the child's last heartbeat measures the next one's
+// interval; it is only working state and is not exported.
+export const studyDays = pgTable(
+  'study_days',
+  {
+    childId: uuid('child_id')
+      .notNull()
+      .references(() => children.id, { onDelete: 'cascade' }),
+    day: date('day').notNull(),
+    seconds: integer('seconds').default(0).notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.childId, table.day] }),
+    check('study_days_seconds', sql`${table.seconds} >= 0`),
+  ],
+).enableRLS();
+
+export const studyBeats = pgTable('study_beats', {
+  childId: uuid('child_id')
+    .primaryKey()
+    .references(() => children.id, { onDelete: 'cascade' }),
+  beatAt: timestamp('beat_at', { withTimezone: true }).notNull(),
+}).enableRLS();
 
 export const parentSessions = pgTable(
   'parent_sessions',

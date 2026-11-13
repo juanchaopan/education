@@ -50,6 +50,7 @@ import { createAiConsent } from './ai-consent-application.js';
 import { createFamilyExport } from './family-export-application.js';
 import { createFamilyDeletion } from './family-deletion-application.js';
 import { createFamilyTimeZone } from './family-time-zone-application.js';
+import { createStudyTime } from './study-time-application.js';
 import { createTeachingFeedback } from './teaching-feedback-application.js';
 import { createTeacherQuestion } from './teacher-question-application.js';
 import { createVoiceTranscription } from './voice-transcription-application.js';
@@ -161,6 +162,7 @@ async function createIdentitySessions(
       drafts: createDrafts(pool),
       answering: createAnswering(pool, config.rateLimitKey!),
       variation: createVariation(pool, config.rateLimitKey!),
+      studyTime: createStudyTime(pool, config.defaultTimeZone),
       teachingFeedback: createTeachingFeedback(pool, env),
       teacherQuestion: createTeacherQuestion(pool, env),
       voiceTranscription: createVoiceTranscription(pool, env),
