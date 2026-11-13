@@ -1,11 +1,12 @@
 import { expect, test } from '@playwright/test';
 import pg from 'pg';
 import { removeFamilies } from './family-cleanup.js';
-import { seedSignedInFamily } from './seeded-family.js';
+import { giveBook, seedSignedInFamily } from './seeded-family.js';
 import { signInWithToken } from './session-cookie.js';
 
-// A child works on a lesson page for a minute; the parent sees the minute on
-// the child's card, picks today and opens the record of that day.
+// A child given the garden's book works on its lesson page for a minute; the
+// parent sees the minute on the child's card, picks today and opens the record
+// of that day.
 test('the time a child studies shows on the parent card and the record of that day', async ({
   browser,
   baseURL,
@@ -20,6 +21,7 @@ test('the time a child studies shows on the parent card and the record of that d
   const parentContext = await browser.newContext();
   try {
     await pool.query(`UPDATE families SET time_zone='Asia/Shanghai' WHERE id=$1`, [family]);
+    await giveBook(pool, children[0]!.id);
     const lesson = await childContext.newPage();
     await signInWithToken(lesson, baseURL!, children[0]!.token);
     await lesson.goto('/problems/garden-balance/1');

@@ -7,7 +7,7 @@ import { gardenFilm, movesToTheAnswer } from './garden-film.js';
 import { listenToNarration } from './narration-check.js';
 import { signInRecentParent } from './recent-parent.js';
 import { checkNow, releaseName, releases, serveReleases } from './release.js';
-import { seedSignedInFamily } from './seeded-family.js';
+import { giveBook, seedSignedInFamily } from './seeded-family.js';
 import { signInWithToken } from './session-cookie.js';
 
 // An open page and a deployment that moves to another release under it. The
@@ -155,7 +155,7 @@ test.describe('a lesson page', () => {
   });
 });
 
-// A signed-in child's draft.
+// The draft of a signed-in child given the garden's book.
 test.describe('a signed-in child', () => {
   needsIsolatedDatabase();
 
@@ -168,6 +168,7 @@ test.describe('a signed-in child', () => {
     pool = new pg.Pool({ connectionString: database });
     const seeded = await seedSignedInFamily(pool, ['小鹿']);
     family = seeded.family;
+    await giveBook(pool, seeded.children[0]!.id);
     await signInWithToken(page, baseURL!, seeded.children[0]!.token);
   });
   test.afterEach(async () => {
