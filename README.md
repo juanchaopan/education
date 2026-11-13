@@ -115,6 +115,8 @@ npm run lesson:review -- garden-balance
 
 `AI_MONTHLY_BUDGET_USD` 可设置文字解题提示的部署级月度上限，留空表示预算未设置。配置及结算规则见 [AI 用量与费用上限](docs/evidence/39/README.md)。
 
+`DEFAULT_TIME_ZONE`（默认 `Asia/Shanghai`，只接受 IANA 时区名）是还没有自己时区的家庭分天用的时区；家长打开家长空间时，网页把这台设备的时区填成家庭时区，家长也可以在「家庭」页修改。见 [家长总览](docs/design/family-overview.md#家庭时区)。
+
 中国大陆可访问是发布条件；免费平台失败后转用用户提供的服务器/域名。Vercel staging 与 Gmail 试点方向见 ADR-0008/0010，正式全链路与 AI 仍需验证，不能将本地构建成功当成发布成功。
 
 架构与需求见 [docs](docs/README.md)。
