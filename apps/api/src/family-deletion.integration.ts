@@ -2,6 +2,7 @@ import { randomBytes, randomUUID } from 'node:crypto';
 import pg from 'pg';
 import { afterAll, expect, it } from 'vitest';
 import { familyDeletionPhrase } from '@education/contracts';
+import { createProblemRegistry } from '@education/problems/server';
 import { buildApp } from './app.js';
 import { createDrafts } from './draft-application.js';
 import { createFamilyDeletion } from './family-deletion-application.js';
@@ -26,13 +27,19 @@ const pools = [0, 1].map(() => new pg.Pool({ connectionString: process.env.DATAB
 const pool = pools[0]!;
 const ledgerPool = new pg.Pool({ connectionString: process.env.DELETION_LEDGER_URL });
 const draftPath = '/api/v1/problems/test-deletion/1/draft';
+// The book every child here is given, holding the problem whose draft they keep.
+const book = { id: 'g1-math-xueersi', grade: '一年级', subject: '数学', category: '学而思' };
+const registry = createProblemRegistry(
+  [{ summary: { id: 'test-deletion', version: 1, title: '数苹果', book: book.id, sequence: 1 } }],
+  [book],
+);
 // Two servers with their own connection pools, as two deployed instances would have.
 const servers = pools.map((from) =>
   buildApp({
     origin,
     familyDeletion: createFamilyDeletion(from, ledgerPool),
     familyExport: createFamilyExport(from, 'Asia/Shanghai'),
-    drafts: createDrafts(from, (id) => id === 'test-deletion'),
+    drafts: createDrafts(from, registry),
   }),
 );
 const [first, second] = servers as [Server, Server];
@@ -109,8 +116,9 @@ async function learning(family: string, child: string) {
     `INSERT INTO help_events(child_id,problem_id,problem_version,round,hint_id) VALUES($1,'apples',1,$2,'count')`,
     [child, round],
   );
-  await pool.query(`INSERT INTO book_assignments(child_id,book_id) VALUES($1,'g1-math-xueersi')`, [
+  await pool.query(`INSERT INTO book_assignments(child_id,book_id) VALUES($1,$2)`, [
     child,
+    book.id,
   ]);
   await pool.query(`INSERT INTO study_days(child_id,day,seconds) VALUES($1,'2026-11-12',600)`, [
     child,

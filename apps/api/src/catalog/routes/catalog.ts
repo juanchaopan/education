@@ -1,41 +1,30 @@
 import type { FastifyInstance } from 'fastify';
-import { Type } from '@sinclair/typebox';
-import { CatalogResponse, ProblemParams, ProblemSummary } from '@education/contracts';
-import { readSessionCredentials } from '../../shared/session-cookie.js';
-import { createCatalog } from '../services/catalog.js';
+import { ProblemOpening, ProblemParams } from '@education/contracts';
+import { problemRequest } from '../../shared/problem-request.js';
+import { RequestError } from '../../shared/request-error.js';
+import type { readSessionCredentials } from '../../shared/session-cookie.js';
 
 type Credentials = ReturnType<typeof readSessionCredentials>;
-// What else happens when someone opens a problem that exists, given the
-// session the request carries.
-export type ProblemOpening = (
+
+// Opens a problem version for the session the request carries, or throws
+// why it does not open.
+export type OpenProblem = (
   credentials: Credentials,
   problem: { id: string; version: number },
-) => Promise<void>;
+) => Promise<ProblemOpening>;
 
-// Opening a problem records, for a signed-in child, that its book was opened,
-// so no cache keeps the reply or answers it for another session.
-export function registerCatalog(
-  app: FastifyInstance,
-  catalog = createCatalog(),
-  open?: ProblemOpening,
-) {
-  app.get('/api/v1/problems', { schema: { response: { 200: CatalogResponse } } }, catalog.list);
+// A problem opens only for a signed-in viewer; without accounts nobody is
+// signed in. The reply depends on the session, so no cache keeps it or hands
+// it to another session.
+export function registerCatalog(app: FastifyInstance, open?: OpenProblem) {
   app.get<{ Params: ProblemParams }>(
     '/api/v1/problems/:id/:version',
-    {
-      attachValidation: true,
-      schema: {
-        params: ProblemParams,
-        response: { 200: ProblemSummary, 404: Type.Object({ message: Type.String() }) },
-      },
-    },
+    { schema: { params: ProblemParams, response: { 200: ProblemOpening } } },
     async (request, reply) => {
       reply.header('Cache-Control', 'no-store').header('Vary', 'Cookie');
-      const { id, version } = request.params;
-      const problem = request.validationError ? undefined : catalog.detail(id, version);
-      if (!problem) return reply.code(404).send({ message: '这道题或这个版本暂时不可用。' });
-      await open?.(readSessionCredentials(request), { id: problem.id, version: problem.version });
-      return problem;
+      if (!open) throw new RequestError(401, '登录已失效，请重新登录。');
+      const { credentials, problem } = problemRequest(request);
+      return open(credentials, problem);
     },
   );
 }

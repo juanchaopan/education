@@ -13,6 +13,8 @@ const childText = '我觉得答案是十七个';
 const drawing = 'U1lOVEhFVElDRFJBV0lORw==';
 const instruction = '再数一数左边的点';
 const secrets = [pin, key, password, session, childText, drawing, instruction, 'postgres://'];
+// An API route anyone may read.
+const publicApi = '/api/v1/registration-status';
 
 const apps: ReturnType<typeof buildApp>[] = [];
 afterEach(async () => {
@@ -61,7 +63,7 @@ function failingLogin(failure: Error) {
 describe('request log', () => {
   it('records one line per request with its request ID, route, status and time', async () => {
     const { app, completed } = logged();
-    const response = await app.inject('/api/v1/problems');
+    const response = await app.inject(publicApi);
     const id = response.headers['x-request-id'];
     expect(id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
     expect(completed()).toHaveLength(1);
@@ -69,12 +71,12 @@ describe('request log', () => {
       level: 30,
       requestId: id,
       method: 'GET',
-      route: '/api/v1/problems',
+      route: publicApi,
       status: 200,
       outcome: 'ok',
       durationMs: expect.any(Number),
     });
-    const second = await app.inject('/api/v1/problems');
+    const second = await app.inject(publicApi);
     expect(second.headers['x-request-id']).not.toBe(id);
   });
 
@@ -176,7 +178,7 @@ describe('request log', () => {
 
   it('tells a service closed for maintenance from a database that cannot be reached', async () => {
     const closed = logged({ ready: async () => false });
-    expect((await closed.app.inject('/api/v1/problems')).statusCode).toBe(503);
+    expect((await closed.app.inject(publicApi)).statusCode).toBe(503);
     expect((await closed.app.inject('/health/ready')).statusCode).toBe(503);
     expect(closed.completed().map(({ outcome, level }) => [outcome, level])).toEqual([
       ['maintenance', 40],
@@ -189,7 +191,7 @@ describe('request log', () => {
         });
       },
     });
-    expect((await down.app.inject('/api/v1/problems')).statusCode).toBe(503);
+    expect((await down.app.inject(publicApi)).statusCode).toBe(503);
     expect((await down.app.inject('/health/ready')).statusCode).toBe(503);
     expect(down.completed()).toEqual([
       expect.objectContaining({ outcome: 'database', code: 'ECONNREFUSED', level: 50 }),

@@ -24,9 +24,26 @@ export const ProblemSummary = Type.Composite([
   }),
 ]);
 
-export const CatalogResponse = Type.Object({
-  problems: Type.Array(ProblemSummary),
-  categories: Type.Optional(Type.Array(CatalogCategory)),
+// How a problem opens: a child practises it, keeping the work; a parent
+// previews it, keeping nothing.
+export const problemModes = ['practice', 'preview'] as const;
+export const ProblemMode = Type.Union(problemModes.map((mode) => Type.Literal(mode)));
+
+// A problem as it opens for the signed-in viewer, with the book it is filed in.
+export const ProblemOpening = Type.Composite([
+  ProblemSummary,
+  Type.Object({ mode: ProblemMode, book: ProblemId }),
+]);
+
+// Why a problem that exists does not open for the viewer: its book is not
+// given to the child, or the book is unavailable for now.
+export const problemAccessReasons = ['unassigned', 'unavailable'] as const;
+export const ProblemAccessReason = Type.Union(
+  problemAccessReasons.map((reason) => Type.Literal(reason)),
+);
+export const ProblemAccessDenied = Type.Object({
+  message: Type.String(),
+  reason: ProblemAccessReason,
 });
 
 export const ProblemParams = Type.Object({
@@ -45,5 +62,8 @@ export function parseProblemVersion(raw: string) {
 
 export type CatalogCategory = Static<typeof CatalogCategory>;
 export type ProblemSummary = Static<typeof ProblemSummary>;
-export type CatalogResponse = Static<typeof CatalogResponse>;
+export type ProblemMode = Static<typeof ProblemMode>;
+export type ProblemOpening = Static<typeof ProblemOpening>;
+export type ProblemAccessReason = Static<typeof ProblemAccessReason>;
+export type ProblemAccessDenied = Static<typeof ProblemAccessDenied>;
 export type ProblemParams = Static<typeof ProblemParams>;

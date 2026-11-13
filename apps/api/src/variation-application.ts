@@ -1,5 +1,5 @@
 import type pg from 'pg';
-import { problemRegistry } from '@education/problems/server';
+import { problemRegistry, type ProblemRegistry } from '@education/problems/server';
 import { childProblemTransaction } from './child-problem-transaction.js';
 import { lockLearningSlot } from './learning/repositories/postgres-draft.js';
 import { variationsFor } from './learning/repositories/postgres-variation.js';
@@ -11,15 +11,15 @@ import { createVariationService } from './learning/services/variation.js';
 export function createVariation(
   pool: pg.Pool,
   secret: string,
-  find = (id: string, version: number) => problemRegistry.find(id, version)?.variation,
+  registry: ProblemRegistry = problemRegistry,
 ) {
-  const authorized = childProblemTransaction(pool);
+  const authorized = childProblemTransaction(pool, registry.bookOf);
   return createVariationService(
     (credentials, problem, work) =>
       authorized(credentials, problem, async (client, child) => {
         await lockLearningSlot(client, child, problem);
         return work(variationsFor(client, child, problem, secret));
       }),
-    find,
+    (id, version) => registry.find(id, version)?.variation,
   );
 }

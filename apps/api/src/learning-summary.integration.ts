@@ -1,4 +1,5 @@
 import { randomBytes, randomUUID } from 'node:crypto';
+import { createProblemRegistry, type ProblemPlugin } from '@education/problems/server';
 import pg from 'pg';
 import { afterAll, expect, it } from 'vitest';
 import { buildApp } from './app.js';
@@ -12,14 +13,27 @@ if (!process.env.DATABASE_URL?.endsWith('/education_test'))
 const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
 const families: string[] = [];
 const origin = 'https://education.example';
-const answering = createAnswering(pool, 'fixture-key', () => ({
-  hints: { observe: '仔细观察。' },
-  checkCompletion: (input) =>
-    input === true ? 'correct' : input === false ? 'incorrect' : 'uncertain',
-}));
+const book = { id: 'fixture-patterns', grade: '一年级', subject: '数学', category: '规律' };
+const pattern = (id: string, version = 1): ProblemPlugin => ({
+  summary: { id, version, title: '辨认规律', book: book.id, sequence: 1 },
+  answering: {
+    hints: { observe: '仔细观察。' },
+    checkCompletion: (input) =>
+      input === true ? 'correct' : input === false ? 'incorrect' : 'uncertain',
+  },
+});
+const registry = createProblemRegistry(
+  [
+    pattern('test-pattern'),
+    pattern('test-pattern', 2),
+    pattern('test-uncertain'),
+    pattern('test-hint-only'),
+  ],
+  [book],
+);
 const app = buildApp({
   origin,
-  answering,
+  answering: createAnswering(pool, 'fixture-key', registry),
   learningSummary: createLearningSummary(pool, (id, version) =>
     id === 'test-pattern' && version === 2 ? '辨认规律' : undefined,
   ),
@@ -48,6 +62,7 @@ async function parent(verified = true) {
   return { family, token };
 }
 
+// A signed-in child given the book of the problems answered here.
 async function child(family: string, nickname = '小鹿') {
   const id = randomUUID();
   await pool.query(
@@ -55,6 +70,7 @@ async function child(family: string, nickname = '小鹿') {
      VALUES($1,$2,$3,$3,'fixture',1)`,
     [id, family, nickname],
   );
+  await pool.query('INSERT INTO book_assignments(child_id,book_id) VALUES($1,$2)', [id, book.id]);
   const token = randomBytes(32).toString('base64url');
   await pool.query(
     `INSERT INTO child_sessions(token_hash,child_id,credential_version,family_epoch,expires_at)

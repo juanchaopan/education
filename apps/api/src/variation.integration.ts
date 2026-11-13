@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { createProblemRegistry, type ProblemPlugin } from '@education/problems/server';
 import { afterAll, expect, it } from 'vitest';
 import { buildApp } from './app.js';
 import { createAnswering } from './answer-application.js';
@@ -7,13 +8,13 @@ import { createVariation } from './variation-application.js';
 
 const fixtures = familyFixtures();
 const { pool } = fixtures;
-const app = buildApp({
-  origin: fixtureOrigin,
-  answering: createAnswering(pool, 'fixture-key', () => ({
+const pattern = (id: string, book: string): ProblemPlugin => ({
+  summary: { id, version: 1, title: '每组几根', book, sequence: 1 },
+  answering: {
     hints: { observe: '仔细观察。' },
     checkCompletion: (input) => (input === 9 ? 'correct' : 'incorrect'),
-  })),
-  variation: createVariation(pool, 'fixture-key', () => ({
+  },
+  variation: {
     hints: { 'count-again': '数一数，现在有几组？' },
     checkGuess: (input) =>
       typeof input !== 'number' ? 'uncertain' : input === 6 ? 'correct' : 'incorrect',
@@ -21,7 +22,25 @@ const app = buildApp({
       if (!('say' in reason) || reason.say === '嗯') return 'uncertain';
       return reason.say.includes('还是三组') ? 'correct' : 'incorrect';
     },
-  })),
+  },
+});
+const registry = createProblemRegistry(
+  [pattern('test-pattern', 'fixture-patterns'), pattern('test-closed', 'fixture-closed')],
+  [
+    { id: 'fixture-patterns', grade: '一年级', subject: '数学', category: '变化题' },
+    {
+      id: 'fixture-closed',
+      grade: '一年级',
+      subject: '数学',
+      category: '变化题暂停',
+      status: 'unavailable',
+    },
+  ],
+);
+const app = buildApp({
+  origin: fixtureOrigin,
+  answering: createAnswering(pool, 'fixture-key', registry),
+  variation: createVariation(pool, 'fixture-key', registry),
 });
 
 afterAll(async () => {
@@ -29,12 +48,17 @@ afterAll(async () => {
   await fixtures.close();
 });
 
-// A child who can answer the test problem and then do its variation.
-async function child() {
+const give = (childId: string, bookId: string) =>
+  pool.query('INSERT INTO book_assignments(child_id,book_id) VALUES($1,$2)', [childId, bookId]);
+
+// A child given the books of `books`, who can answer the problem `problem`
+// and then do its variation.
+async function child(problem = 'test-pattern', books = ['fixture-patterns']) {
   const { family } = await fixtures.household();
   const { id, token } = await fixtures.learner(family, '小鹿');
+  for (const book of books) await give(id, book);
   const headers = sessionHeaders(token);
-  const at = (part: string) => `/api/v1/problems/test-pattern/1/${part}`;
+  const at = (part: string) => `/api/v1/problems/${problem}/1/${part}`;
   const post = (part: string, payload: object) =>
     app.inject({ method: 'POST', url: at(part), headers, payload });
   return {
@@ -155,6 +179,27 @@ it('rejects a reason longer than a child sentence and unknown fields', async () 
     payload: { action: 'guess', round, attemptId: randomUUID(), input: 6, transcript: '六' },
   });
   expect(extra.statusCode).toBe(400);
+});
+
+it('refuses the variation of a book not given or unavailable, and keeps nothing', async () => {
+  const refusals = [
+    { learner: await child('test-pattern', []), reason: 'unassigned' },
+    { learner: await child('test-closed', ['fixture-closed']), reason: 'unavailable' },
+  ];
+  for (const { learner, reason } of refusals) {
+    const round = randomUUID();
+    for (const refusal of [
+      await learner.state(),
+      await learner.guess(round, 6),
+      await learner.reason(round, '还是三组'),
+      await learner.hint(round),
+      await learner.question(round),
+    ]) {
+      expect(refusal.statusCode).toBe(403);
+      expect(refusal.json()).toMatchObject({ reason });
+    }
+    expect(await rows(learner.id)).toEqual({ answers: [], help: [] });
+  }
 });
 
 it('leaves no variation records once the family is deleted', async () => {

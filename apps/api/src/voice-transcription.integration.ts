@@ -14,6 +14,14 @@ const families: string[] = [];
 const env = { OPENAI_API_KEY: 'synthetic-key', OPENAI_TRANSCRIPTION_ELIGIBLE: 'true' };
 const problem = { id: 'share-sweets', version: 1 };
 const book = { id: 'fixture-numbers', grade: '一年级', subject: '数学', category: '数与运算' };
+const closedBook = {
+  id: 'fixture-closed',
+  grade: '一年级',
+  subject: '数学',
+  category: '暂停',
+  status: 'unavailable' as const,
+};
+const closedProblem = { id: 'closed-sweets', version: 1 };
 const registry = createProblemRegistry(
   [
     {
@@ -22,8 +30,12 @@ const registry = createProblemRegistry(
         'split-evenly': { prompt: '把十二颗糖平均分给三个人。', vocabulary: ['平均分', '每份'] },
       },
     },
+    {
+      summary: { ...closedProblem, title: 'fixture', book: closedBook.id, sequence: 1 },
+      feedback: { 'split-evenly': { prompt: '把十二颗糖平均分给三个人。' } },
+    },
   ],
-  [book],
+  [book, closedBook],
 );
 const webm = Buffer.concat([Buffer.from([0x1a, 0x45, 0xdf, 0xa3]), Buffer.alloc(96)]);
 const request = { stepId: 'split-evenly', format: 'webm', audio: webm.toString('base64') } as const;
@@ -37,6 +49,7 @@ afterAll(async () => {
   await pool.end();
 });
 
+// A signed-in child given both books, whose family consented to the scopes.
 async function child(scopes: (keyof typeof aiConsentPolicies)[]) {
   const family = randomUUID();
   const token = randomBytes(32).toString('base64url');
@@ -46,10 +59,12 @@ async function child(scopes: (keyof typeof aiConsentPolicies)[]) {
     `WITH child AS (
        INSERT INTO children(family_id,nickname,canonical_nickname,pin_hash,pin_pepper_version)
        VALUES($1,'小鹿','小鹿','fixture',1) RETURNING id
+     ), session AS (
+       INSERT INTO child_sessions(token_hash,child_id,credential_version,family_epoch,expires_at)
+       SELECT $2,id,1,1,now()+interval '1 day' FROM child
      )
-     INSERT INTO child_sessions(token_hash,child_id,credential_version,family_epoch,expires_at)
-     SELECT $2,id,1,1,now()+interval '1 day' FROM child`,
-    [family, tokenHash(token)],
+     INSERT INTO book_assignments(child_id,book_id) SELECT id,unnest($3::text[]) FROM child`,
+    [family, tokenHash(token), [book.id, closedBook.id]],
   );
   for (const scope of scopes)
     await pool.query(
@@ -66,7 +81,7 @@ function transcript(text: string) {
 }
 
 function service(send: typeof fetch) {
-  return createVoiceTranscription(pool, env, send, registry.find);
+  return createVoiceTranscription(pool, env, send, registry);
 }
 
 async function usage(family: string) {
@@ -91,6 +106,17 @@ it('needs a valid child session and the transcription consent, not the tutoring 
   });
   expect(send).not.toHaveBeenCalled();
   expect(await usage(tutoringOnly.family)).toEqual([]);
+});
+
+it('transcribes nothing for a problem whose book is unavailable, and records no usage', async () => {
+  const owner = await child(['openai-transcription']);
+  const send = vi.fn<typeof fetch>(async () => transcript('每份是四。'));
+  await expect(service(send)(owner.credentials, closedProblem, request)).rejects.toMatchObject({
+    statusCode: 403,
+    reason: 'unavailable',
+  });
+  expect(send).not.toHaveBeenCalled();
+  expect(await usage(owner.family)).toEqual([]);
 });
 
 it('withholds an older consent once the disclosed inputs changed', async () => {

@@ -1,5 +1,4 @@
 import type { DraftCommand, DraftContent, SavedDraft } from '@education/contracts';
-import { RequestError } from '../../shared/request-error.js';
 
 export type DraftProblem = { id: string; version: number };
 type Credentials = { token?: string; csrf?: string };
@@ -8,20 +7,17 @@ type DraftStore = {
   save: (problem: DraftProblem, content: DraftContent) => Promise<SavedDraft>;
   discard: (problem: DraftProblem, revision: string) => Promise<boolean>;
 };
+// Runs work on the drafts of the signed-in child, once the child is let into
+// the problem.
 type WithDrafts = <T>(
   credentials: Credentials,
   problem: DraftProblem,
   work: (store: DraftStore) => Promise<T>,
 ) => Promise<T>;
 
-export function createDraftService(
-  withDrafts: WithDrafts,
-  available: (id: string, version: number) => boolean,
-) {
+export function createDraftService(withDrafts: WithDrafts) {
   return (credentials: Credentials, problem: DraftProblem, command?: DraftCommand) =>
     withDrafts(credentials, problem, async (store) => {
-      if (!available(problem.id, problem.version))
-        throw new RequestError(404, '这道题或这个版本暂时不可用。');
       const current = await store.current(problem);
       if (!command) return { status: 200 as const, draft: current };
       if (command.revision !== (current?.revision ?? null))

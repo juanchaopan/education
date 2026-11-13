@@ -1,5 +1,6 @@
 import { randomBytes, randomUUID } from 'node:crypto';
 import { draftBodyLimit } from '@education/contracts';
+import { createProblemRegistry, type ProblemPlugin } from '@education/problems/server';
 import pg from 'pg';
 import { afterAll, expect, it } from 'vitest';
 import { buildApp } from './app.js';
@@ -19,26 +20,21 @@ const path = '/api/v1/problems/test-draft/1/draft';
 const content = { stepId: 'compare', drawing: [[{ x: 0.3, y: 0.4 }]] };
 const next = { ...content, stepId: 'explain' };
 const answerPath = path.replace('/draft', '/answer');
-const findAnswering = (id: string, version: number) =>
-  id === problem.id && [1, Number.MAX_SAFE_INTEGER].includes(version)
-    ? {
-        hints: { compare: '先比较叶片两边。' },
-        checkCompletion: (input: unknown) =>
-          input === '对称'
-            ? ('correct' as const)
-            : input === '不对称'
-              ? ('incorrect' as const)
-              : ('uncertain' as const),
-      }
-    : undefined;
+const book = { id: 'fixture-leaves', grade: '一年级', subject: '数学', category: '对称' };
+const leaf = (version: number): ProblemPlugin => ({
+  summary: { ...problem, version, title: '叶子对称吗', book: book.id, sequence: 1 },
+  answering: {
+    hints: { compare: '先比较叶片两边。' },
+    checkCompletion: (input) =>
+      input === '对称' ? 'correct' : input === '不对称' ? 'incorrect' : 'uncertain',
+  },
+});
+const registry = createProblemRegistry([leaf(1), leaf(Number.MAX_SAFE_INTEGER)], [book]);
 const makeApp = () =>
   buildApp({
     origin,
-    answering: createAnswering(pool, 'fixture-key', findAnswering),
-    drafts: createDrafts(
-      pool,
-      (id, version) => id === problem.id && (version === 1 || version === Number.MAX_SAFE_INTEGER),
-    ),
+    answering: createAnswering(pool, 'fixture-key', registry),
+    drafts: createDrafts(pool, registry),
   });
 const first = makeApp();
 const second = makeApp();
@@ -49,7 +45,9 @@ afterAll(async () => {
   await pool.end();
 });
 
-async function child() {
+// A child in a family of their own, given the problem's book unless `given`
+// is false, who can sign in on as many devices as a test needs.
+async function child(given = true) {
   const family = randomUUID();
   families.push(family);
   await pool.query('INSERT INTO families(id,code) VALUES($1,$2)', [
@@ -62,6 +60,8 @@ async function child() {
      VALUES($1,$2,'小鹿','小鹿','fixture',1)`,
     [id, family],
   );
+  if (given)
+    await pool.query('INSERT INTO book_assignments(child_id,book_id) VALUES($1,$2)', [id, book.id]);
   async function session() {
     const token = randomBytes(32).toString('base64url');
     await pool.query(
@@ -177,6 +177,30 @@ it('rejects unbound sessions, forged inputs, unknown versions and any raw audio 
   ).toBe(404);
   await pool.query('UPDATE children SET credential_version=2 WHERE id=$1', [owner.id]);
   expect((await save(headers, null)).statusCode).toBe(401);
+});
+
+it('keeps no draft or answer of a child not given the book, until the book is given', async () => {
+  const stranger = await child(false);
+  const headers = await stranger.session();
+  const refusals = [
+    await first.inject({ url: path, headers }),
+    await save(headers, null),
+    await answer(headers),
+    await answer(headers, submission(randomUUID())),
+  ];
+  for (const refusal of refusals) {
+    expect(refusal.statusCode).toBe(403);
+    expect(refusal.json()).toEqual({ message: '这本书还没有安排给你。', reason: 'unassigned' });
+  }
+  for (const table of ['drafts', 'attempts', 'progress', 'help_events'])
+    expect(
+      (await pool.query(`SELECT 1 FROM ${table} WHERE child_id=$1`, [stranger.id])).rowCount,
+    ).toBe(0);
+  await pool.query('INSERT INTO book_assignments(child_id,book_id) VALUES($1,$2)', [
+    stranger.id,
+    book.id,
+  ]);
+  expect((await save(headers, null)).statusCode).toBe(200);
 });
 
 it('supports separate drafts for catalog versions and caps request bytes before validation', async () => {
