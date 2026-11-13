@@ -7,7 +7,9 @@ import type { ParentAccount } from '../domain/session.js';
 import { RequestError } from '../../shared/request-error.js';
 
 export type AuthorizedParent = ParentAccount & { recent: boolean };
-type ParentWork<T> = (client: pg.PoolClient, parent: AuthorizedParent) => Promise<T>;
+
+// Work done for a signed-in parent in the transaction that holds the session.
+export type ParentWork<T> = (client: pg.PoolClient, parent: AuthorizedParent) => Promise<T>;
 
 export function withParentSession<T>(pool: pg.Pool, hash: string, work: ParentWork<T>) {
   return transaction(pool, async (client) => work(client, await lockSession(client, hash)));

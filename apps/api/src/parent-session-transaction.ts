@@ -1,8 +1,5 @@
 import type pg from 'pg';
-import {
-  withParentSession,
-  type AuthorizedParent,
-} from './identity/repositories/session-transaction.js';
+import { withParentSession, type ParentWork } from './identity/repositories/session-transaction.js';
 import type { ParentTransaction } from './identity/services/parent-transaction.js';
 import {
   csrfMatches,
@@ -11,8 +8,6 @@ import {
   validToken,
 } from './identity/services/session-security.js';
 import { RequestError } from './shared/request-error.js';
-
-type ParentWork<T> = (client: pg.PoolClient, parent: AuthorizedParent) => Promise<T>;
 
 function signedIn(token: string | undefined): asserts token is string {
   if (!validToken(token)) throw new RequestError(401, '登录状态已失效，请重新登录。');
