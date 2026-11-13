@@ -4,20 +4,21 @@ import { FamilyCodeChip, type FamilyCodeChipProps } from '../components/FamilyCo
 import { useRegistrationKey } from '../data-access/useRegistrationKey';
 
 // Copies the family code. A browser that will not copy for the page leaves the
-// parent to select the code by hand, and says so.
+// parent to select the code by hand, and says so. What the last copy said
+// belongs to the code it copied, so a code that changes shows without it.
 function useCopyCode(code: string | undefined) {
-  const [notice, setNotice] = useState('');
+  const [copied, setCopied] = useState<{ code: string; notice: string }>();
   const copy = async () => {
     if (!code) return;
     try {
       await navigator.clipboard.writeText(code);
-      setNotice('已复制家庭码。');
+      setCopied({ code, notice: '已复制家庭码。' });
     } catch {
-      setNotice('暂时无法自动复制，请长按或选中家庭码复制。');
+      setCopied({ code, notice: '暂时无法自动复制，请长按或选中家庭码复制。' });
     }
   };
   return {
-    notice,
+    notice: copied && copied.code === code ? copied.notice : '',
     onCopy: () => {
       void copy();
     },
@@ -36,12 +37,6 @@ export function FamilyCodeCardPanel({ csrf }: { csrf: string }) {
   const code = status.isSuccess ? status.data.familyCode : undefined;
   const copying = useCopyCode(code);
   return (
-    <FamilyCodeCard
-      key={code}
-      code={code}
-      loading={status.isPending}
-      failed={status.isError}
-      {...copying}
-    />
+    <FamilyCodeCard code={code} loading={status.isPending} failed={status.isError} {...copying} />
   );
 }
