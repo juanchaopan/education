@@ -7,8 +7,7 @@ import {
   type InfiniteData,
   type QueryClient,
 } from '@tanstack/react-query';
-import type { Static, TSchema } from '@sinclair/typebox';
-import { Value } from '@sinclair/typebox/value';
+import type { Static } from '@sinclair/typebox';
 import {
   ChildShelfPage,
   FamilyShelfPage,
@@ -17,7 +16,7 @@ import {
   shelfPageSize,
 } from '@education/contracts';
 import type { ShelfFilter } from '../model';
-import { sessionRequest } from './session-request';
+import { sessionRead, sessionRequest } from './session-request';
 
 export const bookshelfQueryKey = ['bookshelf'];
 
@@ -26,21 +25,9 @@ export type ShelfView = 'library' | 'family' | { childId: string };
 
 const signedOut = '登录状态已更新，请刷新页面。';
 
-async function read<Schema extends TSchema>(
-  path: string,
-  schema: Schema,
-  csrf: string,
-  message: string,
-): Promise<Static<Schema>> {
-  const response = await sessionRequest(path, undefined, csrf).catch(() => {
-    throw new Error(message);
-  });
-  if (response.status === 401 || response.status === 403) throw new Error(signedOut);
-  if (!response.ok) throw new Error(message);
-  const data: unknown = await response.json().catch(() => null);
-  if (!Value.Check(schema, data)) throw new Error(message);
-  return data;
-}
+// A read that fails with `failed`, or asks for a refresh when the session
+// has changed.
+const reading = (failed: string) => ({ failed, 401: signedOut, 403: signedOut });
 
 const childPath = (childId: string) => `parents/children/${encodeURIComponent(childId)}`;
 
@@ -92,7 +79,13 @@ function shelfQuery<Schema extends typeof FamilyShelfPage | typeof ChildShelfPag
   return batches<Static<Schema>>(
     [...shelfKey(csrf, view), filter.grade, filter.subject, filter.state],
     shelfPageSize,
-    (offset) => read(shelfPath(view, filter, offset), schema, csrf, '书架没打开，请再试一次。'),
+    (offset) =>
+      sessionRead(
+        shelfPath(view, filter, offset),
+        schema,
+        reading('书架没打开，请再试一次。'),
+        csrf,
+      ),
   );
 }
 
@@ -112,11 +105,11 @@ export function useChildrenAssigned(csrf: string, childIds: readonly string[]) {
       queryKey: assignedKey(csrf, childId),
       retry: false,
       queryFn: () =>
-        read(
+        sessionRead(
           shelfPath({ childId }, { grade: '', subject: '', state: 'assigned' }, 0),
           ChildShelfPage,
+          reading('暂时无法查看安排的书，请刷新页面。'),
           csrf,
-          '暂时无法查看安排的书，请刷新页面。',
         ),
     })),
   });
@@ -129,11 +122,11 @@ export function usePracticeBooks(csrf: string) {
       [...bookshelfQueryKey, csrf, 'practice'],
       practiceBookPageSize,
       (offset) =>
-        read(
+        sessionRead(
           `children/assignments?offset=${offset}`,
           PracticeBookPage,
+          reading('暂时无法打开练习，请再试一次。'),
           csrf,
-          '暂时无法打开练习，请再试一次。',
         ),
     ),
   );

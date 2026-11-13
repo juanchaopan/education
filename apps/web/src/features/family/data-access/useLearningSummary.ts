@@ -1,26 +1,22 @@
 import { useQuery } from '@tanstack/react-query';
-import { Value } from '@sinclair/typebox/value';
 import { FamilyOverview, LearningSummary } from '@education/contracts';
-import { sessionRequest } from './session-request';
+import { sessionRead } from './session-request';
 
 const key = 'parent-learning-summary';
 const unavailable = '暂时无法查看学习摘要，请重试。';
-
-async function readLearning(path: string) {
-  const response = await sessionRequest(path).catch(() => {
-    throw new Error(unavailable);
-  });
-  if (response.status === 401) throw new Error('登录状态已失效，请重新登录家长账号。');
-  if (response.status === 404) throw new Error('没有找到这位孩子，请刷新孩子列表。');
-  if (!response.ok) throw new Error(unavailable);
-  return response.json().catch(() => null) as Promise<unknown>;
-}
+const messages = {
+  failed: unavailable,
+  401: '登录状态已失效，请重新登录家长账号。',
+  404: '没有找到这位孩子，请刷新孩子列表。',
+};
 
 async function readSummary(childId: string, offset: number) {
-  const data = await readLearning(
+  const data = await sessionRead(
     `parents/children/${encodeURIComponent(childId)}/learning-summary?offset=${offset}`,
+    LearningSummary,
+    messages,
   );
-  if (!Value.Check(LearningSummary, data) || data.childId !== childId) throw new Error(unavailable);
+  if (data.childId !== childId) throw new Error(unavailable);
   return data;
 }
 
@@ -33,12 +29,6 @@ export function useLearningSummary(csrf: string, childId: string, offset: number
   });
 }
 
-async function readOverview() {
-  const data = await readLearning('parents/overview');
-  if (!Value.Check(FamilyOverview, data)) throw new Error(unavailable);
-  return data;
-}
-
 // Every child's record as the overview shows it, added up by the server in
 // one request. The overview reads it afresh whenever it opens.
 export function useFamilyOverview(csrf: string) {
@@ -47,6 +37,6 @@ export function useFamilyOverview(csrf: string) {
     retry: false,
     gcTime: 0,
     refetchOnWindowFocus: false,
-    queryFn: readOverview,
+    queryFn: () => sessionRead('parents/overview', FamilyOverview, messages),
   });
 }
