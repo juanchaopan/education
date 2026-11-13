@@ -1,8 +1,15 @@
+/* On a phone the card keeps a narrower edge, so each day's column stays wide
+   enough to tap. */
 .card {
   display: grid;
   gap: var(--space-4);
   align-content: start;
   padding: var(--space-5);
+}
+@media (max-width: 30rem) {
+  .card {
+    padding: var(--space-4);
+  }
 }
 .name {
   display: flex;
