@@ -49,9 +49,10 @@ function useAfterToggle(open: boolean) {
 
 // One book on the child's home, a raised card. Closed, the whole card opens
 // it, and its last row says how many problems it holds; open, the problems
-// follow the book one to a row and that row, now 收起, moves below them,
-// so the card has one way to close and the book itself no longer closes it.
-// A book that cannot be opened now shows its problems greyed, not as links.
+// grow out below the book one to a row and that row, now 收起, moves below
+// them, so the card has one way to close and the book itself no longer
+// closes it. A book that cannot be opened now shows its problems greyed, not
+// as links.
 export function ChildBookCard({ book, open, onToggle, now }: Props) {
   const { card, pressedBy } = useAfterToggle(open);
   const toggle = useRef<HTMLButtonElement>(null);
@@ -74,7 +75,7 @@ export function ChildBookCard({ book, open, onToggle, now }: Props) {
       onClick={press}
     >
       <BookHead book={book} now={now} />
-      <div className={styles.drawer} inert={!open} aria-hidden={!open}>
+      {open && (
         <ol id={listId} className={styles.list}>
           {book.items.map((item, place) => (
             <li key={`${item.id}/${item.version}`}>
@@ -87,13 +88,13 @@ export function ChildBookCard({ book, open, onToggle, now }: Props) {
             </li>
           ))}
         </ol>
-      </div>
+      )}
       <RaisedButton
         ref={toggle}
         shape="block"
         className={styles.toggle}
         aria-expanded={open}
-        aria-controls={listId}
+        aria-controls={open ? listId : undefined}
         aria-label={label}
       >
         {open ? '收起' : `全部 ${book.problems} 道`}

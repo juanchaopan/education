@@ -1,5 +1,5 @@
-/* A book is one raised card: the book itself, the drawer of its problems,
-   and the full-width row that opens and closes it. */
+/* A book is one raised card: the book itself, the problems it opens to, and
+   the full-width row that opens and closes it. */
 .card {
   composes: raised from '../../../shared/ui/Raised.module.css';
   overflow: hidden;
@@ -51,22 +51,21 @@
   color: var(--ink-soft);
 }
 
-/* The drawer grows from nothing to the height of its problems, pushing the
-   toggle row down ahead of it. */
-.drawer {
-  display: grid;
-  grid-template-rows: 0fr;
-  transition: grid-template-rows var(--lift) var(--ease-out);
-}
-.card[data-open] .drawer {
-  grid-template-rows: 1fr;
-}
+/* The problems grow out from below the book to their full height as they
+   appear, pushing the toggle row down ahead of them. */
 .list {
-  min-block-size: 0;
+  interpolate-size: allow-keywords;
+  block-size: auto;
   margin: 0;
   padding: 0;
   overflow: hidden;
   list-style: none;
+  transition: block-size var(--lift) var(--ease-out);
+}
+@starting-style {
+  .list {
+    block-size: 0;
+  }
 }
 .row {
   display: flex;
@@ -81,6 +80,9 @@
 }
 a.row:hover {
   background: var(--surface-2);
+}
+a.row:focus-visible {
+  outline-offset: -4px;
 }
 .row[aria-disabled] {
   color: var(--ink-soft);
@@ -125,6 +127,9 @@ a.row:hover {
   translate: none;
   box-shadow: var(--sunken);
 }
+.toggle:focus-visible {
+  outline-offset: -4px;
+}
 :global(:root[data-theme='night']) .toggle {
   color: var(--accent-ink);
 }
@@ -143,7 +148,7 @@ a.row:hover {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .drawer,
+  .list,
   .arrow {
     transition: none;
   }
