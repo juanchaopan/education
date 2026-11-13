@@ -66,7 +66,11 @@ const events = `
 
 function grouped<T>(rows: readonly T[], key: (row: T) => string) {
   const groups = new Map<string, T[]>();
-  for (const row of rows) groups.set(key(row), [...(groups.get(key(row)) ?? []), row]);
+  for (const row of rows) {
+    const group = groups.get(key(row));
+    if (group) group.push(row);
+    else groups.set(key(row), [row]);
+  }
   return groups;
 }
 
