@@ -15,12 +15,12 @@ export const learningRangeLongest = 7;
 
 // What became of a problem over some days, counted once whatever its
 // versions: finished alone at least once; else finished after help at least
-// once; else answered or helped with but not finished yet.
-export const ProblemState = Type.Union([
-  Type.Literal('independent'),
-  Type.Literal('assisted'),
-  Type.Literal('open'),
-]);
+// once; else answered or helped with but not finished yet. The union also
+// names its type, so the server's reply serializer accepts it as a tuple item.
+export const ProblemState = Type.Union(
+  [Type.Literal('independent'), Type.Literal('assisted'), Type.Literal('open')],
+  { type: 'string' },
+);
 export const ProblemCounts = Type.Object(
   { independent: count, assisted: count, open: count },
   closed,

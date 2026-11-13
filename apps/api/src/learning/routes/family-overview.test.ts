@@ -18,7 +18,17 @@ const day = (date: string): StudyDay => ({
   problems: { independent: 0, assisted: 0, open: 0 },
   ids: [],
 });
+// The last day has problems on it, so each reply carries their states.
 const block = Array.from({ length: 28 }, (_, place) => day(addDays('2026-10-16', place)));
+block[27] = {
+  ...block[27]!,
+  seconds: 600,
+  problems: { independent: 1, assisted: 0, open: 1 },
+  ids: [
+    ['garden', 'independent'],
+    ['trains', 'open'],
+  ],
+};
 const overview: FamilyOverview = {
   timeZone: 'Asia/Shanghai',
   today: '2026-11-12',
