@@ -11,6 +11,9 @@ type Props = {
   art: AccountArt;
   titleId: string;
   title: string;
+  // A page whose card says what it is without a heading, such as the sign-in
+  // with its two tabs, keeps the title for screen readers only.
+  titleHidden?: boolean;
   children: ReactNode;
   // The ways on from this page, such as switching to sign-in or going back.
   footer?: ReactNode;
@@ -22,7 +25,7 @@ type Props = {
 // sits on top and the card overlaps its lower edge. The picture is decoration;
 // the card carries everything the page says. The backdrop is the largest
 // thing on the page, so it is fetched first.
-export function AccountLayout({ art, titleId, title, children, footer }: Props) {
+export function AccountLayout({ art, titleId, title, titleHidden, children, footer }: Props) {
   return (
     <div className={styles.layout}>
       <div className={styles.scene}>
@@ -32,7 +35,7 @@ export function AccountLayout({ art, titleId, title, children, footer }: Props) 
       <div className={styles.side}>
         <Card className={styles.card} aria-labelledby={titleId}>
           <Brand />
-          <h1 id={titleId} className={styles.title}>
+          <h1 id={titleId} className={titleHidden ? styles.hiddenTitle : styles.title}>
             {title}
           </h1>
           <div className={styles.body}>{children}</div>

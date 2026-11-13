@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { ChildLoginForm } from './ChildLoginForm';
+
 const meta = {
   title: 'Family/ChildLogin',
   component: ChildLoginForm,
@@ -12,9 +13,17 @@ const meta = {
     onRemember: () => {},
     onSubmit: () => {},
   },
+  decorators: [
+    (Story) => (
+      <div style={{ maxInlineSize: '28rem' }}>
+        <Story />
+      </div>
+    ),
+  ],
 } satisfies Meta<typeof ChildLoginForm>;
 export default meta;
 type Story = StoryObj<typeof meta>;
+
 export const FirstDevice: Story = {};
 export const Remembered: Story = { args: { familyCode: 'ABCD-EFGH-JKMN', nickname: '小鹿' } };
 export const Waiting: Story = { args: { ...Remembered.args, pending: true } };
