@@ -7,6 +7,14 @@ import {
   useFamilyTimeZoneSetting,
 } from '../data-access/useFamilyTimeZoneSetting';
 
+// How the card shows each state of saving the family's choice.
+const saveStates = {
+  idle: 'idle',
+  pending: 'saving',
+  error: 'failed',
+  success: 'saved',
+} as const satisfies Record<string, SaveState>;
+
 // Every zone the browser knows, with the family's and the device's own in
 // case the browser lists them under another name.
 function knownZones(...more: (string | undefined)[]) {
@@ -27,13 +35,6 @@ export function TimeZonePanel({ csrf }: { csrf: string }) {
     () => zoneOptions(knownZones(current, device), now),
     [current, device, now],
   );
-  const save: SaveState = change.isPending
-    ? 'saving'
-    : change.isError
-      ? 'failed'
-      : change.isSuccess
-        ? 'saved'
-        : 'idle';
   return (
     <TimeZoneCard
       current={current}
@@ -43,7 +44,7 @@ export function TimeZonePanel({ csrf }: { csrf: string }) {
       now={now}
       loading={setting.isPending}
       failed={setting.isError}
-      save={save}
+      save={saveStates[change.status]}
       onChoose={(zone) => {
         change.reset();
         setChoice(zone);

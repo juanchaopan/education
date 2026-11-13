@@ -26,20 +26,22 @@ function useCopyCode(code: string | undefined) {
 
 // The family code chip with its copy, at the top of the overview.
 export function FamilyCodePanel(props: Omit<FamilyCodeChipProps, 'onCopy' | 'notice'>) {
-  return <FamilyCodeChip {...props} {...useCopyCode(props.code)} />;
+  const copying = useCopyCode(props.code);
+  return <FamilyCodeChip {...props} {...copying} />;
 }
 
 // The family code card on the 「家庭」 page, read with the family's KEY status.
 export function FamilyCodeCardPanel({ csrf }: { csrf: string }) {
   const status = useRegistrationKey(csrf);
   const code = status.isSuccess ? status.data.familyCode : undefined;
+  const copying = useCopyCode(code);
   return (
     <FamilyCodeCard
       key={code}
       code={code}
       loading={status.isPending}
       failed={status.isError}
-      {...useCopyCode(code)}
+      {...copying}
     />
   );
 }
