@@ -115,6 +115,12 @@ export const gardenLessonApi: Api = {
   'GET /api/v1/problems/garden-balance/1/draft': ok({ draft: null }),
 };
 
+// The same lesson opened by a verified parent as a preview, which asks for
+// nothing more until the parent answers.
+export const gardenPreview: Api = {
+  'GET /api/v1/problems/garden-balance/1': ok({ ...garden, mode: 'preview' }),
+};
+
 // The path of a problem the server refuses the child, and how it answers.
 export const refusedPath = '/problems/visual-fixture-refused/1';
 export const refusedApi = (reason: ProblemAccessReason): Api => ({

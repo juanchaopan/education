@@ -4,6 +4,7 @@ import { xiaomi } from './bookshelf';
 import {
   childHomeApi,
   gardenLessonApi,
+  gardenPreview,
   going,
   noBooksApi,
   refusedApi,
@@ -99,6 +100,13 @@ const dayStates: PageState[] = [
     ready: '一棵青菜有多重？',
     pressable: '开始短片',
     api: gardenLessonApi,
+  },
+  {
+    name: 'lesson-preview',
+    path: '/problems/garden-balance/1',
+    ready: '一棵青菜有多重？',
+    pressable: '开始短片',
+    api: { ...parentSpaceApi, ...gardenPreview },
   },
   { name: 'family-signed-out', path: '/family', ready: '创建家长账号' },
   {
