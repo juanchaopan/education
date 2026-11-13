@@ -1,6 +1,6 @@
 import type { ComponentProps } from 'react';
 import type { LearningScope } from '../../data-access/learning-request';
-import type { AnswerEvents } from '../../data-access/useLessonAnswer';
+import type { AnswerEvents } from '../../data-access/useAnswerHints';
 import type { Subtitle } from '../../interaction/subtitle';
 import type { LessonAnswer } from '../../lessons/lesson-definition';
 import type { MicrophoneTurn } from '../../voice/microphone-turn';

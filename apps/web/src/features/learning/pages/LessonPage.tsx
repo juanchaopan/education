@@ -2,7 +2,7 @@ import { useState, type ComponentType, type ReactNode } from 'react';
 import type { LessonRecord } from '@education/contracts';
 import { StagePlace } from '../components/lesson-stage/LessonStage';
 import type { LearningScope, LessonAccess } from '../data-access/learning-request';
-import type { AnswerEvents } from '../data-access/useLessonAnswer';
+import type { AnswerEvents } from '../data-access/useAnswerHints';
 import { useLessonDraft } from '../data-access/useLessonDraft';
 import { useLessonPreferences } from '../data-access/useLessonPreferences';
 import { useLessonRecordings } from '../data-access/useLessonRecordings';
