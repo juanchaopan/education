@@ -1,7 +1,14 @@
 import { expect, type Page } from '@playwright/test';
-import type { ProblemSummary } from '@education/contracts';
-import { longCatalog, serveApi, signedOutApi, unverifiedParentApi, type Api } from './api';
+import { serveApi, signedOutApi, unverifiedParentApi, type Api } from './api';
 import { xiaomi } from './bookshelf';
+import {
+  childHomeApi,
+  gardenLessonApi,
+  going,
+  noBooksApi,
+  unavailable,
+  unavailableBooksApi,
+} from './child-home';
 import {
   childShelfApi,
   emptyParentSpaceApi,
@@ -30,48 +37,54 @@ export type PageState = {
 
 const failed = { status: 500, json: { message: 'unavailable' } };
 
-// The garden lesson as the catalog lists it, opened by a visitor.
-const garden: ProblemSummary = {
-  id: 'garden-balance',
-  version: 1,
-  title: '一棵青菜有多重',
-  grade: '一年级',
-  subject: '数学',
-  category: '学而思',
-  sequence: 1,
-};
-
 const dayStates: PageState[] = [
-  { name: 'explore-empty', path: '/', ready: '好问题，正在准备中' },
+  { name: 'home-sign-in', path: '/', ready: '登录', pressable: '进入我的空间' },
+  { name: 'home-sign-in-parent', path: '/?tab=parent', ready: '登录', pressable: '登录' },
+  { name: 'child-home', path: '/', ready: '我的书', last: '思维训练', api: childHomeApi },
   {
-    name: 'explore-loading',
-    path: '/',
-    ready: '正在打开探索地图',
-    api: { 'GET /api/v1/problems': 'pending' },
+    name: 'child-home-open',
+    path: `/?open=${going.id}`,
+    ready: '我的书',
+    last: '排队的小鸭子',
+    api: childHomeApi,
   },
   {
-    name: 'explore-failed',
-    path: '/',
-    ready: '刚才没能打开',
-    api: { 'GET /api/v1/problems': failed },
+    name: 'child-home-unavailable',
+    path: `/?books=unavailable&open=${unavailable.id}`,
+    ready: '我的书',
+    last: '儿歌和童谣',
+    api: unavailableBooksApi,
   },
   {
-    name: 'explore-long-text',
+    name: 'child-home-loading',
     path: '/',
-    ready: '从一个好问题开始',
-    api: { 'GET /api/v1/problems': { status: 200, json: longCatalog } },
+    ready: '我的书',
+    api: { ...childHomeApi, 'GET /api/v1/children/assignments': 'pending' },
+  },
+  {
+    name: 'child-home-failed',
+    path: '/',
+    ready: '我的书没打开',
+    api: { ...childHomeApi, 'GET /api/v1/children/assignments': failed },
+  },
+  { name: 'child-home-empty', path: '/', ready: '家长还没有给你安排书', api: noBooksApi },
+  {
+    name: 'problem-guest',
+    path: '/problems/garden-balance/1',
+    ready: '登录后才能打开这道题',
   },
   {
     name: 'problem-unavailable',
     path: '/problems/visual-fixture-missing',
     ready: '这道题暂时不可用',
+    api: gardenLessonApi,
   },
   {
     name: 'lesson-title-card',
     path: '/problems/garden-balance/1',
     ready: '一棵青菜有多重？',
     pressable: '开始短片',
-    api: { 'GET /api/v1/problems/garden-balance/1': { status: 200, json: garden } },
+    api: gardenLessonApi,
   },
   { name: 'family-signed-out', path: '/family', ready: '创建家长账号' },
   {
@@ -171,7 +184,6 @@ const dayStates: PageState[] = [
     last: '语音转写',
     api: parentSpaceApi,
   },
-  { name: 'child-signed-out', path: '/child', ready: '孩子登录' },
   { name: 'child-registration', path: '/join', ready: '加入我的家庭' },
   { name: 'parent-recovery', path: '/family/recover', ready: '找回家长密码' },
   { name: 'password-reset-without-link', path: '/family/reset', ready: '请从恢复邮件打开' },
@@ -179,12 +191,13 @@ const dayStates: PageState[] = [
   { name: 'not-found', path: '/visual-fixture-missing-page', ready: '这条小路还没找到' },
 ];
 
-// The key pages are also seen in the night theme: the catalogue, the child's
-// and the parent's sign-in, the parent space's overview, family page and bookshelf, a
-// lesson's title card and the page for a path that leads nowhere.
+// The key pages are also seen in the night theme: the sign-in, the child's
+// home, the parent's sign-up, the parent space's overview, family page and
+// bookshelf, a lesson's title card and the page for a path that leads
+// nowhere.
 const nightPages = [
-  'explore-empty',
-  'child-signed-out',
+  'home-sign-in',
+  'child-home',
   'family-signed-out',
   'family-overview',
   'family-profile',
