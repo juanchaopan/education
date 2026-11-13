@@ -33,7 +33,7 @@
     "build:libs": "npm run build -w @education/contracts && npm run build -w @education/problems",
     "test:db": "npm run test:db -w @education/api",
     "test:db:local": "node scripts/with-database.mjs db",
-    "test:toolchain": "node --test scripts/toolchain.test.mjs scripts/auto-merge.test.mjs scripts/lesson-narration.test.mjs scripts/processes.test.mjs scripts/with-database.test.mjs",
+    "test:toolchain": "node --test scripts/toolchain.test.mjs scripts/auto-merge.test.mjs scripts/lesson-narration.test.mjs scripts/processes.test.mjs scripts/with-database.test.mjs scripts/visual.test.mjs",
     "lesson:narrate": "node scripts/lesson-narration.mjs",
     "lesson:review": "node scripts/lesson-review.mjs"
   },
