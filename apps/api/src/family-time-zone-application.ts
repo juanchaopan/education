@@ -1,10 +1,5 @@
 import type pg from 'pg';
-import { withChildSession } from './identity/repositories/postgres-child-session.js';
-import {
-  readChildFamilyTimeZone,
-  readFamilyTimeZone,
-} from './identity/repositories/postgres-family-time-zone.js';
-import { withParentSession } from './identity/repositories/session-transaction.js';
+import { readSessionFamilyTimeZone } from './identity/repositories/postgres-family-time-zone.js';
 import {
   createFamilyTimeZoneService,
   type SessionTimeZone,
@@ -13,26 +8,15 @@ import { tokenHash, validToken } from './identity/services/session-security.js';
 import { parentSessionTransaction } from './parent-session-transaction.js';
 import { RequestError } from './shared/request-error.js';
 
-const signedOut = () => new RequestError(401, '登录状态已失效，请重新登录。');
-
-// Parents and children share the session cookie, so a token is tried as a
-// parent's session first and then as a child's.
+// Parents and children share the session cookie, so one lookup finds the
+// family through whichever session the token holds.
 function sessionTimeZone(pool: pg.Pool): SessionTimeZone {
   return async (token) => {
-    if (!validToken(token)) throw signedOut();
-    const hash = tokenHash(token);
-    try {
-      return await withParentSession(pool, hash, (client, parent) =>
-        readFamilyTimeZone(client, parent.familyId),
-      );
-    } catch (error) {
-      if (!(error instanceof RequestError) || error.statusCode !== 401) throw error;
-    }
-    const child = await withChildSession(pool, hash, async (client, { id }) => ({
-      zone: await readChildFamilyTimeZone(client, id),
-    }));
-    if (!child) throw signedOut();
-    return child.zone;
+    const zone = validToken(token)
+      ? await readSessionFamilyTimeZone(pool, tokenHash(token))
+      : undefined;
+    if (zone === undefined) throw new RequestError(401, '登录状态已失效，请重新登录。');
+    return zone;
   };
 }
 
