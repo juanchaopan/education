@@ -7,7 +7,7 @@ import { EmptyState } from '../../../shared/ui/EmptyState';
 import { FullscreenFrame } from '../../../shared/ui/FullscreenFrame';
 import { PreviewMark } from '../components/PreviewMark';
 import { ProblemNote } from '../components/ProblemNote';
-import { useProblem, type ProblemAnswer } from '../data-access/useProblem';
+import { useBookOpened, useProblem, type ProblemAnswer } from '../data-access/useProblem';
 import { homeOf, type NoteArt, type Viewer } from '../model';
 
 // How a problem's page is opened: with the session token of the viewer it
@@ -52,6 +52,7 @@ function useOpening(viewer: Viewer) {
     void refetch();
   }, [refetch]);
   const answer: ProblemAnswer = query.data ?? { kind: 'signed-out' };
+  useBookOpened(query.data, tokenOf(viewer));
   return {
     waiting: viewer.kind === 'checking' || (tokenOf(viewer) !== undefined && query.isPending),
     failed: query.isError,

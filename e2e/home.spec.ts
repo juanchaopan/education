@@ -60,9 +60,9 @@ test('a new book stays new until the child opens one of its problems, not just t
   await page.route('**/api/v1/children/assignments?*', (route) =>
     route.fulfill({ json: bookPage([{ ...gardenBook, fresh: !opened }]) }),
   );
-  await page.route(`**/api/v1/problems/${garden.id}/${garden.version}`, (route) => {
-    opened = true;
-    return route.fulfill({ json: garden });
+  await page.route(`**/api/v1/problems/${garden.id}/${garden.version}/opened`, (route) => {
+    opened = route.request().method() === 'POST';
+    return route.fulfill({ status: 204 });
   });
   await page.goto('/');
   const newBooks = page.getByLabel('1 本新书');

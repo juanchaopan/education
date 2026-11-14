@@ -47,6 +47,7 @@ import { createLearningSummary } from './learning-summary-application.js';
 import { createFamilyOverview } from './family-overview-application.js';
 import { createBookshelf } from './bookshelf-application.js';
 import { createProblemOpening } from './problem-opening-application.js';
+import { createBookOpened } from './book-opened-application.js';
 import { createPreview } from './preview-application.js';
 import { createAiConsent } from './ai-consent-application.js';
 import { createFamilyExport } from './family-export-application.js';
@@ -85,6 +86,7 @@ export async function createApplication(env: NodeJS.ProcessEnv = process.env) {
     childAccess: createChildAccess(pool, sessions, admit, config),
     ...createFamilyManagement({ pool, ledgerPool, sessions, admit, config }),
     problemOpening: pool ? createProblemOpening(pool) : undefined,
+    bookOpened: pool ? createBookOpened(pool) : undefined,
     preview: pool ? createPreview(pool) : undefined,
     verification: createVerification(pool, mailConfig, admit),
     recovery: createRecovery(pool, mailConfig, admit),

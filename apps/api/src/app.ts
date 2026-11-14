@@ -52,6 +52,7 @@ import { registerStudyTime } from './learning/routes/study-time.js';
 import type { StudyTimeService } from './learning/services/study-time.js';
 import { registerBookshelf } from './learning/routes/bookshelf.js';
 import { registerPreview } from './learning/routes/preview.js';
+import { registerBookOpened, type MarkBookOpened } from './learning/routes/book-opened.js';
 import type { PreviewService } from './learning/services/preview.js';
 import type { BookshelfService } from './learning/services/bookshelf.js';
 import { registerTeachingFeedback } from './ai/routes/teaching-feedback.js';
@@ -77,6 +78,7 @@ type AppOptions = {
   studyTime?: StudyTimeService;
   bookshelf?: BookshelfService;
   problemOpening?: OpenProblem;
+  bookOpened?: MarkBookOpened;
   preview?: PreviewService;
   teachingFeedback?: TeachingFeedbackService;
   teacherQuestion?: TeacherQuestionService;
@@ -208,6 +210,7 @@ function registerLearning(app: FastifyInstance, options: AppOptions) {
   registerStudyTime(app, origin, options.studyTime);
   registerBookshelf(app, origin, options.bookshelf);
   registerPreview(app, origin, options.preview);
+  registerBookOpened(app, origin, options.bookOpened);
 }
 
 function registerIdentity(app: FastifyInstance, options: AppOptions) {

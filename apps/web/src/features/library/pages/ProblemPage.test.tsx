@@ -137,6 +137,27 @@ it('shows a parent the preview, marked so, and goes back to the parent space', a
   expect(await screen.findByRole('heading', { name: '别处 /family' })).toBeVisible();
 });
 
+it("tells the server once that a child opened the problem's book, and nothing of a preview", async () => {
+  const marks = (fetchProblem: ReturnType<typeof serve>) =>
+    fetchProblem.mock.calls.filter(([url]) => url.endsWith('/opened'));
+  const practised = serve();
+  open(problemPath(current.id, current.version));
+  await screen.findByRole('heading', { name: '练习新版' });
+  await vi.waitFor(() => expect(marks(practised)).toHaveLength(1));
+  expect(marks(practised)[0]).toEqual([
+    '/api/v1/problems/fixture-review/2/opened',
+    expect.objectContaining({ method: 'POST', body: '{}' }),
+  ]);
+  expect(marks(practised)[0]![1]).toMatchObject({
+    headers: { 'X-CSRF-Token': 'c'.repeat(43), 'X-Education-Request': 'session' },
+  });
+  cleanup();
+  const previewed = serve(() => Response.json({ ...current, mode: 'preview' }));
+  open(problemPath(current.id, current.version), parent);
+  await screen.findByText('只看');
+  expect(marks(previewed)).toEqual([]);
+});
+
 it('shows nobody signed in only the way to sign in and come back, asking nothing', async () => {
   const fetchProblem = serve();
   open(problemPath(current.id, current.version), { kind: 'guest' });
@@ -198,5 +219,6 @@ it('asks again when the problem is refused partway through, and shows why', asyn
   await userEvent.click(screen.getByRole('button', { name: '被拒绝了' }));
   expect(await screen.findByRole('heading', { name: '请家长安排这本书' })).toBeVisible();
   expect(screen.queryByText('练习新版')).toBeNull();
-  expect(fetchProblem).toHaveBeenCalledTimes(2);
+  const openings = fetchProblem.mock.calls.filter(([url]) => !url.endsWith('/opened'));
+  expect(openings).toHaveLength(2);
 });

@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Value } from '@sinclair/typebox/value';
 import {
@@ -46,4 +47,28 @@ export function useProblem(id: string, version: string, csrf?: string) {
       return readAnswer(response);
     },
   });
+}
+
+// A child practising a problem has opened its book, which then stops being
+// new to the child. The page says so to the server once for each problem it
+// opens; a mark that does not arrive leaves the book new until next time.
+export function useBookOpened(answer: ProblemAnswer | undefined, csrf?: string) {
+  const practised =
+    answer?.kind === 'opened' && answer.problem.mode === 'practice' ? answer.problem : undefined;
+  const id = practised?.id;
+  const version = practised?.version;
+  useEffect(() => {
+    if (id === undefined || version === undefined || !csrf) return;
+    void fetch(`/api/v1/problems/${encodeURIComponent(id)}/${version}/opened`, {
+      method: 'POST',
+      credentials: 'same-origin',
+      cache: 'no-store',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': csrf,
+        'X-Education-Request': 'session',
+      },
+      body: '{}',
+    }).catch(() => undefined);
+  }, [id, version, csrf]);
 }

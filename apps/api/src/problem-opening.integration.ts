@@ -1,7 +1,8 @@
 import { afterAll, describe, expect, it } from 'vitest';
 import { createProblemRegistry, type ProblemPlugin } from '@education/problems/server';
 import { buildApp } from './app.js';
-import { familyFixtures, sessionHeaders } from './family-fixtures.js';
+import { createBookOpened } from './book-opened-application.js';
+import { familyFixtures, fixtureOrigin, sessionHeaders } from './family-fixtures.js';
 import { createProblemOpening } from './problem-opening-application.js';
 
 const { pool, household, learner, close } = familyFixtures();
@@ -27,7 +28,11 @@ const registry = createProblemRegistry(
     },
   ],
 );
-const app = buildApp({ problemOpening: createProblemOpening(pool, registry) });
+const app = buildApp({
+  origin: fixtureOrigin,
+  problemOpening: createProblemOpening(pool, registry),
+  bookOpened: createBookOpened(pool, registry),
+});
 
 afterAll(async () => {
   await app.close();
@@ -48,17 +53,24 @@ const openedAt = async (childId: string, bookId: string) =>
 const open = (id: string, token?: string) =>
   app.inject({ url: `/api/v1/problems/${id}/1`, headers: token ? sessionHeaders(token) : {} });
 
+const markOpened = (id: string, token: string) =>
+  app.inject({
+    method: 'POST',
+    url: `/api/v1/problems/${id}/1/opened`,
+    headers: { ...sessionHeaders(token), 'content-type': 'application/json' },
+    payload: {},
+  });
+
 const refusal = (reason: string) => ({
   message: reason === 'unassigned' ? '这本书还没有安排给你。' : '这本书暂时不可用。',
   reason,
 });
 
 describe('a child opening a problem', () => {
-  it('practises a problem of a book given to them, and marks the book opened once', async () => {
+  it('practises a problem of a book given to them, writing nothing in the opening', async () => {
     const parent = await household();
     const child = await learner(parent.family, '小鹿');
     await give(child.id, 'opening-patterns');
-    expect(await openedAt(child.id, 'opening-patterns')).toBeNull();
     const opened = await open('opening-a', child.token);
     expect(opened.statusCode).toBe(200);
     expect(opened.json()).toEqual({
@@ -68,10 +80,16 @@ describe('a child opening a problem', () => {
     });
     expect(opened.headers['cache-control']).toBe('no-store');
     expect(opened.headers.vary).toBe('Cookie');
-    const first = await openedAt(child.id, 'opening-patterns');
-    expect(first).toBeInstanceOf(Date);
-    await open('opening-a', child.token);
-    expect(await openedAt(child.id, 'opening-patterns')).toEqual(first);
+    expect(
+      (
+        await app.inject({
+          method: 'HEAD',
+          url: '/api/v1/problems/opening-a/1',
+          headers: sessionHeaders(child.token),
+        })
+      ).statusCode,
+    ).toBe(200);
+    expect(await openedAt(child.id, 'opening-patterns')).toBeNull();
   });
 
   it("is refused a sibling's book and another family's, and marks nothing", async () => {
@@ -101,7 +119,9 @@ describe('a child opening a problem', () => {
     expect(missing.statusCode).toBe(404);
     expect(missing.json()).toEqual({ message: '这道题或这个版本暂时不可用。' });
   });
+});
 
+describe("a child's book, opened and taken back", () => {
   it('is refused once the book is taken back, and finds it new again when given anew', async () => {
     const parent = await household();
     const child = await learner(parent.family, '小鹿');
@@ -112,6 +132,43 @@ describe('a child opening a problem', () => {
     await give(child.id, 'opening-patterns');
     expect(await openedAt(child.id, 'opening-patterns')).toBeNull();
     expect((await open('opening-a', child.token)).statusCode).toBe(200);
+  });
+  it('marks the book opened when its page says so, the first time only', async () => {
+    const parent = await household();
+    const child = await learner(parent.family, '小鹿');
+    await give(child.id, 'opening-patterns');
+    const marked = await markOpened('opening-a', child.token);
+    expect(marked.statusCode).toBe(204);
+    const first = await openedAt(child.id, 'opening-patterns');
+    expect(first).toBeInstanceOf(Date);
+    expect((await markOpened('opening-a', child.token)).statusCode).toBe(204);
+    expect(await openedAt(child.id, 'opening-patterns')).toEqual(first);
+  });
+
+  it('marks no book not given, unavailable or of a parent, and takes no write from elsewhere', async () => {
+    const parent = await household();
+    const child = await learner(parent.family, '小鹿');
+    const sibling = await learner(parent.family, '小狗');
+    await give(sibling.id, 'opening-shapes');
+    await give(child.id, 'opening-closed');
+    const refused = await markOpened('opening-b', child.token);
+    expect(refused.statusCode).toBe(403);
+    expect(refused.json()).toEqual(refusal('unassigned'));
+    expect((await markOpened('opening-c', child.token)).json()).toEqual(refusal('unavailable'));
+    expect((await markOpened('opening-b', parent.token)).statusCode).toBe(401);
+    const foreign = await app.inject({
+      method: 'POST',
+      url: '/api/v1/problems/opening-b/1/opened',
+      headers: {
+        ...sessionHeaders(sibling.token),
+        origin: 'https://other.example',
+        'content-type': 'application/json',
+      },
+      payload: {},
+    });
+    expect(foreign.statusCode).toBe(403);
+    expect(await openedAt(sibling.id, 'opening-shapes')).toBeNull();
+    expect(await openedAt(child.id, 'opening-closed')).toBeNull();
   });
 });
 
