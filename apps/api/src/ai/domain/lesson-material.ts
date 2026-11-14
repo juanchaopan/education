@@ -151,3 +151,25 @@ export function lessonMaterial(
     scenery: backdropScenery[content.backdrop],
   };
 }
+
+// The lesson so far within `maxLength` characters of its JSON. A long lesson
+// tells its oldest earlier scenes more briefly, one at a time, until the
+// record fits: first only what each scene was for, without what was said and
+// its picture, then not at all, while the newer scenes, the conclusions
+// found and the child's actions still carry what came before. Nothing fits
+// when the scene asked about, the conclusions and the actions alone are too
+// long.
+export function withinLength(
+  material: LessonMaterial,
+  maxLength: number,
+): LessonMaterial | undefined {
+  const fits = (earlier: readonly SceneMaterial[]) =>
+    JSON.stringify({ ...material, earlier }).length <= maxLength;
+  const earlier = [...material.earlier];
+  for (let at = 0; at < earlier.length && !fits(earlier); at += 1) {
+    const { scene, step } = earlier[at]!;
+    earlier[at] = { scene, step, said: [] };
+  }
+  while (earlier.length > 0 && !fits(earlier)) earlier.shift();
+  return fits(earlier) ? { ...material, earlier } : undefined;
+}
