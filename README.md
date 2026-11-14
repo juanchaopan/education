@@ -23,10 +23,17 @@ docker compose --env-file infra/.env -f infra/docker-compose.yml up -d db
 docker compose --env-file infra/.env -f infra/docker-compose.yml exec db createdb -U education education_ledger
 # 在当前 shell 安全设置 DATABASE_URL 和 DELETION_LEDGER_URL，分别指向这两个开发数据库
 npm run db:migrate
-npm run test:db
 ```
 
-`DATABASE_URL` 必须指向隔离的开发/测试数据库；数据库测试会创建并删除测试记录。迁移可重复运行，但不要在应用每个实例启动时并发执行。设置 `DELETION_LEDGER_URL` 时，迁移同时建立删除清单库的表。数据库测试要求两者分别指向名为 `education_test` 和 `education_ledger_test` 的隔离库。
+`DATABASE_URL` 必须指向隔离的开发/测试数据库。迁移可重复运行，但不要在应用每个实例启动时并发执行。设置 `DELETION_LEDGER_URL` 时，迁移同时建立删除清单库的表。
+
+数据库测试会创建并删除测试记录，要求 `DATABASE_URL` 和 `DELETION_LEDGER_URL` 分别指向名为 `education_test` 和 `education_ledger_test` 的隔离库，所以不用上面的开发库。本机用一条命令跑：
+
+```sh
+npm run test:db:local
+```
+
+它启动一个和 CI 相同的临时 PostgreSQL 容器（`postgres:17-alpine`，用户和库名与 CI 一样，随机密码，只绑定 `127.0.0.1` 上它自己挑的空闲端口），按 CI 的顺序建删除清单库、迁移、运行 `npm run test:db`、再运行 `npm run db:complete-deletions -w @education/api`；结束时删除容器，失败或按 Ctrl+C 打断时也删除。后面的参数交给 Vitest，例如 `npm run test:db:local -- session.integration` 只跑文件名含这几个字的测试。需要 Docker 正在运行。已有这样两个隔离库时，也可以设置好这两个变量后直接运行 `npm run test:db`。
 
 ```sh
 docker compose --env-file infra/.env -f infra/docker-compose.yml up --build -d
@@ -42,7 +49,7 @@ npx playwright install chromium
 npm run test:accounts
 ```
 
-需要可用的本地 Docker daemon、Compose v2 和 OpenSSL。命令构建现有可移植镜像，生成临时密码、共享限流密钥和一天有效的 localhost 测试证书，用独立 Compose 项目启动 PostgreSQL、受控迁移、两个应用实例和 HTTPS 入口。数据库不映射主机端口；入口仅绑定回环地址 8443/8444，可用 `ACCOUNTS_PORT_A` / `ACCOUNTS_PORT_B` 选择空闲端口。两个入口用于精确选择实例，浏览器写请求始终使用第一个入口的同源地址。
+需要可用的本地 Docker daemon、Compose v2 和 OpenSSL；脚本经 `unix:///var/run/docker.sock` 连 Docker、从 `/etc/ssl/certs` 读 CA，所以只能在 Linux 上跑，Windows 上由 CI 运行。命令构建现有可移植镜像，生成临时密码、共享限流密钥和一天有效的 localhost 测试证书，用独立 Compose 项目启动 PostgreSQL、受控迁移、两个应用实例和 HTTPS 入口。数据库不映射主机端口；入口仅绑定回环地址 8443/8444，可用 `ACCOUNTS_PORT_A` / `ACCOUNTS_PORT_B` 选择空闲端口。两个入口用于精确选择实例，浏览器写请求始终使用第一个入口的同源地址。
 
 **此命令会故意破坏测试库的初始迁移、停止测试数据库并删除整个测试卷。** 它不使用外部 `DATABASE_URL`，不连接开发或生产家庭库；不要把这份测试编排作为生产部署。测试结束后清理本次容器、网络、数据卷与临时证书，构建缓存保留。CI 将它作为 `ci` 的必要检查。实际记录与局限见 [#19 验收](docs/evidence/19/README.md)。
 
@@ -70,7 +77,7 @@ CA 公钥的临时副本与本地 TLS 文件存放在 `infra/.env.accounts-*`：
 
 私有 API 全部 `no-store`；登录须精确同源 Origin + JSON + 自定义头；退出额外校验绑定会话的 CSRF token。注册与登录共用数据库预算及哈希并发准入；原有 `registration_attempts` 表保留命名。新全局认证桶替代注册专用桶，升级时总量计数重新起算，邮箱与来源的原有计数继续有效。具体规则与尚待部署验证事项见 [#18 验收记录](docs/evidence/18/README.md)。
 
-`npm run test:e2e` 在提供已迁移的隔离 `DATABASE_URL` 时运行真实注册和登录测试，并删除自己的账号夹具；未提供时明确跳过数据库相关浏览器用例。不要对真实家庭数据库运行测试。
+`npm run test:e2e` 在提供已迁移的隔离 `DATABASE_URL` 时运行真实注册和登录测试，并删除自己的账号夹具；未提供时明确跳过数据库相关浏览器用例。`npm run test:e2e:local` 用和 `test:db:local` 一样的临时数据库容器，先迁移，再带着 `DATABASE_URL` 和 `DELETION_LEDGER_URL` 跑全部浏览器测试，一个都不跳过；后面的参数交给 Playwright。不要对真实家庭数据库运行测试。
 
 云环境构建通过 BuildKit 临时挂载平台 CA，保持 TLS 校验；证书不复制进镜像。构建后移除开发依赖；生产迁移可在 API 目录执行 `node dist/database/migrate.js`，应作为受控发布步骤单独运行。生产前仍需完成发布检查。
 
@@ -88,14 +95,15 @@ npm run db:complete-deletions -w @education/api
 
 ```sh
 npm run check
-npm run test:e2e
+npm run test:db:local
+npm run test:e2e:local
 npm run test:visual
 npm run storybook
 ```
 
-端到端测试前需 `npm run build`，并安装匹配的 Playwright Chromium 和 WebKit：`npx playwright install chromium webkit`。本机已有兼容 Chromium 时可临时设置 `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH`；WebKit 仍需安装。`e2e/empty-framework.spec.ts` 用两个家庭走通家庭框架，需要 `DATABASE_URL` 和 `DELETION_LEDGER_URL`；它和家长账号测试各有自己的 API 服务，登录预算不和其他测试相加。`e2e/garden-balance.spec.ts` 让登录的孩子从题库走完菜园天平并交答案，需要 `DATABASE_URL`。`e2e/garden-narration.spec.ts` 逐句检查菜园短片的每句旁白都完整播放、没有被跳过，也检查录音下载失败和一句放不出来时短片会停下等孩子重试；它也在 WebKit 里运行，有 `DATABASE_URL` 时由登录的孩子听完整部短片，没有时由游客听到作答那一幕。
+端到端测试前需 `npm run build`，并安装匹配的 Playwright Chromium 和 WebKit：`npx playwright install chromium webkit`。本机已有兼容 Chromium 时可临时设置 `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH`；WebKit 仍需安装。测试由 Playwright 启动 6 个 API 服务，端口从 `E2E_PORT`（默认 4173）起连续 6 个；几个工作区同时跑时，各给一个空闲的起始端口。`e2e/empty-framework.spec.ts` 用两个家庭走通家庭框架，需要 `DATABASE_URL` 和 `DELETION_LEDGER_URL`；它和家长账号测试各有自己的 API 服务，登录预算不和其他测试相加。`e2e/garden-balance.spec.ts` 让登录的孩子从题库走完菜园天平并交答案，需要 `DATABASE_URL`。`e2e/garden-narration.spec.ts` 逐句检查菜园短片的每句旁白都完整播放、没有被跳过，也检查录音下载失败和一句放不出来时短片会停下等孩子重试；它也在 WebKit 里运行，有 `DATABASE_URL` 时由登录的孩子听完整部短片，没有时由游客听到作答那一幕。
 
-`npm run test:visual` 需要 Docker 正在运行：它在固定版本的官方 Playwright 镜像里构建应用和 Storybook，把每个 story 和关键页面在桌面、平板、手机三个视口下与经维护者评审的基准截图对比，并检查 WCAG 2.2 AA、键盘、减少动画、触摸目标和缩放。外观有意改变时用 `npm run test:visual -- --update` 重新生成基准，随代码提交并由维护者评审。做法见 [视觉基准与可访问性检查](docs/design/visual-baselines.md)。
+`npm run test:visual` 需要 Docker 正在运行：它在固定版本的官方 Playwright 镜像里构建应用和 Storybook，把每个 story 和关键页面在桌面、平板、手机三个视口下与经维护者评审的基准截图对比，并检查 WCAG 2.2 AA、键盘、减少动画、触摸目标和缩放。容器里的依赖装在 Docker 缓存卷里，`package-lock.json` 不变时下次直接复用。后面可加 `--grep <名字>` 或测试文件只跑部分测试。外观有意改变时用 `npm run test:visual -- --update` 重新生成基准（加筛选时只更新跑到的那些），随代码提交并由维护者评审。做法见 [视觉基准与可访问性检查](docs/design/visual-baselines.md)。
 
 ## 题目旁白和审查录屏
 
@@ -107,7 +115,7 @@ npm run lesson:review -- garden-balance
 
 `npm run lesson:narrate -- <题目文件夹>` 按 `apps/web/src/features/learning/lessons/<题目文件夹>/script.ts` 的台词录旁白：只录缺少的和台词改过的句子，写进这道题的 `assets/`，并在 `assets/narration.json` 记下每个文件录的是哪句话、用的什么声音；单元测试按这份记录检查每句录音都按现在的台词、用现在配置的声音录过，改了台词或声音没重录时 `npm test` 不通过。声音写在 `scripts/lesson-voice.json`：`engine` 选合成引擎，引擎名下是它的设置，换声音只改这里。一道题录过的声音和配置的不同时，命令停下并说明，加 `--new-voice` 才把这道题的每一句都换成新声音重录。现在的声音是 edge-tts 的 `zh-CN-XiaoxiaoNeural`（语速 −14%、音高 +5Hz）：需要 [uv](https://docs.astral.sh/uv/) 和网络，第一次运行时 uv 安装固定版本的 `edge-tts`（LGPL-3.0，只作为本地工具运行）和它用的 Python；不需要账号或密钥，不产生费用，孩子使用时不调用它。edge-tts 用的是微软 Edge 未公开的在线朗读接口，生成要发布的音频的条款待维护者确认，见 [#42](docs/evidence/42/README.md#声音)；新录音在题目里试听过才能给孩子用。
 
-`npm run lesson:review -- <题目标识>[/<版本>]` 按登记表里的题目录一遍完整路径：先 `npm run build`，再由 `review/walks.ts` 里这道题的走法在 Chromium 里从片名卡走到最后一幕，每句旁白放完才做下一步；孩子的登录、草稿和作答由脚本代替服务器回答，不需要数据库。需要 FFmpeg 和 Playwright 的 Chromium。输出在 `review-recordings/<题目标识>-<版本>/`（Git 不跟踪，别的测试也不会清掉它）：带页面声音的 `lesson-review.mp4`，以及记下每个媒体事件和它所放录音的 `playback-events.json`。录屏的每一帧都是完整的页面视口，和审查用的桌面 Chromium 视口一样大，孩子开始短片、页面进入全屏后也不裁切；有一帧不是完整视口时命令失败，不生成视频。录屏只说明能生成证据，仍要人看、人听。
+`npm run lesson:review -- <题目标识>[/<版本>]` 按登记表里的题目录一遍完整路径：先 `npm run build`，再由 `review/walks.ts` 里这道题的走法在 Chromium 里从片名卡走到最后一幕，每句旁白放完才做下一步；孩子的登录、草稿和作答由脚本代替服务器回答，不需要数据库。网站由一个 API 服务在 `REVIEW_PORT`（默认 4195）上提供。需要 FFmpeg 和 Playwright 的 Chromium。输出在 `review-recordings/<题目标识>-<版本>/`（Git 不跟踪，别的测试也不会清掉它）：带页面声音的 `lesson-review.mp4`，以及记下每个媒体事件和它所放录音的 `playback-events.json`。录屏的每一帧都是完整的页面视口，和审查用的桌面 Chromium 视口一样大，孩子开始短片、页面进入全屏后也不裁切；有一帧不是完整视口时命令失败，不生成视频。录屏只说明能生成证据，仍要人看、人听。
 
 ## 配置和安全
 

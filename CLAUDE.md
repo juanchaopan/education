@@ -16,28 +16,49 @@
 
 所有命令在仓库根目录运行，Node.js 24、npm 11。首次 npm ci 后先 npm run build:libs。
 
-| 范围     | 命令                                                                                            |
-| -------- | ----------------------------------------------------------------------------------------------- |
-| 通用     | npm run format:check；npm run lint；npm run arch；npm run typecheck                             |
-| 单元     | npm test                                                                                        |
-| 构建     | npm run build；npm run build-storybook                                                          |
-| 浏览器   | npm run test:e2e（先构建并安装匹配的 Chromium 和 WebKit）                                       |
-| 数据库   | npm run db:migrate；npm run test:db（必须使用隔离的 DATABASE_URL 和另一个 DELETION_LEDGER_URL） |
-| 重复代码 | npx --no-install jscpd .                                                                        |
+| 范围     | 命令                                                                                                                                                                      |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 通用     | npm run format:check；npm run lint；npm run arch；npm run typecheck                                                                                                       |
+| 单元     | npm test                                                                                                                                                                  |
+| 构建     | npm run build；npm run build-storybook                                                                                                                                    |
+| 浏览器   | npm run test:e2e（先构建并安装匹配的 Chromium 和 WebKit）；本机用 npm run test:e2e:local，它带临时数据库，需要数据库的用例一个不跳过                                      |
+| 数据库   | npm run db:migrate；npm run test:db（必须使用隔离的 DATABASE_URL 和另一个 DELETION_LEDGER_URL）；本机用 npm run test:db:local，它在临时容器里按 CI 的顺序建库、迁移、测试 |
+| 重复代码 | npx --no-install jscpd .                                                                                                                                                  |
 
-完整常规检查 npm run check；数据库和浏览器检查单独执行，真实报告通过/失败/未运行。
+完整常规检查 npm run check；数据库和浏览器检查单独执行，真实报告通过/失败/未运行。test:db:local 和 test:e2e:local 后面的参数原样交给测试命令（Vitest 或 Playwright），例如一个测试文件或 --repeat-each。
 
-## 重型检查
+## 测试
 
-重型检查要占大量内存或用到 Docker，多个 issue 并行开发时同一时间只跑一个：npm run test:e2e、npm run test:visual、npm run test:accounts。
+种类按 scaffold skill 的 `shared/testing.md`：静态检查、单元、组件、集成、端到端、快照、交付和非功能。静态检查、单元和组件是轻的，由上面的自检命令运行：单元测试在 api、libs、web 的纯逻辑和 scripts 里，组件测试是 web 里用 jsdom 和 Testing Library 的 `*.test.tsx`。本项目用到的重型种类：
 
-检查跑完，不管通过还是失败，它启动的进程和容器都要结束：
+| 种类                                  | 命令                                                                                   | 环境和占用                                                                                                                                                                                                                                                        | 每次提交前                                               | 开 PR 前                                                     | CI job                                                 |
+| ------------------------------------- | -------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------ |
+| 集成                                  | npm run test:db:local                                                                  | 临时 postgres:17-alpine 容器 education-db-\*（和 CI 同一镜像、用户和库名，随机密码），在 127.0.0.1 上脚本自己挑的空闲端口；没有输出目录；Docker 虚拟机（这台机器上 3–6 GB）加 Vitest 约 1 GB                                                                      | 相关的：`npm run test:db:local -- --changed origin/main` | 全部                                                         | database                                               |
+| 端到端                                | npm run test:e2e:local                                                                 | 6 个 API 服务占 `E2E_PORT` 起连续 6 个端口（默认 4173–4178），加一个同上的临时数据库容器；test-results/（开始时整个清空）；5–6 GB（实测，默认 worker 数下 6 个 API 服务加浏览器）加 Docker 虚拟机                                                                 | 受影响的流程，见下面的对应表                             | 全部：Chromium 桌面、Chromium 模拟 iPhone 13、WebKit（旁白） | app                                                    |
+| 端到端（打包镜像、双实例）和交付      | npm run test:accounts                                                                  | Compose 项目 education-accounts-\*：构建应用镜像，跑 PostgreSQL、失败和受控的迁移、两个应用实例和 HTTPS 入口；`ACCOUNTS_PORT_A` / `ACCOUNTS_PORT_B`（默认 8443/8444）；test-results/accounts/、infra/.env.accounts-\*；最重，Docker 虚拟机 6 GB 以上另加 Chromium | 改了身份、会话、迁移、镜像或部署配置时                   | 全部                                                         | accounts；合并后 staging.yml 发布到 staging 并跑 smoke |
+| 快照                                  | npm run test:visual                                                                    | 固定版本的 Playwright 镜像容器 education-visual-\*，依赖装在缓存卷 education-visual-deps-\*；不占主机端口（4190/6190 只在容器里）；test-results/visual/，加 --update 时还有 visual/\*-snapshots/；Docker 虚拟机                                                   | 受影响的截图：`--grep <名字>` 或测试文件                 | 全部                                                         | visual                                                 |
+| 非功能（WCAG 2.2 AA、触摸目标、缩放） | npm run test:visual（accessibility.spec.ts 和每张截图后的 axe）                        | 同快照                                                                                                                                                                                                                                                            | 同快照                                                   | 全部                                                         | visual                                                 |
+| 非功能（依赖漏洞）                    | npm audit --omit=dev --audit-level=high；完整的 npm audit 由每周的 dependency-audit 跑 | 不用环境，只读 package-lock.json；联网查公告；不占端口和目录                                                                                                                                                                                                      | 改了依赖时                                               | 全部                                                         | security；每周 dependency-audit                        |
 
-- test:visual 的容器和 test:accounts 的 Compose 项目由脚本自己清理。test:accounts 中途被打断时，用 docker compose ls 找到 education-accounts- 开头的项目，再对它执行 down -v。
-- 自己手动启动的服务（例如按 playwright.config.ts 的端口和命令启动的 API），跑完全部关掉。
-- 收尾后，docker ps 里看不到这些检查的容器。
+审查录屏 npm run lesson:review 不是测试，产出给人看的证据；它占 `REVIEW_PORT`（默认 4195）和 review-recordings/，1 GB 左右。
 
-检查要用 Docker 而它没在运行时，先用 docker desktop start 启动；连续跑几个 Docker 检查时只启动一次。最后一个跑完后，由这次启动它的一方用 docker desktop stop 退出；原本就开着的不动。
+- 不用的种类：性能（普通操作 2 秒、AI 5 秒开始响应）不测：没有目标网络的设备，上线后观察。负载（三个孩子同时学习）不建：目标还没定。从上一个发布升级的交付测试这次不做：还没有正式发布，放在发布前。
+- 发布前另做：真机 iPad 和 iPhone 的 Safari，从上一个发布升级。
+- 一个改动对应的测试：单元、组件和集成用 Vitest 按模块依赖图选，`npm run test --workspaces --if-present -- --changed origin/main` 和 `npm run test:db:local -- --changed origin/main`；改了 package.json 或测试配置时 Vitest 会跑全部。端到端和快照按下表的目录选；Playwright 的 `--only-changed` 只看测试文件自己的 import，不看应用代码，只作补充。拿不准就多跑。
+
+  | 改动的目录                                                                                  | 端到端（e2e/）                                                                                                                                  | 快照（visual/）                          |
+  | ------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+  | apps/web/src/features/family、apps/api/src/identity，api 里家庭、授权、学习摘要和时长的文件 | registration、session、recovery、verification、registration-key、child-\*、family-\*、ai-consent、learning-summary、study-time、empty-framework | pages.spec.ts 的家长空间、孩子登录和注册 |
+  | apps/web/src/features/learning、apps/api/src/learning、libs/problems，草稿和作答的文件      | garden-\*、lesson-\*、hold-to-talk、conclusion-board                                                                                            | pages.spec.ts 的题目页，stories.spec.ts  |
+  | apps/web/src/features/library、apps/api/src/catalog，书架的文件                             | bookshelf、catalog                                                                                                                              | pages.spec.ts 的题库和练习安排           |
+  | apps/web/src/shared、apps/web/src/app、libs/contracts，api 的 app.ts 和 application.ts      | 全部                                                                                                                                            | 全部                                     |
+
+- 时间目标：每次提交前 10 分钟，开 PR 前 60 分钟。超出时按改动选、分片、缓存，或把检查挪到后面的阶段；不能删掉。
+- 结果随外部变化的检查（依赖漏洞扫描这类，新公告发布后不改代码结果也会变），PR 上只拦改动能负责的：相对基线新出现的，或线上依赖里的 high/critical；其余交给定时运行，由它开或更新 issue。PR 因为不是本次改动造成的问题失败时，报告里写明，另开 PR 或记 issue，不混进本次改动。
+- CI 失败时先在本机用同一命令复现，再推修复；不稳定的测试开 issue 修，不靠反复重跑；基准截图只为有意的外观改动更新。
+- 互相不占用同一样东西的检查，机器扛得住时可以同时跑。能配置的端口每次换一个空闲的，就不算共用；test:e2e 开始时清空整个 test-results/，所以同一个工作区里它和 test:visual、test:accounts 共用输出目录，不同工作区各有自己的 test-results/。用 Docker 的检查共用一个 Docker 虚拟机，内存要按它算。
+- 重型检查跑完，不管通过还是失败，它启动的东西都不再运行：test:visual 的容器、test:db:local 和 test:e2e:local 的数据库容器、test:accounts 的 Compose 项目由脚本自己清理，按 Ctrl+C 打断时也一样；test:visual 的依赖缓存卷留着给下次用，package-lock.json 变了以后旧卷由下一次运行删掉。脚本被强行结束、来不及清理时，用 docker ps -a --filter name=education-db- 和 --filter name=education-visual- 找到留下的容器执行 docker rm -f，test:accounts 用 docker compose ls 找到 education-accounts- 开头的项目执行 down -v；自己手动启动的服务（例如按 playwright.config.ts 的端口和命令启动的 API）跑完全部关掉。收尾后 docker ps 里看不到这些检查的容器。Docker Desktop：检查要用而它没在运行时用 docker desktop start 启动，连续跑几个 Docker 检查时只启动一次；最后一个跑完后，由这次启动它的一方用 docker desktop stop 退出，原本就开着的不动。
+- 这台机器跑不了的检查交给 CI，PR 里写明"本机未运行"和原因：在 Windows 上，test:toolchain 里调用 oxlint 的用例找不到 node_modules/.bin/oxlint；test:accounts 的脚本经 unix:///var/run/docker.sock 连 Docker、从 /etc/ssl/certs 读 CA，只能在 Linux 上跑。
 
 ## 环境
 
@@ -69,6 +90,7 @@
 
 - GitHub Flow：main 为集成分支；feature/、feat/、fix/、docs/ 等分支通过 PR 合并。
 - Conventional Commits，每个提交只做一件事。采用 squash merge；生产显式手动发布。
+- 一个 issue 一个 PR；只有审查的人一次读不完 diff 时才拆。
 - 所有改动走 PR；CI 与审查通过前不合并，中高风险由维护者确认。不能访问 GitHub API 时报告，不能声称 PR 或保护规则已创建。
 - 未经用户批准，不配置账号级别权限、付费服务或自动合并。
 
