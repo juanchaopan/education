@@ -90,9 +90,6 @@ it('gives a library book to a child from the list of children, then moves it to 
       given = true;
       return new Response(null, { status: 204 });
     },
-    'GET problems': {
-      problems: [{ id: 'fixture-pattern', version: 1, title: '找规律', sequence: 1, ...fields }],
-    },
   });
   const user = userEvent.setup();
   renderFamilyPage('/family/practice');
@@ -122,6 +119,39 @@ it('gives a library book to a child from the list of children, then moves it to 
   expect(await screen.findByRole('heading', { name: '找规律' })).toBeVisible();
   expect(screen.getByRole('radio', { name: '我的家庭' })).toBeChecked();
   expect(screen.getByRole('article')).toHaveTextContent('小米');
+});
+
+it('says the books are on their way when the catalogue has none', async () => {
+  stubFetch({
+    'GET session': session,
+    'GET parents/children': twoChildren,
+    'GET parents/books': page([]),
+  });
+  renderFamilyPage('/family/practice');
+  expect(await screen.findByText('书在路上')).toBeVisible();
+  expect(screen.queryByText('书库里的书都安排出去了')).toBeNull();
+});
+
+it('waits for the family shelf before saying why the library is empty, and says when it did not open', async () => {
+  let familyShelf: () => unknown = () => new Promise(() => {});
+  stubFetch({
+    'GET session': session,
+    'GET parents/children': twoChildren,
+    'GET parents/books': (url: URL) =>
+      url.searchParams.get('shelf') === 'family' ? familyShelf() : page([]),
+  });
+  renderFamilyPage('/family/practice');
+  expect(await screen.findByText('正在打开书架…')).toBeInTheDocument();
+  expect(screen.queryByText('书库里的书都安排出去了')).toBeNull();
+  expect(screen.queryByText('书在路上')).toBeNull();
+  cleanup();
+  familyShelf = () => Response.json({}, { status: 503 });
+  renderFamilyPage('/family/practice');
+  expect(await screen.findByText('书架没打开')).toBeVisible();
+  expect(screen.queryByText('书库里的书都安排出去了')).toBeNull();
+  familyShelf = () => page([familyBook('book-patterns', '找规律', { [mi]: 0 })]);
+  await userEvent.click(screen.getByRole('button', { name: '再试一次' }));
+  expect(await screen.findByText('书库里的书都安排出去了')).toBeVisible();
 });
 
 it("opens a child's given books from the address and takes one back, saying when it fails", async () => {

@@ -1,0 +1,60 @@
+/* Everything a child presses outside the lessons stands up the same way: a
+   paper face on a darker lower edge, casting a soft shadow. Pressed, it sinks
+   onto its edge; chosen, its face turns to the main colour; when it cannot be
+   pressed it lies flat, without edge or shadow. Other parts compose `.raised`
+   for a surface that stands up the same way. */
+.raised {
+  border: 1px solid var(--line);
+  color: var(--ink);
+  background: var(--surface-raised);
+  box-shadow:
+    0 var(--raised-depth) 0 var(--raised-edge),
+    var(--raised-cast);
+}
+
+.button {
+  composes: raised;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-block-size: var(--touch-target);
+  padding: var(--space-2) var(--space-5);
+  border-radius: var(--radius-pill);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    translate var(--press) var(--ease-out),
+    box-shadow var(--press) var(--ease-out);
+}
+.button:active:not(:disabled) {
+  translate: 0 calc(var(--raised-depth) - 1px);
+  box-shadow: 0 1px 0 var(--raised-edge);
+}
+.button:disabled {
+  color: var(--ink-soft);
+  background: var(--surface-2);
+  box-shadow: none;
+  cursor: default;
+}
+
+.chosen {
+  border-color: var(--primary-edge);
+  color: var(--primary-ink);
+  background: linear-gradient(var(--primary-hi), var(--primary));
+  box-shadow:
+    0 var(--raised-depth) 0 var(--primary-edge),
+    var(--primary-shadow);
+}
+.chosen:active:not(:disabled) {
+  box-shadow: 0 1px 0 var(--primary-edge);
+}
+
+/* A row inside a card fills its width and keeps its corners square, so the
+   card's own corners shape it. */
+.block {
+  inline-size: 100%;
+  min-block-size: 3.5rem;
+  border-radius: 0;
+}

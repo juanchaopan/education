@@ -37,12 +37,12 @@ test('parent confirms password, resets a child PIN and the old browser loses acc
     await page.getByRole('button', { name: '登录', exact: true }).click();
     await expect(page.getByRole('button', { name: '为小鹿重置 PIN' })).toBeEnabled();
     const childPage = await childContext.newPage();
-    await childPage.goto(new URL('/child', page.url()).href);
+    await childPage.goto(new URL('/', page.url()).href);
     await childPage.getByLabel('我的家庭码', { exact: true }).fill(code);
     await childPage.getByLabel('我的昵称', { exact: true }).fill('小鹿');
     await childPage.getByLabel('我的六位 PIN').fill(pin);
     await childPage.getByRole('button', { name: '进入我的空间' }).click();
-    await expect(childPage.getByRole('heading', { name: '小鹿，欢迎回来！' })).toBeVisible();
+    await expect(childPage.getByRole('heading', { name: '我的书', level: 1 })).toBeVisible();
     await pool.query(
       "UPDATE parent_sessions SET password_verified_at=now()-interval '6 minutes' WHERE parent_id=(SELECT id FROM parents WHERE email=$1)",
       [email],
@@ -69,13 +69,13 @@ test('parent confirms password, resets a child PIN and the old browser loses acc
       true,
     );
     await childPage.reload();
-    await expect(childPage.getByRole('heading', { name: '孩子登录', exact: true })).toBeVisible();
+    await expect(childPage.getByRole('tab', { name: '孩子登录' })).toBeVisible();
     await childPage.getByLabel('我的六位 PIN').fill(pin);
     await childPage.getByRole('button', { name: '进入我的空间' }).click();
     await expect(childPage.getByRole('alert')).toContainText('PIN 不正确');
     await childPage.getByLabel('我的六位 PIN').fill(nextPin);
     await childPage.getByRole('button', { name: '进入我的空间' }).click();
-    await expect(childPage.getByRole('heading', { name: '小鹿，欢迎回来！' })).toBeVisible();
+    await expect(childPage.getByRole('heading', { name: '我的书', level: 1 })).toBeVisible();
     await page.reload();
     await expect(page.getByRole('button', { name: '为小鹿重置 PIN' })).toBeEnabled();
   } finally {

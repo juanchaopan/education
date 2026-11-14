@@ -13,6 +13,11 @@ const headers = {
 };
 const childId = '11111111-1111-4111-8111-111111111111';
 const emptyPage = { total: 0, grades: [], subjects: [], books: [], hasMore: false };
+const noBooks = {
+  counts: { all: 0, learning: 0, finished: 0, unavailable: 0, fresh: 0 },
+  books: [],
+  hasMore: false,
+};
 const assignmentUrl = (bookId = 'g1-math-xueersi') =>
   `/api/v1/parents/children/${childId}/assignments/${bookId}`;
 
@@ -20,7 +25,7 @@ function setup() {
   const service = {
     familyShelf: vi.fn(async () => emptyPage),
     childShelf: vi.fn(async () => emptyPage),
-    practice: vi.fn(async () => ({ books: [], hasMore: false })),
+    childBooks: vi.fn(async () => noBooks),
     assign: vi.fn(async () => undefined),
     cancel: vi.fn(async () => undefined),
   } satisfies BookshelfService;
@@ -72,12 +77,42 @@ describe('shelves', () => {
     expect(service.childShelf).not.toHaveBeenCalled();
     await app.close();
   });
+});
 
-  it("reads the child's own practice by page", async () => {
+describe("the child's books", () => {
+  it('reads one filter from an offset, uncached', async () => {
     const { app, service } = setup();
-    const reply = await app.inject({ url: '/api/v1/children/assignments?offset=10', headers });
+    const reply = await app.inject({
+      url: '/api/v1/children/assignments?books=finished&offset=6',
+      headers,
+    });
     expect(reply.statusCode).toBe(200);
-    expect(service.practice).toHaveBeenCalledExactlyOnceWith(credentials, '10');
+    expect(reply.json()).toEqual(noBooks);
+    expect(reply.headers['cache-control']).toBe('no-store');
+    expect(service.childBooks).toHaveBeenCalledExactlyOnceWith(credentials, {
+      books: 'finished',
+      offset: '6',
+    });
+    await app.close();
+  });
+
+  it('reads every book without a filter', async () => {
+    const { app, service } = setup();
+    expect((await app.inject({ url: '/api/v1/children/assignments', headers })).statusCode).toBe(
+      200,
+    );
+    expect(service.childBooks).toHaveBeenCalledExactlyOnceWith(credentials, {});
+    await app.close();
+  });
+
+  it.each([
+    ['an unknown filter', '/api/v1/children/assignments?books=new'],
+    ['a negative offset', '/api/v1/children/assignments?offset=-6'],
+    ['an unknown parameter', '/api/v1/children/assignments?grade=%E4%B8%80'],
+  ])('rejects %s without calling the service', async (_name, url) => {
+    const { app, service } = setup();
+    expect((await app.inject({ url, headers })).statusCode).toBe(400);
+    expect(service.childBooks).not.toHaveBeenCalled();
     await app.close();
   });
 });

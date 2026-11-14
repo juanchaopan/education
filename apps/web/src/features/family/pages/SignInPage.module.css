@@ -1,0 +1,9 @@
+/* A parent already signed in: one line saying so, and the way on. */
+.signedIn {
+  display: grid;
+  gap: var(--space-4);
+}
+.signedIn > p {
+  margin: 0;
+  font-weight: 700;
+}

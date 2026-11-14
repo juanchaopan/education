@@ -1,11 +1,11 @@
 import { useRef, useState } from 'react';
 import type { ChildAccess, ChildShelfBook, FamilyShelfBook } from '@education/contracts';
-import { useCatalog } from '../../../shared/lib/useCatalog';
 import { AssignToggle } from '../../../shared/ui/AssignToggle';
 import { BookCard } from '../../../shared/ui/BookCard';
 import { ProgressTag } from '../../../shared/ui/ProgressTag';
 import { ChildChooser } from '../components/ChildChooser';
 import {
+  useAnyBookGiven,
   useBookToggles,
   useChildShelf,
   useFamilyShelf,
@@ -35,11 +35,26 @@ function failureNote(failure: BookFailure | null, bookId: string, childId?: stri
   );
 }
 
-// An empty library says whether the catalogue has no books yet or every book
-// has been given.
-function useLibraryEmpty(onFamily: () => void): ShelfEmpty {
-  const catalog = useCatalog();
-  if (catalog.data && !catalog.data.problems.length)
+// An empty library says whether the catalogue has no books yet, which is so
+// when no book was given to the family either, or every book has been given;
+// it says nothing until the family shelf has answered, and says so when that
+// shelf did not open.
+function useLibraryEmpty(
+  csrf: string,
+  empty: boolean,
+  onFamily: () => void,
+): ShelfEmpty | undefined {
+  const given = useAnyBookGiven(csrf, empty);
+  if (given.isError)
+    return {
+      icon: 'wifiOff',
+      title: '书架没打开',
+      description: given.error.message,
+      actionLabel: '再试一次',
+      onAction: () => void given.refetch(),
+    };
+  if (given.data === undefined) return undefined;
+  if (given.data === false)
     return { title: '书在路上', description: '题库里还没有书，新书会陆续放上来。' };
   return {
     title: '书库里的书都安排出去了',
@@ -71,8 +86,12 @@ export function FamilyBooks({
   const refresh = useRefreshShelves(csrf);
   const [open, setOpen] = useState<string | null>(null);
   const pressed = useRef<Promise<void>[]>([]);
-  const libraryEmpty = useLibraryEmpty(() => onShelf('family'));
-  const empty: ShelfEmpty =
+  const libraryEmpty = useLibraryEmpty(
+    csrf,
+    shelf === 'library' && query.data?.pages[0]?.total === 0,
+    () => onShelf('family'),
+  );
+  const empty: ShelfEmpty | undefined =
     shelf === 'library'
       ? libraryEmpty
       : {

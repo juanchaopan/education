@@ -1,0 +1,17 @@
+.books {
+  display: grid;
+  gap: var(--space-5);
+  padding-block-start: var(--space-4);
+}
+
+/* A filter without books: one line and the way back to all of them. */
+.none {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-3);
+  padding-block: var(--space-6) var(--space-2);
+  color: var(--ink-soft);
+}
+.none > p {
+  margin: 0;
+}

@@ -1,5 +1,5 @@
 import Fastify from 'fastify';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { createProblemRegistry, type Book, type ProblemEntry } from '@education/problems/server';
 import type { ProblemSummary } from '@education/contracts';
 import { registerCatalog } from './catalog.js';
@@ -82,6 +82,28 @@ describe('versioned catalog', () => {
         expect(missing.statusCode).toBe(404);
         expect(missing.json()).toEqual({ message: '这道题或这个版本暂时不可用。' });
       }
+    } finally {
+      await app.close();
+    }
+  });
+
+  it('tells the opening of a problem that exists, with the session, and of no other, uncached', async () => {
+    const registry = createProblemRegistry([plugin('shape-a')], shelf);
+    const open = vi.fn(async () => {});
+    const app = Fastify();
+    registerCatalog(app, createCatalog(registry), open);
+    try {
+      const headers = { cookie: '__Host-education_session=synthetic', 'x-csrf-token': 'csrf' };
+      const opened = await app.inject({ url: '/api/v1/problems/shape-a/1', headers });
+      expect(opened.statusCode).toBe(200);
+      expect(opened.headers['cache-control']).toBe('no-store');
+      expect(opened.headers.vary).toBe('Cookie');
+      expect(open).toHaveBeenCalledExactlyOnceWith(
+        { token: 'synthetic', csrf: 'csrf' },
+        { id: 'shape-a', version: 1 },
+      );
+      expect((await app.inject('/api/v1/problems/shape-a/2')).statusCode).toBe(404);
+      expect(open).toHaveBeenCalledOnce();
     } finally {
       await app.close();
     }

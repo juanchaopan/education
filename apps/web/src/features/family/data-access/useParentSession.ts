@@ -28,9 +28,11 @@ async function read(response: Response): Promise<ParentSession> {
   if (!Value.Check(ParentSession, data)) throw new Error('暂时无法确认登录状态，请刷新重试。');
   return data;
 }
-export function useParentSession() {
+// The parent's session, read only while `needed`.
+export function useParentSession(needed = true) {
   return useQuery({
     queryKey: key,
+    enabled: needed,
     retry: false,
     staleTime: 0,
     gcTime: 0,

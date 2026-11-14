@@ -1,12 +1,13 @@
 import type pg from 'pg';
 import {
-  practiceBookPageSize,
+  childBookPageSize,
   shelfPageSize,
+  type ChildBookPage,
+  type ChildBookQuery,
   type ChildShelfPage,
   type ChildShelfQuery,
   type FamilyShelfPage,
   type FamilyShelfQuery,
-  type PracticeBookPage,
 } from '@education/contracts';
 import {
   assignable,
@@ -16,17 +17,19 @@ import {
   type ShelfOrder,
   type ShelvedBook,
 } from '../domain/bookshelf.js';
+import { childBookPage, isFresh } from '../domain/child-books.js';
 import {
   assignBook,
   cancelBook,
   readBookAssignments,
   readDoneProblems,
+  readStudyTimes,
 } from '../repositories/postgres-book-assignments.js';
 import { RequestError } from '../../shared/request-error.js';
 
 type Credentials = { token?: string; csrf?: string };
-// Work for a signed-in parent, given the ids of the family's children in the
-// order the parent space lists them.
+// Work for a signed-in parent on the whole family, given its children's ids
+// in the order the parent space lists them.
 type FamilyTransaction = <T>(
   credentials: Credentials,
   work: (client: pg.PoolClient, childIds: readonly string[]) => Promise<T>,
@@ -60,14 +63,16 @@ async function holders(client: pg.PoolClient, childIds: readonly string[]) {
   return given as ReadonlyMap<string, ReadonlySet<string>>;
 }
 
-// The books given to a child, newest first, with when each was given, and the
-// problems of those books the child has done. A book the catalogue no longer
-// lists is left out.
+// The books given to a child, newest first, with when each was given and
+// first opened, and the problems of those books the child has done. A book
+// the catalogue no longer lists is left out.
 export async function readChildBooks(shelf: Shelf, client: pg.PoolClient, childId: string) {
-  const books = (await readBookAssignments(client, [childId])).flatMap(({ bookId, assignedAt }) => {
-    const book = shelf.byId.get(bookId);
-    return book ? [{ book, assignedAt }] : [];
-  });
+  const books = (await readBookAssignments(client, [childId])).flatMap(
+    ({ bookId, assignedAt, openedAt }) => {
+      const book = shelf.byId.get(bookId);
+      return book ? [{ book, assignedAt, openedAt }] : [];
+    },
+  );
   const done = await readDoneProblems(client, [childId], problemIds(books.map(({ book }) => book)));
   return { books, done: done(childId) };
 }
@@ -127,35 +132,38 @@ async function childShelf(
   };
 }
 
-// Available books first, unfinished before finished, then books that are
-// no longer available; the newest given comes first within each group.
-function practiceRank(book: ShelvedBook, finished: boolean) {
-  if (book.status !== 'available') return 2;
-  return finished ? 1 : 0;
+// The latest of the times the child handed in an answer to one of the
+// book's problems.
+function lastStudied(book: ShelvedBook, studied: ReadonlyMap<string, Date>) {
+  const times = book.problems.flatMap(({ id }) => studied.get(id) ?? []);
+  return times.length ? new Date(Math.max(...times.map((time) => time.getTime()))) : null;
 }
 
-// The signed-in child's books, with every problem in them.
-async function practice(
+// The signed-in child's books in the home's order, with how many each filter
+// holds, and one page of the chosen filter with every problem in each book.
+async function childBooks(
   shelf: Shelf,
   client: pg.PoolClient,
   childId: string,
-  offset?: string,
-): Promise<PracticeBookPage> {
+  query: ChildBookQuery,
+): Promise<ChildBookPage> {
   const { books, done } = await readChildBooks(shelf, client, childId);
-  const ranked = books
-    .map(({ book }) => ({ book, progress: progress(book, done) }))
-    .sort(
-      (a, b) =>
-        practiceRank(a.book, a.progress.finished) - practiceRank(b.book, b.progress.finished),
-    );
-  const { offset: from, size } = page(offset, practiceBookPageSize);
+  const studied = await readStudyTimes(client, childId, problemIds(books.map(({ book }) => book)));
+  const given = books.map(({ book, assignedAt, openedAt }) => {
+    const { done: count, finished } = progress(book, done);
+    return { book, assignedAt, openedAt, studiedAt: lastStudied(book, studied), finished, count };
+  });
+  const found = childBookPage(given, query.books, page(query.offset, childBookPageSize));
   return {
-    books: ranked.slice(from, from + size).map(({ book, progress: { done: count } }) => ({
-      ...card(book),
-      done: count,
-      items: book.problems.map((problem) => ({ ...problem, done: done.has(problem.id) })),
+    ...found,
+    books: found.books.map((entry) => ({
+      ...card(entry.book),
+      done: entry.count,
+      assignedAt: entry.assignedAt.toISOString(),
+      studiedAt: entry.studiedAt?.toISOString() ?? null,
+      fresh: isFresh(entry),
+      items: entry.book.problems.map((problem) => ({ ...problem, done: done.has(problem.id) })),
     })),
-    hasMore: from + size < ranked.length,
   };
 }
 
@@ -175,8 +183,8 @@ export function createBookshelfService({
       family(credentials, (client, childIds) => familyShelf(shelf, client, childIds, query)),
     childShelf: (credentials: Credentials, childId: string, query: ChildShelfQuery) =>
       parent(credentials, childId, (client) => childShelf(shelf, client, childId, query)),
-    practice: (credentials: Credentials, offset?: string) =>
-      child(credentials, (client, childId) => practice(shelf, client, childId, offset)),
+    childBooks: (credentials: Credentials, query: ChildBookQuery) =>
+      child(credentials, (client, childId) => childBooks(shelf, client, childId, query)),
     assign: (credentials: Credentials, childId: string, bookId: string) =>
       parent(credentials, childId, async (client) => {
         if (!assignable(shelf.byId.get(bookId)))

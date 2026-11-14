@@ -1,0 +1,45 @@
+/* The tabs sit in a trough pressed into the card; the chosen one is a raised
+   slider in it. */
+.tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-1);
+  margin-block: var(--space-5);
+  padding: 0.3125rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  box-shadow: var(--sunken);
+}
+.tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-block-size: var(--touch-target);
+  border: 0;
+  border-radius: var(--radius-pill);
+  color: var(--ink-soft);
+  background: none;
+  font: inherit;
+  font-size: var(--text-base);
+  cursor: pointer;
+  transition:
+    background var(--lift) var(--ease-out),
+    box-shadow var(--lift) var(--ease-out);
+}
+.tab[aria-selected='true'] {
+  color: var(--ink);
+  background: var(--surface-raised);
+  box-shadow:
+    0 2px 0 var(--raised-edge),
+    var(--raised-cast);
+  font-weight: 700;
+}
+.tab[aria-selected='true'] .icon {
+  color: var(--accent-ink);
+}
+
+.panel > :first-child {
+  margin-top: 0;
+}

@@ -1,0 +1,8 @@
+/* The help takes a whole line of the foot it sits in. */
+.help {
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--ink-soft);
+  font-weight: 400;
+  text-align: end;
+}

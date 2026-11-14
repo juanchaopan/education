@@ -174,7 +174,8 @@ const learningSlot = () => ({
 
 // The books a parent has given each child, by the book's stable id; the book
 // list itself is in the problem catalogue. A child holds a book at most once,
-// and the row goes with the child.
+// and the row goes with the child. `opened_at` is when the child first opened
+// one of the book's problems; until then the book is new to the child.
 export const bookAssignments = pgTable(
   'book_assignments',
   {
@@ -183,6 +184,7 @@ export const bookAssignments = pgTable(
       .references(() => children.id, { onDelete: 'cascade' }),
     bookId: text('book_id').notNull(),
     assignedAt: timestamp('assigned_at', { withTimezone: true }).defaultNow().notNull(),
+    openedAt: timestamp('opened_at', { withTimezone: true }),
   },
   (table) => [primaryKey({ columns: [table.childId, table.bookId] })],
 ).enableRLS();

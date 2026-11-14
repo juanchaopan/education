@@ -1,5 +1,9 @@
 import { expect, test, type Page } from '@playwright/test';
-import { acceptEveryGardenAnswer, signInAtTheGardenAnswer } from './child-at-the-answer.js';
+import {
+  acceptEveryGardenAnswer,
+  signInAtTheGardenAnswer,
+  signInAtTheGardenStart,
+} from './child-at-the-answer.js';
 import { gardenFilm, movesToTheAnswer, play } from './garden-film.js';
 
 // The garden keeps what each scene finds on the conclusion board along the
@@ -31,6 +35,7 @@ function boardOf(page: Page) {
 const reading = (...sentences: string[]) => new RegExp(sentences.join('.*'));
 
 test('keeps each conclusion found in sight, lighting the one in use', async ({ page }) => {
+  await signInAtTheGardenStart(page);
   await page.goto(lesson);
   await page.getByRole('button', { name: /开始短片/ }).click({ timeout: 60_000 });
   const { items, conclusion } = boardOf(page);

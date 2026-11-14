@@ -1,14 +1,21 @@
 import type pg from 'pg';
 
-type BookAssignmentRow = { childId: string; bookId: string; assignedAt: Date };
+type BookAssignmentRow = {
+  childId: string;
+  bookId: string;
+  assignedAt: Date;
+  openedAt: Date | null;
+};
 
-// Every book the children have been given, newest first.
+// Every book the children have been given, newest first, with when each
+// child first opened one of its problems.
 export async function readBookAssignments(
   client: pg.PoolClient,
   childIds: readonly string[],
 ): Promise<BookAssignmentRow[]> {
   const { rows } = await client.query<BookAssignmentRow>(
-    `SELECT child_id AS "childId",book_id AS "bookId",assigned_at AS "assignedAt"
+    `SELECT child_id AS "childId",book_id AS "bookId",assigned_at AS "assignedAt",
+       opened_at AS "openedAt"
      FROM book_assignments WHERE child_id=ANY($1::uuid[])
      ORDER BY assigned_at DESC,book_id`,
     [childIds],
@@ -40,6 +47,27 @@ export async function readDoneProblems(
   return (childId: string): ReadonlySet<string> => done.get(childId) ?? nothingDone;
 }
 
+// When the child last handed in an answer to each of `problemIds`, at any
+// version: the final answer, or a guess or reason of its variation, whichever
+// came last. A problem never answered is left out.
+export async function readStudyTimes(
+  client: pg.PoolClient,
+  childId: string,
+  problemIds: readonly string[],
+): Promise<ReadonlyMap<string, Date>> {
+  const { rows } = await client.query<{ problemId: string; studiedAt: Date }>(
+    `SELECT problem_id AS "problemId",max(at) AS "studiedAt" FROM (
+       SELECT problem_id,updated_at AS at FROM progress
+       WHERE child_id=$1 AND problem_id=ANY($2::text[])
+       UNION ALL
+       SELECT problem_id,submitted_at FROM variation_answers
+       WHERE child_id=$1 AND problem_id=ANY($2::text[])
+     ) answered GROUP BY problem_id`,
+    [childId, problemIds],
+  );
+  return new Map(rows.map(({ problemId, studiedAt }) => [problemId, studiedAt]));
+}
+
 // Giving a book the child already has changes nothing, so it keeps the time
 // it was first given.
 export async function assignBook(client: pg.PoolClient, childId: string, bookId: string) {
@@ -55,4 +83,14 @@ export async function cancelBook(client: pg.PoolClient, childId: string, bookId:
     childId,
     bookId,
   ]);
+}
+
+// The first time the child opens a problem of a book given to them, the book
+// stops being new; later openings, and books not given, change nothing.
+export async function markBookOpened(client: pg.PoolClient, childId: string, bookId: string) {
+  await client.query(
+    `UPDATE book_assignments SET opened_at=now()
+     WHERE child_id=$1 AND book_id=$2 AND opened_at IS NULL`,
+    [childId, bookId],
+  );
 }

@@ -18,6 +18,7 @@ afterEach(async () => {
 function setup() {
   const sessions = {
     login: vi.fn().mockResolvedValue({ token, view, maxAge: 900 }),
+    current: vi.fn().mockResolvedValue(view),
     read: vi.fn().mockResolvedValue(view),
     logout: vi.fn().mockResolvedValue(undefined),
   };
@@ -62,13 +63,13 @@ it('reads only the cookie identity and refuses duplicate cookies and foreign que
   });
   expect(response.json()).toEqual(view);
   expect(response.headers['cache-control']).toBe('no-store');
-  expect(sessions.read).toHaveBeenLastCalledWith(token, '127.0.0.1');
+  expect(sessions.current).toHaveBeenLastCalledWith(token);
   expect((await app.inject({ url: '/api/v1/session?familyId=other' })).statusCode).toBe(400);
   await app.inject({
     url: '/api/v1/session',
     headers: { cookie: `__Host-education_session=${token}; __Host-education_session=another` },
   });
-  expect(sessions.read).toHaveBeenLastCalledWith(undefined, '127.0.0.1');
+  expect(sessions.current).toHaveBeenLastCalledWith(undefined);
 });
 it('requires same-origin CSRF-protected POST to revoke, then clears cookie', async () => {
   const { app, sessions } = setup();

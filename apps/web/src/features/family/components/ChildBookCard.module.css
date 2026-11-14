@@ -1,0 +1,155 @@
+/* A book is one raised card: the book itself, the problems it opens to, and
+   the full-width row that opens and closes it. */
+.card {
+  composes: raised from '../../../shared/ui/Raised.module.css';
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+}
+.card[data-open] {
+  cursor: default;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  padding: var(--space-4) var(--space-4) var(--space-4) var(--space-5);
+}
+.cover {
+  position: relative;
+  flex: none;
+}
+/* A new book wears a red 新 on its corner, turned back flat to the reader. */
+.fresh {
+  position: absolute;
+  z-index: 1;
+  inset-block-start: calc(var(--space-2) * -1);
+  inset-inline-end: calc(var(--space-3) * -1);
+  padding: 0 0.4375rem;
+  border-radius: var(--radius-pill);
+  color: var(--badge-ink);
+  background: var(--badge);
+  box-shadow: var(--badge-shadow);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+.meta {
+  flex: 1;
+  min-inline-size: 0;
+}
+.title {
+  margin: 0;
+  font-size: var(--text-lg);
+}
+.line {
+  margin: 0 0 var(--space-2);
+  color: var(--ink-soft);
+  font-size: var(--text-sm);
+}
+.card[data-unavailable] .title {
+  color: var(--ink-soft);
+}
+
+/* The problems grow out from below the book to their full height as they
+   appear, pushing the toggle row down ahead of them. */
+.list {
+  interpolate-size: allow-keywords;
+  block-size: auto;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  list-style: none;
+  transition: block-size var(--lift) var(--ease-out);
+}
+@starting-style {
+  .list {
+    block-size: 0;
+  }
+}
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-block-size: 3.375rem;
+  padding: var(--space-2) var(--space-5);
+  border-top: 1px solid var(--line);
+  color: var(--ink);
+  background: var(--surface-raised);
+  text-decoration: none;
+}
+a.row:hover {
+  background: var(--surface-2);
+}
+a.row:focus-visible {
+  outline-offset: -4px;
+}
+.row[aria-disabled] {
+  color: var(--ink-soft);
+  background: var(--surface-2);
+}
+.place {
+  inline-size: 1.6em;
+  flex: none;
+  color: var(--ink-soft);
+  text-align: end;
+}
+.name {
+  flex: 1;
+  font-weight: 700;
+}
+.row[aria-disabled] .name {
+  font-weight: 400;
+}
+.done {
+  flex: none;
+  color: var(--ok);
+}
+.row[aria-disabled] .done {
+  color: var(--ink-soft);
+}
+.go {
+  flex: none;
+  color: var(--ink-soft);
+}
+
+/* The row that opens the book: the most visible part of the card, the whole
+   width of it, in the main colour on the softer surface. */
+.toggle {
+  border: 0;
+  border-top: 1px solid var(--line);
+  color: var(--primary);
+  background: var(--surface-2);
+  box-shadow: none;
+  font-size: var(--text-base);
+}
+.toggle:active:not(:disabled) {
+  translate: none;
+  box-shadow: var(--sunken);
+}
+.toggle:focus-visible {
+  outline-offset: -4px;
+}
+:global(:root[data-theme='night']) .toggle {
+  color: var(--accent-ink);
+}
+.arrow {
+  transition: rotate var(--lift) var(--ease-out);
+}
+.card[data-open] .arrow {
+  rotate: 180deg;
+}
+
+@media (max-width: 40rem) {
+  .head {
+    gap: var(--space-4);
+    padding: var(--space-3) var(--space-3) var(--space-3) var(--space-4);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .list,
+  .arrow {
+    transition: none;
+  }
+}

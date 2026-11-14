@@ -4,18 +4,18 @@ import { removeFamilies } from './family-cleanup.js';
 import { draftSaved } from './draft-save.js';
 import { gardenFilm, movesToTheAnswer, play } from './garden-film.js';
 import { holdWhile } from './hold.js';
-import { seedSignedInFamily } from './seeded-family.js';
+import { giveBook, seedSignedInFamily } from './seeded-family.js';
 import { signInWithToken } from './session-cookie.js';
 
-// The first real problem from the production entry point: the catalog places
-// it, a signed-in child plays every scene by dragging and tapping, the place
-// is saved, and the final count is judged on the server. The browser here has
-// no microphone and the server no AI key, so the answer falls back to tapping
-// a number and a question sends the child back to the scene. The teacher's
-// words are checked without the teacher's name, which only screen readers
-// hear before them.
+// The first real problem from the production entry point: the parent gives
+// the child its book, the child finds it new on the home page, opens it and
+// plays every scene by dragging and tapping, the place is saved, and the
+// final count is judged on the server. The browser here has no microphone and
+// the server no AI key, so the answer falls back to tapping a number and a
+// question sends the child back to the scene. The teacher's words are checked
+// without the teacher's name, which only screen readers hear before them.
 
-test('a child places the garden problem, resumes it and is judged on the counted answer', async ({
+test('a child opens the garden problem from a given book, resumes it and is judged on the counted answer', async ({
   page,
   baseURL,
 }, info) => {
@@ -29,11 +29,11 @@ test('a child places the garden problem, resumes it and is judged on the counted
   const pool = new pg.Pool({ connectionString: database });
   const { family, parent, children } = await seedSignedInFamily(pool, ['小鹿']);
   try {
+    await giveBook(pool, children[0]!.id);
     await signInWithToken(page, baseURL!, children[0]!.token);
     await page.goto('/');
-    await expect(page.getByLabel('年级', { exact: true })).toHaveValue('一年级');
-    await expect(page.getByLabel('学科', { exact: true })).toHaveValue('数学');
-    await expect(page.getByLabel('分类', { exact: true })).toHaveValue('学而思');
+    await expect(page.getByLabel('1 本新书')).toBeVisible();
+    await page.getByRole('button', { name: /^学而思，新书/ }).click();
     await page.getByRole('link', { name: '一棵青菜有多重' }).click();
     await expect(page).toHaveURL(/\/problems\/garden-balance\/1$/);
     await page.getByRole('button', { name: /开始短片/ }).click();
@@ -74,6 +74,12 @@ test('a child places the garden problem, resumes it and is judged on the counted
     await answer.screenshot({ path: info.outputPath('answer-assisted.png') });
     await answer.getByRole('button', { name: '接着看' }).click();
     await expect(caption).toHaveText(/现在换个条件/);
+
+    // Back home the book is no longer new: the child opened one of its
+    // problems.
+    await page.goto('/');
+    await expect(page.getByRole('heading', { name: '学而思' })).toBeVisible();
+    await expect(page.getByLabel(/本新书/)).toHaveCount(0);
 
     // The parent sees the helped answer and the wrong count, apart, in the
     // learning part of the parent space.
