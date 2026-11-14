@@ -9,6 +9,7 @@ export const lessonTemplateLesson = lessonContent({
   flow: 'scene-by-scene',
   vocabulary: ['小石子', '碗', '一颗', '几颗'],
   shots: ['look', 'count', 'after'],
+  answerScene: 'count',
   lines: {
     look: { scene: 'look', text: '桌上有两颗小石子。把它们一颗一颗放进碗里。' },
     ask: { scene: 'count', text: '碗里一共有几颗小石子？' },

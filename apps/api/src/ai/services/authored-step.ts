@@ -2,16 +2,37 @@ import type { FeedbackStep, ProblemPlugin } from '@education/problems/server';
 import { RequestError } from '../../shared/request-error.js';
 import { ruleFeedbackFor, type FeedbackStepScope } from '../domain/teaching-feedback.js';
 
+// The entry a record holds of its own under a name a request gives, so that a
+// name such as toString finds nothing.
+function own<T>(record: Readonly<Record<string, T>> | undefined, name: string) {
+  return record && Object.hasOwn(record, name) ? record[name] : undefined;
+}
+
+const refused = () => new RequestError(404, '这一步暂时不能提交。');
+
 // A child may only send work for a step the problem's author opened to AI help;
 // any other problem version or step is refused before a provider is involved.
 export function authoredStep<P extends Pick<ProblemPlugin, 'feedback'>>(
   plugin: P | undefined,
   stepId: string,
 ): { plugin: P; step: FeedbackStep } {
-  const steps = plugin?.feedback;
-  const step = steps && Object.hasOwn(steps, stepId) ? steps[stepId] : undefined;
-  if (!plugin || !step) throw new RequestError(404, '这一步暂时不能提交。');
+  const step = own(plugin?.feedback, stepId);
+  if (!plugin || !step) throw refused();
   return { plugin, step };
+}
+
+// A step opened to AI help, with the scene of the problem's lesson it is, as a
+// question about it needs both; a problem version without lesson content, or
+// a step that is no scene of its lesson, is refused like a step the author
+// did not open.
+export function authoredScene<P extends Pick<ProblemPlugin, 'feedback' | 'lesson'>>(
+  candidate: P | undefined,
+  stepId: string,
+) {
+  const { plugin, step } = authoredStep(candidate, stepId);
+  const scene = own(plugin.lesson?.scenes, stepId);
+  if (!scene) throw refused();
+  return { plugin, step, scene };
 }
 
 // What the author's own rules say about the child's words, when they settle

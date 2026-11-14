@@ -7,12 +7,14 @@ import type { MicrophoneTurn } from '../../voice/microphone-turn';
 import type { SpokenFinalAnswer } from '../SpokenFinalAnswer';
 
 // What a lesson flow's answer part is given on a signed-in child's lesson
-// page: the lesson's answer settings, the scene on screen, the child's
-// scope, the teacher's voice and the lesson's tones, the lesson's one
-// microphone and the teacher's subtitle, what the page hears of hints and a
-// count judged right, and how the film plays on once the answer is done.
+// page: the lesson's answer settings and the scene its content asks for the
+// answer in, the scene on screen, the child's scope, the teacher's voice and
+// the lesson's tones, the lesson's one microphone and the teacher's subtitle,
+// what the page hears of hints and a count judged right, and how the film
+// plays on once the answer is done.
 export type FlowAnswerProps = Readonly<{
-  answer: LessonAnswer<string>;
+  answer: LessonAnswer;
+  answerScene: string;
   shot: string;
   scope: LearningScope;
   film: ComponentProps<typeof SpokenFinalAnswer>['film'];

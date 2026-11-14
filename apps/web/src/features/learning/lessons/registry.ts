@@ -13,15 +13,15 @@ import type {
 } from './lesson-definition';
 
 // What the checks read of a lesson's definition: its content, with its
-// version, flow, scenes, lines and conclusions; its script's lines, scenes,
-// entry lines and each scene's framing; its answer scene and hints; the
-// library backdrop and teacher it picks; where its props stand; and how its
-// board draws the conclusions. Every lesson's definition is one, whatever
-// its own types.
+// version, flow, scenes, answer scene, lines and conclusions; its script's
+// lines, scenes, entry lines and each scene's framing; its answer's hints;
+// the library backdrop and teacher it picks; where its props stand; and how
+// its board draws the conclusions. Every lesson's definition is one,
+// whatever its own types.
 export type LessonOutline = Readonly<{
   content: AnyLessonContent;
   script: Pick<Script<string, string>, 'lines' | 'shots' | 'entryLines' | 'cameras'>;
-  answer: Pick<LessonAnswer<string>, 'shot' | 'hints'>;
+  answer: Pick<LessonAnswer, 'hints'>;
   backdrop: BackdropId;
   teacher: Pick<TeacherRole, 'id'>;
   staging: Box;

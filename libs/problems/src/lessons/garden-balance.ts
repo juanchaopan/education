@@ -10,6 +10,7 @@ export const gardenBalanceLesson = lessonContent({
   flow: 'scene-by-scene',
   vocabulary: ['青菜', '苹果', '黄瓜', '天平', '秤盘', '一样重', '一组', '每组', '几根'],
   shots: ['leaves', 'apples', 'exchange', 'bridge', 'answer', 'variation', 'end'],
+  answerScene: 'answer',
   lines: {
     hello: { scene: 'leaves', text: '咦？今天，菜园里有两棵青菜。' },
     clue: { scene: 'leaves', text: '看。两棵青菜，和六个苹果一样重。' },

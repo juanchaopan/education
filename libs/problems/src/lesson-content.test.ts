@@ -18,6 +18,7 @@ const fixture: AnyLessonContent = {
   flow: 'scene-by-scene',
   vocabulary: ['小石子'],
   shots: ['look', 'count', 'after'],
+  answerScene: 'count',
   lines: {
     hello: { scene: 'look', text: '看看这颗小石子。' },
     ask: { scene: 'count', text: '一共有几颗？' },
@@ -74,6 +75,23 @@ describe('the lesson content check', () => {
       'scene count has no entry lines',
       'entry line hello is not a line of scene after',
       'entry line gone is not a line of scene after',
+    ]);
+  });
+
+  it('finds a lesson flow that is not in the list', () => {
+    const flow = 'step-by-step' as AnyLessonContent['flow'];
+    expect(problems({ flow })).toEqual([
+      'the lesson follows flow step-by-step, which is not in the list',
+    ]);
+  });
+
+  it('finds an answer scene that is not a scene', () => {
+    expect(problems({ answerScene: 'counting' })).toEqual(['answer scene counting is not a scene']);
+  });
+
+  it('finds an answer scene with no scene after it to play on into', () => {
+    expect(problems({ answerScene: 'after' })).toEqual([
+      'answer scene after has no scene after it',
     ]);
   });
 

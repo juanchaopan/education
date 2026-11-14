@@ -76,6 +76,7 @@ classDiagram
     +problem
     +flow
     +shots
+    +answerScene
     +lines
     +scenes
     +conclusions
@@ -190,14 +191,14 @@ classDiagram
 | 字幕的来源 `createSubtitle`                               | `interaction/subtitle.ts`、`useSubtitleWords.ts`                                                      | 旁白、作答、提示和提问各自说话，字幕显示最新的一句；关掉字幕时旁白的话也算最新，只是不显示，免得旧的回答又冒出来；重听和接着讲把旁白重新放到最前。                                                                                                                                                                   |
 | 设备上的偏好 `useLessonPreferences`                       | `data-access/lesson-preferences.ts`                                                                   | 字幕和声音开关，存在这台设备的浏览器里（`localStorage`），不上传；浏览器不让存时只在这次打开里有效。                                                                                                                                                                                                                 |
 | 题目页 `LessonPage`、`FilmControls`、`LessonPanels`       | `pages/`                                                                                              | 由 `GardenBalanceLesson`、`GardenPanels` 推广而来：`FilmControls` 是每个人都有的工具组和字幕，题目有结论板时还有结论板；已登录时 `LessonPanels` 接草稿、按幕保存、作答、提示、每幕提问和草稿提示，草稿提示什么时候出现、出现多久由它决定，并把收到的提示和答对告诉结论板；游客只看短片和登录提示。                   |
-| 流程的作答部分 `flowAnswers`                              | `pages/flows/`                                                                                        | 每种课堂流程一个作答部分，`LessonPanels` 按课堂内容里的流程选；逐幕探究的是 `SceneBySceneAnswer`：作答那一幕里的最终作答（`SpokenFinalAnswer`）和提示。清单里的流程都要有，类型检查核对。                                                                                                                            |
+| 流程的作答部分 `flowAnswers`                              | `pages/flows/`                                                                                        | 每种课堂流程一个作答部分，`LessonPanels` 按课堂内容里的流程选；逐幕探究的是 `SceneBySceneAnswer`：课堂内容里的作答那一幕（`answerScene`）里的最终作答（`SpokenFinalAnswer`）和提示。清单里的流程都要有，类型检查核对。                                                                                               |
 | 题目定义 `LessonDefinition`                               | `lessons/lesson-definition.ts`                                                                        | 一道题需要提供的全部内容，见下文。`stageLook(定义)` 按定义里的 id 从库里取背景和角色，交给 `LessonStage`。                                                                                                                                                                                                           |
 | 台词稿 `narratedScript`                                   | `lessons/lesson-script.ts`                                                                            | 按课堂内容的幕序、旁白文字和进场台词，给每句配上录音，组成题目的台词稿；录音工具在 Node 里读同一份。                                                                                                                                                                                                                 |
 | 题目登记 `lessons`                                        | `lessons/registry.ts`                                                                                 | 每道题一行：题目版本和按需加载的定义；应用外壳据此生成题目页，不再逐题手写。                                                                                                                                                                                                                                         |
 | 绘景库 `backdrops`、角色库 `teachers`                     | `media/backdrops/backdrops.ts`、`media/teachers/teachers.ts`                                          | 图片和带标签的清单，见「绘景库和角色库」。                                                                                                                                                                                                                                                                           |
 | 库的检视 `BackdropSheet`、`TeacherSheet`                  | `components/lesson-stage/LibrarySheet.tsx`、`ClearingOutline.tsx`                                     | 只给人看图用：在 Storybook 里显示每张背景和它的空地框、每个角色、它的头像和标签；题目的 story 也能叠加空地框和道具范围。孩子看不到。                                                                                                                                                                                 |
 
-`libs/problems` 增加题目规则的辅助函数：整数答案的判定（整数判对错，其他判为无法判断）、每幕说明和词表由课堂内容组装（`sceneSteps`）。题目插件照旧放在 `libs/problems/src/<题目>.ts`，只在服务器上运行；每道题的课堂内容放在 `libs/problems/src/lessons/<题目>.ts`，按题单独导出为 `@education/problems/lessons/<题目>`，网站只在打开这道题时加载它。
+`libs/problems` 增加题目规则的辅助函数：整数答案的判定（整数判对错，其他判为无法判断）、每幕说明和词表由课堂内容组装（`sceneSteps`）。题目插件照旧放在 `libs/problems/src/<题目>.ts`，只在服务器上运行，并带上这道题的课堂内容，孩子提问时服务端从它读这一幕的说明；每道题的课堂内容放在 `libs/problems/src/lessons/<题目>.ts`，按题单独导出为 `@education/problems/lessons/<题目>`，网站只在打开这道题时加载它。
 
 ### 一道题要写什么
 
@@ -209,6 +210,7 @@ type LessonContent<Shot extends string, Line extends string, Picture extends str
   flow: LessonFlow; // 课堂流程，例如 'scene-by-scene'（逐幕探究）
   vocabulary: readonly string[]; // 题目的用词，语音识别每一幕都要认
   shots: readonly [Shot, ...Shot[]]; // 幕序
+  answerScene: Shot; // 作答那一幕，它后面的幕都算答对以后
   lines: Record<Line, { scene: Shot; text: string }>; // 每句旁白和它在哪一幕说，按说的顺序
   scenes: Record<Shot, { prompt: string; entry: readonly Line[] }>; // 每一幕的说明（不含最终答数）和进场台词
   conclusions: readonly Conclusion<Shot, Picture>[]; // 各幕得出的结论，按板上的顺序，见「结论板」
@@ -252,7 +254,6 @@ type LessonDefinition<
   // 哪些道具能拿起、拿起时的影子、放下和点按对应的操作
   props: StageProps<Move, Record<Piece, Look>> & { carried: (look: Look) => ReactNode };
   answer: {
-    shot: Shot; // 答对以后进入它的下一幕
     question: string; // 作答胶囊回答的问题，读屏读给孩子
     words: CountWords;
     choices: readonly number[];
@@ -419,7 +420,7 @@ story 在本机看：`npm run storybook` 后打开 `http://localhost:6006`，按
 | 氛围 `Ambience`                                                              | 画面有生气：萤火虫、花瓣等点缀                                                         | 开场和讲述                                           | 孩子要专心数、比的画面里点缀太多                                                       | 选用的点缀种类                                                                                                                                                              | 已有               | Learning/Lesson stage/Ambience，`features/learning/components/lesson-stage/Ambience.stories.tsx`                                                          |
 | 字幕和工具组 `Subtitle`、`StageTools`                                        | 看得到老师说的每一句话；能重听、关字幕、关声音                                         | 每一道题，由题目页放进画面                           | —                                                                                      | 不用提供；台词的文字就是字幕                                                                                                                                                | 已有               | Learning/Subtitle，`features/learning/components/lesson-stage/Subtitle.stories.tsx`；Learning/Stage tools，`…/lesson-stage/StageTools.stories.tsx`        |
 | 提问 `AskMicrophone`、`QuestionBox`                                          | 每一幕都能按住话筒问老师，先看一遍转出的字再发                                         | 每一道题，由题目页放进画面                           | —                                                                                      | 课堂内容里每一幕的说明和题目的用词，插件由它们组装给老师和语音识别的说明（`sceneSteps`）                                                                                    | 已有               | Learning/Ask microphone，`…/lesson-stage/AskMicrophone.stories.tsx`；Learning/Question box，`…/lesson-stage/QuestionBox.stories.tsx`                      |
-| 作答 `AnswerCapsule`                                                         | 最后开口说出一个整数并确认；说不了话时点数字                                           | 答案是一个数（可以带单位）                           | 选择题、说出一句结论、写出一个式子：还没有部件，要先按第二阶段提出                     | 作答那一幕、要回答的问题、单位和错数的说明、可点的数字、提示的顺序；插件里的判定规则                                                                                        | 已有               | Learning/Answer capsule，`features/learning/components/lesson-stage/AnswerCapsule.stories.tsx`                                                            |
+| 作答 `AnswerCapsule`                                                         | 最后开口说出一个整数并确认；说不了话时点数字                                           | 答案是一个数（可以带单位）                           | 选择题、说出一句结论、写出一个式子：还没有部件，要先按第二阶段提出                     | 课堂内容里的作答那一幕，定义里要回答的问题、单位和错数的说明、可点的数字、提示的顺序；插件里的判定规则                                                                      | 已有               | Learning/Answer capsule，`features/learning/components/lesson-stage/AnswerCapsule.stories.tsx`                                                            |
 | 提示 `FireflyHint`                                                           | 作答时一次给一条提示，用过提示的答对记为提示后完成                                     | 有作者写好的、按顺序给的提示                         | —                                                                                      | 插件里的提示和作答用到的提示顺序                                                                                                                                            | 已有               | Learning/Firefly hint，`features/learning/components/lesson-stage/FireflyHint.stories.tsx`                                                                |
 | 画面上的提示条 `StageNotice`                                                 | 草稿出了问题、接着上次的地方、没登录时，在画面上说一句并给一两个按钮                   | 每一道题，由题目页放进画面                           | —                                                                                      | 不用提供                                                                                                                                                                    | 已有               | Learning/Draft notice，`features/learning/components/DraftNotice.stories.tsx`                                                                             |
 | 绘景库和角色库 `backdrops`、`teachers`                                       | 适合这个年龄段和题型的背景、讲课角色，不用每题单独画                                   | 每一道题，按[挑选顺序](#绘景库和角色库)挑            | 库里没有合适的：按 [lesson-media.md](lesson-media.md) 生成一张通用的新图入库           | 背景和角色的 id                                                                                                                                                             | 已有               | Learning/Backdrops，`features/learning/media/backdrops/backdrops.stories.tsx`；Learning/Teachers，`features/learning/media/teachers/teachers.stories.tsx` |
@@ -443,6 +444,7 @@ story 在本机看：`npm run storybook` 后打开 `http://localhost:6006`，按
 | 画面里的控件 | 画面下方一条：`LessonQuestionPanel`、`SpokenAnswerPanel`、文字按钮  | 嵌在画面里的露珠、`Subtitle`、`QuestionBox`、`AnswerCapsule`、`FireflyHint`                                                    | 直接替换，外观改变，新的视觉基准 |
 | 每幕内容     | 插件里的 `sceneSteps(用词, 说明)`、台词稿里的文字、`board` 里的结论 | `libs/problems/src/lessons/<题目>.ts` 的课堂内容；`sceneSteps(内容)`、`narratedScript(内容, 录音)`、`board` 只给小图和 `found` | 直接替换，行为不变（#216）       |
 | 作答部分     | `LessonPanels` 在作答那一幕放 `SpokenFinalAnswer`                   | `LessonPanels` 按课堂内容的流程从 `flowAnswers` 选，逐幕探究是 `SceneBySceneAnswer`                                            | 直接替换，行为不变（#216）       |
+| 作答那一幕   | 定义里的 `answer.shot`                                              | 课堂内容里的 `answerScene`，服务端也读得到                                                                                     | 直接替换，行为不变（#210）       |
 
 ## 数据结构变更
 
@@ -464,13 +466,14 @@ story 在本机看：`npm run storybook` 后打开 `http://localhost:6006`，按
 | 10   | 功能：题目页换用这些部件，画面占满屏幕，竖屏按道具范围摆放，字幕和声音开关              | 是           | [#143](https://github.com/juanchaopan/education/issues/143) |
 | 11   | 功能：结论板做成公共部件，菜园题用它留住各幕的结论                                      | 是           | [#181](https://github.com/juanchaopan/education/issues/181) |
 | 12   | 重构：每幕内容统一声明在题目包的课堂内容里，题目声明课堂流程，作答部分按流程组织        | 否           | [#216](https://github.com/juanchaopan/education/issues/216) |
+| 13   | 重构：作答那一幕写进课堂内容，题目插件带上课堂内容，提问从课堂内容读这一幕的说明        | 否           | [#210](https://github.com/juanchaopan/education/issues/210) |
 
-步骤 1、3、4、12 每一步合并后菜园题的单元测试、e2e 和视觉基准都不变。步骤 7 只依赖步骤 6，可以和步骤 8 同时进行。#125、#126 排在这些步骤之后，直接用公共部件，也用来检验部件够不够用；不够的地方先补公共部件。步骤 9 只加部件、story 和视觉基准，题目页不变；步骤 10 让题目页用上它们。
+步骤 1、3、4、12、13 每一步合并后菜园题的单元测试、e2e 和视觉基准都不变。步骤 7 只依赖步骤 6，可以和步骤 8 同时进行。#125、#126 排在这些步骤之后，直接用公共部件，也用来检验部件够不够用；不够的地方先补公共部件。步骤 9 只加部件、story 和视觉基准，题目页不变；步骤 10 让题目页用上它们。
 
 ## 测试策略
 
 - 重构步骤：菜园题现有的单元测试、e2e（`e2e/garden-balance.spec.ts`）和视觉基准是行为基准，必须原样通过；公共部件各自补单元测试和 Storybook story。
-- 定义检查：一个单元测试遍历登记表，检查每道题的课堂内容（每句旁白都在这道题的某一幕说，每幕都有进场台词且是这一幕的旁白，结论的 id 不重复、出现和用到它的幕都对、「假如」条有可以并排的那条）、台词稿和课堂内容一致、每句台词都有录音、流程在清单里且题目满足它的要求（逐幕探究：作答那一幕在幕序里且后面还有一幕）、题目版本在登记表和课堂内容里一致、幕名和题目插件的步骤一致、作答用到的提示都在插件里、按每一幕的取景道具范围都在所选背景的空地里，点亮结论的提示都是作答会给的，有结论板的题每条结论都有道具小图、`found` 只说有的结论，道具范围在横屏结论板下面，并且题库里的每个题目版本都有登记的题目。课堂内容自己的检查 `lessonContentProblems` 在 `libs/problems` 里另有单元测试。背景和讲课角色的 id 只能是库里有的，课堂内容里的幕名和旁白名也只能是声明过的，写错时类型检查不通过。
+- 定义检查：一个单元测试遍历登记表，检查每道题的课堂内容（每句旁白都在这道题的某一幕说，每幕都有进场台词且是这一幕的旁白，结论的 id 不重复、出现和用到它的幕都对、「假如」条有可以并排的那条）、台词稿和课堂内容一致、每句台词都有录音、流程在清单里且题目满足它的要求（逐幕探究：作答那一幕在幕序里且后面还有一幕）、题目插件带的课堂内容就是网站播放的这一份、题目版本在登记表和课堂内容里一致、幕名和题目插件的步骤一致、作答用到的提示都在插件里、按每一幕的取景道具范围都在所选背景的空地里，点亮结论的提示都是作答会给的，有结论板的题每条结论都有道具小图、`found` 只说有的结论，道具范围在横屏结论板下面，并且题库里的每个题目版本都有登记的题目。课堂内容自己的检查 `lessonContentProblems` 在 `libs/problems` 里另有单元测试。背景和讲课角色的 id 只能是库里有的，课堂内容里的幕名和旁白名也只能是声明过的，写错时类型检查不通过。
 - 放音检查（#129）：e2e 的共用工具按台词逐幕检查每句都播放到结束，在桌面 Chromium、手机模拟和 WebKit 上跑；登记表里的每道题都要接入。
 - 分层检查：`npm run arch` 增加规则，一道题的文件不能引用另一道题的文件和课堂内容，题目的代码只在打开时加载，网站的代码只读题目包里的课堂内容、不引用题目插件；`libs/problems` 自己的规则保证课堂内容不引用插件和判定规则。
 - 全屏和返回：e2e（`e2e/lesson-frame.spec.ts`）覆盖从题库进入后返回原分类和滚动位置、直接打开链接后返回、浏览器后退键、开始短片时请求全屏（浏览器拒绝或不支持时页面照常）、手机和平板的竖放和横放、电脑上画面撑满整个屏幕且返回按钮可用键盘到达，以及正在判定答案时返回要等判定结束、只发一次（孩子的登录和服务器的回答由测试代答，不需要数据库）。

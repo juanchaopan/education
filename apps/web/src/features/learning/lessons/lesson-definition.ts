@@ -45,11 +45,11 @@ export type LessonProps<Move, Piece extends string, Look extends object> = Stage
 > &
   Readonly<{ carried: (look: Look) => ReactNode }>;
 
-// The final count: the scene it is asked in, the question, the unit it is said
-// in and what a wrong count most likely is, the numbers to tap, and the ids of
-// the plugin's hints in the order the child receives them.
-export type LessonAnswer<Shot extends string> = Readonly<{
-  shot: Shot;
+// The final count, asked in the content's answer scene: the question, the
+// unit it is said in and what a wrong count most likely is, the numbers to
+// tap, and the ids of the plugin's hints in the order the child receives
+// them.
+export type LessonAnswer = Readonly<{
   question: string;
   words: CountWords;
   choices: readonly number[];
@@ -81,13 +81,14 @@ type Looks = Readonly<{
 
 // Everything one problem gives the shared lesson page: its content, declared
 // in @education/problems and read by the server too, with its version, the
-// lesson flow it follows, its scenes and the conclusions they find; how its
-// film looks; its script, which pairs the content's lines with their
-// recordings, and its scene rules; its props, its final count and its own
-// scene, drawn on the stage's 1200×675 world. A lesson whose way of teaching
-// keeps its conclusions on the conclusion board says in `board` how they are
-// drawn, with the lesson's own symbols. The page is built for one definition
-// at a time, so each lesson's own types hold all the way through.
+// lesson flow it follows, its scenes, the scene that asks for the answer and
+// the conclusions its scenes find; how its film looks; its script, which
+// pairs the content's lines with their recordings, and its scene rules; its
+// props, its final count and its own scene, drawn on the stage's 1200×675
+// world. A lesson whose way of teaching keeps its conclusions on the
+// conclusion board says in `board` how they are drawn, with the lesson's own
+// symbols. The page is built for one definition at a time, so each lesson's
+// own types hold all the way through.
 export type LessonDefinition<
   State extends FilmState<Shot>,
   Shot extends string,
@@ -101,7 +102,7 @@ export type LessonDefinition<
     script: Script<Shot, Line>;
     story: Story<State, Shot, Line, Move>;
     props: LessonProps<Move, Piece, Look>;
-    answer: LessonAnswer<Shot>;
+    answer: LessonAnswer;
     board?: LessonBoard<State, string>;
     Scene: ComponentType<SceneProps<State>>;
   }>;

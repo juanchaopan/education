@@ -1,8 +1,9 @@
 // What a lesson says and finds, declared once for each problem and read by the
 // site and the server alike: the lesson flow it follows, its scenes in
-// teaching order, what a model may see of each scene, the words the teacher
-// says in each, and the conclusions its scenes find. It holds no judging
-// rules, which only the server's plugins have, so the site may load it.
+// teaching order, the scene that asks for the final answer, what a model may
+// see of each scene, the words the teacher says in each, and the conclusions
+// its scenes find. It holds no judging rules, which only the server's plugins
+// have, so the site may load it.
 
 // The lesson flows a problem can follow, the skeleton of its lesson; see the
 // handbook's 课堂流程清单. `scene-by-scene` is 逐幕探究: each scene finds a
@@ -44,7 +45,9 @@ export type LessonScene<Line extends string> = Readonly<{ prompt: string; entry:
 // A problem's lesson. `vocabulary` is the problem's own words, which speech
 // recognition is told to expect in every scene. Its lines are listed in the
 // order they are said, and its conclusions in the order the board shows
-// them.
+// them. `answerScene` asks for the final answer; the page plays past it only
+// once the child has answered right, so the scenes after it count as
+// answered, for the conclusion board.
 export type LessonContent<
   Shot extends string,
   Line extends string,
@@ -54,6 +57,7 @@ export type LessonContent<
   flow: LessonFlow;
   vocabulary: readonly string[];
   shots: readonly [Shot, ...Shot[]];
+  answerScene: Shot;
   lines: Readonly<Record<Line, LessonLine<Shot>>>;
   scenes: Readonly<Record<Shot, LessonScene<Line>>>;
   conclusions: readonly Conclusion<Shot, Picture>[];
@@ -61,14 +65,19 @@ export type LessonContent<
 
 // A lesson's content with its scene, line and picture names kept exact: the
 // scenes are named by `shots` and the lines by `lines`, so a scene, an entry
-// line or a conclusion's scene that names anything else does not compile.
+// line, the answer scene or a conclusion's scene that names anything else
+// does not compile.
 export function lessonContent<
   const Shot extends string,
   const Line extends string,
   const Picture extends string,
 >(
-  content: Omit<LessonContent<Shot, Line, Picture>, 'lines' | 'scenes' | 'conclusions'> &
+  content: Omit<
+    LessonContent<Shot, Line, Picture>,
+    'answerScene' | 'lines' | 'scenes' | 'conclusions'
+  > &
     Readonly<{
+      answerScene: NoInfer<Shot>;
       lines: Readonly<Record<Line, LessonLine<NoInfer<Shot>>>>;
       scenes: Readonly<Record<NoInfer<Shot>, LessonScene<NoInfer<Line>>>>;
       conclusions: readonly Conclusion<NoInfer<Shot>, Picture>[];
@@ -108,6 +117,25 @@ function lineProblems({ shots, lines, scenes }: AnyLessonContent) {
   ];
 }
 
+// 逐幕探究 asks for the count in one of the lesson's scenes, and a correct
+// count plays on into the scene after it.
+function sceneBySceneProblems({ shots, answerScene }: AnyLessonContent) {
+  const at = shots.indexOf(answerScene);
+  if (at < 0) return [`answer scene ${answerScene} is not a scene`];
+  return at + 1 < shots.length ? [] : [`answer scene ${answerScene} has no scene after it`];
+}
+
+// What each lesson flow asks of a lesson that follows it.
+const flowRules: Readonly<Record<LessonFlow, (content: AnyLessonContent) => string[]>> = {
+  'scene-by-scene': sceneBySceneProblems,
+};
+
+function flowProblems(content: AnyLessonContent) {
+  const { flow } = content;
+  const rules = Object.hasOwn(flowRules, flow) ? flowRules[flow] : undefined;
+  return rules ? rules(content) : [`the lesson follows flow ${flow}, which is not in the list`];
+}
+
 // A conclusion is first found in one of the scenes and used only from there
 // on; a supposed one stands beside the conclusion before it, which is found
 // by then.
@@ -131,13 +159,15 @@ function conclusionProblems(
 
 // Everything wrong with a lesson's content, or nothing: lines said in no
 // scene, scenes that say nothing on arriving or arrive with another scene's
-// lines, and conclusions declared twice, found in no scene, used before they
-// are found, or supposed with nothing to stand beside.
+// lines, a flow not in the list or whose needs the scenes do not meet, and
+// conclusions declared twice, found in no scene, used before they are found,
+// or supposed with nothing to stand beside.
 export function lessonContentProblems(content: AnyLessonContent) {
   const { shots, conclusions } = content;
   const ids = conclusions.map(({ id }) => id);
   return [
     ...lineProblems(content),
+    ...flowProblems(content),
     ...ids
       .filter((id, index) => ids.indexOf(id) !== index)
       .map((id) => `conclusion ${id} is declared twice`),

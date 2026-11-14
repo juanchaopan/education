@@ -53,7 +53,6 @@ export const gardenLesson = {
     carried: ({ sprite, size }) => <SpriteUse sprite={sprite} size={size} />,
   },
   answer: {
-    shot: 'answer',
     question: answerQuestion,
     words: answerWords,
     choices: answerChoices,
