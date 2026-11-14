@@ -18,6 +18,10 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { onInterrupt, run } from './processes.mjs';
 
 const volumePrefix = 'education-visual-deps-';
+const keyLength = 16;
+// Workspaces on different lock files share the Docker daemon, so the sets of
+// volumes of the most recent lock files stay, not only the current one.
+const keptSets = 3;
 
 // A run that only sets the number of workers runs every test; any other
 // argument may leave tests out.
@@ -43,11 +47,31 @@ export function installDirectories(lock) {
 
 // One volume for each of those directories, named after the lock file.
 export function volumes(lockText) {
-  const key = createHash('sha256').update(lockText).digest('hex').slice(0, 16);
+  const key = createHash('sha256').update(lockText).digest('hex').slice(0, keyLength);
   return installDirectories(JSON.parse(lockText)).map((directory) => ({
     name: `${volumePrefix}${key}-${directory.replaceAll('/', '-')}`,
     directory,
   }));
+}
+
+// The names of the cache volumes to remove: those of every lock file except
+// the current one and the most recently created others, up to `keptSets` sets
+// in all. `existing` lists each volume's name and creation time.
+export function staleVolumes(existing, current, keep = keptSets) {
+  const keyOf = (name) => name.slice(volumePrefix.length, volumePrefix.length + keyLength);
+  const currentKeys = new Set(current.map(({ name }) => keyOf(name)));
+  const created = new Map();
+  for (const { name, createdAt } of existing) {
+    const key = keyOf(name);
+    created.set(key, Math.max(created.get(key) ?? 0, createdAt));
+  }
+  const recent = [...created]
+    .filter(([key]) => !currentKeys.has(key))
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, Math.max(keep - currentKeys.size, 0))
+    .map(([key]) => key);
+  const kept = new Set([...currentKeys, ...recent]);
+  return existing.map(({ name }) => name).filter((name) => !kept.has(keyOf(name)));
 }
 
 // The packages are installed once per set of volumes, under a lock on the
@@ -84,10 +108,12 @@ function baselineCopy({ update, filtered }) {
 export function containerScript(options, directories) {
   const ignored = [
     '.git',
+    '.claude/worktrees',
     'node_modules',
     'dist',
     'storybook-static',
     'test-results',
+    'review-recordings',
     ...(options.update && !options.filtered ? ['./visual/*-snapshots'] : []),
   ];
   // Arguments reach the script as its positional parameters, so they are
@@ -118,16 +144,24 @@ export function containerScript(options, directories) {
 }
 
 const docker = (args, options = { stdio: 'ignore' }) => spawnSync('docker', args, options);
+const output = (args) => docker(args, { encoding: 'utf8' }).stdout ?? '';
 
-// Volumes of an earlier lock file are removed; Docker keeps those a running
+// Removes the volumes `staleVolumes` names; Docker keeps those a running
 // container still uses.
-function removeOldVolumes(current) {
-  const listed = docker(['volume', 'ls', '--quiet', '--filter', `name=${volumePrefix}`], {
-    encoding: 'utf8',
-  });
-  const kept = new Set(current.map(({ name }) => name));
-  const old = (listed.stdout ?? '').split(/\r?\n/).filter((name) => name && !kept.has(name));
-  if (old.length) docker(['volume', 'rm', ...old]);
+function removeStaleVolumes(current) {
+  const names = output(['volume', 'ls', '--quiet', '--filter', `name=${volumePrefix}`])
+    .split(/\r?\n/)
+    .filter(Boolean);
+  if (!names.length) return;
+  const existing = output(['volume', 'inspect', '--format', '{{.Name}} {{.CreatedAt}}', ...names])
+    .split(/\r?\n/)
+    .filter(Boolean)
+    .map((line) => {
+      const [name, ...created] = line.split(' ');
+      return { name, createdAt: Date.parse(created.join(' ')) || 0 };
+    });
+  const stale = staleVolumes(existing, current);
+  if (stale.length) docker(['volume', 'rm', ...stale]);
 }
 
 function dockerArgs(name, image, options, cache) {
@@ -180,7 +214,7 @@ async function main() {
     return interrupted || status;
   } finally {
     docker(['rm', '--force', name]);
-    removeOldVolumes(cache);
+    removeStaleVolumes(cache);
   }
 }
 

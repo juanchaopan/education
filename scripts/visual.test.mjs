@@ -1,7 +1,13 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
-import { containerScript, installDirectories, parseOptions, volumes } from './visual.mjs';
+import {
+  containerScript,
+  installDirectories,
+  parseOptions,
+  staleVolumes,
+  volumes,
+} from './visual.mjs';
 
 const lock = (packages) => JSON.stringify({ packages: { '': {}, ...packages } });
 
@@ -51,10 +57,44 @@ test('the volumes of this repository are valid Docker volume names', () => {
   for (const { name } of volumes(text)) assert.match(name, /^[a-zA-Z0-9][a-zA-Z0-9_.-]+$/);
 });
 
+const volume = (key, directory, createdAt) => ({
+  name: `education-visual-deps-${key.padEnd(16, '0')}-${directory}`,
+  createdAt,
+});
+
+test('the cache keeps the current lock file and the newest earlier ones', () => {
+  const existing = [
+    volume('a', 'node_modules', 10),
+    volume('a', 'apps-api-node_modules', 11),
+    volume('b', 'node_modules', 20),
+    volume('c', 'node_modules', 30),
+    volume('d', 'node_modules', 40),
+    volume('e', 'node_modules', 5),
+  ];
+  const current = [{ name: existing[0].name, directory: 'node_modules' }];
+  assert.deepEqual(staleVolumes(existing, current, 3), [existing[2].name, existing[5].name]);
+  assert.deepEqual(
+    staleVolumes(existing, current, 1),
+    existing.slice(2).map(({ name }) => name),
+  );
+});
+
+test('a current lock file that has no volume yet removes none of the kept ones', () => {
+  const existing = [volume('a', 'node_modules', 10), volume('b', 'node_modules', 20)];
+  const current = [{ name: volume('f', 'node_modules', 0).name, directory: 'node_modules' }];
+  assert.deepEqual(staleVolumes(existing, current, 3), []);
+});
+
 const script = (argv) => containerScript(parseOptions(argv), ['node_modules']);
 const leavesOutBaselines = /--exclude='\.\/visual\/\*-snapshots'/;
 const replacesFolders = /-name "\*-snapshots" -exec rm -rf \{\} \+\ncp -r visual\/\*-snapshots/;
 const copiesWritten = /-newer \/tmp\/started -exec cp --parents -t \/repo \{\} \+/;
+
+test('the copy into the container leaves out other workspaces and recordings', () => {
+  const copy = script([]).split('\n')[0];
+  for (const name of ['.git', '.claude/worktrees', 'node_modules', 'review-recordings'])
+    assert.ok(copy.includes(`--exclude='${name}'`), name);
+});
 
 test('a comparison keeps the baselines and copies none back', () => {
   const comparison = script(['--grep', '书架']);
