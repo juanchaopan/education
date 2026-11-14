@@ -12,7 +12,9 @@ concurrency:
   cancel-in-progress: true
 jobs:
   # The integration tests against the real database, in the same order as a
-  # local `npm run test:db:local`.
+  # local `npm run test:db:local`. The `app` job runs the same PostgreSQL
+  # service; scripts/with-database.mjs starts that image, user and databases
+  # locally, and scripts/with-database.test.mjs checks this file against it.
   database:
     runs-on: ubuntu-latest
     timeout-minutes: 15

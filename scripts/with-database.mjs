@@ -107,7 +107,7 @@ async function runSteps(plan, env) {
   return 0;
 }
 
-export async function withDatabase(name, plan) {
+async function withDatabase(name, plan) {
   const port = await freePort();
   const password = randomBytes(24).toString('hex');
   try {

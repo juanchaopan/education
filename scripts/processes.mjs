@@ -29,7 +29,7 @@ export function end(child, signal) {
 }
 
 // The exit code that reports each signal, 128 plus its number.
-export const signals = { SIGINT: 130, SIGTERM: 143, SIGHUP: 129 };
+const signals = { SIGINT: 130, SIGTERM: 143, SIGHUP: 129 };
 
 // Handles the interrupts instead of exiting on them, so the script can remove
 // what it started; `stop` gets the signal and the exit code that reports it.
