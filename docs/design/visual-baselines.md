@@ -6,11 +6,11 @@
 
 截图取决于浏览器版本和系统字体，所以测试只在官方 Playwright 镜像里运行：`mcr.microsoft.com/playwright:v<版本>-noble`，版本号取自 `package-lock.json` 里安装的 `@playwright/test`。镜像固定了 Chromium 和字体；正文中文由镜像自带的文泉驿正黑（WenQuanYi Zen Hei）渲染，标题用构建时生成的霞鹜文楷子集（见 [网站视觉语言](visual-language.md#字体)）。文字一律用灰度抗锯齿（Chromium 的 `--disable-lcd-text`）：否则 Chromium 只在不透明的图层上用彩色的次像素抗锯齿，同一段文字的样子就取决于页面当时怎样分层。升级 Playwright 会换镜像，基准要随之重新生成并评审。
 
-本地和 CI 运行的是同一个命令 `npm run test:visual`（`scripts/visual.mjs`）：把仓库复制进容器（不带 `node_modules` 和构建产物），在容器里 `npm ci`、构建应用和 Storybook，再运行 `playwright.visual.config.ts`。本机需要 Docker 正在运行；复制进容器时仓库里的文件不能正在改动，否则复制会失败。本机的 `node_modules` 不会被改动，写回的基准和测试结果归仓库的所有者。环境变量 `CI` 会传进容器，CI 里因此禁止 `test.only`。所有视口按 1 倍像素截图，基准只用来发现布局、换行和颜色的变化。
+本地和 CI 运行的是同一个命令 `npm run test:visual`（`scripts/visual.mjs`）：把仓库复制进容器（不带 `node_modules` 和构建产物），构建应用和 Storybook，再运行 `playwright.visual.config.ts`。容器里的依赖装在 Docker 缓存卷里，卷名是 `education-visual-deps-` 加 `package-lock.json` 的哈希，每个 `node_modules` 目录一个卷：之后的运行直接复用，只有锁文件变了才在新卷里重新 `npm ci`，旧锁文件的卷由下一次运行删掉。同时开始的几次运行在卷上加锁，只装一次。本机需要 Docker 正在运行；复制进容器时仓库里的文件不能正在改动，否则复制会失败。本机的 `node_modules` 不会被改动，写回的基准和测试结果归仓库的所有者。容器叫 `education-visual-<随机>`，运行结束时删除，按 Ctrl+C 打断时也删除。预览服务器的端口 4190 和 6190 只在容器里，不占本机端口。环境变量 `CI` 会传进容器，CI 里因此禁止 `test.only`。所有视口按 1 倍像素截图，基准只用来发现布局、换行和颜色的变化。
 
 同一份代码每次截出的图都逐像素相同，所以 CI 里失败的测试会重试一次，但重试后才通过（flaky）也算失败：重试只用来看出是两次都失败还是只失败一次，不能让偶发的差异混过去。
 
-`--` 之后的参数原样交给 Playwright，例如用 `npm run test:visual -- -- --grep 孩子登录` 只比对部分测试，在内存紧张时用 `-- -- --workers=2` 减少同时打开的浏览器，或用 `-- -- --grep <名字> --repeat-each=20` 检查一张截图是否每次都相同。
+除 `--update` 以外的参数原样交给 Playwright，例如用 `npm run test:visual -- --grep 孩子登录` 只比对部分测试，用 `npm run test:visual -- visual/pages.spec.ts` 只跑一个测试文件，在内存紧张时用 `-- --workers=2` 减少同时打开的浏览器，或用 `-- --grep <名字> --repeat-each=20` 检查一张截图是否每次都相同。
 
 ## 截图前的条件
 
@@ -59,7 +59,7 @@
 
 基准不会被普通运行写入：配置里 `updateSnapshots: 'none'`，缺少或不同的基准都让测试失败。比对允许每张图最多 20 个像素不同（`maxDiffPixels`），这只是余量，截图本身每次都应逐像素相同。外观有意改变时：
 
-1. 运行 `npm run test:visual -- --update`。它运行全部测试、重新生成 `visual/*-snapshots/` 下的全部基准，已不存在的 story 或页面的旧基准随之删除。因为会整体替换基准，它只接受 `-- --workers=<n>`，不接受 `--grep` 之类的筛选。
+1. 只重新生成外观变了的页面或组件的基准：`npm run test:visual -- --update --grep <名字>` 或 `npm run test:visual -- --update visual/pages.spec.ts`。加了筛选的更新只把这次运行写出的基准拷回仓库，其他基准不动。不加筛选的 `npm run test:visual -- --update`（只加 `--workers=<n>` 也算不加筛选）运行全部测试、整体替换 `visual/*-snapshots/` 下的基准，已不存在的 story 或页面的旧基准随之删除；删掉 story 或页面以后要跑一次这样的更新。
 2. 用 `git status` 和 `git diff --stat` 看哪些图变了，逐张对照新旧图；改动和代码放在同一个 PR。没有改到的页面或组件的图也变了，说明截图不稳定：找出原因并让它满足上面的截图条件，不要只把图还原。
 3. PR 里写明哪些页面或组件的外观变了。`*-snapshots/**` 属于高风险路径，由维护者看过图后加 `human-reviewed`。
 

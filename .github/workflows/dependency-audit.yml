@@ -1,0 +1,38 @@
+name: dependency-audit
+# The full dependency audit, once a week: every severity, development
+# dependencies included. Its result changes when new advisories are
+# published, not with a change of ours, so it keeps one issue per advisory
+# instead of failing pull requests; the security job of CI blocks a pull
+# request only for high or critical advisories in runtime dependencies.
+on:
+  schedule:
+    - cron: '23 2 * * 1'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: dependency-audit
+  cancel-in-progress: false
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      # npm audit reads the lock file and exits non-zero when it finds
+      # anything; the script reads the report and fails only when the audit
+      # itself could not run.
+      - run: npm audit --json > "$RUNNER_TEMP/audit.json" || true
+      - name: Open, update or close the issue of each advisory
+        run: node scripts/dependency-audit.mjs "$RUNNER_TEMP/audit.json"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
