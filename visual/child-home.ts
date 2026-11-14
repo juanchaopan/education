@@ -98,6 +98,7 @@ export const noBooksApi: Api = {
 };
 
 // The garden lesson, opened by a child given its book, at its title card.
+// Opening it in practice mode marks the book opened.
 const garden: ProblemOpening = {
   id: 'garden-balance',
   version: 1,
@@ -112,6 +113,7 @@ const garden: ProblemOpening = {
 export const gardenLessonApi: Api = {
   'GET /api/v1/children/session': ok(child),
   'GET /api/v1/problems/garden-balance/1': ok(garden),
+  'POST /api/v1/problems/garden-balance/1/opened': { status: 204 },
   'GET /api/v1/problems/garden-balance/1/draft': ok({ draft: null }),
 };
 
