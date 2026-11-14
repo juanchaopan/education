@@ -58,6 +58,7 @@
 - 结果随外部变化的检查（依赖漏洞扫描这类，新公告发布后不改代码结果也会变），PR 上只拦改动能负责的：相对基线新出现的，或线上依赖里的 high/critical；其余交给定时运行，由它开或更新 issue。PR 因为不是本次改动造成的问题失败时，报告里写明，另开 PR 或记 issue，不混进本次改动。
 - CI 失败时先在本机用同一命令复现，再推修复；不稳定的测试开 issue 修，不靠反复重跑；基准截图只为有意的外观改动更新。
 - 互相不占用同一样东西的检查，机器扛得住时可以同时跑。能配置的端口每次换一个空闲的，就不算共用；test:e2e 开始时清空整个 test-results/，所以同一个工作区里它和 test:visual、test:accounts 共用输出目录，不同工作区各有自己的 test-results/。用 Docker 的检查共用一个 Docker 虚拟机，内存要按它算。
+- 多个 issue 并行开发时，重型检查一个一个启动：先拿 `.git/dev-workflow-locks/launch.lock`，持锁的才看空闲内存、启动检查，等它占上内存再放锁，下一个看到的才是真实剩余；这台机器同一时间只扛得住一个 test:e2e、test:visual 或 test:accounts。
 - 重型检查跑完，不管通过还是失败，它启动的东西都不再运行：test:visual 的容器、test:db:local 和 test:e2e:local 的数据库容器、test:accounts 的 Compose 项目由脚本自己清理，按 Ctrl+C 打断时也一样；test:visual 的依赖缓存卷留着给下次用，package-lock.json 变了以后旧卷由下一次运行删掉。脚本被强行结束、来不及清理时，用 docker ps -a --filter name=education-db- 和 --filter name=education-visual- 找到留下的容器执行 docker rm -f，test:accounts 用 docker compose ls 找到 education-accounts- 开头的项目执行 down -v；自己手动启动的服务（例如按 playwright.config.ts 的端口和命令启动的 API）跑完全部关掉。收尾后 docker ps 里看不到这些检查的容器。Docker Desktop：检查要用而它没在运行时用 docker desktop start 启动，连续跑几个 Docker 检查时只启动一次；最后一个跑完后，由这次启动它的一方用 docker desktop stop 退出，原本就开着的不动。
 - 这台机器跑不了的检查交给 CI，PR 里写明"本机未运行"和原因：在 Windows 上，test:toolchain 里调用 oxlint 的用例找不到 node_modules/.bin/oxlint；test:accounts 的脚本经 unix:///var/run/docker.sock 连 Docker、从 /etc/ssl/certs 读 CA，只能在 Linux 上跑。
 
