@@ -47,7 +47,7 @@ export type LessonScene<Line extends string> = Readonly<{ prompt: string; entry:
 // order they are said, and its conclusions in the order the board shows
 // them. `answerScene` asks for the final answer; the page plays past it only
 // once the child has answered right, so the scenes after it count as
-// answered, for the conclusion board and for what a model may see.
+// answered, for the conclusion board.
 export type LessonContent<
   Shot extends string,
   Line extends string,
