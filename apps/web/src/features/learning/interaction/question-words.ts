@@ -21,8 +21,9 @@ const carryOn: Alternative = { instead: '我们接着做题吧。' };
 
 // A question the server could not take, as when the page no longer matches
 // the lesson the server keeps after the site changed: opening the problem
-// again lets the child ask once more.
-const notTaken = '这个问题小兔这次没法回答，重新打开题目再问吧。';
+// again lets the child ask once more. The teacher says it in the first
+// person, as the subtitle already names whichever teacher tells the lesson.
+const notTaken = '这个问题我这次答不上来，重新打开题目再问吧。';
 
 // What the question box beside the microphone shows, if anything: the voice
 // while the child holds it, the words being heard, the words to read over,
