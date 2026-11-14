@@ -25,8 +25,11 @@ test.describe.configure({ retries: 0 });
 
 const nickname = '小鹿';
 const unavailableAi = '暂未启用：现在不会发送任何内容，孩子用题目提示继续。';
-// The one maintained book, which holds the one maintained problem.
-const maintainedBook = '学而思';
+// The maintained books in the shelf's grade order, each holding one problem.
+const maintainedBooks = [
+  { name: '学而思', filed: '一年级 · 数学 · 1 题' },
+  { name: '学而思', filed: '六年级 · 数学 · 1 题' },
+];
 
 type ChildLogin = { code: string; pin: string };
 type Request = { method: 'GET' | 'POST' | 'PUT'; path: string; data?: object };
@@ -61,7 +64,7 @@ async function chooseShelf(parent: Page, name: string) {
 }
 
 // The parent pages invent no learning: the child has no records and no books,
-// and the child's shelf holds only the maintained books.
+// and the child's shelf holds only the maintained books, none given yet.
 async function expectNothingRecorded(parent: Page) {
   await openParentPart(parent, '学习记录');
   const summary = parent.getByRole('region', { name: '学习摘要' });
@@ -70,16 +73,18 @@ async function expectNothingRecorded(parent: Page) {
   await expect(summary.getByText('还没有这位孩子的学习记录。')).toBeVisible();
   await openParentPart(parent, '练习安排');
   await chooseShelf(parent, nickname);
-  const book = parent.getByRole('article');
-  await expect(book).toHaveCount(1);
-  await expect(book.getByRole('heading')).toHaveText(maintainedBook);
-  await expect(book).toContainText('一年级 · 数学 · 1 题');
-  // The switch's name holds the child and the book around the words it
-  // shows; screen-reader-only words may come with spaces around them.
-  await expect(book.getByRole('button', { name: /^为小鹿\s*安排\s*《学而思》$/ })).toHaveAttribute(
-    'aria-pressed',
-    'false',
-  );
+  const shelf = parent.getByRole('article');
+  await expect(shelf).toHaveCount(maintainedBooks.length);
+  for (const [place, { name, filed }] of maintainedBooks.entries()) {
+    const book = shelf.nth(place);
+    await expect(book.getByRole('heading')).toHaveText(name);
+    await expect(book).toContainText(filed);
+    // The switch's name holds the child and the book around the words it
+    // shows; screen-reader-only words may come with spaces around them.
+    await expect(
+      book.getByRole('button', { name: new RegExp(`^为${nickname}\\s*安排\\s*《${name}》$`) }),
+    ).toHaveAttribute('aria-pressed', 'false');
+  }
   await chooseShelf(parent, '已安排');
   await expect(parent.getByText('这里还没有书')).toBeVisible();
 }
