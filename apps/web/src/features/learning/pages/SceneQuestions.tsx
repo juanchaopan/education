@@ -1,3 +1,4 @@
+import type { LessonRecord } from '@education/contracts';
 import { AskMicrophone } from '../components/lesson-stage/AskMicrophone';
 import { StagePlace } from '../components/lesson-stage/LessonStage';
 import { QuestionBox } from '../components/lesson-stage/QuestionBox';
@@ -15,6 +16,8 @@ type Props = {
   // The step of the final answer, where a question counts as help.
   answerStep: string;
   guidance: string;
+  // The lesson so far as the page has seen it, which a question carries.
+  record: () => LessonRecord;
   // The narration a question holds, until the child carries it on.
   narration: { pause: () => void };
   turn: MicrophoneTurn;
@@ -33,12 +36,13 @@ export function SceneQuestions({
   stepId,
   answerStep,
   guidance,
+  record,
   narration,
   turn,
   audio,
   subtitle,
 }: Props) {
-  const question = useLessonQuestion(scope, stepId, { answerStep, turn, audio });
+  const question = useLessonQuestion(scope, stepId, record, { answerStep, turn, audio });
   const { voice } = question;
   const phase = questionPhase(question);
   useSubtitleWords(subtitle, 'question', questionWords(question, guidance));

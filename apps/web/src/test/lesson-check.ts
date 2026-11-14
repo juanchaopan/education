@@ -1,4 +1,10 @@
-import { lessonContentProblems, type AnyLessonContent } from '@education/problems/lesson-content';
+import { KeyAction, ScenePicture } from '@education/contracts';
+import {
+  lessonContentProblems,
+  pictureProblems,
+  type AnyLessonContent,
+} from '@education/problems/lesson-content';
+import { Value } from '@sinclair/typebox/value';
 import {
   boardReach,
   establishing,
@@ -88,11 +94,12 @@ function scriptProblems({ script, content }: LessonOutline) {
   ];
 }
 
-// The lesson's props stand in its backdrop's clearing in every scene, as that
-// scene frames the backdrop; the props stay put while the backdrop zooms and
-// moves. Its backdrop and teacher are library ids by type, so a lesson naming
-// any other does not compile.
-function stagingProblems({ backdrop, staging, script }: LessonOutline) {
+// The lesson's props stand in the clearing of the backdrop its content names
+// in every scene, as that scene frames the backdrop; the props stay put while
+// the backdrop zooms and moves. Its backdrop and teacher are library ids by
+// type, so a lesson naming any other does not compile.
+function stagingProblems({ content, staging, script }: LessonOutline) {
+  const { backdrop } = content;
   const { clearZone } = backdrops[backdrop];
   return script.shots
     .filter((shot) => !inside(staging, framed(clearZone, script.cameras?.[shot] ?? establishing)))
@@ -146,6 +153,30 @@ function conclusionProblems(lesson: LessonOutline) {
   return lesson.content.conclusions.flatMap((conclusion) => answeringProblems(conclusion, lesson));
 }
 
+// An id a question can carry in its lesson record.
+const carried = (id: string) => Value.Check(KeyAction, { stepId: 'scene', action: id, times: 1 });
+
+// What a question tells the teacher of the lesson: every record word is
+// named by an id a question can carry, and every scene's picture fits the
+// question request and uses only the words the content declares.
+function recordProblems({ content, pictures }: LessonOutline) {
+  const { places, things, states, actions } = content.recordWords;
+  const ids = [places, things, states, actions].flatMap((words) => Object.keys(words));
+  return [
+    ...ids
+      .filter((id) => !carried(id))
+      .map((id) => `record word ${id} is no id a question carries`),
+    ...content.shots.flatMap((shot) => {
+      const picture = pictures[shot];
+      if (!picture) return [`scene ${shot} has no picture`];
+      return [
+        ...(Value.Check(ScenePicture, picture) ? [] : [`the picture of ${shot} is too large`]),
+        ...pictureProblems(content, picture).map((problem) => `the picture of ${shot}: ${problem}`),
+      ];
+    }),
+  ];
+}
+
 // The server answers questions from the lesson content its plugin carries,
 // so it is the very content the site plays. Content is plain data, so the
 // same declaration reads the same as JSON.
@@ -169,8 +200,9 @@ function pluginProblems(listed: ProblemVersion, lesson: LessonOutline, plugin?: 
 // Everything wrong with a registered lesson, or nothing: its version against
 // its registry line, its content, with what its lesson flow asks of it, its
 // script and recordings against the content, where its props stand against
-// its backdrop in each scene, its conclusions and their board, and the
-// server's plugin for it, with its steps, hints and lesson content.
+// its backdrop in each scene, its conclusions and their board, what its
+// scenes tell the teacher, and the server's plugin for it, with its steps,
+// hints and lesson content.
 export function lessonProblems(
   listed: ProblemVersion,
   lesson: LessonOutline,
@@ -183,6 +215,7 @@ export function lessonProblems(
     ...stagingProblems(lesson),
     ...conclusionProblems(lesson),
     ...boardProblems(lesson),
+    ...recordProblems(lesson),
     ...pluginProblems(listed, lesson, plugin),
   ];
 }
@@ -194,7 +227,7 @@ const fileName = (clip: string) => clip.slice(clip.lastIndexOf('/') + 1);
 // recorded by hand without the tool, or a voice changed in lesson-voice.json
 // without recording the lesson again is found here.
 export function narrationProblems(
-  { script }: LessonOutline,
+  { script }: Pick<LessonOutline, 'script'>,
   config: VoiceConfig,
   record?: NarrationRecord,
 ) {

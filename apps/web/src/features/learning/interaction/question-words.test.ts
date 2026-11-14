@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { teachers } from '../media/teachers/teachers';
 import { questionPhase, questionWords } from './question-words';
 
 const idle = { status: 'idle' } as const;
@@ -50,6 +51,20 @@ describe("the teacher's words about the question", () => {
     expect(
       questionWords({ ...quiet, reply: { status: 'fallback', reason: 'timeout' } }, guidance).text,
     ).toMatch(/碰一碰这个苹果。$/);
+  });
+
+  it('asks the child to open the problem again when the server could not take the question', () => {
+    expect(
+      questionWords({ ...quiet, reply: { status: 'fallback', reason: 'invalid-input' } }, guidance),
+    ).toEqual({ text: '这个问题我这次答不上来，重新打开题目再问吧。碰一碰这个苹果。' });
+  });
+
+  it('says it as whichever teacher tells the lesson, naming none of them', () => {
+    const { text } = questionWords(
+      { ...quiet, reply: { status: 'fallback', reason: 'invalid-input' } },
+      guidance,
+    );
+    for (const { name } of Object.values(teachers)) expect(text).not.toContain(name);
   });
 
   it('says why speech could not be used, and sends the child back to the scene', () => {

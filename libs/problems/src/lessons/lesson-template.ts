@@ -7,6 +7,7 @@ import { lessonContent } from '../lesson-content.js';
 export const lessonTemplateLesson = lessonContent({
   problem: { id: 'lesson-template', version: 1 },
   flow: 'scene-by-scene',
+  backdrop: 'forest-picnic-morning',
   vocabulary: ['小石子', '碗', '一颗', '几颗'],
   shots: ['look', 'count', 'after'],
   answerScene: 'count',
@@ -30,4 +31,13 @@ export const lessonTemplateLesson = lessonContent({
     },
   },
   conclusions: [],
+  // The places on screen and the things there, how the picture stands, and
+  // the child's key actions, which the teacher is told about in words when
+  // the child asks a question.
+  recordWords: {
+    places: { table: '桌上', bowl: '碗里' },
+    things: { pebble: { name: '小石子', unit: '颗' } },
+    states: {},
+    actions: { 'pebble-to-bowl': '把一颗小石子放进碗里' },
+  },
 });

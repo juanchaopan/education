@@ -127,7 +127,7 @@ export const PropsInTheClearing: Story = {
       >
         <GardenScene state={state} handling={handling} />
         <ClearingOutline
-          box={framed(backdrops[gardenLesson.backdrop].clearZone, establishing)}
+          box={framed(backdrops[content.backdrop].clearZone, establishing)}
           kind="clearing"
         />
         <ClearingOutline box={gardenLesson.staging} kind="staging" />

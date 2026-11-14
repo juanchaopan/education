@@ -8,6 +8,7 @@ import { lessonContent } from '../lesson-content.js';
 export const gardenBalanceLesson = lessonContent({
   problem: { id: 'garden-balance', version: 1 },
   flow: 'scene-by-scene',
+  backdrop: 'garden-morning',
   vocabulary: ['青菜', '苹果', '黄瓜', '天平', '秤盘', '一样重', '一组', '每组', '几根'],
   shots: ['leaves', 'apples', 'exchange', 'bridge', 'answer', 'variation', 'end'],
   answerScene: 'answer',
@@ -137,6 +138,33 @@ export const gardenBalanceLesson = lessonContent({
       answer: { amount: [9, 'cucumber'], says: '1 棵青菜和 3 组黄瓜一样重，一共 9 根黄瓜' },
     },
   ],
+  // One scale stands in the middle of every scene, with the basket at its
+  // right; the variation's basket holds the two spare cucumbers and its sign.
+  recordWords: {
+    places: {
+      'left-pan': '天平左盘（画面左边）',
+      'right-pan': '天平右盘（画面右边）',
+      basket: '天平右边的篮子',
+    },
+    things: {
+      cabbage: { name: '青菜', unit: '棵' },
+      apple: { name: '苹果', unit: '个' },
+      cucumber: { name: '黄瓜', unit: '根' },
+      'group-of-three': { name: '黄瓜，每组 3 根', unit: '组' },
+      'group-of-two': { name: '黄瓜，每组 2 根', unit: '组' },
+    },
+    states: {
+      level: '天平是平的',
+      'apples-down': '苹果这边沉下去了',
+      'two-each-sign': '篮子上写着「一个苹果换两根」',
+    },
+    actions: {
+      'cabbage-to-basket': '把一棵青菜拖进篮子',
+      'apple-to-basket': '从右盘拿走一个苹果放进篮子',
+      'apple-tapped': '碰了碰苹果',
+      'apple-swapped': '把一个苹果换成一组黄瓜',
+    },
+  },
 });
 
 // The garden problem's variation, 「假如 1 个苹果 = 2 根黄瓜」: what the child

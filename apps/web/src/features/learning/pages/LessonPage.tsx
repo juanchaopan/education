@@ -1,13 +1,16 @@
 import { useState, type ComponentType, type ReactNode } from 'react';
+import type { LessonRecord } from '@education/contracts';
 import { StagePlace } from '../components/lesson-stage/LessonStage';
 import type { LearningScope } from '../data-access/learning-request';
 import type { AnswerEvents } from '../data-access/useLessonAnswer';
 import { useLessonDraft } from '../data-access/useLessonDraft';
 import { useLessonPreferences } from '../data-access/useLessonPreferences';
 import { useLessonRecordings } from '../data-access/useLessonRecordings';
-import type { FilmState } from '../interaction/lesson-film';
+import type { FilmState, FilmStory } from '../interaction/lesson-film';
+import type { LessonRecording } from '../interaction/lesson-record';
 import { createSubtitle, type Subtitle } from '../interaction/subtitle';
 import { useLessonFilm, type LessonFilm } from '../interaction/useLessonFilm';
+import { useLessonRecord } from '../interaction/useLessonRecord';
 import type { AnswerProgress, BoardScenes } from '../lessons/lesson-board';
 import { filmStory, resumed, stageLook, type LessonDefinition } from '../lessons/lesson-definition';
 import { createMicrophoneTurn, type MicrophoneTurn } from '../voice/microphone-turn';
@@ -46,6 +49,65 @@ function useAnswerProgress<Shot extends string>({ shots, answerScene }: BoardSce
   };
 }
 
+// What a lesson's film plays from: its story, how its scenes are recorded,
+// and its scenes in teaching order with the one that asks for the count.
+type Played<
+  State extends FilmState<Shot>,
+  Shot extends string,
+  Line extends string,
+  Move,
+> = Readonly<{
+  tale: FilmStory<State, Shot, Line, Move>;
+  recording: LessonRecording<State, Move>;
+  scenes: BoardScenes<Shot>;
+}>;
+
+// The film as it plays, with what the page follows beside it: how far the
+// child has got with the count, and the lesson so far as the page has seen
+// it, which questions carry.
+function usePlayingFilm<
+  State extends FilmState<Shot>,
+  Shot extends string,
+  Line extends string,
+  Move,
+>(
+  { tale, recording, scenes }: Played<State, Shot, Line, Move>,
+  onArrive: (shot: Shot) => void,
+  muted: boolean,
+) {
+  const answer = useAnswerProgress(scenes);
+  const record = useLessonRecord(recording, scenes.shots);
+  const film = useLessonFilm(tale, {
+    onArrive: (shot, state) => {
+      answer.arrive(shot);
+      record.arrive(shot, state);
+      onArrive(shot);
+    },
+    onMove: record.move,
+    muted,
+  });
+  return { film, answer, record };
+}
+
+// What the controls in the picture share: the playing film, the lesson so
+// far as the page has seen it, the teacher's subtitle, the lesson's one
+// microphone, and what the answer tells the conclusion board.
+type Shared<State, Shot extends string, Move> = Readonly<{
+  film: LessonFilm<State, Shot, Move>;
+  record: () => LessonRecord;
+  subtitle: Subtitle;
+  turn: MicrophoneTurn;
+  answer: AnswerEvents;
+}>;
+
+// Where the film starts, what the page does on reaching a scene, and the
+// controls it adds to those every lesson has.
+type BodyProps<State, Shot extends string, Move> = {
+  start?: Start<Shot>;
+  onArrive?: (shot: Shot) => void;
+  controls: (shared: Shared<State, Shot, Move>) => ReactNode;
+};
+
 // One problem's lesson page, built once for its own definition, so the page
 // holds the lesson to its own state, scenes, lines, moves and props. Anyone
 // can watch and play the scenes; saving, questions and the answer need a
@@ -62,36 +124,24 @@ export function lessonPage<
 ): ComponentType<{ csrf?: string }> {
   const { script, story } = lesson;
   const look = stageLook(lesson);
-  const tale = filmStory(script, story);
+  const played = {
+    tale: filmStory(script, story),
+    recording: lesson.record,
+    scenes: lesson.content,
+  };
   const firstScene = script.shots[0];
   const first = { stepId: firstScene, drawing: [] };
   const Screen = lessonScreen(lesson, look);
-  // What the controls in the picture share: the playing film, the teacher's
-  // subtitle, the lesson's one microphone, and what the answer tells the
-  // conclusion board.
   type Film = LessonFilm<State, Shot, Move>;
-  type Lesson = { film: Film; subtitle: Subtitle; turn: MicrophoneTurn; answer: AnswerEvents };
-  type BodyProps = {
-    start?: Start<Shot>;
-    onArrive?: (shot: Shot) => void;
-    controls: (lesson: Lesson) => ReactNode;
-  };
 
   // The playing film filling the screen, its recordings fetched as the page
   // opens, its sound and captions as the child chose them on this device, and
   // the controls every lesson has beside the page's own, with the conclusions
   // it keeps when its way of teaching uses the board.
-  function Body({ start = {}, onArrive, controls }: BodyProps) {
+  function Body({ start = {}, onArrive = () => {}, controls }: BodyProps<State, Shot, Move>) {
     const recordings = useLessonRecordings(script.lines);
     const preferences = useLessonPreferences();
-    const answer = useAnswerProgress(lesson.content);
-    const film = useLessonFilm(tale, {
-      onArrive: (shot) => {
-        answer.arrive(shot);
-        onArrive?.(shot);
-      },
-      muted: !preferences.sound,
-    });
+    const { film, answer, record } = usePlayingFilm(played, onArrive, !preferences.sound);
     const [subtitle] = useState(createSubtitle);
     const [turn] = useState(createMicrophoneTurn);
     return (
@@ -109,7 +159,7 @@ export function lessonPage<
               teacher={look.teacher}
             >
               <KeptConclusions lesson={lesson} state={film.state} progress={answer.progress} />
-              {controls({ film, subtitle, turn, answer: answer.events })}
+              {controls({ film, record: record.read, subtitle, turn, answer: answer.events })}
             </FilmControls>
           }
         />
@@ -141,12 +191,13 @@ export function lessonPage<
         onArrive={(shot) => {
           if (story.savesProgress(shot)) void draft.saveAs({ stepId: shot, drawing: [] });
         }}
-        controls={({ film, subtitle, turn, answer }) => (
+        controls={({ film, record, subtitle, turn, answer }) => (
           <LessonPanels
             lesson={lesson}
             teacher={look.teacher.name}
             scope={scope}
             film={film}
+            record={record}
             turn={turn}
             subtitle={subtitle}
             draft={draft}

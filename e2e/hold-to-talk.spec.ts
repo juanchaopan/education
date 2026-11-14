@@ -1,7 +1,12 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { expect, test, type Locator, type Page, type Request } from '@playwright/test';
-import { gardenApi, round, signInAtTheGardenAnswer } from './child-at-the-answer.js';
-import { gardenFilm } from './garden-film.js';
+import {
+  gardenApi,
+  round,
+  signInAtTheGardenAnswer,
+  signInAtTheGardenStart,
+} from './child-at-the-answer.js';
+import { gardenFilm, movesToTheAnswer, play } from './garden-film.js';
 import { centreOf, holdWhile } from './hold.js';
 
 // Speaking in the garden lesson with a real browser microphone. Chromium
@@ -54,10 +59,10 @@ test.use({
 // What the lesson asked of the server, in order.
 type Asked = { path: string; body?: Record<string, unknown> };
 
-// A signed-in child whose saved place is the answer scene, and a server that
-// hears each of `heard` in turn, the last one in every later recording, and
-// answers every question.
-async function serveLesson(page: Page, heard: readonly string[]) {
+// A signed-in child, by default one whose saved place is the answer scene,
+// and a server that hears each of `heard` in turn, the last one in every
+// later recording, and answers every question.
+async function serveLesson(page: Page, heard: readonly string[], signIn = signInAtTheGardenAnswer) {
   const asked: Asked[] = [];
   let recordings = 0;
   const note = (request: Request) => {
@@ -67,7 +72,7 @@ async function serveLesson(page: Page, heard: readonly string[]) {
       body: body ? JSON.parse(body) : undefined,
     });
   };
-  await signInAtTheGardenAnswer(page);
+  await signIn(page);
   await page.route(`**${gardenApi}/answer`, (route) => {
     note(route.request());
     const body = route.request().postDataJSON() as { action?: string; attemptId?: string } | null;
@@ -104,6 +109,8 @@ async function openAnswer(page: Page) {
 const askButton = (film: Locator) => film.getByRole('button', { name: '按住问小兔' });
 // The question box's voice meter while the microphone is held.
 const listening = (page: Page) => page.getByRole('status').filter({ hasText: '我在听' });
+const sentQuestion = (asked: readonly Asked[]) =>
+  asked.find(({ path }) => path.endsWith('/question'))?.body;
 
 test.skip(({ browserName }) => browserName !== 'chromium', 'Fake microphones are Chromium’s');
 
@@ -151,9 +158,70 @@ test('a question is held to ask, read over and sent; while answering it is help 
     [path.split('/').at(-1), body?.action].filter(Boolean).join(':'),
   );
   expect(order.slice(order.indexOf('answer:question'))).toEqual(['answer:question', 'question']);
-  expect(asked.find(({ path }) => path.endsWith('/question'))?.body).toEqual({
+  // Picked up at the answer scene, the page has seen no earlier scene.
+  expect(sentQuestion(asked)).toEqual({
     stepId: 'answer',
     text: '要数几组黄瓜？',
+    record: {
+      now: {
+        things: [
+          { place: 'left-pan', thing: 'cabbage', count: 1 },
+          { place: 'right-pan', thing: 'apple', count: 0 },
+          { place: 'right-pan', thing: 'group-of-three', count: 3 },
+        ],
+        states: ['level'],
+      },
+      ended: [],
+      actions: [],
+    },
+  });
+});
+
+test('a question carries the scenes played so far and what the child did in them', async ({
+  page,
+}) => {
+  test.setTimeout(120_000);
+  const asked = await serveLesson(page, ['刚才拿走了几个苹果'], signInAtTheGardenStart);
+  await page.goto('/problems/garden-balance/1');
+  await page.getByRole('button', { name: /开始短片/ }).click({ timeout: 30_000 });
+  // The cabbage into the basket, then apples until the scale is level and
+  // the next scene asks to touch the apple.
+  await play(movesToTheAnswer(page).slice(0, 4));
+  const { film } = gardenFilm(page);
+  await holdWhile(page, askButton(film), () => page.waitForTimeout(1200));
+  await film.getByRole('button', { name: '发给小兔' }).click();
+  await expect.poll(() => sentQuestion(asked)).toBeDefined();
+  expect(sentQuestion(asked)).toMatchObject({
+    stepId: 'exchange',
+    record: {
+      now: {
+        things: [
+          { place: 'left-pan', thing: 'apple', count: 1 },
+          { place: 'right-pan', thing: 'cucumber', count: 0 },
+        ],
+        states: ['apples-down'],
+      },
+      ended: [
+        // The scene ends with the cabbage in the basket, the apples sinking.
+        { stepId: 'leaves', picture: { states: ['apples-down'] } },
+        {
+          stepId: 'apples',
+          picture: {
+            things: [
+              { place: 'left-pan', thing: 'cabbage', count: 1 },
+              { place: 'right-pan', thing: 'apple', count: 3 },
+              { place: 'basket', thing: 'cabbage', count: 1 },
+              { place: 'basket', thing: 'apple', count: 3 },
+            ],
+            states: ['level'],
+          },
+        },
+      ],
+      actions: [
+        { stepId: 'leaves', action: 'cabbage-to-basket', times: 1 },
+        { stepId: 'apples', action: 'apple-to-basket', times: 3 },
+      ],
+    },
   });
 });
 

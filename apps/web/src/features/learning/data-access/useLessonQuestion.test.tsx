@@ -1,4 +1,5 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
+import type { LessonRecord } from '@education/contracts';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { FakeRecorder, fakeMicrophone } from '../../../test/fake-recorder';
 import { queryWrapper } from '../../../test/query-wrapper';
@@ -15,10 +16,24 @@ const scope = { id: 'garden-balance', version: 1, csrf: 'session-token' };
 const round = '11111111-1111-1111-1111-111111111111';
 const reply = { status: 'ready', source: 'ai', reply: '看看哪边低一些。' } as const;
 
+// The lesson's record as the page keeps it, which changes as the child plays.
+function recordOf(apples: number): LessonRecord {
+  return {
+    now: { things: [{ place: 'right-pan', thing: 'apple', count: apples }], states: [] },
+    ended: [],
+    actions: [],
+  };
+}
+let record = recordOf(6);
+
 function setup(stepId = 'apples') {
   const microphone = fakeMicrophone();
   return renderHook(
-    ({ step }) => useLessonQuestion(scope, step, { host: microphone.host, answerStep: 'answer' }),
+    ({ step }) =>
+      useLessonQuestion(scope, step, () => record, {
+        host: microphone.host,
+        answerStep: 'answer',
+      }),
     { initialProps: { step: stepId }, wrapper: queryWrapper() },
   );
 }
@@ -33,6 +48,7 @@ async function say(result: ReturnType<typeof setup>['result'], text: string) {
 
 beforeEach(() => {
   FakeRecorder.reset();
+  record = recordOf(6);
   vi.mocked(readAnswerRound).mockResolvedValue({ round });
   vi.mocked(requestTeacherReply).mockResolvedValue(reply);
 });
@@ -49,6 +65,7 @@ it('lets the child read over and correct the question before it goes to the teac
   expect(vi.mocked(requestTeacherReply).mock.calls[0]![1]).toEqual({
     stepId: 'apples',
     text: '为什么苹果这边低？',
+    record: recordOf(6),
   });
   expect(result.current.voice).toEqual({ status: 'idle' });
   expect(recordQuestion).not.toHaveBeenCalled();
@@ -63,13 +80,16 @@ it('sends nothing when the text was emptied', async () => {
   expect(requestTeacherReply).not.toHaveBeenCalled();
 });
 
-it('asks about the scene the question was asked in, even after the scene moved on', async () => {
+it('asks about the scene the question was asked in, as it stood then, even after it moved on', async () => {
   const { result, rerender } = setup('apples');
   await say(result, '为什么要拿走苹果？');
+  record = recordOf(3);
   rerender({ step: 'exchange' });
   await act(() => result.current.send());
   await waitFor(() => expect(requestTeacherReply).toHaveBeenCalledOnce());
-  expect(vi.mocked(requestTeacherReply).mock.calls[0]![1].stepId).toBe('apples');
+  const sent = vi.mocked(requestTeacherReply).mock.calls[0]![1];
+  expect(sent.stepId).toBe('apples');
+  expect(sent.record).toEqual(recordOf(6));
 });
 
 it('records a question asked while answering as help, once a round, before it goes out', async () => {

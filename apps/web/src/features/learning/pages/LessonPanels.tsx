@@ -1,3 +1,4 @@
+import type { LessonRecord } from '@education/contracts';
 import { useFlash } from '../../../shared/lib/useFlash';
 import { DraftNotice } from '../components/DraftNotice';
 import { StagePlace } from '../components/lesson-stage/LessonStage';
@@ -40,6 +41,8 @@ type Props<Shot extends string> = {
   teacher: string;
   scope: LearningScope;
   film: PanelFilm<Shot>;
+  // The lesson so far as the page has seen it, which a question carries.
+  record: () => LessonRecord;
   // The lesson's one microphone, which the answer and the questions share,
   // and the teacher's subtitle, which they both speak through.
   turn: MicrophoneTurn;
@@ -81,6 +84,7 @@ export function LessonPanels<Shot extends string>({
   teacher,
   scope,
   film,
+  record,
   turn,
   subtitle,
   draft,
@@ -132,6 +136,7 @@ export function LessonPanels<Shot extends string>({
         stepId={shot}
         answerStep={answerScene}
         guidance={guidance(script, shot)}
+        record={record}
         narration={film}
         turn={turn}
         audio={film.chime.audio}

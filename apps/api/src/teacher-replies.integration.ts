@@ -1,8 +1,10 @@
 import { randomBytes, randomUUID } from 'node:crypto';
 import pg from 'pg';
 import { afterAll, afterEach, expect, it, vi } from 'vitest';
+import type { LessonRecord } from '@education/contracts';
 import { lessonContent } from '@education/problems/lesson-content';
 import { createProblemRegistry } from '@education/problems/server';
+import { lessonMaterial } from './ai/domain/lesson-material.js';
 import { aiConsentPolicies } from './identity/domain/ai-consent-policy.js';
 import { csrfToken, tokenHash } from './identity/services/session-security.js';
 import { createTeacherQuestion } from './teacher-question-application.js';
@@ -21,6 +23,7 @@ const book = { id: 'fixture-shapes', grade: '一年级', subject: '数学', cate
 const lesson = lessonContent({
   problem,
   flow: 'scene-by-scene',
+  backdrop: 'garden-morning',
   vocabulary: ['点'],
   shots: ['count-left', 'done'],
   answerScene: 'count-left',
@@ -33,12 +36,21 @@ const lesson = lessonContent({
     done: { prompt: '孩子数完了左边的点。', entry: ['bye'] },
   },
   conclusions: [],
+  recordWords: {
+    places: { left: '左边' },
+    things: { dot: { name: '点', unit: '个' } },
+    states: {},
+    actions: { 'dot-tapped': '点了一个点' },
+  },
 });
 const registry = createProblemRegistry(
   [
     {
       summary: { ...problem, title: 'fixture', book: book.id, sequence: 1 },
-      feedback: { 'count-left': { prompt: '数一数左边的点。' } },
+      feedback: {
+        'count-left': { prompt: '数一数左边的点。' },
+        done: { prompt: '孩子数完了左边的点。' },
+      },
       lesson,
       checkStep: ({ answer }) => ({
         status: answer === '三个' ? 'correct' : 'uncertain',
@@ -202,38 +214,85 @@ it('withholds a reply that arrives after the family is deleted and still settles
 });
 
 const ask = (send: typeof fetch) => createTeacherQuestion(pool, env, send, registry.find);
+const record: LessonRecord = {
+  now: { things: [{ place: 'left', thing: 'dot', count: 3 }], states: [] },
+  ended: [],
+  actions: [{ stepId: 'count-left', action: 'dot-tapped', times: 2 }],
+};
+const asked = (text: string) => ({ stepId: 'count-left', text, record });
 
 it('answers a question the rules settle without consent, the provider or any usage record', async () => {
   const owner = await child(false);
   const send = vi.fn<typeof fetch>();
-  await expect(
-    ask(send)(owner.credentials, problem, { stepId: 'count-left', text: '三个' }),
-  ).resolves.toEqual({ status: 'ready', source: 'rules', reply: '数对了！' });
-  await expect(
-    ask(send)(owner.credentials, problem, { stepId: 'count-left', text: '从哪里数？' }),
-  ).resolves.toEqual({ status: 'fallback', reason: 'unauthorized' });
+  await expect(ask(send)(owner.credentials, problem, asked('三个'))).resolves.toEqual({
+    status: 'ready',
+    source: 'rules',
+    reply: '数对了！',
+  });
+  await expect(ask(send)(owner.credentials, problem, asked('从哪里数？'))).resolves.toEqual({
+    status: 'fallback',
+    reason: 'unauthorized',
+  });
   expect(send).not.toHaveBeenCalled();
   expect(await usage(owner.family)).toEqual([]);
 });
 
-it('sends a question only with its scene, answers in one sentence and settles the usage', async () => {
+it('sends a question only with the lesson so far, answers in one sentence and settles the usage', async () => {
   const owner = await child(true);
   const reply = { reply: '从左边第一个点开始，一个一个数。', injection: false };
   const send = vi.fn<typeof fetch>(async () => providerReply(JSON.stringify(reply)));
-  await expect(
-    ask(send)(owner.credentials, problem, { stepId: 'count-left', text: '从哪里数？' }),
-  ).resolves.toEqual({ status: 'ready', source: 'ai', reply: reply.reply });
+  await expect(ask(send)(owner.credentials, problem, asked('从哪里数？'))).resolves.toEqual({
+    status: 'ready',
+    source: 'ai',
+    reply: reply.reply,
+  });
   const body = String(send.mock.calls[0]?.[1]?.body);
+  const material = lessonMaterial(lesson, 'count-left', record, false);
   expect(JSON.parse(body)).toMatchObject({
     input: [
-      {
-        role: 'user',
-        content: JSON.stringify({ step: '数一数左边的点。', question: '从哪里数？' }),
-      },
+      { role: 'user', content: JSON.stringify({ lesson: material, question: '从哪里数？' }) },
     ],
     text: { format: { name: 'teacher_answer', strict: true } },
   });
+  expect(body).toContain('左边：3 个点。');
+  expect(body).toContain('点了一个点（2 次）');
   expect(body).not.toContain(owner.family);
   expect(body).not.toContain(owner.credentials.token);
   expect(await usage(owner.family)).toEqual([{ state: 'settled', input_tokens: '300' }]);
+});
+
+it('leaves a lesson record that does not fit the lesson to the scene guidance, without the provider or usage', async () => {
+  const owner = await child(true);
+  const send = vi.fn<typeof fetch>();
+  const wrong = { ...record, now: { things: [], states: ['tilted'] } };
+  await expect(
+    ask(send)(owner.credentials, problem, {
+      stepId: 'count-left',
+      text: '为什么？',
+      record: wrong,
+    }),
+  ).resolves.toEqual({ status: 'fallback', reason: 'invalid-input' });
+  expect(send).not.toHaveBeenCalled();
+  expect(await usage(owner.family)).toEqual([]);
+});
+
+it('tells a scene past the answer only once the child has answered the problem right', async () => {
+  const owner = await child(true);
+  const reply = { reply: '刚才数出了左边的点，说说你是怎么数的。', injection: false };
+  const send = vi.fn<typeof fetch>(async () => providerReply(JSON.stringify(reply)));
+  const after = { ...asked('刚才数出几个？'), stepId: 'done' };
+  await expect(ask(send)(owner.credentials, problem, after)).resolves.toEqual({
+    status: 'fallback',
+    reason: 'invalid-input',
+  });
+  expect(send).not.toHaveBeenCalled();
+  await pool.query(
+    `INSERT INTO progress(child_id,problem_id,problem_version,round,assisted)
+     SELECT id,$2,$3,gen_random_uuid(),1 FROM children WHERE family_id=$1`,
+    [owner.family, problem.id, problem.version],
+  );
+  await expect(ask(send)(owner.credentials, problem, after)).resolves.toMatchObject({
+    source: 'ai',
+  });
+  expect(send).toHaveBeenCalledOnce();
 });

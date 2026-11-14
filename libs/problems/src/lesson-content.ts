@@ -1,9 +1,13 @@
+import type { BackdropId } from './backdrops.js';
+
 // What a lesson says and finds, declared once for each problem and read by the
-// site and the server alike: the lesson flow it follows, its scenes in
-// teaching order, the scene that asks for the final answer, what a model may
-// see of each scene, the words the teacher says in each, and the conclusions
-// its scenes find. It holds no judging rules, which only the server's plugins
-// have, so the site may load it.
+// site and the server alike: the lesson flow it follows, the library backdrop
+// it plays on, its scenes in teaching order, the scene that asks for the final
+// answer, what a model may see of each scene, the words the teacher says in
+// each, the conclusions its scenes find, and the words its scenes and the
+// child's key actions are told in when the child asks the teacher. It holds no
+// judging rules, which only the server's plugins have, so the site may load
+// it.
 
 // The lesson flows a problem can follow, the skeleton of its lesson; see the
 // handbook's 课堂流程清单. `scene-by-scene` is 逐幕探究: each scene finds a
@@ -42,38 +46,73 @@ export type LessonLine<Shot extends string> = Readonly<{ scene: Shot; text: stri
 // on arriving, whether by playing on or by coming back to a saved scene.
 export type LessonScene<Line extends string> = Readonly<{ prompt: string; entry: readonly Line[] }>;
 
+// The words a lesson's scenes are told in, by id: the places on screen, for
+// example 天平左盘（画面左边）; the things there, each with its name and the
+// word it is counted with, 棵 for 青菜; how the picture stands, for example
+// 天平是平的; and the child's key actions, for example 从右盘拿走一个苹果. The
+// site sends only these ids and counts, and the server tells the teacher the
+// words.
+export type RecordWords<
+  Place extends string,
+  Thing extends string,
+  State extends string,
+  Action extends string,
+> = Readonly<{
+  places: Readonly<Record<Place, string>>;
+  things: Readonly<Record<Thing, Readonly<{ name: string; unit: string }>>>;
+  states: Readonly<Record<State, string>>;
+  actions: Readonly<Record<Action, string>>;
+}>;
+export type AnyRecordWords = RecordWords<string, string, string, string>;
+
+// A scene's picture at one moment: how many of each thing lie at each place,
+// and how the picture stands. Its lists are plain arrays, as the question
+// request that carries it declares them.
+export type ScenePicture<
+  Place extends string = string,
+  Thing extends string = string,
+  State extends string = string,
+> = Readonly<{
+  things: Readonly<{ place: Place; thing: Thing; count: number }>[];
+  states: State[];
+}>;
+
 // A problem's lesson. `vocabulary` is the problem's own words, which speech
 // recognition is told to expect in every scene. Its lines are listed in the
 // order they are said, and its conclusions in the order the board shows
 // them. `answerScene` asks for the final answer; the page plays past it only
 // once the child has answered right, so the scenes after it count as
-// answered, for the conclusion board.
+// answered, for the conclusion board and for what a model may see.
 export type LessonContent<
   Shot extends string,
   Line extends string,
   Picture extends string,
+  Words extends AnyRecordWords = AnyRecordWords,
 > = Readonly<{
   problem: Readonly<{ id: string; version: number }>;
   flow: LessonFlow;
+  backdrop: BackdropId;
   vocabulary: readonly string[];
   shots: readonly [Shot, ...Shot[]];
   answerScene: Shot;
   lines: Readonly<Record<Line, LessonLine<Shot>>>;
   scenes: Readonly<Record<Shot, LessonScene<Line>>>;
   conclusions: readonly Conclusion<Shot, Picture>[];
+  recordWords: Words;
 }>;
 
-// A lesson's content with its scene, line and picture names kept exact: the
-// scenes are named by `shots` and the lines by `lines`, so a scene, an entry
-// line, the answer scene or a conclusion's scene that names anything else
-// does not compile.
+// A lesson's content with its scene, line, picture and record word names kept
+// exact: the scenes are named by `shots` and the lines by `lines`, so a scene,
+// an entry line, the answer scene or a conclusion's scene that names anything
+// else does not compile.
 export function lessonContent<
   const Shot extends string,
   const Line extends string,
   const Picture extends string,
+  const Words extends AnyRecordWords,
 >(
   content: Omit<
-    LessonContent<Shot, Line, Picture>,
+    LessonContent<Shot, Line, Picture, Words>,
     'answerScene' | 'lines' | 'scenes' | 'conclusions'
   > &
     Readonly<{
@@ -82,7 +121,7 @@ export function lessonContent<
       scenes: Readonly<Record<NoInfer<Shot>, LessonScene<NoInfer<Line>>>>;
       conclusions: readonly Conclusion<NoInfer<Shot>, Picture>[];
     }>,
-): LessonContent<Shot, Line, Picture> {
+): LessonContent<Shot, Line, Picture, Words> {
   return content;
 }
 
@@ -95,8 +134,39 @@ type AnyConclusion = AnyLessonContent['conclusions'][number];
 export type PictureOf<Content> =
   Content extends LessonContent<string, string, infer Picture> ? Picture : never;
 
+// The record words a lesson's content declares, and a scene picture and key
+// action told in them, for a lesson to describe its scenes with exact names.
+export type RecordWordsOf<Content> =
+  Content extends LessonContent<string, string, string, infer Words> ? Words : never;
+export type ScenePictureOf<Content> = ScenePicture<
+  keyof RecordWordsOf<Content>['places'] & string,
+  keyof RecordWordsOf<Content>['things'] & string,
+  keyof RecordWordsOf<Content>['states'] & string
+>;
+export type KeyActionOf<Content> = keyof RecordWordsOf<Content>['actions'] & string;
+
 const missing = (from: readonly string[], within: readonly string[]) =>
   from.filter((name) => !within.includes(name));
+
+const declared = (words: Readonly<Record<string, unknown>>, id: string) => Object.hasOwn(words, id);
+
+// The ids in a scene picture that the lesson's record words do not declare.
+export function pictureProblems({ recordWords }: AnyLessonContent, picture: ScenePicture) {
+  const { places, things, states } = recordWords;
+  return [
+    ...picture.things.flatMap(({ place, thing }) => [
+      ...(declared(places, place) ? [] : [`place ${place} is not declared`]),
+      ...(declared(things, thing) ? [] : [`thing ${thing} is not declared`]),
+    ]),
+    ...picture.states
+      .filter((state) => !declared(states, state))
+      .map((state) => `state ${state} is not declared`),
+  ];
+}
+
+// Whether the lesson's record words declare a key action.
+export const declaresAction = ({ recordWords }: AnyLessonContent, action: string) =>
+  declared(recordWords.actions, action);
 
 // Every line is said in one of the scenes, and every scene says something on
 // arriving, from its own lines.
@@ -136,6 +206,27 @@ function flowProblems(content: AnyLessonContent) {
   return rules ? rules(content) : [`the lesson follows flow ${flow}, which is not in the list`];
 }
 
+// The longest record word a lesson may declare.
+export const recordWordMaxLength = 30;
+
+// The record words name every place, thing, state and action in a few words:
+// the teacher reads them, and a child hears what the teacher says of them.
+function recordWordProblems({ recordWords }: AnyLessonContent) {
+  const { places, things, states, actions } = recordWords;
+  const words = [
+    ...Object.entries(places),
+    ...Object.entries(things).flatMap(([id, { name, unit }]) => [
+      [id, name],
+      [id, unit],
+    ]),
+    ...Object.entries(states),
+    ...Object.entries(actions),
+  ];
+  return words
+    .filter(([, word]) => !word?.trim() || word.length > recordWordMaxLength)
+    .map(([id]) => `record word ${id} is empty or longer than ${recordWordMaxLength} characters`);
+}
+
 // A conclusion is first found in one of the scenes and used only from there
 // on; a supposed one stands beside the conclusion before it, which is found
 // by then.
@@ -159,15 +250,16 @@ function conclusionProblems(
 
 // Everything wrong with a lesson's content, or nothing: lines said in no
 // scene, scenes that say nothing on arriving or arrive with another scene's
-// lines, a flow not in the list or whose needs the scenes do not meet, and
-// conclusions declared twice, found in no scene, used before they are found,
-// or supposed with nothing to stand beside.
+// lines, a flow not in the list or whose needs the scenes do not meet, record
+// words empty or too long, and conclusions declared twice, found in no scene,
+// used before they are found, or supposed with nothing to stand beside.
 export function lessonContentProblems(content: AnyLessonContent) {
   const { shots, conclusions } = content;
   const ids = conclusions.map(({ id }) => id);
   return [
     ...lineProblems(content),
     ...flowProblems(content),
+    ...recordWordProblems(content),
     ...ids
       .filter((id, index) => ids.indexOf(id) !== index)
       .map((id) => `conclusion ${id} is declared twice`),

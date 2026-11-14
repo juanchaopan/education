@@ -8,7 +8,8 @@ import { useQuestionReply } from './useQuestionReply';
 vi.mock('./question-request', () => ({ requestTeacherReply: vi.fn() }));
 
 const scope = { id: 'garden-balance', version: 1, csrf: 'session-token' };
-const question = { stepId: 'leaves', text: '篮子在哪里？' };
+const record = { now: { things: [], states: ['level'] }, ended: [], actions: [] };
+const question = { stepId: 'leaves', text: '篮子在哪里？', record };
 const ready = { status: 'ready', source: 'ai', reply: '篮子在天平旁边。' } as const;
 
 // A reply that stays on its way until the returned function delivers it.
