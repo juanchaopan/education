@@ -28,4 +28,5 @@ export const railChase: ProblemPlugin = {
     checkCompletion: numberSetAnswer(times),
   },
   feedback: railChaseSteps,
+  lesson: railChaseLesson,
 };

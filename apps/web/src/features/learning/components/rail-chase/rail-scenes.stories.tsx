@@ -119,9 +119,10 @@ export const OnAnUprightPhone: Story = {
   args: { state: at('solve'), line: lines.solveAsk.text, frame: 'phone' },
 };
 
-// The backdrop's clearing and the part of the world the props take up, over
-// the scene where the cars have driven furthest, so a person can see that
-// everything the lesson draws stands in the clearing.
+// The clearing of the backdrop the lesson's content names and the part of
+// the world the props take up, over the scene where the cars have driven
+// furthest, so a person can see that everything the lesson draws stands in
+// the clearing.
 export const PropsInTheClearing: Story = {
   args: { state: at('check-fourteen', { t: 14, stopped: true }) },
   render: ({ state, handling, frame, ...stage }) => (
@@ -129,7 +130,7 @@ export const PropsInTheClearing: Story = {
       <LessonStage {...stage} look={look} shot={state.shot} defs={railLesson.defs}>
         <RailScene state={state} handling={handling} />
         <ClearingOutline
-          box={framed(backdrops[railLesson.backdrop].clearZone, establishing)}
+          box={framed(backdrops[railLesson.content.backdrop].clearZone, establishing)}
           kind="clearing"
         />
         <ClearingOutline box={railLesson.staging} kind="staging" />

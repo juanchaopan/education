@@ -8,10 +8,12 @@ import { lessonContent } from '../lesson-content.js';
 // |10 − t| = 4 and its two cases. The child gives both times, checks them on
 // the same tracks, and a variation with a faster yellow car follows. The
 // lesson never stops at 6 or 14 seconds before the answer, and no scene
-// prompt states them.
+// prompt states them. It plays in the library's railway workshop at blue
+// hour.
 export const railChaseLesson = lessonContent({
   problem: { id: 'rail-chase', version: 1 },
   flow: 'derive-and-solve',
+  backdrop: 'railway-workshop-dusk',
   vocabulary: [
     '黄车',
     '蓝车',
@@ -45,6 +47,7 @@ export const railChaseLesson = lessonContent({
     'vary',
     'vary-seven',
   ],
+  answerScene: 'solve',
   lines: {
     storyWorkshop: {
       scene: 'story',
@@ -396,4 +399,62 @@ export const railChaseLesson = lessonContent({
       hints: ['blue-ahead', 'yellow-ahead'],
     },
   ],
+  // The same two tracks run across the middle of every scene, the yellow car
+  // on the upper one and the blue car on the lower one; the squares between
+  // the midpoints and the start strip lie under them, the derivation board
+  // stands top right and the two small pictures of four squares apart lie
+  // under the question. The board's states name its newest line.
+  recordWords: {
+    places: {
+      tracks: '两条轨道（画面中间）',
+      'yellow-car': '上面轨道的黄车',
+      'blue-car': '下面轨道的蓝车',
+      between: '两个中点 M、N 之间（轨道下面）',
+      'start-strip': '起点的十格（画面下面）',
+      'side-pictures': '题目下面的两张小图',
+    },
+    things: {
+      second: { name: '两车已经开的时间', unit: '秒' },
+      'square-a-second': { name: '每秒走的路程', unit: '格' },
+      square: { name: '格子', unit: '格' },
+      'gold-square': { name: '变成金色的格子（追回的）', unit: '格' },
+      'plain-square': { name: '还没变金的格子（蓝车还领先的）', unit: '格' },
+      'lit-picture': { name: '点亮的小图', unit: '张' },
+    },
+    states: {
+      'blue-in-front': '蓝车在前',
+      'yellow-in-front': '黄车在前',
+      'lined-up': 'M 和 N 上下对齐了',
+      'four-apart-mark': '轨道旁标着「相距四格」',
+      'board-rate': '推导板最新一行：每秒追回 2 − 1 = 1 格',
+      'board-two-seconds': '推导板最新一行：走 2 秒，追回 2 格',
+      'board-three-seconds': '推导板最新一行：走 3 秒，追回 3 格',
+      'board-three-ahead': '推导板最新一行：走 3 秒，蓝车领先 7 格',
+      'board-rest': '推导板最新一行：蓝车领先 = 10 − t',
+      'board-zero': '推导板最新一行：10 − 10 = 0',
+      'board-minus-one': '推导板最新一行：10 − 11 = −1',
+      'board-distance': '推导板最新一行：距离 = |10 − t|',
+      'board-equation': '推导板最新一行：|10 − t| = 4',
+      'board-blue-ahead': '推导板：蓝车在前时 10 − t = 4',
+      'board-yellow-ahead': '推导板：黄车在前时 10 − t = −4',
+      'board-six': '推导板最新一行：t = 6',
+      'board-both-times': '推导板最新一行：t = 6 或 t = 14',
+      'board-faster': '推导板最新一行：假如黄车每秒走 3 格',
+      'board-faster-equation': '推导板最新一行：|10 − 2t| = 4',
+    },
+    actions: {
+      push: '推着两辆车往右开',
+      'push-at-stop': '车停下以后，还想往前推',
+      'push-still': '在车不动的这一幕推车',
+      'tap-yellow-car': '点了黄车',
+      'tap-blue-car': '点了蓝车',
+      'tap-start-gap': '点了 M、N 之间一开始的一段',
+      'tap-rest': '点了起点十格里还没变金的一段',
+      'tap-gap': '点了黄车超过以后两点之间的空隙',
+      'tap-four': '点了题目里的「4 格」',
+      'tap-blue-ahead': '点亮了小图「蓝车在前 4 格」',
+      'tap-yellow-ahead': '点亮了小图「黄车在前 4 格」',
+      'wrong-tap': '点了这一步还不用点的地方',
+    },
+  },
 });
