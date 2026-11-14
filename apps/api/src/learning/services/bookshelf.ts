@@ -17,7 +17,7 @@ import {
   type ShelfOrder,
   type ShelvedBook,
 } from '../domain/bookshelf.js';
-import { childBookPage, isFresh, type GivenBook } from '../domain/child-books.js';
+import { childBookPage, isFresh } from '../domain/child-books.js';
 import {
   assignBook,
   cancelBook,
@@ -149,19 +149,16 @@ async function childBooks(
 ): Promise<ChildBookPage> {
   const { books, done } = await readChildBooks(shelf, client, childId);
   const studied = await readStudyTimes(client, childId, problemIds(books.map(({ book }) => book)));
-  const given: GivenBook[] = books.map(({ book, assignedAt, openedAt }) => ({
-    book,
-    assignedAt,
-    openedAt,
-    studiedAt: lastStudied(book, studied),
-    finished: progress(book, done).finished,
-  }));
+  const given = books.map(({ book, assignedAt, openedAt }) => {
+    const { done: count, finished } = progress(book, done);
+    return { book, assignedAt, openedAt, studiedAt: lastStudied(book, studied), finished, count };
+  });
   const found = childBookPage(given, query.books, page(query.offset, childBookPageSize));
   return {
     ...found,
     books: found.books.map((entry) => ({
       ...card(entry.book),
-      done: progress(entry.book, done).done,
+      done: entry.count,
       assignedAt: entry.assignedAt.toISOString(),
       studiedAt: entry.studiedAt?.toISOString() ?? null,
       fresh: isFresh(entry),

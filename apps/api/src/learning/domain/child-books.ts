@@ -5,8 +5,8 @@ import type { ShelvedBook } from './bookshelf.js';
 // when the child first opened one of its problems (null before that), when
 // the child last handed in an answer in it (null before the first), and
 // whether the child has finished it.
-export type GivenBook<Book extends ShelvedBook = ShelvedBook> = Readonly<{
-  book: Book;
+export type GivenBook = Readonly<{
+  book: ShelvedBook;
   assignedAt: Date;
   openedAt: Date | null;
   studiedAt: Date | null;
@@ -53,8 +53,8 @@ function compare(a: GivenBook, b: GivenBook) {
 
 // The child's books in the home's order, how many each filter holds, and
 // one page of the chosen filter, or of all of them without one.
-export function childBookPage<Book extends ShelvedBook>(
-  given: readonly GivenBook<Book>[],
+export function childBookPage<Entry extends GivenBook>(
+  given: readonly Entry[],
   filter: ChildBookFilter | undefined,
   page: Readonly<{ offset: number; size: number }>,
 ) {
