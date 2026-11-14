@@ -58,7 +58,7 @@ test('goes back to the open book on the home page, scrolled as it was, out of fu
   page,
 }) => {
   await signInAtTheGardenStart(page);
-  await signInAsAssignedChild(page, [...earlier, { ...gardenBook, fresh: false }]);
+  await signInAsAssignedChild(page, { books: [...earlier, { ...gardenBook, fresh: false }] });
   await openTheGardenBook(page);
   // The home page is scrolled to its foot, and how far down it was is read
   // at the moment of the tap, since bringing the link into view may scroll it.
