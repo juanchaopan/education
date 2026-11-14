@@ -109,6 +109,21 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx --no-install jscpd .
+  # Known vulnerabilities in what ships: a pull request fails only for high or
+  # critical advisories in runtime dependencies. The weekly dependency-audit
+  # workflow reports the rest as issues, since new advisories appear without
+  # any change of ours.
+  security:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - run: npm audit --omit=dev --audit-level=high
   accounts:
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -128,7 +143,7 @@ jobs:
           path: test-results/accounts/
   ci:
     if: always()
-    needs: [database, app, visual, duplication, accounts]
+    needs: [database, app, visual, duplication, security, accounts]
     runs-on: ubuntu-latest
     steps:
       - name: Require every check to pass
@@ -137,10 +152,12 @@ jobs:
           APP: ${{ needs.app.result }}
           VISUAL: ${{ needs.visual.result }}
           DUPLICATION: ${{ needs.duplication.result }}
+          SECURITY: ${{ needs.security.result }}
           ACCOUNTS: ${{ needs.accounts.result }}
         run: >-
           test "$DATABASE" = success && test "$APP" = success && test "$VISUAL" = success &&
-          test "$DUPLICATION" = success && test "$ACCOUNTS" = success
+          test "$DUPLICATION" = success && test "$SECURITY" = success &&
+          test "$ACCOUNTS" = success
   # Main's CI, started by a push or a dispatch, hands its run to staging once
   # every check passed. The run that completes is often one the auto-merge
   # bot's token started, and its completion starts no workflow_run; a dispatch
