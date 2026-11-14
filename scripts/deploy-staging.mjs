@@ -9,7 +9,7 @@ import { maintenancePool } from '../apps/api/dist/shared/maintenance-pool.js';
 import { withStagingDatabaseLock } from './staging-database-lock.mjs';
 import { migrateStaging } from './staging-migrate.mjs';
 import { releaseStaging } from './staging-release.mjs';
-import { releaseFiles, vercelApi } from './staging-vercel.mjs';
+import { releaseFiles, uploadFiles, vercelApi, vercelUpload } from './staging-vercel.mjs';
 import { smokeAccount } from './staging-smoke.mjs';
 
 function required(name) {
@@ -45,6 +45,7 @@ async function deploy() {
     throw new Error('Checkout does not match release SHA');
   execFileSync('git', ['diff', '--exit-code', 'HEAD'], { stdio: 'pipe' });
   const teamId = required('STAGING_VERCEL_TEAM_ID');
+  const token = required('VERCEL_TOKEN');
   const runtimeEnv = {
     ...stagingMailEnv(process.env, required('STAGING_ORIGIN')),
     ...stagingAiEnv(process.env),
@@ -68,8 +69,8 @@ async function deploy() {
         teamId,
         origin: required('STAGING_ORIGIN'),
         projectId: required('STAGING_VERCEL_PROJECT_ID'),
-        api: vercelApi(required('VERCEL_TOKEN'), teamId),
-        files: await releaseFiles(),
+        api: vercelApi(token, teamId),
+        files: await uploadFiles(vercelUpload(token, teamId), await releaseFiles()),
         runtimeEnv,
         wait: setTimeout,
         stillCurrent: () => assertCurrent(revision),
