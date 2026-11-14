@@ -1,9 +1,9 @@
 // Runs the checks that need PostgreSQL against a throwaway container set up
-// like the database service of CI's app job: the same image, user and
-// databases, with a random password, published on 127.0.0.1 at a free port
-// this script picks. The migrations run first. The container is removed when
-// the run ends, whether it passed, failed or was interrupted.
-//   node scripts/with-database.mjs db [args]    the database tests, as CI runs them
+// like the database service of CI: the same image, user and databases, with a
+// random password, published on 127.0.0.1 at a free port this script picks.
+// The migrations run first. The container is removed when the run ends,
+// whether it passed, failed or was interrupted.
+//   node scripts/with-database.mjs db [args]    the database tests, as CI's database job runs them
 //   node scripts/with-database.mjs e2e [args]   every browser test, the database ones included
 // The arguments after the check go to its test command: Vitest for db,
 // Playwright for e2e. Run it through npm (npm run test:db:local or
@@ -18,7 +18,8 @@ export const image = 'postgres:17-alpine';
 export const user = 'education';
 export const databases = { app: 'education_test', ledger: 'education_ledger_test' };
 
-// The npm commands of each check, in the order CI's app job runs them.
+// The npm commands of each check, in the order CI's database and app jobs
+// run them.
 export function steps(check, extra) {
   const migrate = ['run', 'db:migrate'];
   if (check === 'db')

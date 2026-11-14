@@ -13,27 +13,54 @@ import {
 } from './with-database.mjs';
 
 const ci = readFileSync(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8');
-const ciRuns = [...ci.matchAll(/^\s+- run: (.+)$/gm)].map(([, command]) => command);
 
-test('the container matches the database service of CI', () => {
-  assert.match(ci, new RegExp(`image: ${image}$`, 'm'));
-  assert.match(ci, new RegExp(`POSTGRES_USER: ${user}$`, 'm'));
-  assert.match(ci, new RegExp(`POSTGRES_DB: ${databases.app}$`, 'm'));
-  assert.match(ci, new RegExp(`DELETION_LEDGER_URL: postgres://.+/${databases.ledger}$`, 'm'));
+// The text of one job of the CI workflow, up to the next job.
+function job(name) {
+  const start = ci.indexOf(`\n  ${name}:\n`);
+  assert.ok(start >= 0, `CI has a ${name} job`);
+  const next = ci.slice(start + 1).search(/\n {2}[\w-]+:\n/);
+  return next < 0 ? ci.slice(start) : ci.slice(start, start + 1 + next);
+}
+
+const runs = (text) => [...text.matchAll(/^\s+- run: (.+)$/gm)].map(([, command]) => command);
+const createLedger = `psql "$DATABASE_URL" -c 'CREATE DATABASE ${databases.ledger}'`;
+
+function inOrder(commands, expected) {
+  const found = expected.map((command) => commands.indexOf(command));
+  return found.every((index, step) => index >= 0 && (step === 0 || index > found[step - 1]));
+}
+
+test('the container matches the database service of each CI job that uses one', () => {
+  for (const name of ['database', 'app']) {
+    const text = job(name);
+    assert.match(text, new RegExp(`image: ${image}$`, 'm'));
+    assert.match(text, new RegExp(`POSTGRES_USER: ${user}$`, 'm'));
+    assert.match(text, new RegExp(`POSTGRES_DB: ${databases.app}$`, 'm'));
+    assert.match(text, new RegExp(`DELETION_LEDGER_URL: postgres://.+/${databases.ledger}$`, 'm'));
+  }
 });
 
-test('the database check runs the steps of CI in their order', () => {
-  const inCi = [
-    `psql "$DATABASE_URL" -c 'CREATE DATABASE ${databases.ledger}'`,
+test('the database check runs the steps of the CI database job in their order', () => {
+  const expected = [
+    createLedger,
     'npm run db:migrate',
     'npm run test:db',
     'npm run db:complete-deletions -w @education/api',
-  ].map((command) => ciRuns.indexOf(command));
-  assert.ok(inCi.every((index, step) => index >= 0 && (step === 0 || index > inCi[step - 1])));
+  ];
+  assert.ok(inOrder(runs(job('database')), expected));
   assert.deepEqual(steps('db', []), [
     ['run', 'db:migrate'],
     ['run', 'test:db', '-w', '@education/api', '--'],
     ['run', 'db:complete-deletions', '-w', '@education/api'],
+  ]);
+});
+
+test('the browser check migrates first, as the CI app job does', () => {
+  const expected = [createLedger, 'npm run db:migrate', 'npm run test:e2e'];
+  assert.ok(inOrder(runs(job('app')), expected));
+  assert.deepEqual(steps('e2e', []), [
+    ['run', 'db:migrate'],
+    ['run', 'test:e2e', '--'],
   ]);
 });
 
@@ -42,9 +69,12 @@ test('the arguments after the check go to its test command', () => {
     '--',
     'src/session.integration.ts',
   ]);
-  assert.deepEqual(steps('e2e', ['e2e/session.spec.ts', '--repeat-each=3']), [
-    ['run', 'db:migrate'],
-    ['run', 'test:e2e', '--', 'e2e/session.spec.ts', '--repeat-each=3'],
+  assert.deepEqual(steps('e2e', ['e2e/session.spec.ts', '--repeat-each=3'])[1], [
+    'run',
+    'test:e2e',
+    '--',
+    'e2e/session.spec.ts',
+    '--repeat-each=3',
   ]);
 });
 
