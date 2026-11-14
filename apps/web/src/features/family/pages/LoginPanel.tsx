@@ -3,8 +3,9 @@ import { LoginForm } from '../components/LoginForm';
 import { useParentLogin } from '../data-access/useParentSession';
 
 // Signs the parent in. The password is cleared once it has been used, and a
-// failed attempt keeps what was typed so the parent can correct it.
-export function LoginPanel() {
+// failed attempt keeps what was typed so the parent can correct it. A page
+// that moves on once the parent is in says where.
+export function LoginPanel({ onSignedIn }: { onSignedIn?: () => void }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const login = useParentLogin();
@@ -16,6 +17,7 @@ export function LoginPanel() {
         onSuccess: () => {
           setPassword('');
           login.reset();
+          onSignedIn?.();
         },
       },
     );

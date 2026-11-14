@@ -4,13 +4,14 @@ import { AnswerCapsule } from '../components/lesson-stage/AnswerCapsule';
 import { FireflyHint } from '../components/lesson-stage/FireflyHint';
 import { StagePlace } from '../components/lesson-stage/LessonStage';
 import type { LearningScope } from '../data-access/learning-request';
-import { useLessonAnswer, type AnswerEvents, type Judgement } from '../data-access/useLessonAnswer';
+import type { AnswerEvents } from '../data-access/useAnswerHints';
+import { useLessonAnswer, type Judgement } from '../data-access/useLessonAnswer';
 import { useVoiceInput } from '../data-access/useVoiceInput';
 import { chimeMs, type Chime } from '../interaction/chime';
 import type { NarrationFailure } from '../interaction/narration';
-import { answerStep, answerWords, type CountWords } from '../interaction/spoken-answer';
+import { answerStep, answerWords, hintWords, type CountWords } from '../interaction/spoken-answer';
 import { spokenNumber } from '../interaction/spoken-number';
-import type { Subtitle, Words } from '../interaction/subtitle';
+import type { Subtitle } from '../interaction/subtitle';
 import { useSubtitleWords } from '../interaction/useSubtitleWords';
 import { usesMicrophone, type MicrophoneTurn } from '../voice/microphone-turn';
 
@@ -44,15 +45,6 @@ type Props = {
 // The short rising cue that tells the child the microphone is open. The
 // microphone opens once it has sounded, so it is not heard as speech.
 const listenTones = [523, 784];
-
-const hintFailed = '提示暂时打不开，可以再试一次。';
-
-// What the teacher says about the hints: thinking while one is on its way,
-// so the last hint is not said again, then the new hint or why none came.
-function hintWords(answer: ReturnType<typeof useLessonAnswer>): Words {
-  if (answer.hintWaiting) return { thinking: true };
-  return { text: answer.hintFailed ? hintFailed : answer.hint };
-}
 
 // Whether the child still has an answer to give: none was sent yet, or the
 // last one was wrong or unclear.

@@ -1,11 +1,9 @@
 import { Button } from '../../../shared/ui/Button';
 import { Form } from '../../../shared/ui/Form';
-import { Hint } from '../../../shared/ui/Hint';
-import { Icon } from '../../../shared/ui/Icon';
+import { MoreInfo } from '../../../shared/ui/MoreInfo';
 import { Notice } from '../../../shared/ui/Notice';
 import { Switch } from '../../../shared/ui/Switch';
 import { TextField } from '../../../shared/ui/TextField';
-import { IntroductionLayout } from './IntroductionLayout';
 
 export type ChildLoginFields = { familyCode: string; nickname: string; pin: string };
 export type ChildLoginFormProps = ChildLoginFields & {
@@ -17,33 +15,17 @@ export type ChildLoginFormProps = ChildLoginFields & {
   onSubmit: () => void;
 };
 
+// A child's sign-in: the family code, the nickname and the six-digit PIN.
+// The field names let a password manager fill it in, and the PIN is never
+// shown. The device can remember the family code and the nickname.
 export function ChildLoginForm(props: ChildLoginFormProps) {
-  return (
-    <IntroductionLayout
-      titleId="child-login-title"
-      title="孩子登录"
-      introduction={
-        <>
-          <Icon name="user" badge />
-          <h2>欢迎回来，小小探索家</h2>
-          <p>慢慢来，请输入自己的六位 PIN。</p>
-          <p>第一次来这台设备？请家长从家长空间复制家庭码，再填上注册时的昵称。</p>
-          <p>登录后，下次打开通常可以直接回来。共用设备时，离开前记得退出。</p>
-        </>
-      }
-    >
-      <ChildLoginFields {...props} />
-    </IntroductionLayout>
-  );
-}
-
-function ChildLoginFields(props: ChildLoginFormProps) {
   return (
     <Form onSubmit={props.onSubmit} aria-busy={props.pending}>
       <TextField
         id="child-family"
         label="我的家庭码"
-        hint="家长空间里随时可查看，不用背下来。不是注册 KEY。"
+        icon="home"
+        hint="家长空间里随时可查看。"
         name="family-code"
         autoComplete="off"
         autoCapitalize="characters"
@@ -57,6 +39,7 @@ function ChildLoginFields(props: ChildLoginFormProps) {
       <TextField
         id="child-nickname"
         label="我的昵称"
+        icon="user"
         name="username"
         autoComplete="username"
         required
@@ -68,6 +51,7 @@ function ChildLoginFields(props: ChildLoginFormProps) {
       <TextField
         id="child-pin"
         label="我的六位 PIN"
+        icon="lock"
         name="password"
         type="password"
         autoComplete="current-password"
@@ -86,7 +70,7 @@ function ChildLoginFields(props: ChildLoginFormProps) {
         disabled={props.pending}
         onChange={props.onRemember}
       />
-      <Hint>网站不会记住明文 PIN。共用设备可取消勾选。</Hint>
+      <MoreInfo label="共用的设备">网站不会记住明文 PIN。共用设备可以关掉这个开关。</MoreInfo>
       {props.error && <Notice tone="error">{props.error}</Notice>}
       <Button type="submit" disabled={props.pending}>
         {props.pending ? '正在打开你的空间…' : '进入我的空间'}

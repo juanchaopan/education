@@ -17,6 +17,8 @@ const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
 const ledgerPool = new pg.Pool({ connectionString: process.env.DELETION_LEDGER_URL });
 const ledger = createDeletionLedger(ledgerPool);
 const families: string[] = [];
+// An API route anyone may read, open while the service gate is.
+const publicApi = '/api/v1/registration-status';
 
 afterAll(async () => {
   await openService(pool);
@@ -83,7 +85,7 @@ it('keeps a restored database closed until every deleted family is gone, then op
   const restored = createRestoredDatabase(pool, ledgerPool);
   try {
     await closeService(pool);
-    expect((await app.inject('/api/v1/problems')).statusCode).toBe(503);
+    expect((await app.inject(publicApi)).statusCode).toBe(503);
     expect((await app.inject('/health/ready')).statusCode).toBe(503);
     // The migration is checked on its own, without the gate.
     expect(await (await createMigrationCheck(pool))()).toBe(true);
@@ -110,13 +112,13 @@ it('keeps a restored database closed until every deleted family is gone, then op
     await ledger.record(late);
     await expect(restored.open()).rejects.toBeInstanceOf(RestoreCheckError);
     expect(await serviceOpen(pool)).toBe(false);
-    expect((await app.inject('/api/v1/problems')).statusCode).toBe(503);
+    expect((await app.inject(publicApi)).statusCode).toBe(503);
 
     await restored.replay();
     await restored.open();
     expect(await held(late)).toEqual({ families: 0, sessions: 0, drafts: 0 });
     expect((await app.inject('/health/ready')).statusCode).toBe(200);
-    expect((await app.inject('/api/v1/problems')).statusCode).toBe(200);
+    expect((await app.inject(publicApi)).statusCode).toBe(200);
     await restored.open();
     expect(await serviceOpen(pool)).toBe(true);
   } finally {

@@ -1,44 +1,23 @@
-import type { CatalogCategory, CatalogResponse } from '@education/contracts';
+// Who opens a problem, as far as the page knows: still being found out, not
+// found out because the child's session could not be checked, with a way to
+// ask again; nobody signed in, a signed-in child with the session's token, or
+// a parent with a verified email and the session's token.
+export type Viewer =
+  | Readonly<{ kind: 'checking' }>
+  | Readonly<{ kind: 'unchecked'; retry: () => void }>
+  | Readonly<{ kind: 'guest' }>
+  | Readonly<{ kind: 'child'; csrf: string }>
+  | Readonly<{ kind: 'parent'; csrf: string }>;
 
-export type CategoryLevel = keyof CatalogCategory;
+// The picture a problem's note is drawn on: a backdrop, softly blurred, and
+// the teaching character beside the note.
+export type NoteArt = Readonly<{ backdrop: string; teacher: string }>;
 
-export function catalogPath({ grade, subject, category }: CatalogCategory) {
-  return `/?${new URLSearchParams({ grade, subject, category })}`;
-}
-
-function selectLevel(paths: CatalogCategory[], level: CategoryLevel, query: URLSearchParams) {
-  const options = [...new Set(paths.map((path) => path[level]))];
-  const requested = query.get(level);
-  const value = requested !== null && options.includes(requested) ? requested : (options[0] ?? '');
-  return { options, value, paths: paths.filter((path) => path[level] === value) };
-}
-
-export function selectCategory(catalog: CatalogResponse, query: URLSearchParams) {
-  const grade = selectLevel(catalog.categories ?? catalog.problems, 'grade', query);
-  const subject = selectLevel(grade.paths, 'subject', query);
-  const category = selectLevel(subject.paths, 'category', query);
-  return {
-    grade,
-    subject,
-    category,
-    problems: catalog.problems.filter(
-      (problem) =>
-        problem.grade === grade.value &&
-        problem.subject === subject.value &&
-        problem.category === category.value,
-    ),
-  };
-}
-
-export function changeCategory(
-  selection: ReturnType<typeof selectCategory>,
-  level: CategoryLevel,
-  value: string,
-) {
-  const query = new URLSearchParams();
-  for (const key of ['grade', 'subject', 'category'] as const) {
-    query.set(key, key === level ? value : selection[key].value);
-    if (key === level) break;
-  }
-  return query;
+// Where the back button leads from a problem opened directly: the parent
+// space for a parent; for a child, the home page with the problem's book
+// opened, once the book is known; the home page for anyone else.
+export function homeOf(viewer: Viewer, book?: string) {
+  if (viewer.kind === 'parent') return '/family';
+  if (viewer.kind === 'child' && book) return `/?open=${encodeURIComponent(book)}`;
+  return '/';
 }

@@ -18,13 +18,17 @@ const denied = () =>
     401,
     '家庭码、昵称或 PIN 不正确，或登录已失效。请检查后重试，也可以请家长帮忙。',
   );
+// Signing in spends the login budgets; reading the session, also on the way
+// to logging out, does not. A session token is 32 random bytes that cannot be
+// guessed, and reading one hashes no PIN, so counting reads would only lock
+// out the children who come to sign in.
 export function createChildSessionService(deps: Dependencies) {
   return {
     login: (input: ChildLogin, source: string, previous?: string) =>
       login(deps, input, source, previous),
-    read: (token: string | undefined, source: string) => read(deps, token, source),
-    logout: async (token: string | undefined, csrf: string | undefined, source: string) => {
-      const view = await read(deps, token, source);
+    read: (token: string | undefined) => read(deps, token),
+    logout: async (token: string | undefined, csrf: string | undefined) => {
+      const view = await read(deps, token);
       if (!csrfMatches(csrf, view.csrfToken)) throw new RequestError(403, '请刷新页面后重试。');
       await deps.repository.revoke(tokenHash(token!));
     },
@@ -50,21 +54,9 @@ async function login(deps: Dependencies, input: ChildLogin, source: string, prev
     familyCode,
   );
 }
-async function read(
-  deps: Dependencies,
-  token: string | undefined,
-  source: string,
-): Promise<ChildSession> {
+async function read(deps: Dependencies, token: string | undefined): Promise<ChildSession> {
   const account = validToken(token) ? await deps.repository.read(tokenHash(token)) : undefined;
-  if (!account)
-    return deps.admit(
-      async () => {
-        throw denied();
-      },
-      '',
-      source,
-      'child-login',
-    );
+  if (!account) throw denied();
   return viewFor(account.nickname, token!);
 }
 const viewFor = (nickname: string, token: string): ChildSession => ({

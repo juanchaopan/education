@@ -11,7 +11,7 @@ type Problem = { id: string; version: number };
 // corrects. Recognition never records an attempt, changes progress or stores
 // the audio, so an unclear or failed recording costs the child nothing.
 export function createVoiceTranscriptionService(
-  authenticate: (credentials: Credentials) => Promise<void>,
+  authenticate: (credentials: Credentials, problem: Problem) => Promise<void>,
   find: (id: string, version: number) => Pick<ProblemPlugin, 'feedback'> | undefined,
   transcribe: TranscriptionGateway,
 ) {
@@ -21,7 +21,7 @@ export function createVoiceTranscriptionService(
     { stepId, format, audio }: TranscriptionRequest,
     signal?: AbortSignal,
   ): Promise<TranscriptionResult> => {
-    await authenticate(credentials);
+    await authenticate(credentials, problem);
     const { step } = authoredStep(find(problem.id, problem.version), stepId);
     const recording = transcriptionAudio(audio, format);
     if (!recording) return { status: 'fallback', reason: 'invalid-input' };

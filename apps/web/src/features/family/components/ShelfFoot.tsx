@@ -1,5 +1,4 @@
-import { useEffect, useRef } from 'react';
-import { useLatest } from '../../../shared/lib/useLatest';
+import { useReadAhead } from '../../../shared/lib/useReadAhead';
 import { Button } from '../../../shared/ui/Button';
 import { Dots } from '../../../shared/ui/Loading';
 import { Spoken } from '../../../shared/ui/Spoken';
@@ -14,29 +13,13 @@ type Props = {
   onMore: () => void;
 };
 
-// Read the next batch this far ahead of the bottom of the screen.
-const ahead = '0px 0px 100% 0px';
-
 // The foot of a list of books read batch by batch. The next batch loads by
 // itself about a screen before the reader reaches the bottom; the 加载更多
 // button stays as the way for the keyboard, screen readers and a batch that
 // did not load. It hops while a batch loads, and says when every book is
 // shown.
 export function ShelfFoot({ state, total, onMore }: Props) {
-  const foot = useRef<HTMLDivElement>(null);
-  const more = useLatest(onMore);
-  useEffect(() => {
-    const target = foot.current;
-    if (state !== 'more' || !target || typeof IntersectionObserver === 'undefined') return;
-    const watcher = new IntersectionObserver(
-      ([entry]) => {
-        if (entry?.isIntersecting) more.current();
-      },
-      { rootMargin: ahead },
-    );
-    watcher.observe(target);
-    return () => watcher.disconnect();
-  }, [state, more]);
+  const foot = useReadAhead<HTMLDivElement>(state === 'more', onMore);
   if (state === 'done')
     return total === undefined ? null : (
       <p className={styles.foot} role="status">

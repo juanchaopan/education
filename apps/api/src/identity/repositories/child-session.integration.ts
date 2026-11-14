@@ -75,9 +75,9 @@ it('isolates same-named children by family, persists hash-only sessions across i
   expect(row.child_id).toBe(a.child);
   expect(row.child_id).not.toBe(b.child);
   expect(JSON.stringify(row)).not.toContain(result.token);
-  expect((await a.other.read(result.token, 'source')).role).toBe('child');
-  await a.other.logout(result.token, result.view.csrfToken, 'source');
-  await expect(a.service.read(result.token, 'source')).rejects.toMatchObject({ statusCode: 401 });
+  expect((await a.other.read(result.token)).role).toBe('child');
+  await a.other.logout(result.token, result.view.csrfToken);
+  await expect(a.service.read(result.token)).rejects.toMatchObject({ statusCode: 401 });
 });
 it('slides DB expiry after more than seven days and rejects expired, version, epoch and unsupported pepper credentials', async () => {
   const a = await setup();
@@ -86,7 +86,7 @@ it('slides DB expiry after more than seven days and rejects expired, version, ep
     `UPDATE child_sessions SET created_at=now()-interval '90 days',last_seen_at=now()-interval '80 days',expires_at=now()+interval '100 days' WHERE token_hash=$1`,
     [tokenHash(result.token)],
   );
-  await a.other.read(result.token, 'source');
+  await a.other.read(result.token);
   expect(
     (
       await pool.query(
@@ -108,7 +108,7 @@ it('slides DB expiry after more than seven days and rejects expired, version, ep
     await pool.query(`UPDATE child_sessions SET ${change} WHERE token_hash=$1`, [
       tokenHash(result.token),
     ]);
-    await expect(a.service.read(result.token, 'source')).rejects.toMatchObject({ statusCode: 401 });
+    await expect(a.service.read(result.token)).rejects.toMatchObject({ statusCode: 401 });
   }
   await pool.query('UPDATE children SET pin_pepper_version=NULL WHERE id=$1', [a.child]);
   await expect(a.service.login(a.input, 'source')).rejects.toMatchObject({ statusCode: 401 });
@@ -173,7 +173,7 @@ it('rotates between parent and child sessions without retaining the old browser 
   const child = await a.service.login(a.input, 'source', previous);
   expect(await parents.read(tokenHash(previous))).toBeUndefined();
   await parents.issue(account, tokenHash('y'.repeat(43)), tokenHash(child.token));
-  await expect(a.service.read(child.token, 'source')).rejects.toMatchObject({ statusCode: 401 });
+  await expect(a.service.read(child.token)).rejects.toMatchObject({ statusCode: 401 });
 });
 it('never grants parent endpoints to child sessions and validates Origin, CSRF, cookie ambiguity and server selectors', async () => {
   const a = await setup();
@@ -260,7 +260,7 @@ it('rejects child cookies at the live parent session, KEY-read and KEY-write aut
         })
       ).statusCode,
     ).toBe(401);
-    expect((await a.service.read(child.token, 'source')).role).toBe('child');
+    expect((await a.service.read(child.token)).role).toBe('child');
   } finally {
     await app.close();
   }
@@ -284,8 +284,8 @@ it('parent password recovery revokes only that family’s child sessions and blo
     [parent.id, randomUUID(), reset],
   );
   expect(await createRecoveryRepository(pool).consume(reset, 'new-hash')).toBe(true);
-  await expect(a.other.read(own.token, 'source')).rejects.toMatchObject({ statusCode: 401 });
-  expect((await b.other.read(other.token, 'source')).nickname).toBe('小鹿');
+  await expect(a.other.read(own.token)).rejects.toMatchObject({ statusCode: 401 });
+  expect((await b.other.read(other.token)).nickname).toBe('小鹿');
   expect(await repository.issue(original, tokenHash(randomUUID()))).toBe(false);
   expect((await a.service.login(a.input, 'source')).view.role).toBe('child');
 });
@@ -357,5 +357,41 @@ it('enforces daily child and family ceilings and the deployment budget shared wi
     } finally {
       await pool.query('DELETE FROM registration_attempts WHERE bucket=$1', [key]);
     }
+  }
+});
+it('reads the session and logs out without spending login attempts, so the child still signs in', async () => {
+  const a = await setup();
+  const app = buildApp({ origin: headers.origin, childSessions: a.service });
+  const attempts = async () =>
+    (
+      await pool.query<{ count: number }>(
+        'SELECT count(*)::int AS count FROM registration_attempts',
+      )
+    ).rows[0]!.count;
+  try {
+    const before = await attempts();
+    const invalid = { cookie: `__Host-education_session=${'x'.repeat(43)}` };
+    for (let index = 0; index < 40; index++)
+      for (const cookie of [{}, invalid]) {
+        const read = await app.inject({ url: '/api/v1/children/session', headers: cookie });
+        expect(read.statusCode).toBe(401);
+        const logout = await app.inject({
+          method: 'POST',
+          url: '/api/v1/children/logout',
+          headers: { ...headers, ...cookie, 'x-csrf-token': 'x'.repeat(43) },
+          payload: {},
+        });
+        expect(logout.statusCode).toBe(401);
+      }
+    expect(await attempts()).toBe(before);
+    const login = await app.inject({
+      method: 'POST',
+      url: '/api/v1/children/login',
+      headers,
+      payload: a.input,
+    });
+    expect(login.statusCode).toBe(200);
+  } finally {
+    await app.close();
   }
 });

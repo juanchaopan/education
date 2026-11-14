@@ -3,7 +3,7 @@ import { useFlash } from '../../../shared/lib/useFlash';
 import { DraftNotice } from '../components/DraftNotice';
 import { StagePlace } from '../components/lesson-stage/LessonStage';
 import type { LearningScope } from '../data-access/learning-request';
-import type { AnswerEvents } from '../data-access/useLessonAnswer';
+import type { AnswerEvents } from '../data-access/useAnswerHints';
 import type { useLessonDraft } from '../data-access/useLessonDraft';
 import { useStudyTime } from '../data-access/useStudyTime';
 import type { FilmState } from '../interaction/lesson-film';
@@ -116,6 +116,7 @@ export function LessonPanels<Shot extends string>({
         />
       </StagePlace>
       <FlowAnswer
+        mode="practice"
         answer={answer}
         answerScene={answerScene}
         shot={shot}

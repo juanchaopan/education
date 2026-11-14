@@ -1,12 +1,12 @@
 import { Type } from '@sinclair/typebox';
 import {
   BookAssignment,
+  ChildBookPage,
+  ChildBookQuery,
   ChildShelfPage,
   ChildShelfQuery,
   FamilyShelfPage,
   FamilyShelfQuery,
-  PracticeBookPage,
-  PracticeBookQuery,
   ShelfChild,
 } from '@education/contracts';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
@@ -22,7 +22,7 @@ function credentials(request: FastifyRequest, reply: FastifyReply) {
   return readSessionCredentials(request);
 }
 
-// The parent's shelves, the child's practice, and giving a child a book or
+// The parent's shelves, the child's books, and giving a child a book or
 // taking it back. Giving and taking back carry an empty body.
 export function registerBookshelf(
   app: FastifyInstance,
@@ -50,10 +50,10 @@ export function registerBookshelf(
     (request, reply) =>
       available().childShelf(credentials(request, reply), request.params.childId, request.query),
   );
-  app.get<{ Querystring: PracticeBookQuery }>(
+  app.get<{ Querystring: ChildBookQuery }>(
     '/api/v1/children/assignments',
-    { schema: { querystring: PracticeBookQuery, response: { 200: PracticeBookPage } } },
-    (request, reply) => available().practice(credentials(request, reply), request.query.offset),
+    { schema: { querystring: ChildBookQuery, response: { 200: ChildBookPage } } },
+    (request, reply) => available().childBooks(credentials(request, reply), request.query),
   );
   // Giving by PUT and taking back by DELETE answer alike: nothing, once done.
   for (const [method, action] of [

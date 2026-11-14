@@ -18,9 +18,13 @@ function setup() {
     revoke: vi.fn().mockResolvedValue(undefined),
   };
   const verify = vi.fn().mockResolvedValue(true);
-  const admit = async <T>(work: () => Promise<T>) => work();
+  const admitted = vi.fn();
+  const admit = async <T>(work: () => Promise<T>) => {
+    admitted();
+    return work();
+  };
   const service = createSessionService({ repository, verify, admit, dummyHash: 'dummy-hash' });
-  return { repository, verify, admit, service };
+  return { repository, verify, admit, admitted, service };
 }
 it('normalizes only email, rotates the token, and stores only a token hash', async () => {
   const { service, repository, verify } = setup();
@@ -70,4 +74,17 @@ it('binds CSRF to the cookie and refuses missing, expired, and revoked sessions'
   repository.read.mockResolvedValue(undefined);
   await expect(service.read(token, 'ip')).rejects.toMatchObject({ statusCode: 401 });
   await expect(service.read(undefined, 'ip')).rejects.toMatchObject({ statusCode: 401 });
+});
+it('reads the session for a page and logs out without spending the login budgets', async () => {
+  const { service, repository, admitted } = setup();
+  repository.read.mockResolvedValue(undefined);
+  for (const token of [undefined, 'short', 'x'.repeat(43)]) {
+    await expect(service.current(token)).rejects.toMatchObject({ statusCode: 401 });
+    await expect(service.logout(token, 'x'.repeat(43), 'ip')).rejects.toMatchObject({
+      statusCode: 401,
+    });
+  }
+  expect(admitted).not.toHaveBeenCalled();
+  await expect(service.read(undefined, 'ip')).rejects.toMatchObject({ statusCode: 401 });
+  expect(admitted).toHaveBeenCalledOnce();
 });

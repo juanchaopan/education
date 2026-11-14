@@ -3,14 +3,18 @@ import type { InfiniteData, UseInfiniteQueryResult } from '@tanstack/react-query
 import type { ChildShelfPage, FamilyShelfPage } from '@education/contracts';
 import { BookCardPlaceholder } from '../../../shared/ui/BookCard';
 import { EmptyState } from '../../../shared/ui/EmptyState';
+import type { IconName } from '../../../shared/ui/icons';
+import { Loading } from '../../../shared/ui/Loading';
 import { footState } from '../components/foot-state';
 import { ShelfFilters } from '../components/ShelfFilters';
 import { ShelfFoot } from '../components/ShelfFoot';
 import { everyBook, type ShelfFilter } from '../model';
 import styles from './ShelfPage.module.css';
 
-// A shelf with nothing in it, as its caller describes it.
+// A shelf with nothing in it, as its caller describes it; the library's
+// icon unless another is named.
 export type ShelfEmpty = Readonly<{
+  icon?: IconName;
   title: string;
   description: string;
   actionLabel?: string;
@@ -25,8 +29,9 @@ type Props<P extends Page> = {
   filter: ShelfFilter;
   byState: boolean;
   onFilter: (filter: ShelfFilter) => void;
-  // What an empty shelf says when nothing narrows it.
-  empty: ShelfEmpty;
+  // What an empty shelf says when nothing narrows it, or nothing yet while
+  // the caller is still finding out why it is empty.
+  empty?: ShelfEmpty;
   card: (book: P['books'][number]) => ReactNode;
 };
 
@@ -96,7 +101,7 @@ export function ShelfView<P extends Page>({
             onAction={() => onFilter(everyBook)}
           />
         ) : (
-          <EmptyState icon="library" {...empty} />
+          <WhyEmpty empty={empty} />
         ))}
       {!!books.length && (
         <>
@@ -116,4 +121,10 @@ export function ShelfView<P extends Page>({
       )}
     </>
   );
+}
+
+function WhyEmpty({ empty }: { empty?: ShelfEmpty }) {
+  if (!empty) return <Loading label="正在打开书架…" />;
+  const { icon = 'library', ...words } = empty;
+  return <EmptyState icon={icon} {...words} />;
 }

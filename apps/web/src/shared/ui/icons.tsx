@@ -169,6 +169,13 @@ export const glyphs = {
       <path d="m3.5 7 8.5 6.5L20.5 7" />
     </>
   ),
+  // Looking without taking part, as a parent previews a lesson.
+  eye: (
+    <>
+      <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z" />
+      <circle cx="12" cy="12" r="3" />
+    </>
+  ),
   lock: (
     <>
       <rect x="4.5" y="10.5" width="15" height="10" rx="2.5" />

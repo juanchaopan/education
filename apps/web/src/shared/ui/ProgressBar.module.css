@@ -1,0 +1,51 @@
+.bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+/* The trough is pressed into the card; the strip in it stands up, lit from
+   above. */
+.track {
+  flex: 1;
+  block-size: 0.75rem;
+  overflow: hidden;
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  box-shadow: var(--sunken);
+}
+.fill {
+  display: block;
+  inline-size: calc(var(--share) * 100%);
+  block-size: 100%;
+  border-radius: var(--radius-pill);
+  background: linear-gradient(var(--primary-hi), var(--primary));
+  box-shadow:
+    inset 0 -2px 0 color-mix(in srgb, var(--primary-edge) 60%, transparent),
+    inset 0 2px 0 color-mix(in srgb, var(--surface-raised) 30%, transparent);
+}
+.bar[data-state='finished'] .fill {
+  background: linear-gradient(color-mix(in srgb, var(--ok) 80%, var(--surface-raised)), var(--ok));
+}
+.bar[data-state='off'] .fill {
+  background: color-mix(in srgb, var(--ink-soft) 45%, var(--surface-2));
+  box-shadow: none;
+}
+
+.label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-inline-size: 4.5em;
+  justify-content: flex-end;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.bar[data-state='finished'] .label {
+  color: var(--ok);
+}
+.bar[data-state='off'] .label {
+  color: var(--ink-soft);
+  font-weight: 400;
+}

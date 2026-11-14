@@ -13,7 +13,7 @@ type FeedbackProblem = Pick<ProblemPlugin, 'feedback' | 'checkStep'>;
 // Feedback is advice only. Nothing here records an attempt, changes progress or
 // touches permissions, so a late or failed model reply never alters learning.
 export function createTeachingFeedbackService(
-  authenticate: (credentials: Credentials) => Promise<void>,
+  authenticate: (credentials: Credentials, problem: Problem) => Promise<void>,
   find: (id: string, version: number) => FeedbackProblem | undefined,
   askModel: AskModel<FeedbackModelInput, ModelFeedback>,
 ) {
@@ -23,7 +23,7 @@ export function createTeachingFeedbackService(
     { stepId, text, image }: FeedbackRequest,
     signal?: AbortSignal,
   ): Promise<TeachingFeedbackResult> => {
-    await authenticate(credentials);
+    await authenticate(credentials, problem);
     const { plugin, step } = authoredStep(find(problem.id, problem.version), stepId);
     const scope = { stepId, area: step.area, drawn: image !== undefined };
     const ruled = await authoredRuling(plugin, scope, text);

@@ -1,13 +1,17 @@
 import { afterEach, describe, expect, it } from 'vitest';
+import type { ProblemOpening } from '@education/contracts';
 import { buildApp } from './app.js';
-import { createCatalog } from './catalog/services/catalog.js';
 import { loggedApp } from './log-fixtures.js';
 import { readConfig } from './shared/config.js';
+import { RequestError } from './shared/request-error.js';
 
 const apps: ReturnType<typeof buildApp>[] = [];
 afterEach(async () => {
   await Promise.all(apps.splice(0).map((app) => app.close()));
 });
+
+// An API route anyone may read, open while the database is.
+const publicApi = '/api/v1/registration-status';
 
 describe('framework HTTP contract', () => {
   it('reports the immutable release revision without caching it', async () => {
@@ -17,12 +21,26 @@ describe('framework HTTP contract', () => {
     expect(response.json()).toEqual({ revision: 'a'.repeat(40) });
     expect(response.headers['cache-control']).toBe('no-store');
   });
-  it('serves exactly the maintained problems, with no invented demo content', async () => {
+  it('lists no problems, and opens none for anyone not signed in', async () => {
     const app = buildApp();
     apps.push(app);
-    const response = await app.inject('/api/v1/problems');
-    expect(response.statusCode).toBe(200);
-    expect(response.json()).toEqual(createCatalog().list());
+    expect((await app.inject('/api/v1/problems')).statusCode).toBe(404);
+    const response = await app.inject('/api/v1/problems/garden-balance/1');
+    expect(response.statusCode).toBe(401);
+    expect(response.json()).toEqual({ message: '登录已失效，请重新登录。' });
+  });
+  it('sends the reason a problem does not open beside its message', async () => {
+    const app = buildApp({
+      problemOpening: async (): Promise<ProblemOpening> => {
+        throw new RequestError(403, '这本书暂时不可用。', 'unavailable');
+      },
+    });
+    apps.push(app);
+    const response = await app.inject('/api/v1/problems/garden-balance/1');
+    expect(response.statusCode).toBe(403);
+    expect(response.json()).toEqual({ message: '这本书暂时不可用。', reason: 'unavailable' });
+    expect(response.headers['cache-control']).toBe('no-store');
+    expect(response.headers.vary).toBe('Cookie');
   });
   it('reports liveness without claiming database or AI readiness', async () => {
     const app = buildApp();
@@ -46,18 +64,19 @@ describe('framework HTTP contract', () => {
     let healthy = false;
     const app = buildApp({ ready: async () => healthy, revision: 'b'.repeat(40) });
     apps.push(app);
-    const closed = await app.inject('/api/v1/problems');
+    const encoded = publicApi.replace('/api/', '/%61pi/');
+    const closed = await app.inject(publicApi);
     expect(closed.statusCode).toBe(503);
     expect(closed.json()).toEqual({ message: '网站正在维护，请稍后再试。' });
     expect(closed.headers['cache-control']).toBe('no-store');
     expect(closed.headers['retry-after']).toBe('300');
     // The router decodes the path, so an encoded API path reaches the same gate.
-    expect((await app.inject('/%61pi/v1/problems')).statusCode).toBe(503);
+    expect((await app.inject(encoded)).statusCode).toBe(503);
     expect((await app.inject('/version.json')).statusCode).toBe(200);
     expect((await app.inject('/health/live')).statusCode).toBe(200);
     healthy = true;
-    expect((await app.inject('/api/v1/problems')).statusCode).toBe(200);
-    expect((await app.inject('/%61pi/v1/problems')).statusCode).toBe(200);
+    expect((await app.inject(publicApi)).statusCode).toBe(200);
+    expect((await app.inject(encoded)).statusCode).toBe(200);
   });
   it('treats a failed readiness check as closed for API requests', async () => {
     const { app, text } = loggedApp(apps, {
@@ -65,7 +84,7 @@ describe('framework HTTP contract', () => {
         throw new Error('relation "service_gate" does not exist');
       },
     });
-    expect((await app.inject('/api/v1/problems')).statusCode).toBe(503);
+    expect((await app.inject(publicApi)).statusCode).toBe(503);
     expect(text()).not.toContain('service_gate');
   });
   it('does not reveal database errors or report readiness without a configured check', async () => {

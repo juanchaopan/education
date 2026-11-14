@@ -1,4 +1,4 @@
-import type { SavedDraft } from '@education/contracts';
+import type { ProblemMode, SavedDraft } from '@education/contracts';
 import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
@@ -12,6 +12,7 @@ import { lessonPage } from './LessonPage';
 const FixturePage = lessonPage(fixtureLesson);
 
 const draftPath = '/api/v1/problems/fixture/1/draft';
+const previewPath = '/api/v1/problems/fixture/1/preview';
 const savedAt = (stepId: string): SavedDraft => ({
   content: { stepId, drawing: [] },
   revision: '33333333-3333-3333-3333-333333333333',
@@ -19,11 +20,15 @@ const savedAt = (stepId: string): SavedDraft => ({
 });
 
 // The server as the lesson sees it: every recording arrives, the draft
-// holds `saved` and takes whatever is saved unless saving fails, and nothing
-// else is there.
+// holds `saved` and takes whatever is saved unless saving fails, a preview
+// takes 3 as the right count, and nothing else is there.
 function serve(saved: SavedDraft | null, { savingFails = false } = {}) {
   const fetch = vi.fn(async (path: string, init?: RequestInit) => {
     if (path.endsWith('.mp3')) return new Response('sound');
+    if (path === previewPath) {
+      const { input } = JSON.parse(String(init?.body)) as { input?: number };
+      return Response.json({ outcome: input === 3 ? 'independent' : 'incorrect' });
+    }
     if (path !== draftPath) return new Response(null, { status: 404 });
     if (!init?.body) return Response.json({ draft: saved });
     if (savingFails) return new Response(null, { status: 503 });
@@ -48,12 +53,13 @@ function PageReadiness() {
   return <output aria-label="刷新">{usePageReadiness().readiness}</output>;
 }
 
-function open(csrf?: string) {
+// Opens the lesson for a child to practise, or for a parent to preview.
+function open(mode: ProblemMode = 'practice') {
   const Page = pageWrapper();
   render(
     <MemoryRouter>
       <Page>
-        <FixturePage csrf={csrf} />
+        <FixturePage session={{ mode, csrf: 'token' }} />
         <PageReadiness />
       </Page>
     </MemoryRouter>,
@@ -106,17 +112,23 @@ afterEach(() => {
   localStorage.clear();
 });
 
-it('lets a visitor play the film without saving anything, and asks them to sign in', async () => {
+it('lets a parent preview the lesson, tapping the count the preview judges, keeping nothing', async () => {
   const fetch = serve(null);
-  open();
+  open('preview');
   await start(/开始短片/);
   expect(caption()).toHaveTextContent('看看这颗小石子。');
-  expect(within(film()).getByRole('link', { name: '去孩子空间登录' })).toBeInTheDocument();
   expect(screen.queryByRole('button', { name: '按住问小兔' })).not.toBeInTheDocument();
   await userEvent.click(screen.getByRole('button', { name: '小石子' }));
   expect(caption()).toHaveTextContent('一共有几颗？');
-  expect(screen.queryByRole('region', { name: '说出答案' })).not.toBeInTheDocument();
-  expect(fetch.mock.calls.some(([path]) => path === draftPath)).toBe(false);
+  const answer = screen.getByRole('region', { name: '说出答案' });
+  const numbers = within(answer).getByRole('group', { name: '点一个数字回答' });
+  await userEvent.click(within(numbers).getByRole('button', { name: '2' }));
+  await userEvent.click(await within(numbers).findByRole('button', { name: '3' }));
+  expect(await within(answer).findByRole('button', { name: '接着看' })).toBeInTheDocument();
+  expect(caption()).toHaveTextContent('答对了！你自己算出来了。');
+  expect(screen.queryByRole('complementary', { name: '学习草稿' })).not.toBeInTheDocument();
+  const asked = fetch.mock.calls.map(([path]) => path).filter((path) => !path.endsWith('.mp3'));
+  expect(asked).toEqual([previewPath, previewPath]);
 });
 
 it('asks for the whole screen as the child starts the film', async () => {
@@ -141,7 +153,7 @@ it('starts the film all the same when the browser refuses the whole screen', asy
 
 it('lays every control into the picture, and says for a moment that the scene is saved', async () => {
   serve(null);
-  open('token');
+  open();
   await start(/开始短片/);
   const picture = film();
   for (const name of ['重听这一句', '字幕', '声音', '按住问小兔'])
@@ -151,9 +163,9 @@ it('lays every control into the picture, and says for a moment that the scene is
   expect(notice).toHaveTextContent('已保存');
 });
 
-it('saves each scene a signed-in child reaches and asks about the scene on screen', async () => {
+it('saves each scene a child reaches and asks about the scene on screen', async () => {
   const fetch = serve(null);
-  open('token');
+  open();
   await start(/开始短片/);
   expect(screen.getByRole('button', { name: '按住问小兔' })).toBeInTheDocument();
   await userEvent.click(screen.getByRole('button', { name: '小石子' }));
@@ -164,7 +176,7 @@ it('saves each scene a signed-in child reaches and asks about the scene on scree
 
 it('tells the child the lesson picked up where they left it, and starts over when asked', async () => {
   const fetch = serve(savedAt('count'));
-  open('token');
+  open();
   await start(/接着上次的地方/);
   const notice = await draftNotice();
   expect(notice).toHaveTextContent('从上次的地方继续');
@@ -179,7 +191,7 @@ it('tells the child the lesson picked up where they left it, and starts over whe
 
 it('listens for the answer by itself once the question is heard, and offers numbers without a microphone', async () => {
   serve(savedAt('count'));
-  open('token');
+  open();
   await start(/接着上次的地方/);
   expect(caption()).toHaveTextContent('一共有几颗？');
   expect(screen.queryByRole('region', { name: '说出答案' })).not.toBeInTheDocument();
@@ -191,12 +203,12 @@ it('listens for the answer by itself once the question is heard, and offers numb
 
 it('hides the narrated lines while the captions are off, and keeps that on the device', async () => {
   serve(null);
-  open();
+  open('preview');
   await start(/开始短片/);
   await userEvent.click(screen.getByRole('button', { name: '字幕', pressed: true }));
   expect(caption()).toBeEmptyDOMElement();
   cleanup();
-  open();
+  open('preview');
   await start(/开始短片/);
   expect(screen.getByRole('button', { name: '字幕', pressed: false })).toBeInTheDocument();
   expect(caption()).toBeEmptyDOMElement();
@@ -204,7 +216,7 @@ it('hides the narrated lines while the captions are off, and keeps that on the d
 
 it('plays the lines without sound once the sound is off, with the captions on', async () => {
   serve(null);
-  open();
+  open('preview');
   await start(/开始短片/);
   await userEvent.click(screen.getByRole('button', { name: '字幕', pressed: true }));
   await userEvent.click(screen.getByRole('button', { name: '声音', pressed: true }));
@@ -215,14 +227,14 @@ it('plays the lines without sound once the sound is off, with the captions on', 
 
 it('starts over at the first scene when the saved step is not a later scene', async () => {
   serve(savedAt('somewhere-else'));
-  open('token');
+  open();
   await start(/开始短片/);
   expect(caption()).toHaveTextContent('看看这颗小石子。');
 });
 
 it('keeps the notice while the place reached is unsaved, and holds a reload until then', async () => {
   serve(null, { savingFails: true });
-  open('token');
+  open();
   await start(/开始短片/);
   expect(readiness()).toHaveTextContent('playing');
   expect(await draftNotice()).toHaveTextContent('还没同步');
@@ -231,9 +243,9 @@ it('keeps the notice while the place reached is unsaved, and holds a reload unti
   await waitFor(() => expect(readiness()).toHaveTextContent('unsaved'));
 });
 
-it('lets a reload go ahead once a visitor has heard the line to its end', async () => {
+it('lets a reload go ahead once a parent previewing has heard the line to its end', async () => {
   serve(null);
-  open();
+  open('preview');
   await start(/开始短片/);
   expect(readiness()).toHaveTextContent('playing');
   await hearLineToEnd();

@@ -1,7 +1,8 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 import { queryWrapper } from '../../../test/query-wrapper';
-import { useLessonAnswer, type AnswerEvents } from './useLessonAnswer';
+import type { AnswerEvents } from './useAnswerHints';
+import { useLessonAnswer } from './useLessonAnswer';
 
 const scope = { id: 'garden-balance', version: 1, csrf: 'session-token' };
 const round = '11111111-1111-1111-1111-111111111111';

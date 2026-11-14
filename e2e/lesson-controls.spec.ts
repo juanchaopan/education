@@ -1,5 +1,10 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { gardenApi, round, signInAtTheGardenAnswer } from './child-at-the-answer.js';
+import {
+  gardenApi,
+  round,
+  signInAtTheGardenAnswer,
+  signInAtTheGardenStart,
+} from './child-at-the-answer.js';
 import { gardenFilm } from './garden-film.js';
 
 // The controls laid into the garden film's picture: the captions and sound
@@ -40,31 +45,34 @@ async function expectControlsClearOfProps(film: Locator) {
 // with the other tests running beside this one.
 test.beforeEach(() => test.setTimeout(90_000));
 
-async function startAsAGuest(page: Page) {
+// A child given the garden's book starts its film from the beginning.
+async function startTheFilm(page: Page) {
   await page.goto(lesson);
   await page.getByRole('button', { name: /开始短片/ }).click({ timeout: 60_000 });
   return gardenFilm(page);
 }
 
 test('keeps the captions the child turned off for every later visit', async ({ page }) => {
-  const { film, caption } = await startAsAGuest(page);
+  await signInAtTheGardenStart(page);
+  const { film, caption } = await startTheFilm(page);
   await expect(caption).toHaveText(/\S/);
   await film.getByRole('button', { name: '字幕', pressed: true }).click();
   await expect(caption).toBeEmpty();
   await page.reload();
-  await startAsAGuest(page);
+  await startTheFilm(page);
   await expect(film.getByRole('button', { name: '字幕', pressed: false })).toBeVisible();
   await expect(caption).toBeEmpty();
 });
 
 test('shows the captions, and keeps them on, while the sound is off', async ({ page }) => {
-  const { film, caption } = await startAsAGuest(page);
+  await signInAtTheGardenStart(page);
+  const { film, caption } = await startTheFilm(page);
   await film.getByRole('button', { name: '字幕', pressed: true }).click();
   await film.getByRole('button', { name: '声音', pressed: true }).click();
   await expect(caption).toHaveText(/\S/);
   await expect(film.getByRole('button', { name: '字幕', pressed: true })).toBeDisabled();
   await page.reload();
-  await startAsAGuest(page);
+  await startTheFilm(page);
   await expect(film.getByRole('button', { name: '声音', pressed: false })).toBeVisible();
   await expect(caption).toHaveText(/\S/);
 });
@@ -76,10 +84,11 @@ const upright = {
 };
 
 for (const [name, size] of Object.entries(upright)) {
-  test(`keeps a visitor's controls clear of the props on ${name}`, async ({ page }, testInfo) => {
+  test(`keeps the controls clear of the props on ${name}`, async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'desktop', 'every screen is set here');
     await page.setViewportSize(size);
-    const { film } = await startAsAGuest(page);
+    await signInAtTheGardenStart(page);
+    const { film } = await startTheFilm(page);
     await expect(film.getByRole('button', { name: '青菜' }).first()).toBeVisible();
     await expectControlsClearOfProps(film);
   });

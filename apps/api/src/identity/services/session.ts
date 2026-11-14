@@ -14,6 +14,27 @@ type Dependencies = {
 };
 const denied = () => new RequestError(401, '邮箱或密码不正确，或登录状态已失效。');
 
+// The live session a token stands for, or undefined.
+async function findSession(
+  repository: SessionRepository,
+  token: string | undefined,
+): Promise<ParentSession | undefined> {
+  if (!validToken(token)) return undefined;
+  const account = await repository.read(tokenHash(token));
+  if (!account) return undefined;
+  return {
+    role: 'parent',
+    email: account.email,
+    emailVerified: account.emailVerified,
+    access: account.access,
+    csrfToken: csrfToken(token),
+  };
+}
+
+// `current` reads the session a page asks about, also on the way to logging
+// out, without spending the login budgets: a session token is 32 random bytes
+// that cannot be guessed, and reading one hashes no password. `read`, which
+// lets a parent into the parent endpoints, spends them for a missing session.
 export function createSessionService({ repository, admit, verify, dummyHash }: Dependencies) {
   const reject = (source: string, status = 401): Promise<never> =>
     admit(
@@ -24,18 +45,13 @@ export function createSessionService({ repository, admit, verify, dummyHash }: D
       '',
       source,
     );
-  const read = async (token: string | undefined, source: string): Promise<ParentSession> => {
-    if (!validToken(token)) return reject(source);
-    const account = await repository.read(tokenHash(token));
-    if (!account) return reject(source);
-    return {
-      role: 'parent',
-      email: account.email,
-      emailVerified: account.emailVerified,
-      access: account.access,
-      csrfToken: csrfToken(token),
-    };
+  const current = async (token: string | undefined) => {
+    const session = await findSession(repository, token);
+    if (!session) throw denied();
+    return session;
   };
+  const read = async (token: string | undefined, source: string) =>
+    (await findSession(repository, token)) ?? reject(source);
   const login = async (input: ParentLogin, source: string, previous?: string) => {
     const email = input.email.trim().toLowerCase();
     return admit(
@@ -64,10 +80,10 @@ export function createSessionService({ repository, admit, verify, dummyHash }: D
     );
   };
   const logout = async (token: string | undefined, csrf: string | undefined, source: string) => {
-    const session = await read(token, source);
+    const session = await current(token);
     if (!csrfMatches(csrf, session.csrfToken)) return reject(source, 403);
     await repository.revoke(tokenHash(token!));
   };
-  return { login, read, logout };
+  return { login, current, read, logout };
 }
 export type SessionService = ReturnType<typeof createSessionService>;

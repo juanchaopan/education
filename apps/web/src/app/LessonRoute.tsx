@@ -1,12 +1,14 @@
 import { Suspense, type ComponentType } from 'react';
-import { useChildSession } from '../features/family/data-access/useChildSession';
+import type { LessonAccess } from '../features/learning/data-access/learning-request';
 import { EmptyState } from '../shared/ui/EmptyState';
 import { LessonBoundary } from './LessonBoundary';
 import { useReleaseCheck } from './release/useReleaseUpdate';
 
 // One lesson as the route shows it, loaded when opened: it receives the
-// signed-in child's session token, or nothing for a visitor.
-export type LessonScreen = ComponentType<{ csrf?: string }>;
+// session it is opened under, a child's to practise or a parent's to
+// preview, and what to do when the server refuses the problem partway
+// through.
+export type LessonScreen = ComponentType<LessonAccess>;
 
 const opening = <EmptyState icon="clock" title="正在打开这道题" description="请稍等一下。" />;
 
@@ -24,17 +26,18 @@ const unopened = (
   />
 );
 
-// A lesson needs to know whether a child is signed in before it starts, so a
-// child's saved place and answers are never mixed with a visitor's. Lessons
-// are loaded only when opened, so the catalog never carries their scenes.
-export function LessonRoute({ lesson: Lesson }: { lesson: LessonScreen }) {
-  const session = useChildSession();
+// Lessons are loaded only when opened, so the home page never carries their
+// scenes.
+export function LessonRoute({
+  lesson: Lesson,
+  session,
+  onRefused,
+}: LessonAccess & { lesson: LessonScreen }) {
   const checkRelease = useReleaseCheck();
-  if (session.isPending) return opening;
   return (
     <LessonBoundary fallback={unopened} onFailure={checkRelease}>
       <Suspense fallback={opening}>
-        <Lesson csrf={session.data?.csrfToken} />
+        <Lesson session={session} onRefused={onRefused} />
       </Suspense>
     </LessonBoundary>
   );

@@ -10,8 +10,10 @@ type Props = {
   // The id of the book's painted cover, or null for none.
   cover: string | null;
   // A card's cover carries the grade label and the unavailable band; a
-  // thumbnail beside a row of text carries neither, as the row says both.
-  size?: 'card' | 'thumb';
+  // thumbnail beside a row of text carries neither, as the row says both. A
+  // standing book is a small cover turned a little into the page, its pages
+  // showing at its edge, beside a row that says everything about it.
+  size?: 'card' | 'thumb' | 'standing';
   unavailable?: boolean;
   // Marks laid on the cover, such as progress, and the corner they sit in:
   // the top right for one child's progress, the bottom right for several.
@@ -35,7 +37,7 @@ export function BookCover({
 }: Props) {
   const image = coverImage(cover);
   const look = subjectLook(subject);
-  return (
+  const face = (
     <div className={styles.cover} data-size={size} data-unavailable={unavailable || undefined}>
       {image ? (
         <img className={styles.picture} src={image} alt="" loading="lazy" decoding="async" />
@@ -51,6 +53,13 @@ export function BookCover({
           {marks}
         </span>
       )}
+    </div>
+  );
+  if (size !== 'standing') return face;
+  return (
+    <div className={styles.standing}>
+      {face}
+      <span className={styles.pages} aria-hidden="true" />
     </div>
   );
 }

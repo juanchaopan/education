@@ -1,7 +1,7 @@
 import { expect, it } from 'vitest';
 import type { Judgement } from '../data-access/useLessonAnswer';
 import type { VoiceState } from '../data-access/voice-input';
-import { answerStep, type CountWords } from './spoken-answer';
+import { answerStep, hintWords, tappedStep, type CountWords } from './spoken-answer';
 
 const open: Judgement = { status: 'open' };
 const idle: VoiceState = { status: 'idle' };
@@ -120,5 +120,25 @@ it('keeps a failed submission retryable while the answer is being judged', () =>
   expect(answerStep(idle, { status: 'failed', message: '暂时连不上，请重试。' }, words)).toEqual({
     kind: 'failed',
     message: '暂时连不上，请重试。',
+  });
+});
+
+it('offers the numbers to tap from the start when the answer is tapped, beside the last verdict', () => {
+  expect(tappedStep(open, words)).toEqual({ kind: 'ask', message: '', choices: true });
+  expect(tappedStep(wrong, words)).toEqual({ kind: 'ask', message: '不是 3', choices: true });
+  expect(tappedStep({ status: 'judging' }, words)).toEqual({ kind: 'judging' });
+  expect(tappedStep({ status: 'judged', outcome: 'independent', count: 9 }, words)).toEqual({
+    kind: 'done',
+    assisted: false,
+  });
+});
+
+it('has the teacher think while a hint is on its way, then say it or why none came', () => {
+  expect(hintWords({ hintWaiting: true, hintFailed: false })).toEqual({ thinking: true });
+  expect(hintWords({ hint: '先数左边。', hintWaiting: false, hintFailed: false })).toEqual({
+    text: '先数左边。',
+  });
+  expect(hintWords({ hint: '先数左边。', hintWaiting: false, hintFailed: true })).toEqual({
+    text: '提示暂时打不开，可以再试一次。',
   });
 });

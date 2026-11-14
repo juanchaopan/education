@@ -4,21 +4,28 @@ import { ChildAccess } from './child-access.js';
 
 const closed = { additionalProperties: false };
 
-// A shelf page holds 24 books; a child's practice comes ten books at a time,
-// each with all of its problems.
+// A shelf page holds 24 books; the signed-in child's books come six at a
+// time, each with all of its problems.
 export const shelfPageSize = 24;
-export const practiceBookPageSize = 10;
+export const childBookPageSize = 6;
 
 // Whether a book can be given to children; an unavailable one stays on the
 // shelves of the children who were given it, greyed out.
 export const bookStatuses = ['available', 'unavailable'] as const;
 export const BookStatus = Type.Union(bookStatuses.map((status) => Type.Literal(status)));
 
+// The filters of the child's books besides all of them: the available books
+// the child is still on, those the child finished, and the unavailable ones.
+export const childBookFilters = ['learning', 'finished', 'unavailable'] as const;
+export const ChildBookFilter = Type.Union(childBookFilters.map((filter) => Type.Literal(filter)));
+
 const BookId = ProblemId;
 const Count = Type.Integer({ minimum: 0 });
 const Label = Type.String({ minLength: 1, maxLength: 40 });
 const Offset = Type.Optional(Type.String({ pattern: '^(0|[1-9][0-9]{0,8})$' }));
 const ChildId = ChildAccess.properties.id;
+// A moment as an ISO 8601 string.
+const Moment = Type.String({ minLength: 1 });
 
 // What every shelf says of a book: its stable id, its name (the category),
 // its grade and subject, its cover's id in the site's cover library, its
@@ -59,7 +66,11 @@ export const ChildShelfQuery = Type.Object(
 
 export const ShelfChild = Type.Object({ childId: ChildId }, closed);
 export const BookAssignment = Type.Object({ childId: ChildId, bookId: BookId }, closed);
-export const PracticeBookQuery = Type.Object({ offset: Offset }, closed);
+// The signed-in child's books, all of them or one filter, from an offset.
+export const ChildBookQuery = Type.Object(
+  { books: Type.Optional(ChildBookFilter), offset: Offset },
+  closed,
+);
 
 // On the library and the family shelf, every child of the family with whether
 // they have the book and how many of its problems they have done.
@@ -97,12 +108,17 @@ function shelfPage<Book extends typeof FamilyShelfBook | typeof ChildShelfBook>(
 export const FamilyShelfPage = shelfPage(FamilyShelfBook);
 export const ChildShelfPage = shelfPage(ChildShelfBook);
 
-// A book given to the signed-in child, with every problem it holds at its
-// latest version and whether the child has done it.
-export const PracticeBook = Type.Object(
+// A book given to the signed-in child: when it was given, when the child
+// last handed in an answer in it (null before the first), whether it is new
+// to the child (no problem of it opened yet), and every problem it holds at
+// its latest version with whether the child has done it.
+export const ChildBook = Type.Object(
   {
     ...bookFields,
     done: Count,
+    assignedAt: Moment,
+    studiedAt: Type.Union([Moment, Type.Null()]),
+    fresh: Type.Boolean(),
     items: Type.Array(
       Type.Object(
         {
@@ -118,20 +134,32 @@ export const PracticeBook = Type.Object(
   closed,
 );
 
-export const PracticeBookPage = Type.Object(
-  { books: Type.Array(PracticeBook, { maxItems: practiceBookPageSize }), hasMore: Type.Boolean() },
+// How many of the child's books each filter holds, and how many are new.
+export const ChildBookCounts = Type.Object(
+  { all: Count, learning: Count, finished: Count, unavailable: Count, fresh: Count },
+  closed,
+);
+
+export const ChildBookPage = Type.Object(
+  {
+    counts: ChildBookCounts,
+    books: Type.Array(ChildBook, { maxItems: childBookPageSize }),
+    hasMore: Type.Boolean(),
+  },
   closed,
 );
 
 export type BookStatus = Static<typeof BookStatus>;
+export type ChildBookFilter = Static<typeof ChildBookFilter>;
 export type FamilyShelfQuery = Static<typeof FamilyShelfQuery>;
 export type ChildShelfQuery = Static<typeof ChildShelfQuery>;
 export type ShelfChild = Static<typeof ShelfChild>;
 export type BookAssignment = Static<typeof BookAssignment>;
-export type PracticeBookQuery = Static<typeof PracticeBookQuery>;
+export type ChildBookQuery = Static<typeof ChildBookQuery>;
 export type FamilyShelfBook = Static<typeof FamilyShelfBook>;
 export type ChildShelfBook = Static<typeof ChildShelfBook>;
 export type FamilyShelfPage = Static<typeof FamilyShelfPage>;
 export type ChildShelfPage = Static<typeof ChildShelfPage>;
-export type PracticeBook = Static<typeof PracticeBook>;
-export type PracticeBookPage = Static<typeof PracticeBookPage>;
+export type ChildBook = Static<typeof ChildBook>;
+export type ChildBookCounts = Static<typeof ChildBookCounts>;
+export type ChildBookPage = Static<typeof ChildBookPage>;

@@ -18,11 +18,23 @@ it('shows a way to open a lesson again when its files did not load', async () =>
   const missing: LessonScreen = lazy(() => Promise.reject(new TypeError('Failed to fetch module')));
   render(
     <QueryClientProvider client={new QueryClient()}>
-      <LessonRoute lesson={missing} />
+      <LessonRoute lesson={missing} session={{ mode: 'practice', csrf: 'c'.repeat(43) }} />
     </QueryClientProvider>,
   );
   expect(await screen.findByRole('heading', { name: '这道题暂时打不开' })).toBeInTheDocument();
   expect(screen.getByRole('button', { name: '重新打开' })).toBeInTheDocument();
+});
+
+it('gives the lesson the session it is opened under', async () => {
+  const Lesson: LessonScreen = ({ session }) => (
+    <p>{session.mode === 'practice' ? '记下进度' : '只看'}</p>
+  );
+  render(
+    <QueryClientProvider client={new QueryClient()}>
+      <LessonRoute lesson={Lesson} session={{ mode: 'preview', csrf: 'p'.repeat(43) }} />
+    </QueryClientProvider>,
+  );
+  expect(await screen.findByText('只看')).toBeInTheDocument();
 });
 
 it('tells the page once that the lesson could not go on, and shows the fallback in its place', () => {

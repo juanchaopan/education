@@ -10,7 +10,12 @@ const view = {
   csrfToken: csrf,
 };
 function fixture() {
-  const sessions = { read: vi.fn().mockResolvedValue(view), login: vi.fn(), logout: vi.fn() };
+  const sessions = {
+    current: vi.fn(),
+    read: vi.fn().mockResolvedValue(view),
+    login: vi.fn(),
+    logout: vi.fn(),
+  };
   const status = { enabled: true, status: 'accepted', retryAfter: 60, canRetry: false };
   const verification = {
     status: vi.fn().mockResolvedValue(status),

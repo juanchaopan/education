@@ -59,8 +59,8 @@ function useSavedDraft(scope: DraftScope) {
   });
 }
 
-export function useLessonDraft({ id, version, csrf }: DraftScope, initial: LocalDraft) {
-  const scope = useMemo(() => ({ id, version, csrf }), [id, version, csrf]);
+export function useLessonDraft({ id, version, csrf, refused }: DraftScope, initial: LocalDraft) {
+  const scope = useMemo(() => ({ id, version, csrf, refused }), [id, version, csrf, refused]);
   const load = useSavedDraft(scope);
   const [stored, setStored] = useState<DraftState>({ scope, saves: 0 });
   const state = stored.scope === scope ? stored : { scope, saves: 0 };

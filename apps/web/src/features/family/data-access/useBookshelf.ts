@@ -1,21 +1,24 @@
 import { useState } from 'react';
 import {
+  keepPreviousData,
   useInfiniteQuery,
   useMutation,
   useQueries,
+  useQuery,
   useQueryClient,
   type InfiniteData,
   type QueryClient,
 } from '@tanstack/react-query';
 import type { Static } from '@sinclair/typebox';
 import {
+  ChildBookPage,
+  childBookPageSize,
   ChildShelfPage,
   FamilyShelfPage,
-  PracticeBookPage,
-  practiceBookPageSize,
   shelfPageSize,
+  type ChildBookFilter,
 } from '@education/contracts';
-import type { ShelfFilter } from '../model';
+import { everyBook, type ShelfFilter } from '../model';
 import { sessionRead, sessionRequest } from './session-request';
 
 export const bookshelfQueryKey = ['bookshelf'];
@@ -24,6 +27,7 @@ export const bookshelfQueryKey = ['bookshelf'];
 export type ShelfView = 'library' | 'family' | { childId: string };
 
 const signedOut = '登录状态已更新，请刷新页面。';
+const unopened = '书架没打开，请再试一次。';
 
 // A read that fails with `failed`, or asks for a refresh when the session
 // has changed.
@@ -79,13 +83,7 @@ function shelfQuery<Schema extends typeof FamilyShelfPage | typeof ChildShelfPag
   return batches<Static<Schema>>(
     [...shelfKey(csrf, view), filter.grade, filter.subject, filter.state],
     shelfPageSize,
-    (offset) =>
-      sessionRead(
-        shelfPath(view, filter, offset),
-        schema,
-        reading('书架没打开，请再试一次。'),
-        csrf,
-      ),
+    (offset) => sessionRead(shelfPath(view, filter, offset), schema, reading(unopened), csrf),
   );
 }
 
@@ -95,6 +93,28 @@ export function useFamilyShelf(csrf: string, shelf: 'library' | 'family', filter
 
 export function useChildShelf(csrf: string, childId: string, filter: ShelfFilter) {
   return useInfiniteQuery(shelfQuery(csrf, { childId }, filter, ChildShelfPage));
+}
+
+// Whether the family has been given any book, which says, once the library
+// is empty, whether every book was given away or there are none yet. It is
+// asked only when needed, and afresh each time.
+export function useAnyBookGiven(csrf: string, needed: boolean) {
+  return useQuery({
+    queryKey: [...bookshelfQueryKey, csrf, 'any-given'],
+    enabled: needed,
+    retry: false,
+    staleTime: 0,
+    gcTime: 0,
+    queryFn: async () =>
+      (
+        await sessionRead(
+          shelfPath('family', everyBook, 0),
+          FamilyShelfPage,
+          reading(unopened),
+          csrf,
+        )
+      ).total > 0,
+  });
 }
 
 // The first page of the books each named child has, one query per child, for
@@ -115,21 +135,27 @@ export function useChildrenAssigned(csrf: string, childIds: readonly string[]) {
   });
 }
 
-// The books given to the signed-in child, ten at a time.
-export function usePracticeBooks(csrf: string) {
-  return useInfiniteQuery(
-    batches<PracticeBookPage>(
-      [...bookshelfQueryKey, csrf, 'practice'],
-      practiceBookPageSize,
-      (offset) =>
-        sessionRead(
-          `children/assignments?offset=${offset}`,
-          PracticeBookPage,
-          reading('暂时无法打开练习，请再试一次。'),
+// The signed-in child's books, all of them or one filter, six at a time.
+// While another filter is read, the books of the last one stand in for it,
+// so the page keeps its filters, and the one just chosen keeps the focus.
+export function useChildBooks(csrf: string, filter?: ChildBookFilter) {
+  return useInfiniteQuery({
+    ...batches<ChildBookPage>(
+      [...bookshelfQueryKey, csrf, 'child-books', filter ?? 'all'],
+      childBookPageSize,
+      (offset) => {
+        const query = new URLSearchParams({ offset: String(offset) });
+        if (filter) query.set('books', filter);
+        return sessionRead(
+          `children/assignments?${query.toString()}`,
+          ChildBookPage,
+          reading('我的书没打开，请再试一次。'),
           csrf,
-        ),
+        );
+      },
     ),
-  );
+    placeholderData: keepPreviousData,
+  });
 }
 
 export type BookChange = Readonly<{ childId: string; bookId: string; assign: boolean }>;

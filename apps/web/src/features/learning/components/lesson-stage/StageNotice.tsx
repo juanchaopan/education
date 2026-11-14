@@ -1,5 +1,4 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
-import { Link } from 'react-router-dom';
 import { classNames } from '../../../../shared/lib/class-names';
 import { Icon } from '../../../../shared/ui/Icon';
 import type { IconName } from '../../../../shared/ui/icons';
@@ -18,7 +17,7 @@ type Props = {
 // A notice laid into the stage on a pane of smoked glass, the way a toast
 // slides over a page: an icon, a sentence, and a button or two. It tells the
 // child about things outside the lesson itself, such as a draft that needs a
-// choice or the saving that signing in brings.
+// choice.
 export function StageNotice({ icon, text, label, children }: Props) {
   return (
     <aside className={styles.notice} aria-label={label}>
@@ -32,30 +31,15 @@ export function StageNotice({ icon, text, label, children }: Props) {
 // The step a notice is for, in gold, or a quieter one in clear glass. Like
 // every part laid into the picture, they keep the same colours by day and by
 // night.
-type Emphasis = { quiet?: boolean };
-
 export function NoticeButton({
   quiet = false,
   ...button
-}: Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'type' | 'className'> & Emphasis) {
+}: Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'type' | 'className'> & { quiet?: boolean }) {
   return (
     <button
       {...button}
       type="button"
       className={classNames(styles.action, quiet && styles.quiet)}
     />
-  );
-}
-
-// A notice's step that leads to another page.
-export function NoticeLink({
-  to,
-  quiet = false,
-  children,
-}: { to: string; children: ReactNode } & Emphasis) {
-  return (
-    <Link to={to} className={classNames(styles.action, quiet && styles.quiet)}>
-      {children}
-    </Link>
   );
 }

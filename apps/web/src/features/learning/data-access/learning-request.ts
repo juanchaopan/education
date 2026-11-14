@@ -1,8 +1,27 @@
+import { ProblemAccessDenied, type ProblemMode } from '@education/contracts';
 import type { Static, TSchema } from '@sinclair/typebox';
 import { Value } from '@sinclair/typebox/value';
 
-export type LearningScope = Readonly<{ id: string; version: number; csrf: string }>;
-type Resource = 'draft' | 'answer' | 'question' | 'transcription';
+// The session a lesson is opened under: a child's, who practises it and
+// whose work is kept, or a verified parent's, who previews it and keeps
+// nothing; with the session's CSRF token either way.
+export type LessonSession = Readonly<{ mode: ProblemMode; csrf: string }>;
+
+// What a lesson's page opens with: its session, and what to do when the
+// server refuses the problem partway through, because its book was taken
+// back or made unavailable.
+export type LessonAccess = Readonly<{ session: LessonSession; onRefused?: () => void }>;
+
+// The problem a lesson's requests are about, the session token they carry,
+// and what to do when the server refuses the problem.
+export type LearningScope = Readonly<{
+  id: string;
+  version: number;
+  csrf: string;
+  refused?: () => void;
+}>;
+
+type Resource = 'draft' | 'answer' | 'question' | 'transcription' | 'preview';
 
 // A request to the API under the child's session, with its CSRF token. A body
 // makes it a JSON write by POST; it gives up after ten seconds, or sooner
@@ -22,14 +41,26 @@ export function childRequest(path: string, csrf: string, body?: string, cancel?:
   });
 }
 
-export function requestLearning(
+// A refusal names its reason; a 403 without one is a stale page's token.
+async function noteRefusal(scope: LearningScope, response: Response) {
+  if (response.status !== 403 || !scope.refused) return;
+  const body: unknown = await response
+    .clone()
+    .json()
+    .catch(() => undefined);
+  if (Value.Check(ProblemAccessDenied, body)) scope.refused();
+}
+
+export async function requestLearning(
   scope: LearningScope,
   resource: Resource,
   body?: string,
   cancel?: AbortSignal,
 ) {
   const path = `problems/${encodeURIComponent(scope.id)}/${scope.version}/${resource}`;
-  return childRequest(path, scope.csrf, body, cancel);
+  const response = await childRequest(path, scope.csrf, body, cancel);
+  await noteRefusal(scope, response);
+  return response;
 }
 
 // Posts to a step resource and returns the reply only when it matches the

@@ -57,6 +57,18 @@ describe('books', () => {
     expect(registry.books).toEqual([book()]);
   });
 
+  it('finds the book each problem version is filed in', () => {
+    const other = book({ id: 'other-book', category: '图形', status: 'unavailable' });
+    const registry = createProblemRegistry(
+      [plugin('fixture-book'), plugin('other-book', { version: 2 })],
+      [book(), other],
+    );
+    expect(registry.bookOf('fixture-problem', 1)).toEqual(book());
+    expect(registry.bookOf('fixture-problem', 2)).toEqual(other);
+    expect(registry.bookOf('fixture-problem', 3)).toBeUndefined();
+    expect(registry.bookOf('missing-problem', 1)).toBeUndefined();
+  });
+
   it("lists a book's problems at their latest version, in the book's order", () => {
     const other = book({ id: 'other-book', category: '图形' });
     const registry = createProblemRegistry(

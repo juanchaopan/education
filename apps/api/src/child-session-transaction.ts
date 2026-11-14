@@ -25,12 +25,3 @@ export function childSessionTransaction(pool: pg.Pool) {
     return result;
   };
 }
-
-// Confirms a signed-in child with a matching CSRF token, or throws 401 or 403.
-export function childAuthenticator(pool: pg.Pool) {
-  const authorized = childSessionTransaction(pool);
-  return async (credentials: Credentials) => {
-    // The transaction reads an undefined result as a missing session.
-    await authorized(credentials, async () => true);
-  };
-}

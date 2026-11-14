@@ -179,3 +179,41 @@ it('revokes a verified session if its parent verification is removed', async () 
   await pool.query('UPDATE parents SET email_verified=false WHERE email=$1', [input.email]);
   await expect(service.read(token, 'ip')).rejects.toMatchObject({ statusCode: 401 });
 });
+it('reads the session for a page and logs out without spending login attempts', async () => {
+  const { service, input } = await setup(true);
+  const origin = 'https://education.example';
+  const app = buildApp({ origin, sessions: service });
+  const headers = { origin, 'content-type': 'application/json', 'x-education-request': 'session' };
+  const attempts = async () =>
+    (
+      await pool.query<{ count: number }>(
+        'SELECT count(*)::int AS count FROM registration_attempts',
+      )
+    ).rows[0]!.count;
+  try {
+    const before = await attempts();
+    const invalid = { cookie: `__Host-education_session=${'x'.repeat(43)}` };
+    for (let index = 0; index < 40; index++)
+      for (const cookie of [{}, invalid]) {
+        const read = await app.inject({ url: '/api/v1/session', headers: cookie });
+        expect(read.statusCode).toBe(401);
+        const logout = await app.inject({
+          method: 'POST',
+          url: '/api/v1/parents/logout',
+          headers: { ...headers, ...cookie, 'x-csrf-token': 'x'.repeat(43) },
+          payload: {},
+        });
+        expect(logout.statusCode).toBe(401);
+      }
+    expect(await attempts()).toBe(before);
+    const login = await app.inject({
+      method: 'POST',
+      url: '/api/v1/parents/login',
+      headers,
+      payload: input,
+    });
+    expect(login.statusCode).toBe(200);
+  } finally {
+    await app.close();
+  }
+});

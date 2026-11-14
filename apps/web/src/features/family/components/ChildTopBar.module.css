@@ -1,0 +1,83 @@
+/* The bar lies over the picture at the top of the page; its parts are
+   smoked glass, like the controls laid into a lesson. */
+.bar {
+  position: absolute;
+  z-index: 3;
+  inset: 0 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-4) var(--space-6);
+}
+.brand,
+.me {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-block-size: var(--touch-target);
+  padding: var(--space-1) var(--space-4) var(--space-1) var(--space-1);
+  border: 1px solid var(--dew-pane-edge);
+  border-radius: var(--radius-pill);
+  color: var(--dew-ink);
+  background: var(--dew-pane);
+  box-shadow: var(--dew-pane-shadow);
+  backdrop-filter: var(--glass-filter);
+}
+.brand {
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  letter-spacing: 0.12em;
+  text-decoration: none;
+}
+.mark {
+  display: grid;
+  place-items: center;
+  inline-size: 2.125rem;
+  block-size: 2.125rem;
+  border-radius: 50%;
+  color: var(--primary-ink);
+  background: linear-gradient(var(--primary-hi), var(--primary));
+  box-shadow: 0 var(--raised-depth) 0 var(--primary-edge);
+}
+.me {
+  font: inherit;
+  cursor: pointer;
+}
+.brand:focus-visible,
+.me:focus-visible {
+  outline: var(--dew-focus-ring);
+  outline-offset: 2px;
+}
+
+.holder {
+  position: relative;
+}
+.menu {
+  position: absolute;
+  inset-inline-end: 0;
+  inset-block-start: calc(100% + var(--space-3));
+  min-inline-size: 12rem;
+  padding: var(--space-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface-raised);
+  box-shadow: var(--raised-shadow);
+}
+.item {
+  justify-content: flex-start;
+  min-block-size: 3rem;
+  border-radius: var(--radius);
+}
+
+/* A phone shows the brand's mark only; its name stays the link's name. */
+@media (max-width: 40rem) {
+  .bar {
+    padding: var(--space-3);
+  }
+  .brand {
+    padding: var(--space-1);
+  }
+  .name {
+    display: none;
+  }
+}

@@ -32,7 +32,7 @@ import Fastify, {
   type FastifyRequest,
 } from 'fastify';
 import { Type } from '@sinclair/typebox';
-import { registerCatalog } from './catalog/routes/catalog.js';
+import { registerCatalog, type OpenProblem } from './catalog/routes/catalog.js';
 import { registerParentRegistration } from './identity/routes/registration.js';
 import type { RegistrationService } from './identity/services/registration.js';
 import { RequestError } from './shared/request-error.js';
@@ -51,6 +51,9 @@ import type { FamilyOverviewService } from './learning/services/family-overview.
 import { registerStudyTime } from './learning/routes/study-time.js';
 import type { StudyTimeService } from './learning/services/study-time.js';
 import { registerBookshelf } from './learning/routes/bookshelf.js';
+import { registerPreview } from './learning/routes/preview.js';
+import { registerBookOpened, type MarkBookOpened } from './learning/routes/book-opened.js';
+import type { PreviewService } from './learning/services/preview.js';
 import type { BookshelfService } from './learning/services/bookshelf.js';
 import { registerTeachingFeedback } from './ai/routes/teaching-feedback.js';
 import type { TeachingFeedbackService } from './ai/services/teaching-feedback.js';
@@ -74,6 +77,9 @@ type AppOptions = {
   familyOverview?: FamilyOverviewService;
   studyTime?: StudyTimeService;
   bookshelf?: BookshelfService;
+  problemOpening?: OpenProblem;
+  bookOpened?: MarkBookOpened;
+  preview?: PreviewService;
   teachingFeedback?: TeachingFeedbackService;
   teacherQuestion?: TeacherQuestionService;
   voiceTranscription?: VoiceTranscriptionService;
@@ -119,7 +125,7 @@ export function buildApp(options: AppOptions = {}) {
       .send({ status: ready ? 'ready' : 'unavailable' });
   });
   registerServiceGate(app, options.ready);
-  registerCatalog(app);
+  registerCatalog(app, options.problemOpening);
   registerLearning(app, options);
   registerTeachingFeedback(app, options.origin ?? localOrigin, options.teachingFeedback);
   registerTeacherQuestion(app, options.origin ?? localOrigin, options.teacherQuestion);
@@ -172,7 +178,7 @@ function httpErrorStatus(error: FastifyError) {
 }
 
 // The request log records each error's category; the reply carries only a
-// message meant for families.
+// message meant for families, and a refusal's reason when it has one.
 function registerErrors(app: FastifyInstance) {
   app.setErrorHandler<FastifyError>((error, request, reply) => {
     const invalid = error.validation !== undefined;
@@ -189,6 +195,7 @@ function registerErrors(app: FastifyInstance) {
             : invalid
               ? '请检查邮箱和密码格式后重试。'
               : '暂时无法完成，请稍后重试。',
+        ...(error instanceof RequestError && error.reason && { reason: error.reason }),
       });
   });
 }
@@ -202,6 +209,8 @@ function registerLearning(app: FastifyInstance, options: AppOptions) {
   registerFamilyOverview(app, options.familyOverview);
   registerStudyTime(app, origin, options.studyTime);
   registerBookshelf(app, origin, options.bookshelf);
+  registerPreview(app, origin, options.preview);
+  registerBookOpened(app, origin, options.bookOpened);
 }
 
 function registerIdentity(app: FastifyInstance, options: AppOptions) {

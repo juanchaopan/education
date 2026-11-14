@@ -1,0 +1,27 @@
+/* Smoked glass like the back button beside it, the same at any time of day,
+   with the one word in gold. */
+.mark {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-block-size: 2.75rem;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--dew-pane-edge);
+  border-radius: var(--radius-pill);
+  color: var(--dew-gold);
+  background: var(--dew-pane);
+  backdrop-filter: var(--glass-filter);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+/* Heard by screen readers, taking no room. */
+.unseen {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

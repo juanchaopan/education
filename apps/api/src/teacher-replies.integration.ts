@@ -81,7 +81,9 @@ afterAll(async () => {
   await pool.end();
 });
 
-async function child(consented: boolean) {
+// A signed-in child given the problem's book, unless `given` is false, whose
+// family has or has not consented to the tutoring.
+async function child(consented: boolean, given = true) {
   const family = randomUUID();
   const token = randomBytes(32).toString('base64url');
   families.push(family);
@@ -90,10 +92,12 @@ async function child(consented: boolean) {
     `WITH child AS (
        INSERT INTO children(family_id,nickname,canonical_nickname,pin_hash,pin_pepper_version)
        VALUES($1,'小鹿','小鹿','fixture',1) RETURNING id
+     ), session AS (
+       INSERT INTO child_sessions(token_hash,child_id,credential_version,family_epoch,expires_at)
+       SELECT $2,id,1,1,now()+interval '1 day' FROM child
      )
-     INSERT INTO child_sessions(token_hash,child_id,credential_version,family_epoch,expires_at)
-     SELECT $2,id,1,1,now()+interval '1 day' FROM child`,
-    [family, tokenHash(token)],
+     INSERT INTO book_assignments(child_id,book_id) SELECT id,$3 FROM child WHERE $4`,
+    [family, tokenHash(token), book.id, given],
   );
   if (consented)
     await pool.query(
@@ -118,7 +122,7 @@ function providerReply(text: string) {
 }
 
 function service(send: typeof fetch) {
-  return createTeachingFeedback(pool, env, send, registry.find);
+  return createTeachingFeedback(pool, env, send, registry);
 }
 
 async function usage(family: string) {
@@ -154,6 +158,24 @@ it('needs a valid child session and withholds the model without family consent',
   ).resolves.toEqual({ status: 'fallback', reason: 'unauthorized' });
   expect(send).not.toHaveBeenCalled();
   expect(await usage(owner.family)).toEqual([]);
+});
+
+it('helps no child with a problem whose book is not given to them, and calls no model', async () => {
+  const stranger = await child(true, false);
+  const send = vi.fn<typeof fetch>(async () => providerReply(JSON.stringify(modelReply)));
+  const input = { stepId: 'count-left', text: '我数了四个' };
+  await expect(service(send)(stranger.credentials, problem, input)).rejects.toMatchObject({
+    statusCode: 403,
+    reason: 'unassigned',
+  });
+  await expect(ask(send)(stranger.credentials, problem, asked('我数了四个'))).rejects.toMatchObject(
+    {
+      statusCode: 403,
+      reason: 'unassigned',
+    },
+  );
+  expect(send).not.toHaveBeenCalled();
+  expect(await usage(stranger.family)).toEqual([]);
 });
 
 it('sends only the step and the submission to the model and settles the usage', async () => {
@@ -213,7 +235,7 @@ it('withholds a reply that arrives after the family is deleted and still settles
   ]);
 });
 
-const ask = (send: typeof fetch) => createTeacherQuestion(pool, env, send, registry.find);
+const ask = (send: typeof fetch) => createTeacherQuestion(pool, env, send, registry);
 const record: LessonRecord = {
   now: { things: [{ place: 'left', thing: 'dot', count: 3 }], states: [] },
   ended: [],

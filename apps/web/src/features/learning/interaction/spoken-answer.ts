@@ -1,5 +1,6 @@
 import type { Judgement } from '../data-access/useLessonAnswer';
 import type { VoiceState } from '../data-access/voice-input';
+import type { Words } from './subtitle';
 import { spokenNumber } from './spoken-number';
 import { retryable, voiceMessage, type Alternative } from './voice-message';
 
@@ -100,6 +101,26 @@ export function answerStep(
   if (step?.kind === 'ask' && step.choices && said) return { ...step, message: said };
   if (step) return step;
   return awaiting ? { kind: 'waiting' } : ask(said ?? '');
+}
+
+// The answer given by tapping a number alone, as in a parent's preview, where
+// no microphone opens: the numbers are there from the start, beside what
+// the last count came to.
+export function tappedStep(judgement: Judgement, { explain }: CountWords): AnswerStep {
+  return settled(judgement) ?? ask(verdict(judgement, explain) ?? '', true);
+}
+
+const hintFailed = '提示暂时打不开，可以再试一次。';
+
+// What the teacher says about the hints: thinking while one is on its way,
+// so the last hint is not said again, then the new hint or why none came.
+export function hintWords(hints: {
+  hint?: string;
+  hintWaiting: boolean;
+  hintFailed: boolean;
+}): Words {
+  if (hints.hintWaiting) return { thinking: true };
+  return { text: hints.hintFailed ? hintFailed : hints.hint };
 }
 
 // What the teacher says about a step of the answer, in its subtitle: the

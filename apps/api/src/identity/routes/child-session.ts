@@ -41,7 +41,7 @@ export function registerChildSessions(
     async (request, reply) => {
       reply.header('Cache-Control', 'no-store').header('Vary', 'Cookie');
       const token = readSessionCookie(request);
-      const view = await required(service).read(token, request.ip);
+      const view = await required(service).read(token);
       return reply
         .header('Set-Cookie', writeSessionCookie(token!, childSessionLifetime))
         .send(view);
@@ -58,7 +58,6 @@ export function registerChildSessions(
       await required(service).logout(
         readSessionCookie(request),
         request.headers['x-csrf-token'] as string | undefined,
-        request.ip,
       );
       return reply.header('Set-Cookie', writeSessionCookie('', 0)).code(204).send();
     },
