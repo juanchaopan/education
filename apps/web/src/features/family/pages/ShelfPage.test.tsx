@@ -132,6 +132,28 @@ it('says the books are on their way when the catalogue has none', async () => {
   expect(screen.queryByText('书库里的书都安排出去了')).toBeNull();
 });
 
+it('waits for the family shelf before saying why the library is empty, and says when it did not open', async () => {
+  let familyShelf: () => unknown = () => new Promise(() => {});
+  stubFetch({
+    'GET session': session,
+    'GET parents/children': twoChildren,
+    'GET parents/books': (url: URL) =>
+      url.searchParams.get('shelf') === 'family' ? familyShelf() : page([]),
+  });
+  renderFamilyPage('/family/practice');
+  expect(await screen.findByText('正在打开书架…')).toBeInTheDocument();
+  expect(screen.queryByText('书库里的书都安排出去了')).toBeNull();
+  expect(screen.queryByText('书在路上')).toBeNull();
+  cleanup();
+  familyShelf = () => Response.json({}, { status: 503 });
+  renderFamilyPage('/family/practice');
+  expect(await screen.findByText('书架没打开')).toBeVisible();
+  expect(screen.queryByText('书库里的书都安排出去了')).toBeNull();
+  familyShelf = () => page([familyBook('book-patterns', '找规律', { [mi]: 0 })]);
+  await userEvent.click(screen.getByRole('button', { name: '再试一次' }));
+  expect(await screen.findByText('书库里的书都安排出去了')).toBeVisible();
+});
+
 it("opens a child's given books from the address and takes one back, saying when it fails", async () => {
   const fetcher = stubFetch({
     'GET session': session,

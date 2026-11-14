@@ -36,9 +36,24 @@ function failureNote(failure: BookFailure | null, bookId: string, childId?: stri
 }
 
 // An empty library says whether the catalogue has no books yet, which is so
-// when no book was given to the family either, or every book has been given.
-function useLibraryEmpty(csrf: string, empty: boolean, onFamily: () => void): ShelfEmpty {
+// when no book was given to the family either, or every book has been given;
+// it says nothing until the family shelf has answered, and says so when that
+// shelf did not open.
+function useLibraryEmpty(
+  csrf: string,
+  empty: boolean,
+  onFamily: () => void,
+): ShelfEmpty | undefined {
   const given = useAnyBookGiven(csrf, empty);
+  if (given.isError)
+    return {
+      icon: 'wifiOff',
+      title: '书架没打开',
+      description: given.error.message,
+      actionLabel: '再试一次',
+      onAction: () => void given.refetch(),
+    };
+  if (given.data === undefined) return undefined;
   if (given.data === false)
     return { title: '书在路上', description: '题库里还没有书，新书会陆续放上来。' };
   return {
@@ -76,7 +91,7 @@ export function FamilyBooks({
     shelf === 'library' && query.data?.pages[0]?.total === 0,
     () => onShelf('family'),
   );
-  const empty: ShelfEmpty =
+  const empty: ShelfEmpty | undefined =
     shelf === 'library'
       ? libraryEmpty
       : {
