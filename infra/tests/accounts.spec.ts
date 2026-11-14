@@ -269,8 +269,9 @@ test('child login survives a server restart, shares authentication and logout ac
       })
     ).status(),
   ).toBe(401);
-  await page.goto('/child');
-  await expect(page.getByRole('heading', { name: '小鹿，欢迎回来！' })).toBeVisible();
+  await page.goto('/');
+  await expect(page.getByRole('heading', { name: '我的书', level: 1 })).toBeVisible();
+  await expect(page.getByRole('button', { name: /小鹿/ })).toBeVisible();
   await compose(['restart', 'app-a', 'app-b']);
   for (const base of [origin, other])
     await expect
@@ -286,7 +287,7 @@ test('child login survives a server restart, shares authentication and logout ac
       )
       .toBe(200);
   await page.reload();
-  await expect(page.getByRole('heading', { name: '小鹿，欢迎回来！' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '我的书', level: 1 })).toBeVisible();
   expect(
     (
       await context.request.post(`${other}/api/v1/children/logout`, {
