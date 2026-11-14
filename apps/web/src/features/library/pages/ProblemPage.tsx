@@ -65,7 +65,8 @@ function useOpening(viewer: Viewer) {
 // came from, or, for a link opened directly, to the viewer's home, where a
 // child finds the problem's book opened; a parent's preview carries its mark
 // beside the button. Nobody signed in sees only the way to sign in and come
-// back, and nothing of the problem is asked for.
+// back, and nothing of the problem is asked for; when who is signed in could
+// not be checked, the page says so and offers to ask again.
 export function ProblemPage(props: Props) {
   const opening = useOpening(props.viewer);
   const opened = opening.answer.kind === 'opened' ? opening.answer.problem : undefined;
@@ -76,6 +77,14 @@ export function ProblemPage(props: Props) {
     >
       {opening.waiting ? (
         <EmptyState icon="clock" title="正在打开这道题" description="请稍等一下。" />
+      ) : props.viewer.kind === 'unchecked' ? (
+        <EmptyState
+          icon="wifiOff"
+          title="暂时无法确认登录状态"
+          description="请稍后再试。你的账号不会丢失。"
+          actionLabel="再试一次"
+          onAction={props.viewer.retry}
+        />
       ) : opening.failed ? (
         <EmptyState
           icon="alert"

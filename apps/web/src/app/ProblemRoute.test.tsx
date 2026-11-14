@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, expect, it, vi } from 'vitest';
 import { ProblemRoute } from './ProblemRoute';
@@ -52,4 +53,22 @@ it("asks for the parent's session when no child is signed in, and then shows the
   open();
   expect(await screen.findByRole('heading', { name: '登录后才能打开这道题' })).toBeInTheDocument();
   expect(asked(fetch, '/api/v1/session')).toBe(true);
+});
+
+it("says the child's session could not be checked, and asks again, taking nobody for a visitor", async () => {
+  let down = true;
+  const fetch = vi.fn(async (address: string) => {
+    const { pathname } = new URL(address, 'https://education.example');
+    if (pathname === '/api/v1/children/session')
+      return down ? new Response(null, { status: 503 }) : Response.json(child);
+    return Response.json({ message: '这道题或这个版本暂时不可用。' }, { status: 404 });
+  });
+  vi.stubGlobal('fetch', fetch);
+  open();
+  expect(await screen.findByRole('heading', { name: '暂时无法确认登录状态' })).toBeInTheDocument();
+  expect(screen.queryByRole('heading', { name: '登录后才能打开这道题' })).toBeNull();
+  expect(asked(fetch, '/api/v1/session')).toBe(false);
+  down = false;
+  await userEvent.click(screen.getByRole('button', { name: '再试一次' }));
+  expect(await screen.findByRole('heading', { name: '这道题暂时不可用' })).toBeInTheDocument();
 });

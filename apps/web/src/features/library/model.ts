@@ -1,8 +1,10 @@
-// Who opens a problem, as far as the page knows: still being found out,
-// nobody signed in, a signed-in child with the session's token, or a parent
-// with a verified email and the session's token.
+// Who opens a problem, as far as the page knows: still being found out, not
+// found out because the child's session could not be checked, with a way to
+// ask again; nobody signed in, a signed-in child with the session's token, or
+// a parent with a verified email and the session's token.
 export type Viewer =
   | Readonly<{ kind: 'checking' }>
+  | Readonly<{ kind: 'unchecked'; retry: () => void }>
   | Readonly<{ kind: 'guest' }>
   | Readonly<{ kind: 'child'; csrf: string }>
   | Readonly<{ kind: 'parent'; csrf: string }>;
