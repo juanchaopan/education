@@ -7,23 +7,32 @@ const browsers = {
 };
 type Ports = Record<keyof typeof browsers, number>;
 
+// The six API servers take the ports from E2E_PORT up, so runs in different
+// worktrees can use different free ranges side by side; 4173 applies when it
+// is not set.
+const firstPort = Number(process.env.E2E_PORT ?? 4173);
+const pair = (offset: number): Ports => ({
+  desktop: firstPort + offset,
+  mobile: firstPort + offset + 1,
+});
+
 // Every request comes from 127.0.0.1, so all tests on one server share that
 // address's sign-in budget, and a sign-in attempt includes any request without
 // a valid session. The parent account specs and the family acceptance, which
 // sign in and out the most, get servers of their own; the rest share one.
+const shared = pair(0);
 const ownServers: { suffix: string; specs: RegExp; ports: Ports }[] = [
   {
     suffix: 'accounts',
     specs: /(^|[\\/])(registration|session|recovery|verification|registration-key)\.spec\.ts$/,
-    ports: { desktop: 4175, mobile: 4176 },
+    ports: pair(2),
   },
   {
     suffix: 'acceptance',
     specs: /(^|[\\/])empty-framework\.spec\.ts$/,
-    ports: { desktop: 4177, mobile: 4178 },
+    ports: pair(4),
   },
 ];
-const shared: Ports = { desktop: 4173, mobile: 4174 };
 
 // Lesson narration also plays in WebKit, the engine of Safari on iPads and
 // iPhones; the sound checks run there on the desktop server.

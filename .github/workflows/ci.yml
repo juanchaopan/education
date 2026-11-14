@@ -11,8 +11,13 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 jobs:
-  app:
+  # The integration tests against the real database, in the same order as a
+  # local `npm run test:db:local`. The `app` job runs the same PostgreSQL
+  # service; scripts/with-database.mjs starts that image, user and databases
+  # locally, and scripts/with-database.test.mjs checks this file against it.
+  database:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     services:
       postgres:
         image: postgres:17-alpine
@@ -28,6 +33,34 @@ jobs:
       DATABASE_URL: postgres://education:ci-only-password@127.0.0.1:5432/education_test
       # The deletion ledger is a separate database, as it is in deployments.
       DELETION_LEDGER_URL: postgres://education:ci-only-password@127.0.0.1:5432/education_ledger_test
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run build:libs
+      - run: psql "$DATABASE_URL" -c 'CREATE DATABASE education_ledger_test'
+      - run: npm run db:migrate
+      - run: npm run test:db
+      - run: npm run db:complete-deletions -w @education/api
+  app:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: education
+          POSTGRES_PASSWORD: ci-only-password
+          POSTGRES_DB: education_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U education -d education_test"
+          --health-interval 5s --health-timeout 3s --health-retries 20
+    env:
+      DATABASE_URL: postgres://education:ci-only-password@127.0.0.1:5432/education_test
+      DELETION_LEDGER_URL: postgres://education:ci-only-password@127.0.0.1:5432/education_ledger_test
       STORYBOOK_DISABLE_TELEMETRY: '1'
     steps:
       - uses: actions/checkout@v7
@@ -38,10 +71,10 @@ jobs:
       - run: npm ci
       - run: npm run check
       - run: npm run test:staging
+      # The browser tests that need the database run against it migrated, as
+      # a local `npm run test:e2e:local` does.
       - run: psql "$DATABASE_URL" -c 'CREATE DATABASE education_ledger_test'
       - run: npm run db:migrate
-      - run: npm run test:db
-      - run: npm run db:complete-deletions -w @education/api
       # WebKit runs the lesson sound checks, as Safari plays lessons on iPads.
       - run: npx playwright install --with-deps chromium webkit
       - run: npm run test:e2e
@@ -78,6 +111,21 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx --no-install jscpd .
+  # Known vulnerabilities in what ships: a pull request fails only for high or
+  # critical advisories in runtime dependencies. The weekly dependency-audit
+  # workflow reports the rest as issues, since new advisories appear without
+  # any change of ours.
+  security:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - run: npm audit --omit=dev --audit-level=high
   accounts:
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -97,17 +145,20 @@ jobs:
           path: test-results/accounts/
   ci:
     if: always()
-    needs: [app, visual, duplication, accounts]
+    needs: [database, app, visual, duplication, security, accounts]
     runs-on: ubuntu-latest
     steps:
       - name: Require every check to pass
         env:
+          DATABASE: ${{ needs.database.result }}
           APP: ${{ needs.app.result }}
           VISUAL: ${{ needs.visual.result }}
           DUPLICATION: ${{ needs.duplication.result }}
+          SECURITY: ${{ needs.security.result }}
           ACCOUNTS: ${{ needs.accounts.result }}
         run: >-
-          test "$APP" = success && test "$VISUAL" = success && test "$DUPLICATION" = success &&
+          test "$DATABASE" = success && test "$APP" = success && test "$VISUAL" = success &&
+          test "$DUPLICATION" = success && test "$SECURITY" = success &&
           test "$ACCOUNTS" = success
   # Main's CI, started by a push or a dispatch, hands its run to staging once
   # every check passed. The run that completes is often one the auto-merge
