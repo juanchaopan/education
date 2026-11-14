@@ -73,13 +73,22 @@ it('does not issue a session if the PIN or family epoch changes during hashing',
 it('requires valid live tokens and CSRF, revokes logout, and propagates database unavailability', async () => {
   const { service, input, repository } = setup();
   const { token, view } = await service.login(input, 'source');
-  await expect(service.logout(token, 'wrong', 'source')).rejects.toMatchObject({ statusCode: 403 });
+  await expect(service.logout(token, 'wrong')).rejects.toMatchObject({ statusCode: 403 });
   expect(repository.revoke).not.toHaveBeenCalled();
-  await service.logout(token, view.csrfToken, 'source');
+  await service.logout(token, view.csrfToken);
   expect(repository.revoke).toHaveBeenCalledOnce();
   repository.read.mockResolvedValueOnce(undefined);
-  await expect(service.read(token, 'source')).rejects.toMatchObject({ statusCode: 401 });
-  await expect(service.read(undefined, 'source')).rejects.toMatchObject({ statusCode: 401 });
+  await expect(service.read(token)).rejects.toMatchObject({ statusCode: 401 });
+  await expect(service.read(undefined)).rejects.toMatchObject({ statusCode: 401 });
   repository.read.mockRejectedValueOnce(new Error('database unavailable'));
-  await expect(service.read(token, 'source')).rejects.toThrow('database unavailable');
+  await expect(service.read(token)).rejects.toThrow('database unavailable');
+});
+it('reads the session and logs out without spending the login budgets', async () => {
+  const { service, repository, calls } = setup();
+  repository.read.mockResolvedValue(undefined);
+  for (const token of [undefined, 'short', 'x'.repeat(43)]) {
+    await expect(service.read(token)).rejects.toMatchObject({ statusCode: 401 });
+    await expect(service.logout(token, 'x'.repeat(43))).rejects.toMatchObject({ statusCode: 401 });
+  }
+  expect(calls).toEqual([]);
 });

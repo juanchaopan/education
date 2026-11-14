@@ -39,7 +39,7 @@ export function registerParentSessions(
     { schema: { querystring: empty, response: { 200: ParentSession } } },
     async (request, reply) => {
       reply.header('Cache-Control', 'no-store').header('Vary', 'Cookie');
-      return serviceOrUnavailable(service).read(readSessionCookie(request), request.ip);
+      return serviceOrUnavailable(service).current(readSessionCookie(request));
     },
   );
   app.post(

@@ -97,13 +97,13 @@ it('atomically changes protected PIN and revokes every old session across instan
   );
   await a.access.reset(a.parent.token, a.parent.view.csrfToken, a.input, 'parent-source');
   for (const token of [one.token, two.token])
-    await expect(a.children().read(token, 'read')).rejects.toMatchObject({ statusCode: 401 });
+    await expect(a.children().read(token)).rejects.toMatchObject({ statusCode: 401 });
   await expect(a.children().login(login, 'old-pin')).rejects.toMatchObject({ statusCode: 401 });
   expect((await a.children().login({ ...login, pin: nextPin }, 'new-pin')).view.nickname).toBe(
     '小鹿',
   );
-  expect((await a.children().read(sibling.token, 'sibling')).nickname).toBe('小熊');
-  expect((await b.children().read(other.token, 'other')).nickname).toBe('小鹿');
+  expect((await a.children().read(sibling.token)).nickname).toBe('小熊');
+  expect((await b.children().read(other.token)).nickname).toBe('小鹿');
   expect((await pool.query('SELECT code FROM families WHERE id=$1', [a.family])).rows[0].code).toBe(
     a.code,
   );
