@@ -42,6 +42,9 @@ test('a visitor opening a problem link sees only the way to sign in, and comes b
 
   await page.getByRole('link', { name: '去登录' }).click();
   await expect(page).toHaveURL(/\/\?next=%2Fproblems%2Fgarden-balance%2F1$/);
+  // The sign-in has asked for the session and found nobody before the test's
+  // server starts answering for the signed-in child.
+  await expect(page.getByLabel('我的家庭码', { exact: true })).toBeEditable();
   await signInAtTheGardenStart(page);
   await page.route('**/api/v1/children/login', (route) => route.fulfill({ json: child }));
   await page.getByLabel('我的家庭码', { exact: true }).fill('ABCD-EFGH-JKMN');
