@@ -12,6 +12,8 @@ export type ProblemOpening = (
   problem: { id: string; version: number },
 ) => Promise<void>;
 
+// Opening a problem records, for a signed-in child, that its book was opened,
+// so no cache keeps the reply or answers it for another session.
 export function registerCatalog(
   app: FastifyInstance,
   catalog = createCatalog(),
@@ -28,6 +30,7 @@ export function registerCatalog(
       },
     },
     async (request, reply) => {
+      reply.header('Cache-Control', 'no-store').header('Vary', 'Cookie');
       const { id, version } = request.params;
       const problem = request.validationError ? undefined : catalog.detail(id, version);
       if (!problem) return reply.code(404).send({ message: '这道题或这个版本暂时不可用。' });

@@ -45,7 +45,9 @@ describe('opening a problem', () => {
       [child.id],
     );
     expect(await openedAt(child.id, 'opening-patterns')).toBeNull();
-    expect((await open('opening-a', sessionHeaders(child.token))).statusCode).toBe(200);
+    const opened = await open('opening-a', sessionHeaders(child.token));
+    expect(opened.statusCode).toBe(200);
+    expect(opened.headers['cache-control']).toBe('no-store');
     const first = await openedAt(child.id, 'opening-patterns');
     expect(first).toBeInstanceOf(Date);
     await open('opening-a', sessionHeaders(child.token));

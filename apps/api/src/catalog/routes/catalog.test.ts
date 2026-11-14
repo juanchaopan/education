@@ -87,16 +87,17 @@ describe('versioned catalog', () => {
     }
   });
 
-  it('tells the opening of a problem that exists, with the session, and of no other', async () => {
+  it('tells the opening of a problem that exists, with the session, and of no other, uncached', async () => {
     const registry = createProblemRegistry([plugin('shape-a')], shelf);
     const open = vi.fn(async () => {});
     const app = Fastify();
     registerCatalog(app, createCatalog(registry), open);
     try {
       const headers = { cookie: '__Host-education_session=synthetic', 'x-csrf-token': 'csrf' };
-      expect((await app.inject({ url: '/api/v1/problems/shape-a/1', headers })).statusCode).toBe(
-        200,
-      );
+      const opened = await app.inject({ url: '/api/v1/problems/shape-a/1', headers });
+      expect(opened.statusCode).toBe(200);
+      expect(opened.headers['cache-control']).toBe('no-store');
+      expect(opened.headers.vary).toBe('Cookie');
       expect(open).toHaveBeenCalledExactlyOnceWith(
         { token: 'synthetic', csrf: 'csrf' },
         { id: 'shape-a', version: 1 },
