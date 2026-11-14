@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import {
+  keepPreviousData,
   useInfiniteQuery,
   useMutation,
   useQueries,
@@ -135,9 +136,11 @@ export function useChildrenAssigned(csrf: string, childIds: readonly string[]) {
 }
 
 // The signed-in child's books, all of them or one filter, six at a time.
+// While another filter is read, the books of the last one stand in for it,
+// so the page keeps its filters, and the one just chosen keeps the focus.
 export function useChildBooks(csrf: string, filter?: ChildBookFilter) {
-  return useInfiniteQuery(
-    batches<ChildBookPage>(
+  return useInfiniteQuery({
+    ...batches<ChildBookPage>(
       [...bookshelfQueryKey, csrf, 'child-books', filter ?? 'all'],
       childBookPageSize,
       (offset) => {
@@ -151,7 +154,8 @@ export function useChildBooks(csrf: string, filter?: ChildBookFilter) {
         );
       },
     ),
-  );
+    placeholderData: keepPreviousData,
+  });
 }
 
 export type BookChange = Readonly<{ childId: string; bookId: string; assign: boolean }>;

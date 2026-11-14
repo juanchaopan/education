@@ -108,6 +108,19 @@ it('keeps the filter and the open book in the address, and closes the book on a 
   );
 });
 
+it('keeps the filters and the focus on the one chosen by the arrow keys while it is read', async () => {
+  serve();
+  open();
+  await screen.findByRole('heading', { name: '拼音乐园' });
+  screen.getByRole('radio', { name: /^全部/ }).focus();
+  await userEvent.keyboard('{ArrowRight}');
+  const learning = screen.getByRole('radio', { name: /^在学/ });
+  expect(learning).toHaveFocus();
+  expect(learning).toHaveAttribute('aria-checked', 'true');
+  expect(await screen.findByRole('heading', { name: '拼音乐园' })).toBeInTheDocument();
+  expect(learning).toHaveFocus();
+});
+
 it('says when a filter holds no books, with the way back to all of them', async () => {
   serve();
   open('/?books=unavailable');

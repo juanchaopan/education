@@ -86,8 +86,9 @@ export function ChildHome({ session, art }: { session: ChildSession; art: ChildH
   );
 }
 
-// The books read so far under their filters, with the foot that reads more;
-// a child without books is told who gives them.
+// The books read so far under their filters; a child without books is told
+// who gives them. While a newly chosen filter is read, the filters stay and
+// the books wait for it.
 function Shelf({
   books,
   place,
@@ -95,11 +96,8 @@ function Shelf({
   books: ReturnType<typeof useChildBooks>;
   place: ReturnType<typeof useHomePlace>;
 }) {
-  const touch = usePointerCoarse();
-  const [now] = useState(() => new Date());
   const pages = books.data?.pages ?? [];
   const counts = pages[0]?.counts;
-  const shown = pages.flatMap((page) => page.books);
   if (!counts || counts.all === 0)
     return (
       <EmptyState
@@ -111,12 +109,36 @@ function Shelf({
   return (
     <>
       <BookFilters counts={counts} filter={place.filter} onFilter={place.choose} />
-      {shown.length === 0 && (
-        <div className={styles.none}>
-          <p>这里还没有书</p>
-          <RaisedButton onClick={() => place.choose()}>看全部的书</RaisedButton>
-        </div>
+      {books.isPlaceholderData ? (
+        <Loading label="正在打开我的书…" />
+      ) : (
+        <ShownBooks books={books} place={place} />
       )}
+    </>
+  );
+}
+
+// The books of the chosen filter, one card each, with the foot that reads
+// more, or the way back to all of them when the filter holds none.
+function ShownBooks({
+  books,
+  place,
+}: {
+  books: ReturnType<typeof useChildBooks>;
+  place: ReturnType<typeof useHomePlace>;
+}) {
+  const touch = usePointerCoarse();
+  const [now] = useState(() => new Date());
+  const shown = (books.data?.pages ?? []).flatMap((page) => page.books);
+  if (shown.length === 0)
+    return (
+      <div className={styles.none}>
+        <p>这里还没有书</p>
+        <RaisedButton onClick={() => place.choose()}>看全部的书</RaisedButton>
+      </div>
+    );
+  return (
+    <>
       <div className={styles.books}>
         {shown.map((book) => (
           <ChildBookCard
@@ -128,13 +150,11 @@ function Shelf({
           />
         ))}
       </div>
-      {shown.length > 0 && (
-        <BookListFoot
-          state={footState(books)}
-          touch={touch}
-          onMore={() => void books.fetchNextPage()}
-        />
-      )}
+      <BookListFoot
+        state={footState(books)}
+        touch={touch}
+        onMore={() => void books.fetchNextPage()}
+      />
     </>
   );
 }
