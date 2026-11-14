@@ -12,7 +12,11 @@ import type { BackdropId } from './backdrops.js';
 // The lesson flows a problem can follow, the skeleton of its lesson; see the
 // handbook's 课堂流程清单. `scene-by-scene` is 逐幕探究: each scene finds a
 // small conclusion by hand, a short final answer follows, then a variation.
-export const lessonFlows = ['scene-by-scene'] as const;
+// `derive-and-solve` is 列式求解: the same objects stay on screen while the
+// child pushes them through key moments and an equation grows from what is
+// seen; the child gives every solution, judged as a set, checks each on the
+// same picture, then a variation.
+export const lessonFlows = ['scene-by-scene', 'derive-and-solve'] as const;
 export type LessonFlow = (typeof lessonFlows)[number];
 
 // How many of one of the lesson's pictures, for example three apples.
@@ -20,21 +24,23 @@ export type Amount<Picture extends string> = readonly [count: number, picture: P
 
 // One conclusion a scene finds:
 // - `says`, the sentence a screen reader reads for it;
-// - `amounts`, the amounts that weigh the same, in order;
+// - `amounts`, the amounts that weigh the same, in order, which a lesson
+//   whose way of teaching keeps its conclusions on the conclusion board
+//   draws there; a lesson that keeps them in its own picture leaves them out;
 // - `from`, the first scene that finds it;
 // - `uses` and `hints`, the scenes, and the answer's hints, that use it;
-// - `answer`, the final count it is written on with once the child has
-//   answered right, and the sentence it then reads as;
+// - `answer`, what it says once the child has answered right, with the
+//   amount the board then writes on;
 // - `supposed`, a changed condition, which comes right after the
 //   conclusion it changes.
 export type Conclusion<Shot extends string, Picture extends string> = Readonly<{
   id: string;
   says: string;
-  amounts: readonly [Amount<Picture>, ...Amount<Picture>[]];
+  amounts?: readonly [Amount<Picture>, ...Amount<Picture>[]];
   from: Shot;
   uses?: readonly Shot[];
   hints?: readonly string[];
-  answer?: Readonly<{ amount: Amount<Picture>; says: string }>;
+  answer?: Readonly<{ amount?: Amount<Picture>; says: string }>;
   supposed?: boolean;
 }>;
 
@@ -195,9 +201,27 @@ function sceneBySceneProblems({ shots, answerScene }: AnyLessonContent) {
   return at + 1 < shots.length ? [] : [`answer scene ${answerScene} has no scene after it`];
 }
 
+// 列式求解 asks for every solution in one of the lesson's scenes and plays on
+// into the scene that checks them on the same picture. The equation the
+// child solves is a conclusion found before the answer scene and used in it.
+function deriveAndSolveProblems(content: AnyLessonContent) {
+  const { shots, answerScene, conclusions } = content;
+  const asked = shots.indexOf(answerScene);
+  const solved = conclusions.some(
+    ({ from, uses = [] }) => shots.indexOf(from) < asked && uses.includes(answerScene),
+  );
+  return [
+    ...sceneBySceneProblems(content),
+    ...(solved || asked < 0
+      ? []
+      : [`answer scene ${answerScene} uses no conclusion found before it to solve`]),
+  ];
+}
+
 // What each lesson flow asks of a lesson that follows it.
 const flowRules: Readonly<Record<LessonFlow, (content: AnyLessonContent) => string[]>> = {
   'scene-by-scene': sceneBySceneProblems,
+  'derive-and-solve': deriveAndSolveProblems,
 };
 
 function flowProblems(content: AnyLessonContent) {

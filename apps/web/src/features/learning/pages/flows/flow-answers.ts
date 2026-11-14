@@ -1,5 +1,6 @@
 import type { LessonFlow } from '@education/problems/lesson-content';
 import type { ComponentType } from 'react';
+import { DeriveAndSolveAnswer } from './DeriveAndSolveAnswer';
 import type { FlowAnswerProps } from './flow-answer';
 import { SceneBySceneAnswer } from './SceneBySceneAnswer';
 
@@ -7,4 +8,5 @@ import { SceneBySceneAnswer } from './SceneBySceneAnswer';
 // to the list gets its own part here, which the type check asks for.
 export const flowAnswers: Readonly<Record<LessonFlow, ComponentType<FlowAnswerProps>>> = {
   'scene-by-scene': SceneBySceneAnswer,
+  'derive-and-solve': DeriveAndSolveAnswer,
 };

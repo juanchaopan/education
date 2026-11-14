@@ -87,4 +87,8 @@ export const lessons: readonly LessonEntry[] = [
     { id: 'garden-balance', version: 1 },
     async () => (await import('./garden-balance/definition')).gardenLesson,
   ),
+  lesson(
+    { id: 'rail-chase', version: 1 },
+    async () => (await import('./rail-chase/definition')).railLesson,
+  ),
 ];

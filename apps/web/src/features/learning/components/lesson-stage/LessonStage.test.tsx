@@ -114,6 +114,18 @@ it('takes a prop or place reached by the keyboard with Enter or Space', async ()
   expect(onActivate).toHaveBeenCalledTimes(2);
 });
 
+it('tells which prop an arrow key nudges, and which way, but not a place', async () => {
+  const { onActivate } = stage();
+  screen.getByRole('button', { name: '小球' }).focus();
+  await userEvent.keyboard('{ArrowRight}');
+  expect(onActivate).toHaveBeenLastCalledWith({ part: 'ball', key: 'ball-0', nudge: 1 });
+  await userEvent.keyboard('{ArrowLeft}');
+  expect(onActivate).toHaveBeenLastCalledWith({ part: 'ball', key: 'ball-0', nudge: -1 });
+  screen.getByRole('button', { name: '盒子' }).focus();
+  await userEvent.keyboard('{ArrowRight}{ArrowUp}');
+  expect(onActivate).toHaveBeenCalledTimes(2);
+});
+
 it('says which scene is on screen', () => {
   const { film } = stage({ shot: 'closer' });
   expect(film).toHaveAttribute('data-shot', 'closer');

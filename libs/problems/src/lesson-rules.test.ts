@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { sceneSteps, variationReason, wholeNumberAnswer } from './lesson-rules.js';
+import { numberSetAnswer, sceneSteps, variationReason, wholeNumberAnswer } from './lesson-rules.js';
 
 describe('wholeNumberAnswer', () => {
   const check = wholeNumberAnswer(4);
@@ -11,6 +11,26 @@ describe('wholeNumberAnswer', () => {
 
   it('never counts an answer that is not a whole number as wrong', () => {
     for (const unclear of ['四', '4', 4.5, Number.NaN, false, [4], { count: 4 }])
+      expect(check(unclear)).toBe('uncertain');
+  });
+});
+
+describe('numberSetAnswer', () => {
+  const check = numberSetAnswer([6, 14]);
+
+  it('counts exactly the expected numbers as correct, in any order and said twice', () => {
+    expect(check([6, 14])).toBe('correct');
+    expect(check([14, 6])).toBe('correct');
+    expect(check([6, 14, 6])).toBe('correct');
+  });
+
+  it('counts a set with a number missing, one too many or another number as a mistake', () => {
+    for (const wrong of [[6], [14], [6, 14, 4], [4, 10], [-6, 14], [0]])
+      expect(check(wrong)).toBe('incorrect');
+  });
+
+  it('never counts an answer that is not a list of whole numbers as wrong', () => {
+    for (const unclear of [6, '6', [], ['6', '14'], [6, 14.5], [6, true], { times: [6, 14] }])
       expect(check(unclear)).toBe('uncertain');
   });
 });

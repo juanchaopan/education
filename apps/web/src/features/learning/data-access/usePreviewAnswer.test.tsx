@@ -30,7 +30,7 @@ it('sends a count to the preview alone, with no round, and reports the judgement
   expect(result.current.canHint).toBe(true);
   act(() => result.current.submit(6));
   await waitFor(() =>
-    expect(result.current.judgement).toEqual({ status: 'judged', outcome: 'incorrect', count: 6 }),
+    expect(result.current.judgement).toEqual({ status: 'judged', outcome: 'incorrect', said: [6] }),
   );
   act(() => result.current.submit(9));
   await waitFor(() => expect(result.current.judgement).toMatchObject({ outcome: 'independent' }));

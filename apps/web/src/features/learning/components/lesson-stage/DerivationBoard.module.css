@@ -1,0 +1,50 @@
+/* The derivation board in the stage's smoked glass, read but never tapped. */
+.board {
+  font-family: var(--font-display);
+  font-weight: 700;
+  pointer-events: none;
+  user-select: none;
+}
+
+.pane {
+  fill: var(--dew-pane);
+  stroke: var(--dew-pane-edge);
+  stroke-width: 1.5;
+}
+
+.board text {
+  text-anchor: middle;
+  fill: var(--dew-ink);
+}
+
+/* The step the current one grew from, faded. */
+.before {
+  opacity: 0.6;
+}
+
+.note {
+  opacity: 0.85;
+}
+
+/* A new step fades in where it stays. */
+.now {
+  animation: arrive 1.2s var(--ease-out) both;
+}
+
+@keyframes arrive {
+  from {
+    opacity: 0;
+  }
+}
+
+/* The line a hint or the scene points at, in gold with a soft glow. */
+.board .lit {
+  fill: var(--dew-gold);
+  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--dew-gold) 65%, transparent));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .now {
+    animation: none;
+  }
+}

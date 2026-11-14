@@ -1,9 +1,15 @@
 import { expect, it } from 'vitest';
 import { answerWords } from './spoken-answer';
 
-it('has the teacher ask to confirm the count it heard', () => {
-  expect(answerWords({ kind: 'confirm', heard: '九根', count: 9 })).toBe(
+it('has the teacher ask to confirm the numbers it heard', () => {
+  expect(answerWords({ kind: 'confirm', heard: '九根', said: [9] })).toBe(
     '我听到你说「九根」，是 9 吗？',
+  );
+  expect(answerWords({ kind: 'confirm', heard: '六秒和十四秒', said: [6, 14] })).toBe(
+    '我听到你说「六秒和十四秒」，是 6 和 14 吗？',
+  );
+  expect(answerWords({ kind: 'confirm', heard: '三、七、九', said: [3, 7, 9] })).toBe(
+    '我听到你说「三、七、九」，是 3、7 和 9 吗？',
   );
 });
 

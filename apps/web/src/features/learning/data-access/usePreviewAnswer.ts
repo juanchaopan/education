@@ -3,14 +3,14 @@ import { HintReceipt, PreviewOutcome, type PreviewCommand } from '@education/con
 import type { TSchema } from '@sinclair/typebox';
 import { postLearning, type LearningScope } from './learning-request';
 import { useAnswerHints, type AnswerEvents } from './useAnswerHints';
-import { correct, judgementOf } from './useLessonAnswer';
+import { correct, judgementOf, type AnswerInput } from './useLessonAnswer';
 
 const preview = <R extends TSchema>(scope: LearningScope, command: PreviewCommand, reply: R) =>
   postLearning(scope, 'preview', JSON.stringify(command), reply);
 
-// A parent's answer while previewing a problem: the count is judged on the
+// A parent's answer while previewing a problem: the answer is judged on the
 // server by the problem's own rules and the authored hints come one by one,
-// as a child's do, but nothing is kept, so a retry simply sends the count
+// as a child's do, but nothing is kept, so a retry simply sends the answer
 // again.
 export function usePreviewAnswer(
   scope: LearningScope,
@@ -18,8 +18,12 @@ export function usePreviewAnswer(
   events: AnswerEvents = {},
 ) {
   const submit = useMutation({
-    mutationFn: ({ count }: { count: number }) =>
-      preview(scope, { action: 'submit', input: count }, PreviewOutcome),
+    mutationFn: ({ input }: { input: AnswerInput }) =>
+      preview(
+        scope,
+        { action: 'submit', input: typeof input === 'number' ? input : [...input] },
+        PreviewOutcome,
+      ),
     onSuccess: (receipt) => {
       if (correct(receipt)) events.onCorrect?.();
     },
@@ -32,8 +36,8 @@ export function usePreviewAnswer(
   return {
     ...hints,
     judgement: judgementOf(submit),
-    submit(count: number) {
-      if (!submit.isPending) submit.mutate({ count });
+    submit(input: AnswerInput) {
+      if (!submit.isPending) submit.mutate({ input });
     },
     retry() {
       const last = submit.variables;

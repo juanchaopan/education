@@ -26,7 +26,7 @@
   }
 }
 
-/* "我听到" over the count, large, in the title font. */
+/* "我听到" over the numbers, large, in the title font. */
 .heard {
   display: grid;
   justify-items: start;
@@ -38,6 +38,14 @@
 .heard small {
   font-size: var(--text-sm);
   opacity: 0.85;
+}
+
+/* Several numbers heard stand side by side, a little apart. */
+.numbers {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: var(--space-3);
 }
 
 .count {

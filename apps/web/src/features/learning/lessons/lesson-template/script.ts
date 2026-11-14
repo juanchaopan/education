@@ -34,5 +34,5 @@ export const answerHints = ['count-again'] as const;
 // bowl.
 export const answerWords: CountWords = {
   unit: '颗',
-  explain: (count) => `${count} 颗还不对。一颗一颗地数数碗里的小石子。`,
+  explain: ([count]) => `${count} 颗还不对。一颗一颗地数数碗里的小石子。`,
 };

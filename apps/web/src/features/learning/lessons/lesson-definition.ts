@@ -39,11 +39,14 @@ export type Story<State, Shot extends string, Line extends string, Move> = Reado
   savesProgress: (shot: Shot) => boolean;
 }>;
 
-// The props the child picks up and puts down, and how one looks while carried.
-export type LessonProps<Move, Piece extends string, Look extends object> = StageProps<
+// The props the child picks up and puts down, and how one looks while carried,
+// and the props the child pushes along the stage from the film's state.
+export type LessonProps<
   Move,
-  Readonly<Record<Piece, Look>>
-> &
+  Piece extends string,
+  Look extends object,
+  State = unknown,
+> = StageProps<Move, Readonly<Record<Piece, Look>>, State> &
   Readonly<{ carried: (look: Look) => ReactNode }>;
 
 // The final count, asked in the content's answer scene: the question, the
@@ -104,7 +107,7 @@ export type LessonDefinition<
     script: Script<Shot, Line>;
     story: Story<State, Shot, Line, Move>;
     record: LessonRecording<State, Move>;
-    props: LessonProps<Move, Piece, Look>;
+    props: LessonProps<Move, Piece, Look, State>;
     answer: LessonAnswer;
     board?: LessonBoard<State, string>;
     Scene: ComponentType<SceneProps<State>>;
@@ -137,12 +140,13 @@ export function lessonTeacher({ id, place, ground }: TeacherRole): Teacher {
 }
 
 // The lesson's film as the stage draws it: the library pictures it picks, each
-// scene in its own framing, and the part of the world its props take up.
+// of its scenes in its own framing, the establishing one where it gives
+// none, and the part of the world its props take up.
 export function stageLook(
   lesson: Looks &
     Readonly<{
       content: Pick<LessonContent<string, string, string>, 'backdrop'>;
-      script: Pick<Script<string, string>, 'cameras'>;
+      script: Pick<Script<string, string>, 'shots' | 'cameras'>;
     }>,
 ): StageLook {
   const { title, theater, labels, palette, script, staging } = lesson;

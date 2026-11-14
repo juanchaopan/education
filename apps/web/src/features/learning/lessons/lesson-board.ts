@@ -48,15 +48,17 @@ function used<Shot extends string>(
   return uses.includes(shot) || (hint !== undefined && hints.includes(hint));
 }
 
-// A conclusion as the board draws it. Its amounts only ever grow at the end,
-// so each is named by its place in the line.
+// A conclusion as the board draws it, with the amounts a lesson that keeps a
+// board declares for every conclusion. Its amounts only ever grow at the
+// end, so each is named by its place in the line.
 function factOf<Shot extends string>(
   conclusion: Conclusion<Shot, string>,
   pictures: Readonly<Record<string, ReactNode>>,
   moment: Moment<Shot>,
 ): BoardFact {
   const written = moment.answered ? conclusion.answer : undefined;
-  const amounts = written ? [...conclusion.amounts, written.amount] : conclusion.amounts;
+  const drawn = conclusion.amounts ?? [];
+  const amounts = written?.amount ? [...drawn, written.amount] : drawn;
   return {
     id: conclusion.id,
     says: written?.says ?? conclusion.says,

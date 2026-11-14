@@ -4,7 +4,12 @@ import type { ScenePicture as DeclaredPicture } from '@education/problems/lesson
 import { gardenBalanceLesson as garden } from '@education/problems/lessons/garden-balance';
 import { describe, expect, it } from 'vitest';
 import { gardenPictures as pictures, gardenRecordAt } from './garden-record-fixtures.js';
-import { lessonMaterial, pictureText } from './lesson-material.js';
+import {
+  lessonMaterial,
+  pictureText,
+  withinLength,
+  type LessonMaterial,
+} from './lesson-material.js';
 
 const { shots, scenes, lines, conclusions, recordWords } = garden;
 type Shot = (typeof shots)[number];
@@ -178,5 +183,43 @@ describe('a record that does not fit the lesson', () => {
 
   it('is refused for a scene the lesson does not have', () => {
     expect(lessonMaterial(garden, 'roof', record, true)).toBeUndefined();
+  });
+});
+
+describe('a long lesson so far', () => {
+  const scene = (at: number) => ({
+    scene: at,
+    step: `第 ${at} 幕要看的东西`,
+    said: ['老师说了一句比较长的话。'.repeat(4)],
+    picture: '画面上有一些东西。',
+  });
+  const material: LessonMaterial = {
+    earlier: [1, 2, 3, 4].map(scene),
+    now: { scene: 5, step: '这一幕', said: [] },
+    found: ['一条结论'],
+    done: [],
+    scenery: '远处的山',
+  };
+  const length = (told?: LessonMaterial) => JSON.stringify(told).length;
+
+  it('is told whole when it fits', () => {
+    expect(withinLength(material, length(material))).toEqual(material);
+  });
+
+  it('tells its oldest scenes only by what they were for, then leaves them out, to fit', () => {
+    const brief = withinLength(material, length(material) - 1);
+    expect(brief?.earlier[0]).toEqual({ scene: 1, step: '第 1 幕要看的东西', said: [] });
+    expect(brief?.earlier.slice(1)).toEqual(material.earlier.slice(1));
+    const allBrief = {
+      ...material,
+      earlier: material.earlier.map(({ scene: at, step }) => ({ scene: at, step, said: [] })),
+    };
+    const shorter = withinLength(material, length(allBrief) - 1);
+    expect(shorter?.earlier).toEqual(allBrief.earlier.slice(1));
+    expect(shorter?.found).toEqual(material.found);
+  });
+
+  it('does not fit when the scene asked about alone is too long', () => {
+    expect(withinLength(material, length({ ...material, earlier: [] }) - 1)).toBeUndefined();
   });
 });

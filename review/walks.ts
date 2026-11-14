@@ -1,7 +1,8 @@
 import type { Page } from '@playwright/test';
-import { acceptEveryGardenAnswer, signInAtTheGardenStart } from '../e2e/child-at-the-answer.js';
+import { acceptEveryAnswer, gardenApi, signInAtTheStart } from '../e2e/child-at-the-answer.js';
 import { answerAndHearTheVariation, hearToTheAnswer } from '../e2e/garden-film.js';
 import { listenToNarration } from '../e2e/narration-check.js';
+import * as rail from '../e2e/rail-film.js';
 
 // How each registered lesson is played for its review recording, by its
 // problem id. A problem opens only for someone signed in, so each walk signs
@@ -18,8 +19,8 @@ export type LessonWalk = (page: Page) => Promise<() => Promise<void>>;
 const linger = (page: Page) => page.waitForTimeout(2_000);
 
 async function gardenBalance(page: Page) {
-  await signInAtTheGardenStart(page);
-  await acceptEveryGardenAnswer(page);
+  await signInAtTheStart(page, gardenApi);
+  await acceptEveryAnswer(page, gardenApi);
   const narration = await listenToNarration(page);
   return async () => {
     await hearToTheAnswer(page, narration);
@@ -28,6 +29,18 @@ async function gardenBalance(page: Page) {
   };
 }
 
+async function railChase(page: Page) {
+  await signInAtTheStart(page, rail.railApi, rail.railChild);
+  await acceptEveryAnswer(page, rail.railApi);
+  const narration = await listenToNarration(page);
+  return async () => {
+    await rail.hearToTheAnswer(page, narration);
+    await rail.answerAndHearTheRest(page, narration);
+    await linger(page);
+  };
+}
+
 export const walks: Readonly<Record<string, LessonWalk>> = {
   'garden-balance': gardenBalance,
+  'rail-chase': railChase,
 };

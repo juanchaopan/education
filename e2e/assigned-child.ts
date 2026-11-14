@@ -65,7 +65,7 @@ export function bookPage(books: readonly ChildBook[]): ChildBookPage {
 // The child's books and the problems the child opens from them, as each
 // opens for the child. A lesson's test or review recording passes its own
 // problem and the book it is in.
-type Given = Readonly<{ books?: readonly ChildBook[]; opens?: readonly ProblemOpening[] }>;
+export type Given = Readonly<{ books?: readonly ChildBook[]; opens?: readonly ProblemOpening[] }>;
 
 // A signed-in child with `books`, who may open each problem of `opens`; the
 // garden lesson and its book unless others are named.

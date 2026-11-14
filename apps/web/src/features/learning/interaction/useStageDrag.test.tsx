@@ -3,18 +3,28 @@ import { useEffect } from 'react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { useStageDrag, type StageFilm, type StageProps } from './useStageDrag';
 
-type Move = { plant: 'seed'; place: 'pot' } | 'ring';
+type Move =
+  { plant: 'seed'; place: 'pot' } | 'ring' | { roll: number; from: number } | { step: 1 | -1 };
 type Look = { size: number };
+// The film's state: a cart rolled some way along its rail.
+type State = { shot: string; rolled: number };
 
-const stage: StageProps<Move, { seed: Look }> = {
+const stage: StageProps<Move, { seed: Look }, State> = {
   lifts: { seed: { size: 30 } },
   drop: (piece, place) => (place === 'pot' ? { plant: piece, place } : undefined),
   tap: (part) => (part === 'bell' ? 'ring' : undefined),
+  slides: {
+    cart: {
+      drag: (by, held) => (by < 0 ? undefined : { roll: by, from: held.rolled }),
+      nudge: (step) => ({ step }),
+    },
+  },
 };
 
-type Drag = Omit<ReturnType<typeof useStageDrag<Move, 'seed', Look>>, 'world'>;
+type Drag = Omit<ReturnType<typeof useStageDrag<Move, 'seed', Look, State>>, 'world'>;
+type Film = StageFilm<Move, State>;
 
-function Stage({ film, seen }: { film: StageFilm<Move>; seen: (drag: Drag) => void }) {
+function Stage({ film, seen }: { film: Film; seen: (drag: Drag) => void }) {
   const { world, ...drag } = useStageDrag(film, stage);
   useEffect(() => {
     seen(drag);
@@ -23,6 +33,7 @@ function Stage({ film, seen }: { film: StageFilm<Move>; seen: (drag: Drag) => vo
     <svg ref={world}>
       <g data-part="seed" data-key="seed-0" />
       <g data-part="bell" data-key="bell" />
+      <g data-part="cart" data-key="cart" />
       <g data-place="pot" />
       <g data-place="pond" />
     </svg>
@@ -38,20 +49,21 @@ function setup() {
   const seen = (drag: Drag) => {
     latest = drag;
   };
-  const view = render(<Stage film={{ state: { shot: 'plant' }, act: acted }} seen={seen} />);
+  const film = (shot: string, rolled = 0): Film => ({ state: { shot, rolled }, act: acted });
+  const view = render(<Stage film={film('plant')} seen={seen} />);
   const svg = view.container.querySelector('svg')!;
   const at = (name: string) =>
     view.container.querySelector(`[data-part="${name}"], [data-place="${name}"]`)!;
-  const seed = at('seed');
-  Object.assign(seed, { setPointerCapture: () => {}, hasPointerCapture: () => false });
+  for (const part of [at('seed'), at('cart')])
+    Object.assign(part, { setPointerCapture: () => {}, hasPointerCapture: () => false });
   Object.assign(svg, { getScreenCTM: () => null });
   document.elementFromPoint = (x: number) => {
     const name = Object.entries(spots).find(([, spot]) => spot === x)?.[0];
     return name && name !== 'nowhere' ? at(name) : svg;
   };
-  const pointer = (type: string, clientX: number) =>
+  const pointerOn = (name: string) => (type: string, clientX: number) =>
     act(() => {
-      seed.dispatchEvent(
+      at(name).dispatchEvent(
         new PointerEvent(type, {
           pointerId: 1,
           clientX,
@@ -61,9 +73,15 @@ function setup() {
         }),
       );
     });
-  const shot = (name: string) =>
-    view.rerender(<Stage film={{ state: { shot: name }, act: acted }} seen={seen} />);
-  return { acted, drag: () => latest, pointer, shot };
+  const show = (shot: string, rolled?: number) =>
+    view.rerender(<Stage film={film(shot, rolled)} seen={seen} />);
+  return {
+    acted,
+    drag: () => latest,
+    pointer: pointerOn('seed'),
+    cart: pointerOn('cart'),
+    show,
+  };
 }
 
 class Point {
@@ -133,10 +151,45 @@ it('acts on a prop that is tapped rather than carried', () => {
 });
 
 it('forgets a prop chosen in an earlier scene', () => {
-  const { acted, drag, shot } = setup();
+  const { acted, drag, show } = setup();
   act(() => drag().activate({ part: 'seed', key: 'seed-0' }));
-  shot('water');
+  show('water');
   expect(drag().handling.selected).toBeUndefined();
   act(() => drag().activate({ place: 'pot' }));
   expect(acted).not.toHaveBeenCalled();
+});
+
+it('pushes a sliding prop by how far it is dragged from where it was taken', () => {
+  const { acted, drag, cart, show } = setup();
+  show('plant', 3);
+  cart('pointerdown', 100);
+  cart('pointermove', 130);
+  expect(drag().handling).toEqual({ lifted: 'cart' });
+  expect(drag().ghost).toBeUndefined();
+  // The film has moved on under the finger; the push still counts from
+  // where the cart was taken.
+  show('plant', 4);
+  cart('pointermove', 160);
+  cart('pointerup', 160);
+  expect(acted.mock.calls).toEqual([[{ roll: 30, from: 3 }], [{ roll: 60, from: 3 }]]);
+  expect(drag().handling).toEqual({});
+});
+
+it('makes no move for a push the sliding prop does not take', () => {
+  const { acted, drag, cart } = setup();
+  cart('pointerdown', 100);
+  cart('pointermove', 60);
+  cart('pointercancel', 60);
+  expect(acted).not.toHaveBeenCalled();
+  expect(drag().handling).toEqual({});
+});
+
+it('nudges a sliding prop with the arrow keys, and nothing else', () => {
+  const { acted, drag } = setup();
+  act(() => drag().activate({ part: 'cart', key: 'cart', nudge: 1 }));
+  act(() => drag().activate({ part: 'cart', key: 'cart', nudge: -1 }));
+  act(() => drag().activate({ part: 'bell', key: 'bell', nudge: 1 }));
+  act(() => drag().activate({ part: 'seed', key: 'seed-0', nudge: 1 }));
+  expect(acted.mock.calls).toEqual([[{ step: 1 }], [{ step: -1 }]]);
+  expect(drag().handling.selected).toBeUndefined();
 });

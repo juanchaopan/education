@@ -5,12 +5,13 @@ import { answerStep, hintWords, tappedStep, type CountWords } from './spoken-ans
 
 const open: Judgement = { status: 'open' };
 const idle: VoiceState = { status: 'idle' };
-const wrong: Judgement = { status: 'judged', outcome: 'incorrect', count: 3 };
-const words: CountWords = { unit: '根', explain: (count) => `不是 ${count}` };
+const wrong: Judgement = { status: 'judged', outcome: 'incorrect', said: [3] };
+const words: CountWords = { unit: '根', explain: (said) => `不是 ${said.join('、')}` };
+const seconds: CountWords = { unit: '秒', explain: (said) => `不是 ${said.join('、')}` };
 
 it('waits for the microphone to open by itself, then listens for the answer', () => {
-  expect(answerStep(idle, open, words, true)).toEqual({ kind: 'waiting' });
-  expect(answerStep({ status: 'starting' }, open, words, true)).toEqual({
+  expect(answerStep(idle, open, words, { awaiting: true })).toEqual({ kind: 'waiting' });
+  expect(answerStep({ status: 'starting' }, open, words, { awaiting: true })).toEqual({
     kind: 'listening',
     message: '正在打开麦克风…',
   });
@@ -24,7 +25,7 @@ it('asks for the confirmation of a heard number before anything is sent', () => 
   expect(answerStep({ status: 'review', text: '九根' }, open, words)).toEqual({
     kind: 'confirm',
     heard: '九根',
-    count: 9,
+    said: [9],
   });
 });
 
@@ -32,7 +33,7 @@ it('hears the count in the answer’s unit inside a whole sentence', () => {
   const heard = '一棵青菜和九根黄瓜一样重';
   expect(answerStep({ status: 'review', text: heard }, open, words)).toMatchObject({
     kind: 'confirm',
-    count: 9,
+    said: [9],
   });
 });
 
@@ -109,7 +110,9 @@ it('finishes with a correct answer and tells whether a hint helped', () => {
     ['independent', false],
     ['assisted', true],
   ] as const)
-    expect(answerStep(idle, { status: 'judged', outcome, count: 9 }, words, true)).toEqual({
+    expect(
+      answerStep(idle, { status: 'judged', outcome, said: [9] }, words, { awaiting: true }),
+    ).toEqual({
       kind: 'done',
       assisted,
     });
@@ -127,7 +130,7 @@ it('offers the numbers to tap from the start when the answer is tapped, beside t
   expect(tappedStep(open, words)).toEqual({ kind: 'ask', message: '', choices: true });
   expect(tappedStep(wrong, words)).toEqual({ kind: 'ask', message: '不是 3', choices: true });
   expect(tappedStep({ status: 'judging' }, words)).toEqual({ kind: 'judging' });
-  expect(tappedStep({ status: 'judged', outcome: 'independent', count: 9 }, words)).toEqual({
+  expect(tappedStep({ status: 'judged', outcome: 'independent', said: [9] }, words)).toEqual({
     kind: 'done',
     assisted: false,
   });
@@ -141,4 +144,37 @@ it('has the teacher think while a hint is on its way, then say it or why none ca
   expect(hintWords({ hint: '先数左边。', hintWaiting: false, hintFailed: true })).toEqual({
     text: '提示暂时打不开，可以再试一次。',
   });
+});
+
+it('asks for one number when two different ones are heard for a single answer', () => {
+  expect(answerStep({ status: 'review', text: '九根和六根' }, open, words)).toEqual({
+    kind: 'ask',
+    message: '我听到的是「九根和六根」，没听出是几。再说一次，只说数字就好。',
+    choices: false,
+  });
+});
+
+it('hears every number when the answer is every number that fits', () => {
+  const heard = '六秒和十四秒';
+  expect(answerStep({ status: 'review', text: heard }, open, seconds, { every: true })).toEqual({
+    kind: 'confirm',
+    heard,
+    said: [6, 14],
+  });
+  expect(answerStep({ status: 'review', text: '第六秒' }, open, seconds, { every: true })).toEqual({
+    kind: 'confirm',
+    heard: '第六秒',
+    said: [6],
+  });
+  expect(
+    answerStep({ status: 'review', text: '不知道' }, open, seconds, { every: true }),
+  ).toMatchObject({
+    kind: 'ask',
+    message: '我听到的是「不知道」，没听出是几。再说一次，把每个数都说出来。',
+  });
+});
+
+it('explains a wrong answer from all the numbers the child said', () => {
+  const partly: Judgement = { status: 'judged', outcome: 'incorrect', said: [6] };
+  expect(answerStep(idle, partly, seconds, { every: true })).toMatchObject({ message: '不是 6' });
 });

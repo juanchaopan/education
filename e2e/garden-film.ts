@@ -1,4 +1,5 @@
 import { expect, type Locator, type Page } from '@playwright/test';
+import { play, type FilmMove, type Listener } from './film-play.js';
 
 // Playing the garden film by hand, as a child does with a pointer.
 
@@ -25,10 +26,6 @@ export function gardenFilm(page: Page) {
     caption: film.getByRole('region', { name: '小兔的话' }).getByRole('status'),
   };
 }
-
-// One thing the child does in the film: the move, what shows once the film
-// has taken it, and the recordings the rabbit then says, by file name.
-export type FilmMove = { move: () => Promise<void>; shown?: () => Promise<void>; says: string[] };
 
 // Swapping one of the apples on the scale for its cucumbers.
 function swap(page: Page, says: string[]): FilmMove {
@@ -74,23 +71,6 @@ export function movesToTheAnswer(page: Page): FilmMove[] {
 export function movesInTheVariation(page: Page): FilmMove[] {
   return [swap(page, []), swap(page, []), swap(page, ['change-done'])];
 }
-
-// Makes the moves one after another, each once the film has taken the last,
-// and whatever a test checks after each.
-export async function play(
-  moves: readonly FilmMove[],
-  after: (move: FilmMove) => Promise<void> = async () => {},
-) {
-  for (const step of moves) {
-    await step.move();
-    await step.shown?.();
-    await after(step);
-  }
-}
-
-// Waits until the recordings named, and nothing else, have each played to
-// their end since the last wait (see narration-check.ts).
-type Listener = { heard: (recordings: readonly string[]) => Promise<void> };
 
 // Starts the film and plays it to the question of the count, hearing each
 // line to its end before the next move.

@@ -8,9 +8,10 @@ import {
 } from './lesson-content.js';
 import { gardenBalanceLesson } from './lessons/garden-balance.js';
 import { lessonTemplateLesson } from './lessons/lesson-template.js';
+import { railChaseLesson } from './lessons/rail-chase.js';
 
 describe('each lesson declared in lessons/', () => {
-  it.each([gardenBalanceLesson, lessonTemplateLesson])(
+  it.each([gardenBalanceLesson, railChaseLesson, lessonTemplateLesson])(
     '$problem.id follows a listed flow and has no problems',
     (content) => {
       expect(lessonFlows).toContain(content.flow);
@@ -105,6 +106,19 @@ describe('the lesson content check', () => {
 
   it('finds an answer scene with no scene after it to play on into', () => {
     expect(problems({ answerScene: 'after' })).toEqual([
+      'answer scene after has no scene after it',
+    ]);
+  });
+
+  it('finds a 列式求解 answer scene with no equation found before it to solve', () => {
+    const flow = 'derive-and-solve';
+    const equation = { id: 'equation', says: '一共 x 颗', from: 'roll', uses: ['count'] };
+    const unsolved = 'answer scene count uses no conclusion found before it to solve';
+    expect(problems({ flow, conclusions: [equation] })).toEqual([]);
+    expect(problems({ flow })).toEqual([unsolved]);
+    expect(problems({ flow, conclusions: [{ ...equation, from: 'count' }] })).toEqual([unsolved]);
+    const late = { ...equation, uses: ['after'] };
+    expect(problems({ flow, conclusions: [late], answerScene: 'after' })).toEqual([
       'answer scene after has no scene after it',
     ]);
   });

@@ -40,7 +40,7 @@ it('sends the counted number with the round and no draft, and reports the judgem
   await waitFor(() => expect(result.current.canHint).toBe(true));
   act(() => result.current.submit(6));
   await waitFor(() =>
-    expect(result.current.judgement).toEqual({ status: 'judged', outcome: 'incorrect', count: 6 }),
+    expect(result.current.judgement).toEqual({ status: 'judged', outcome: 'incorrect', said: [6] }),
   );
   expect(body(fetch.mock.calls[1]!)).toMatchObject({
     action: 'submit',
@@ -48,6 +48,20 @@ it('sends the counted number with the round and no draft, and reports the judgem
     input: 6,
     draftRevision: null,
   });
+});
+
+it('sends every number of an answer that is every number that fits', async () => {
+  const fetch = vi
+    .fn()
+    .mockResolvedValueOnce(Response.json({ round }))
+    .mockImplementationOnce(receipt('incorrect'));
+  const { result } = setup(fetch);
+  await waitFor(() => expect(result.current.canHint).toBe(true));
+  act(() => result.current.submit([6]));
+  await waitFor(() =>
+    expect(result.current.judgement).toEqual({ status: 'judged', outcome: 'incorrect', said: [6] }),
+  );
+  expect(body(fetch.mock.calls[1]!)).toMatchObject({ input: [6] });
 });
 
 it('retries a lost reply with the same attempt, so it is never counted twice', async () => {
@@ -62,7 +76,7 @@ it('retries a lost reply with the same attempt, so it is never counted twice', a
     expect(result.current.judgement).toEqual({
       status: 'judged',
       outcome: 'independent',
-      count: 9,
+      said: [9],
     }),
   );
   expect(body(fetch.mock.calls[2]!).attemptId).toBe(body(fetch.mock.calls[1]!).attemptId);
@@ -83,7 +97,7 @@ it('keeps an answer given before the round arrived and sends it once the round i
   await waitFor(() => expect(result.current.canHint).toBe(true));
   act(() => result.current.retry());
   await waitFor(() =>
-    expect(result.current.judgement).toMatchObject({ status: 'judged', count: 9 }),
+    expect(result.current.judgement).toMatchObject({ status: 'judged', said: [9] }),
   );
   expect(body(fetch.mock.calls[2]!)).toMatchObject({ round, input: 9 });
 });

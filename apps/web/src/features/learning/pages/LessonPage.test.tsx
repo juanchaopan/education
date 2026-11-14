@@ -10,6 +10,11 @@ import { pageWrapper } from '../../../test/page-wrapper';
 import { lessonPage } from './LessonPage';
 
 const FixturePage = lessonPage(fixtureLesson);
+// The same lesson following 列式求解, whose answer is every number that fits.
+const SolvingPage = lessonPage({
+  ...fixtureLesson,
+  content: { ...fixtureLesson.content, flow: 'derive-and-solve' },
+});
 
 const draftPath = '/api/v1/problems/fixture/1/draft';
 const previewPath = '/api/v1/problems/fixture/1/preview';
@@ -54,12 +59,12 @@ function PageReadiness() {
 }
 
 // Opens the lesson for a child to practise, or for a parent to preview.
-function open(mode: ProblemMode = 'practice') {
+function open(mode: ProblemMode = 'practice', Lesson = FixturePage) {
   const Page = pageWrapper();
   render(
     <MemoryRouter>
       <Page>
-        <FixturePage session={{ mode, csrf: 'token' }} />
+        <Lesson session={{ mode, csrf: 'token' }} />
         <PageReadiness />
       </Page>
     </MemoryRouter>,
@@ -199,6 +204,16 @@ it('listens for the answer by itself once the question is heard, and offers numb
   const answer = await screen.findByRole('region', { name: '说出答案' });
   expect(within(answer).getByRole('group', { name: '点一个数字回答' })).toBeInTheDocument();
   expect(caption()).toHaveTextContent('这台设备现在不能录音。');
+});
+
+it('takes every number that fits as the answer of a lesson that follows 列式求解', async () => {
+  serve(savedAt('count'));
+  open('practice', SolvingPage);
+  await start(/接着上次的地方/);
+  await hearLineToEnd();
+  const answer = await screen.findByRole('region', { name: '说出答案' });
+  expect(within(answer).getByRole('group', { name: '点亮每一个答案' })).toBeInTheDocument();
+  expect(within(answer).getByRole('button', { name: '交' })).toBeDisabled();
 });
 
 it('hides the narrated lines while the captions are off, and keeps that on the device', async () => {

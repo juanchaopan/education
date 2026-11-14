@@ -1,3 +1,4 @@
+import type { AnswerInput } from '@education/contracts';
 import type { LessonContent } from './lesson-content.js';
 import type { AnsweringPolicy, FeedbackStep, Judgement, VariationPolicy } from './plugin.js';
 
@@ -8,6 +9,27 @@ export function wholeNumberAnswer(answer: number): AnsweringPolicy['checkComplet
   return (input) => {
     if (typeof input !== 'number' || !Number.isInteger(input)) return 'uncertain';
     return input === answer ? 'correct' : 'incorrect';
+  };
+}
+
+const wholeNumbers = (input: AnswerInput): input is number[] =>
+  Array.isArray(input) &&
+  input.length > 0 &&
+  input.every((value) => typeof value === 'number' && Number.isInteger(value));
+
+// Judges a final answer that is every number that fits, such as both times
+// two points are four squares apart. The child's whole numbers are taken as
+// a set, so their order and a number said twice do not matter: exactly the
+// expected numbers are correct, and any other set, one with a number missing
+// or one too many, is a mistake. Anything but a list of whole numbers, an
+// empty list included, was not understood, so it is never counted as wrong.
+export function numberSetAnswer(answers: readonly number[]): AnsweringPolicy['checkCompletion'] {
+  const expected = new Set(answers);
+  return (input) => {
+    if (!wholeNumbers(input)) return 'uncertain';
+    const said = new Set(input);
+    const same = said.size === expected.size && [...said].every((value) => expected.has(value));
+    return same ? 'correct' : 'incorrect';
   };
 }
 

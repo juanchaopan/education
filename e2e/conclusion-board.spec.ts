@@ -1,10 +1,12 @@
 import { expect, test, type Page } from '@playwright/test';
 import {
-  acceptEveryGardenAnswer,
+  acceptEveryAnswer,
+  gardenApi,
   signInAtTheGardenAnswer,
   signInAtTheGardenStart,
 } from './child-at-the-answer.js';
-import { gardenFilm, movesToTheAnswer, play } from './garden-film.js';
+import { play } from './film-play.js';
+import { gardenFilm, movesToTheAnswer } from './garden-film.js';
 
 // The garden keeps what each scene finds on the conclusion board along the
 // top of its picture: from the second scene on, the conclusions found so far
@@ -68,7 +70,7 @@ test('writes the count on once said right, and sets the changed condition beside
   page,
 }) => {
   await signInAtTheGardenAnswer(page);
-  await acceptEveryGardenAnswer(page, { outcome: 'assisted', hint: '先看第一架秤。' });
+  await acceptEveryAnswer(page, gardenApi, { outcome: 'assisted', hint: '先看第一架秤。' });
   await page.goto(lesson);
   await page.getByRole('button', { name: /接着上次的地方/ }).click({ timeout: 60_000 });
   const { film } = gardenFilm(page);

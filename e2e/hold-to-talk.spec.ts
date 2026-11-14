@@ -6,7 +6,8 @@ import {
   signInAtTheGardenAnswer,
   signInAtTheGardenStart,
 } from './child-at-the-answer.js';
-import { gardenFilm, movesToTheAnswer, play } from './garden-film.js';
+import { play } from './film-play.js';
+import { gardenFilm, movesToTheAnswer } from './garden-film.js';
 import { centreOf, holdWhile } from './hold.js';
 
 // Speaking in the garden lesson with a real browser microphone. Chromium
