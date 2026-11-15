@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, type InitialEntry } from 'react-router-dom';
 import { afterEach, expect, it, vi } from 'vitest';
 import { accountArt } from '../../../test/account-art';
 import { Address } from '../../../test/Address';
@@ -49,10 +49,10 @@ function serve(session: Session = 'none') {
   return fetch;
 }
 
-function open(path: string) {
+function open(entry: InitialEntry) {
   render(
     <QueryClientProvider client={new QueryClient()}>
-      <MemoryRouter initialEntries={[path]}>
+      <MemoryRouter initialEntries={[entry]}>
         <Routes>
           <Route path="/login/child" element={<SignInPage art={accountArt} tab="child" />} />
           <Route path="/login/parent" element={<SignInPage art={accountArt} tab="parent" />} />
@@ -108,24 +108,20 @@ it('signs a child in, remembers the family code and nickname, and opens the book
   });
 });
 
-it('fills in the family code and nickname a child just registered with', async () => {
+it('fills in the family code and nickname a child just registered with, across the tabs', async () => {
   serve();
-  render(
-    <QueryClientProvider client={new QueryClient()}>
-      <MemoryRouter
-        initialEntries={[
-          { pathname: '/login/child', state: { familyCode: 'ABCD-EFGH-JKMN', nickname: '小鹿' } },
-        ]}
-      >
-        <Routes>
-          <Route path="/login/child" element={<SignInPage art={accountArt} tab="child" />} />
-        </Routes>
-      </MemoryRouter>
-    </QueryClientProvider>,
-  );
+  open({
+    pathname: '/login/child',
+    state: { familyCode: 'ABCD-EFGH-JKMN', nickname: '小鹿' },
+  });
   expect(await screen.findByLabelText('我的家庭码')).toHaveValue('ABCD-EFGH-JKMN');
   expect(screen.getByLabelText('我的昵称')).toHaveValue('小鹿');
   expect(screen.getByLabelText('我的六位 PIN')).toHaveValue('');
+  await userEvent.click(screen.getByRole('tab', { name: '家长登录' }));
+  await screen.findByLabelText('登录邮箱');
+  await userEvent.click(screen.getByRole('tab', { name: '孩子登录' }));
+  expect(await screen.findByLabelText('我的家庭码')).toHaveValue('ABCD-EFGH-JKMN');
+  expect(screen.getByLabelText('我的昵称')).toHaveValue('小鹿');
 });
 
 it('sends a child already signed in straight on to the page to come back to', async () => {
@@ -154,6 +150,7 @@ it.each([
   ['another site', 'https%3A%2F%2Fexample.com%2F'],
   ['a protocol-relative link', '%2F%2Fexample.com'],
   ['a backslash', '%2F%5Cexample.com'],
+  ['a dot segment that resolves to another host', '%2F.%2F%2Fexample.com'],
 ])('takes a parent who signs in with %s to the parent space instead', async (_name, next) => {
   serve();
   open(`/login/parent?next=${next}`);
@@ -170,4 +167,13 @@ it('offers a parent already signed in the way on, and still lets a child sign in
   expect(screen.queryByLabelText('登录邮箱')).not.toBeInTheDocument();
   await userEvent.click(screen.getByRole('tab', { name: '孩子登录' }));
   expect(await screen.findByLabelText('我的家庭码')).toBeInTheDocument();
+});
+
+it('keeps the way on of a parent already signed in on this site', async () => {
+  serve('parent');
+  open('/login/parent?next=%2F.%2F%2Fexample.com%2Ffamily');
+  expect(await screen.findByRole('link', { name: '进入家长空间' })).toHaveAttribute(
+    'href',
+    '/family',
+  );
 });

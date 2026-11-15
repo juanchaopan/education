@@ -29,8 +29,8 @@ type Account = {
 
 // The parents' pages, at every address under /family. Signed out, the parent
 // is sent to the parent's sign-in, which comes back to the address asked for;
-// a parent who signed out on this page lands on the sign-in itself, since
-// the session ends while the logout is still finishing. Signed in before the
+// a parent signing out on this page lands on the sign-in itself, since the
+// session ends while the logout is still finishing. Signed in before the
 // email is verified, it is the verification step; verified, it is the parent
 // space. A finished deletion signs the page out and keeps saying so until
 // the parent moves on to register a new family. Until the page knows the
@@ -52,8 +52,13 @@ export function FamilyPage({ art }: { art: AccountArt }) {
     );
   if (session.isPending) return <SessionWaiting label="正在确认登录状态…" />;
   if (!session.data) {
-    const back = logout.isIdle ? pathname + search + hash : undefined;
-    return <Navigate to={signInPath('parent', back)} replace />;
+    const signingOut = logout.isPending || logout.isSuccess;
+    return (
+      <Navigate
+        to={signInPath('parent', signingOut ? undefined : pathname + search + hash)}
+        replace
+      />
+    );
   }
   const { csrfToken } = session.data;
   const account: Account = {

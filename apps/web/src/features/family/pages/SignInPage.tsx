@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { returnPath, signInPath, type SignInTab } from '../../../shared/lib/sign-in-path';
 import { Icon } from '../../../shared/ui/Icon';
 import { LinkButton } from '../../../shared/ui/LinkButton';
@@ -17,15 +17,15 @@ import { LoginPanel } from './LoginPanel';
 import styles from './SignInPage.module.css';
 
 // The sign-in: the child's and the parent's, as two tabs, each at its own
-// address. Switching tabs keeps the page to come back to, and takes the place
-// of the tab left in the history, so going back leaves the sign-in. Signing
-// in, or arriving signed in, goes on to that page, or to the child's books or
-// the parent space.
+// address. Switching tabs keeps the page to come back to and what a child's
+// registration handed on, and takes the place of the tab left in the
+// history, so going back leaves the sign-in. Signing in goes on to that page,
+// or to the child's books or the parent space; a child arriving signed in
+// goes straight on, a parent arriving signed in is offered the way on.
 export function SignInPage({ art, tab }: { art: AccountArt; tab: SignInTab }) {
   const navigate = useNavigate();
-  const { search } = useLocation();
-  const [query] = useSearchParams();
-  const next = returnPath(query.get('next'));
+  const { search, state } = useLocation();
+  const next = returnPath(new URLSearchParams(search).get('next'));
   return (
     <AccountLayout
       art={art}
@@ -37,7 +37,7 @@ export function SignInPage({ art, tab }: { art: AccountArt; tab: SignInTab }) {
       <SignInTabs
         tab={tab}
         onTab={(chosen) =>
-          void navigate({ pathname: signInPath(chosen), search }, { replace: true })
+          void navigate({ pathname: signInPath(chosen), search }, { replace: true, state })
         }
       >
         {tab === 'child' ? <ChildSignIn next={next} /> : <ParentSignIn next={next} />}
