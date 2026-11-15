@@ -127,15 +127,18 @@ export function reasonTry(voice: VoiceState, judgement: ReasonJudgement): Reason
   return judgement.outcome === 'uncertain' ? 'missed' : 'judged';
 }
 
+// Two tries in a row that came to nothing turn the reason to tapping.
+export const missesBeforeTapping = 2;
+
 // How many tries in a row came to nothing, once a try ends: one more when it
-// was missed, none once one was judged.
+// was missed, none once one was judged. Once the count reaches the point where
+// the child taps, it stays there for the reason scene, so a tapped reason that
+// is judged does not take the words to tap away.
 export function missesAfter(misses: number, ended: ReasonTry) {
+  if (misses >= missesBeforeTapping) return misses;
   if (ended === 'missed') return misses + 1;
   return ended === 'judged' ? 0 : misses;
 }
-
-// Two tries in a row that came to nothing turn the reason to tapping.
-export const missesBeforeTapping = 2;
 
 // What the teacher says about a step of the reason, in its subtitle: the
 // sentence it heard, to be confirmed, and what went wrong or what to do
