@@ -25,8 +25,9 @@ export const WithTheAnswer: Story = { args: { facts: storyBoards.answered } };
 export const Variation: Story = { args: { facts: storyBoards.varied } };
 // Too many to draw one by one: 「k×」 before one frame, and before one ball.
 export const ManyThings: Story = { args: { facts: storyBoards.many } };
-// Too narrow for one line, the board wraps onto a second, keeping the
-// variation's result beside its condition.
+// Too narrow for one line, the board wraps onto a second. The variation's 那么
+// stays right after its 假如 when the two fit side by side and goes under it,
+// within the board, when they do not.
 export const Wrapping: Story = {
   args: { facts: storyBoards.varied },
   decorators: [
