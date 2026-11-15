@@ -5,6 +5,7 @@ import type { VoiceState } from '../data-access/voice-input';
 import {
   guessStep,
   missesAfter,
+  missesBeforeTapping,
   reasonStep,
   reasonTry,
   reasonWords,
@@ -132,6 +133,13 @@ describe('the tries at saying the reason', () => {
     expect(missesAfter(missesAfter(0, 'missed'), 'missed')).toBe(2);
     expect(missesAfter(1, 'judged')).toBe(0);
     expect(missesAfter(1, 'trying')).toBe(1);
+  });
+
+  it('keeps the count once it reaches the point of tapping, whatever the next try comes to', () => {
+    expect(missesBeforeTapping).toBe(2);
+    expect(missesAfter(2, 'judged')).toBe(2);
+    expect(missesAfter(2, 'missed')).toBe(2);
+    expect(missesAfter(2, 'trying')).toBe(2);
   });
 
   it('does not count a refused microphone as a try, since speech cannot be used', () => {
