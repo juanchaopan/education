@@ -141,7 +141,7 @@
   - 只存结果，不存孩子的原话和转写文字。判定、数据、接口和家庭导出见[变化题作答记录](variation-records.md)。
   - 家长预览时，猜的数和理由都点选，走预览接口，服务器照样判，什么都不记录。
 - **自查卡按流程核对。** E7 按最终作答的判定核对，E8 按上面变化题的顺序、判定和记录核对。
-- **实现状态。** 服务端的变化题判定和记录已经有了，见[变化题作答记录](variation-records.md)。公共题目页里逐幕探究的作答部分（`pages/flows/SceneBySceneAnswer.tsx`）在最终作答以后接着做变化题（`pages/VariationAnswer.tsx`、`VariationGuess.tsx`、`VariationReason.tsx`），菜园天平和新题模板都按上面的做法做，猜的数和理由用 [#217](https://github.com/juanchaopan/education/issues/217) 的接口记录；家长摘要显示变化题结果由 [#219](https://github.com/juanchaopan/education/issues/219) 做。变化题揭晓的结果声明成揭晓那一幕得出的结论（`result`），提问的老师才在揭晓以后知道它。
+- **实现状态。** 服务端的变化题判定和记录已经有了，见[变化题作答记录](variation-records.md)。公共题目页在最终作答以后接着做变化题（`pages/VariationAnswer.tsx`、`VariationGuess.tsx`、`VariationReason.tsx`，由 `LessonPanels` 和 `PreviewPanels` 放在流程的作答部分旁边，课堂内容声明了变化题就有，不分流程），菜园天平和新题模板都按上面的做法做，猜的数和理由用 [#217](https://github.com/juanchaopan/education/issues/217) 的接口记录；家长摘要显示变化题结果由 [#219](https://github.com/juanchaopan/education/issues/219) 做。变化题揭晓的结果声明成揭晓那一幕得出的结论（`result`），提问的老师才在揭晓以后知道它。
 
 ### 列式求解
 
@@ -162,7 +162,7 @@
   - 推导中途换画面：前面得出的量不在眼前，孩子要凭记忆把它带到下一步。
   - 方程只取一种情况（例如只取正的那一边）：会漏掉一个解。作答以前把每种情况摆在画面上，核对时每个解都停。
   - 变化题改了不止一个条件：孩子说不清是哪一样变了，理由没法判。
-- **实现状态。** 公共题目页里列式求解的作答部分（`pages/flows/DeriveAndSolveAnswer.tsx`）有最终作答，按集合判、按结果记录。变化题的服务端判定和记录（[#217](https://github.com/juanchaopan/education/issues/217)）和公共的变化题部分（逐幕探究的作答部分里的猜、说理由和点选）都已经有了；数轴追及还没有变化题的判定规则，它的变化题仍请孩子先在心里猜，再推车核对、揭晓，猜的数和理由不记录。把它接上公共的变化题另开 issue。
+- **实现状态。** 公共题目页里列式求解的作答部分（`pages/flows/DeriveAndSolveAnswer.tsx`）有最终作答，按集合判、按结果记录。变化题的服务端判定和记录（[#217](https://github.com/juanchaopan/education/issues/217)）和公共的变化题部分（猜、说理由和点选，课堂内容声明了变化题就有）都已经有了；数轴追及还没有变化题的判定规则，它的变化题仍请孩子先在心里猜，再推车核对、揭晓，猜的数和理由不记录。数轴追及声明变化题、写上判定规则，由 [#248](https://github.com/juanchaopan/education/issues/248) 做。
 
 ## 作答与提问
 
