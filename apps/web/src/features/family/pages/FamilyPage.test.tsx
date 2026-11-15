@@ -67,6 +67,17 @@ it('sends a signed-out parent to the parent sign-in, which comes back to the add
   expect(address()).toHaveTextContent(/^\/family\/privacy\?x=1#family-deletion-title$/);
 });
 
+it.each(['/family/verify#token=secret', '/family/reset?x=1#token=secret&y=2'])(
+  'keeps the mail token of %s out of the sign-in address',
+  async (path) => {
+    serve('out');
+    renderFamilyPage(path);
+    expect(await screen.findByRole('tab', { name: '家长登录' })).toBeInTheDocument();
+    expect(address()).toHaveTextContent(/^\/login\/parent\?next=%2Ffamily%2F(verify|reset)/);
+    expect(address()).not.toHaveTextContent(/token|secret/);
+  },
+);
+
 it('says on the sign-in when the session could not be read', async () => {
   serve('unknown');
   renderFamilyPage('/family');

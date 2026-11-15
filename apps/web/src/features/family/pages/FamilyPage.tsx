@@ -27,6 +27,14 @@ type Account = {
   onLogout: () => void;
 };
 
+// The part of an address the sign-in should come back to. A fragment that
+// holds a mail token stays out of it: the token is a secret that must not move
+// into the query string of another address.
+function returnAddress(pathname: string, search: string, hash: string) {
+  const carriesToken = new URLSearchParams(hash.slice(1)).has('token');
+  return pathname + search + (carriesToken ? '' : hash);
+}
+
 // The parents' pages, at every address under /family. Signed out, the parent
 // is sent to the parent's sign-in, which comes back to the address asked for;
 // a parent signing out on this page lands on the sign-in itself, since the
@@ -55,7 +63,7 @@ export function FamilyPage({ art }: { art: AccountArt }) {
     const signingOut = logout.isPending || logout.isSuccess;
     return (
       <Navigate
-        to={signInPath('parent', signingOut ? undefined : pathname + search + hash)}
+        to={signInPath('parent', signingOut ? undefined : returnAddress(pathname, search, hash))}
         replace
       />
     );
