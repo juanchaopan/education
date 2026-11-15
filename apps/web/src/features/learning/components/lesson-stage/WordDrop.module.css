@@ -1,0 +1,58 @@
+/* The glass of a dew drop drawn as a pill around its words: the light
+   catches its upper left and its lower half deepens; lit, its glass turns
+   green. It is never smaller than a finger can hit and grows with the
+   picture it is laid into, as the drops beside it do. */
+.drop {
+  --face: var(--dew-face);
+  --deep: var(--dew-depth);
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  min-block-size: max(var(--touch-target), 4.5cqmin);
+  padding: 0 0.9em;
+  border: 1.5px solid var(--dew-rim);
+  border-radius: var(--radius-pill);
+  color: var(--dew-ink);
+  background:
+    radial-gradient(ellipse at 18% 22%, var(--dew-shine) 0 6%, transparent 12%),
+    radial-gradient(
+      ellipse at 50% 120%,
+      color-mix(in srgb, var(--face) 40%, white) 0,
+      transparent 60%
+    ),
+    linear-gradient(var(--face), color-mix(in srgb, var(--face) 70%, var(--deep)));
+  box-shadow:
+    inset 0 -0.3em 0.6em var(--deep),
+    inset 0 0.18em 0.3em var(--dew-lip),
+    0 0.4em 0.9em var(--dew-shadow);
+  backdrop-filter: var(--glass-filter) saturate(1.25);
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  transition:
+    scale var(--lift) var(--ease-spring),
+    filter var(--press) var(--ease-out);
+}
+
+.drop[aria-pressed='true'] {
+  --face: var(--dew-ok);
+  --deep: var(--dew-ok-deep);
+}
+
+.drop:hover {
+  filter: brightness(1.08);
+}
+
+.drop:active {
+  scale: 0.94;
+}
+
+.drop:focus-visible {
+  outline: var(--dew-focus-ring);
+  outline-offset: 3px;
+}

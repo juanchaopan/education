@@ -1,8 +1,8 @@
 import { Dewdrop } from '../../../../shared/ui/Dewdrop';
 import { numberList, type AnswerStep } from '../../interaction/spoken-answer';
-import { Capsule, Counts, Hearing, Heard, Listening, SayAgain } from './capsule-parts';
+import { Capsule, Counts, Heard, SayAgain, Underway } from './capsule-parts';
+import { underway } from './capsule-steps';
 import { NumberChoices } from './NumberChoices';
-import { WaitingDots } from './WaitingDots';
 import styles from './AnswerCapsule.module.css';
 
 type Handlers = {
@@ -16,6 +16,9 @@ type Handlers = {
 };
 
 type Props = Handlers & {
+  // What the child does in the capsule, which names it for screen readers:
+  // 说出答案, or 说出你猜的数 for a guess.
+  label?: string;
   // What the answer answers, which the teacher has asked out loud.
   question: string;
   step: AnswerStep;
@@ -49,12 +52,9 @@ function Asking({ tapping, every, choices, blocked, ...on }: Props & { tapping: 
 }
 
 function Content(props: Props) {
-  const { step, unit, blocked, level, ...on } = props;
+  const { step, unit, blocked, ...on } = props;
+  if (underway(step)) return <Underway {...on} step={step} judging="正在看你的答案" />;
   switch (step.kind) {
-    case 'listening':
-      return <Listening message={step.message} level={level} onFinish={on.onFinish} />;
-    case 'hearing':
-      return <Hearing onStopWaiting={on.onStopWaiting} />;
     case 'confirm':
       return (
         <>
@@ -71,12 +71,6 @@ function Content(props: Props) {
           <SayAgain label="重说" blocked={blocked} onListen={on.onListen} />
         </>
       );
-    case 'judging':
-      return <WaitingDots label="正在看你的答案" />;
-    case 'failed':
-      return (
-        <Dewdrop icon="replay" tone="honey" size="large" label="再交一次" onClick={on.onRetry} />
-      );
     case 'ask':
       return <Asking {...props} tapping={step.choices} />;
     case 'done':
@@ -86,25 +80,32 @@ function Content(props: Props) {
           <Dewdrop icon="play" tone="ok" size="large" label="接着看" onClick={on.onContinue} />
         </>
       );
+    case 'recorded':
+      return (
+        <Heard title="记下了">
+          <Counts said={step.said} unit={unit} />
+        </Heard>
+      );
     default:
       return null;
   }
 }
 
-// The final answer laid into the stage as a glass capsule: a voice meter and
-// a stop drop while the microphone listens by itself, then "我听到 9 根", or
-// every number heard when the answer is every number that fits, with a green
-// drop to agree and a honey one to say it again. Numbers that could not be
-// heard are said again from the honey drop; once speech has proved unusable,
+// An answer laid into the stage as a glass capsule: a voice meter and a stop
+// drop while the microphone listens by itself, then "我听到 9 根", or every
+// number heard when the answer is every number that fits, with a green drop
+// to agree and a honey one to say it again. Numbers that could not be heard
+// are said again from the honey drop; once speech has proved unusable,
 // numbers to tap take its place, one to tap for a single answer, or several
-// to light and hand in together. A correct answer ends in a star and a drop
-// that carries the film on. What the teacher says about each step is the
-// teacher's subtitle; the capsule shows only what the child does, and tells
-// screen readers the question it answers.
-export function AnswerCapsule(props: Props) {
+// to light and hand in together. A correct final answer ends in a star and a
+// drop that carries the film on; a guess ends recorded, "记下了 6 根", laid
+// out as what was heard, neither right nor wrong. What the teacher says
+// about each step is the teacher's subtitle; the capsule shows only what the
+// child does, and tells screen readers the question it answers.
+export function AnswerCapsule({ label = '说出答案', ...props }: Props) {
   if (props.step.kind === 'waiting') return null;
   return (
-    <Capsule label="说出答案" question={props.question}>
+    <Capsule label={label} question={props.question}>
       <Content {...props} />
     </Capsule>
   );

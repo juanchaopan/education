@@ -7,7 +7,7 @@ import { retryable, voiceMessage, type Alternative } from './voice-message';
 // What the answer shows next. The microphone opens by itself once the
 // question has been told; the child says the answer and confirms the numbers
 // that were heard. Tapping numbers is offered only when speech cannot be used
-// at all.
+// at all. A guess is recorded rather than found right or wrong.
 export type AnswerStep =
   | { kind: 'waiting' }
   | { kind: 'ask'; message: string; choices: boolean }
@@ -15,7 +15,8 @@ export type AnswerStep =
   | { kind: 'confirm'; heard: string; said: readonly number[] }
   | { kind: 'judging' }
   | { kind: 'failed'; message: string }
-  | { kind: 'done'; assisted: boolean };
+  | { kind: 'done'; assisted: boolean }
+  | { kind: 'recorded'; said: readonly number[] };
 
 // The lesson's own words for its answer: the unit it is counted in, such as
 // 根, and what a wrong answer most likely is, from the numbers the child said.
@@ -26,17 +27,58 @@ export type CountWords = { unit?: string; explain: (said: readonly number[]) => 
 // `awaiting` tells that the microphone is about to open by itself.
 export type Answering = Readonly<{ every?: boolean; awaiting?: boolean }>;
 
+// The microphone on its way to hearing the child, or a try that came to
+// nothing heard: listening, hearing, or asking again, with what to tap
+// offered once speech has proved unusable.
+export type VoiceStep =
+  | { kind: 'ask'; message: string; choices: boolean }
+  | { kind: 'listening' | 'hearing'; message: string };
+
 // A failed try is tried again by speaking; the numbers are the way round
 // speech that cannot be used.
-const tapping: Alternative = { instead: '可以点下面的数字回答。' };
+const tappingNumbers: Alternative = { instead: '可以点下面的数字回答。' };
 
 // The answer is listened for, never held for, so its progress has its own words.
 const opening = '正在打开麦克风…';
 const listening = '我在听，说出你的答案吧。说完停一下就好。';
 const cutShort = '这次没录上，可以再说一次。';
 
-export function ask(message: string, choices = false): AnswerStep {
+export function ask(message: string, choices = false): AnswerStep & VoiceStep {
   return { kind: 'ask', message, choices };
+}
+
+function failed(
+  state: Extract<VoiceState, { status: 'unavailable' | 'fallback' }>,
+  tapping: Alternative,
+) {
+  if (state.reason === 'short') return ask(cutShort);
+  return ask(voiceMessage(state, tapping), !retryable(state));
+}
+
+// The child speaking, or what the last try came to: what was heard is read
+// by `review`, and `tapping` says what to tap instead of speaking.
+export function voiceStep<Heard>(
+  state: VoiceState,
+  tapping: Alternative,
+  review: (text: string) => Heard,
+): VoiceStep | Heard | undefined {
+  switch (state.status) {
+    case 'idle':
+      return undefined;
+    case 'starting':
+      return { kind: 'listening', message: opening };
+    case 'recording':
+      return { kind: 'listening', message: listening };
+    case 'transcribing':
+      return { kind: 'hearing', message: voiceMessage(state, tapping) };
+    case 'review':
+      return review(state.text);
+    case 'unavailable':
+    case 'fallback':
+      return failed(state, tapping);
+    default:
+      return ask(voiceMessage(state, tapping), state.status === 'guidance');
+  }
 }
 
 function review(text: string, unit: string | undefined, every: boolean): AnswerStep {
@@ -44,32 +86,6 @@ function review(text: string, unit: string | undefined, every: boolean): AnswerS
   if (said && (every || said.length === 1)) return { kind: 'confirm', heard: text, said };
   const again = every ? '再说一次，把每个数都说出来。' : '再说一次，只说数字就好。';
   return ask(`我听到的是「${text}」，没听出是几。${again}`);
-}
-
-function failed(state: Extract<VoiceState, { status: 'unavailable' | 'fallback' }>) {
-  if (state.reason === 'short') return ask(cutShort);
-  return ask(voiceMessage(state, tapping), !retryable(state));
-}
-
-// The child speaking, or what the last try came to.
-function speaking(state: VoiceState, unit: string | undefined, every: boolean) {
-  switch (state.status) {
-    case 'idle':
-      return undefined;
-    case 'starting':
-      return { kind: 'listening', message: opening } satisfies AnswerStep;
-    case 'recording':
-      return { kind: 'listening', message: listening } satisfies AnswerStep;
-    case 'transcribing':
-      return { kind: 'hearing', message: voiceMessage(state, tapping) } satisfies AnswerStep;
-    case 'review':
-      return review(state.text, unit, every);
-    case 'unavailable':
-    case 'fallback':
-      return failed(state);
-    default:
-      return ask(voiceMessage(state, tapping), state.status === 'guidance');
-  }
 }
 
 // A judgement the child cannot answer over: being judged, waiting for a retry,
@@ -102,7 +118,7 @@ export function unsettledStep(
   said: string | undefined,
   { unit, every, awaiting }: Listened,
 ): AnswerStep {
-  const step: AnswerStep | undefined = speaking(voice, unit, every);
+  const step = voiceStep(voice, tappingNumbers, (text) => review(text, unit, every));
   if (step?.kind === 'ask' && step.choices && said) return { ...step, message: said };
   if (step) return step;
   return awaiting ? { kind: 'waiting' } : ask(said ?? '');
@@ -149,7 +165,7 @@ export function numberList(said: readonly number[]) {
 // What the teacher says about a step of the answer, in its subtitle: the
 // numbers it heard, to be confirmed, a correct answer, and what went wrong or
 // what to do next. While the child speaks, or waits, the teacher says
-// nothing; the answer's own drops show it.
+// nothing; the answer's own drops show it, as they show a recorded guess.
 export function answerWords(step: AnswerStep): string | undefined {
   switch (step.kind) {
     case 'confirm':

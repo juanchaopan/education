@@ -1,4 +1,4 @@
-import type { LessonContent } from '@education/problems/lesson-content';
+import type { LessonContent, LessonVariation } from '@education/problems/lesson-content';
 import type { ComponentType, ReactNode } from 'react';
 import type {
   Box,
@@ -60,6 +60,18 @@ export type LessonAnswer = Readonly<{
   hints: readonly string[];
 }>;
 
+// The variation's answers, for a lesson whose content declares a variation:
+// the guess asked in its guess scene, with the question a screen reader
+// hears, the unit it is said in and the numbers to tap; the reason asked in
+// its reason scene, with the question and what the teacher says of a reason
+// that is not clear; and the ids of the plugin's variation hints in the
+// order the child receives them. The reasons to tap are the content's.
+export type LessonVariationAnswer = Readonly<{
+  guess: Readonly<{ question: string; unit?: string; choices: readonly number[] }>;
+  reason: Readonly<{ question: string; unclear: string }>;
+  hints: readonly string[];
+}>;
+
 export type SceneProps<State> = { state: State; handling: Handling };
 
 // The library teacher who tells a lesson, where it stands in the lesson's
@@ -85,15 +97,15 @@ type Looks = Readonly<{
 // Everything one problem gives the shared lesson page: its content, declared
 // in @education/problems and read by the server too, with its version, the
 // lesson flow it follows, its backdrop, its scenes, the scene that asks for
-// the answer, the conclusions its scenes find and the words its scenes are
-// told in; how its film looks; its script, which pairs the content's lines
-// with their recordings, and its scene rules; how its scenes and the child's
-// key actions are recorded for the questions the child asks; its props, its
-// final count and its own scene, drawn on the stage's 1200×675 world. A
-// lesson whose way of teaching keeps its conclusions on the conclusion board
-// says in `board` how they are drawn, with the lesson's own symbols. The page
-// is built for one definition at a time, so each lesson's own types hold all
-// the way through.
+// the answer, its variation, the conclusions its scenes find and the words
+// its scenes are told in; how its film looks; its script, which pairs the
+// content's lines with their recordings, and its scene rules; how its scenes
+// and the child's key actions are recorded for the questions the child
+// asks; its props, its final count, its variation's answers and its own
+// scene, drawn on the stage's 1200×675 world. A lesson whose way of teaching
+// keeps its conclusions on the conclusion board says in `board` how they are
+// drawn, with the lesson's own symbols. The page is built for one definition
+// at a time, so each lesson's own types hold all the way through.
 export type LessonDefinition<
   State extends FilmState<Shot>,
   Shot extends string,
@@ -109,6 +121,7 @@ export type LessonDefinition<
     record: LessonRecording<State, Move>;
     props: LessonProps<Move, Piece, Look, State>;
     answer: LessonAnswer;
+    variation?: LessonVariationAnswer;
     board?: LessonBoard<State, string>;
     Scene: ComponentType<SceneProps<State>>;
   }>;
@@ -183,6 +196,14 @@ export function shotAfter<Shot extends string>(
   return index < 0 ? undefined : shots[index + 1];
 }
 
+// One of the lesson's scenes by its name, if it is one.
+export function sceneNamed<Shot extends string>(
+  { shots }: Readonly<{ shots: readonly Shot[] }>,
+  name: string,
+): Shot | undefined {
+  return shots.find((shot) => shot === name);
+}
+
 // The scene a saved step comes back to: one of the lesson's scenes, past its
 // first, which a new start reaches anyway.
 export function resumed<Shot extends string>(
@@ -191,4 +212,34 @@ export function resumed<Shot extends string>(
 ): Shot | undefined {
   const index = shots.findIndex((shot) => shot === stepId);
   return index > 0 ? shots[index] : undefined;
+}
+
+// A lesson's variation as the page plays it: its scenes as the content
+// declares them, the scenes from the guess to the reason, in which the child
+// answers, the hints are at hand and a question counts as help, the scene a
+// recorded guess moves on to, and its answers.
+export type VariationPlay = Readonly<{
+  scenes: LessonVariation<string>;
+  answering: readonly string[];
+  afterGuess: string;
+  answer: LessonVariationAnswer;
+}>;
+
+export function variationPlay(
+  lesson: Readonly<{
+    content: Pick<LessonContent<string, string, string>, 'shots' | 'variation'>;
+    variation?: LessonVariationAnswer;
+  }>,
+): VariationPlay | undefined {
+  const { shots, variation: scenes } = lesson.content;
+  const answer = lesson.variation;
+  if (!scenes || !answer) return undefined;
+  const from = shots.indexOf(scenes.guessScene);
+  const to = shots.indexOf(scenes.reasonScene);
+  return {
+    scenes,
+    answering: shots.slice(from, to + 1),
+    afterGuess: shots[from + 1] ?? scenes.reasonScene,
+    answer,
+  };
 }

@@ -26,7 +26,8 @@
   }
 }
 
-/* "我听到" over the numbers, large, in the title font. */
+/* A small line such as "我听到" or "记下了" over what it is about, large, in
+   the title font. */
 .heard {
   display: grid;
   justify-items: start;
@@ -56,6 +57,14 @@
 .unit {
   margin-inline-start: 0.2em;
   font-size: 0.55em;
+}
+
+/* A sentence heard, as large as the subtitle allows and wrapping before it
+   pushes the drops beside it off the capsule. */
+.sentence {
+  max-inline-size: 16em;
+  font-size: var(--text-xl);
+  line-height: 1.3;
 }
 
 /* The numbers to tap, six to a row at most, so even a long row of them

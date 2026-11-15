@@ -55,3 +55,11 @@ export const NumbersToLight: Story = {
   args: { ...every, step: { kind: 'ask', message: '', choices: true } },
 };
 export const Correct: Story = { args: { step: { kind: 'done', assisted: false } } };
+// A variation's guess, recorded as it was heard, neither right nor wrong.
+export const GuessRecorded: Story = {
+  args: {
+    label: '说出你猜的数',
+    question: '假如每个苹果只换两根黄瓜，一棵青菜和几根黄瓜一样重？',
+    step: { kind: 'recorded', said: [6] },
+  },
+};

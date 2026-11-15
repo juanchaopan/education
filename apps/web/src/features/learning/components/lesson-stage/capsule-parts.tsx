@@ -1,13 +1,14 @@
 import type { ReactNode } from 'react';
 import { Dewdrop } from '../../../../shared/ui/Dewdrop';
 import { Spoken } from '../../../../shared/ui/Spoken';
+import type { UnderwayStep } from './capsule-steps';
 import { VoiceMeter } from './VoiceMeter';
 import { WaitingDots } from './WaitingDots';
 import styles from './AnswerCapsule.module.css';
 
 // The parts every capsule the child answers in is built from: the glass
-// pill itself, the microphone listening and the words being heard, what was
-// heard, and the honey drop that asks to speak again.
+// pill itself, what it shows while the child's words are on their way, what
+// was heard, and the honey drop that asks to speak again.
 
 // The pill, named for what the child does in it, which tells screen readers
 // the question it answers.
@@ -28,34 +29,44 @@ export function Capsule({
   );
 }
 
-// The microphone open: a meter that moves with the child's voice and a
-// drop to say it is done.
-export function Listening({
-  message,
-  level,
-  onFinish,
-}: {
-  message: string;
+type UnderwayProps = Readonly<{
+  step: UnderwayStep;
+  // What is being judged, as a screen reader hears it.
+  judging: string;
   level?: () => number;
   onFinish: () => void;
-}) {
-  return (
-    <>
-      <VoiceMeter level={level} />
-      <Spoken>{message}</Spoken>
-      <Dewdrop icon="stop" tone="clay" label="说完了" onClick={onFinish} />
-    </>
-  );
-}
+  onStopWaiting: () => void;
+  onRetry: () => void;
+}>;
 
-// What the child said on its way to being heard, with a drop to stop waiting.
-export function Hearing({ onStopWaiting }: { onStopWaiting: () => void }) {
-  return (
-    <>
-      <WaitingDots label="正在听你说了什么" />
-      <Dewdrop icon="close" size="small" label="不等了" onClick={onStopWaiting} />
-    </>
-  );
+// What a capsule shows while the child's words are on their way: a meter
+// that moves with the child's voice and a drop to say it is done, waiting
+// dots with a drop to stop waiting while the words are heard, dots while
+// what was sent is judged, and a drop to send it again when it was lost.
+export function Underway({ step, judging, level, ...on }: UnderwayProps) {
+  switch (step.kind) {
+    case 'listening':
+      return (
+        <>
+          <VoiceMeter level={level} />
+          <Spoken>{step.message}</Spoken>
+          <Dewdrop icon="stop" tone="clay" label="说完了" onClick={on.onFinish} />
+        </>
+      );
+    case 'hearing':
+      return (
+        <>
+          <WaitingDots label="正在听你说了什么" />
+          <Dewdrop icon="close" size="small" label="不等了" onClick={on.onStopWaiting} />
+        </>
+      );
+    case 'judging':
+      return <WaitingDots label={judging} />;
+    case 'failed':
+      return (
+        <Dewdrop icon="replay" tone="honey" size="large" label="再交一次" onClick={on.onRetry} />
+      );
+  }
 }
 
 // A small line, such as 我听到, over what it is about, large, in the title

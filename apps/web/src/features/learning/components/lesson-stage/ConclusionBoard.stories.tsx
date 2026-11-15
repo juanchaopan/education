@@ -19,16 +19,19 @@ export const InUse: Story = { args: { facts: storyBoards.inUse } };
 // Once the count is answered right, it is written onto the conclusion it
 // comes from.
 export const WithTheAnswer: Story = { args: { facts: storyBoards.answered } };
-// A changed condition sits beside the one it changes.
-export const Supposed: Story = { args: { facts: storyBoards.supposed } };
+// The variation, another problem: only the conclusion it keeps, its 假如
+// condition and, revealed and in use, what that came to, tagged 那么 over
+// its glow.
+export const Variation: Story = { args: { facts: storyBoards.varied } };
 // Too many to draw one by one: 「k×」 before one frame, and before one ball.
 export const ManyThings: Story = { args: { facts: storyBoards.many } };
-// Too narrow for one line, the board wraps onto a second.
+// Too narrow for one line, the board wraps onto a second, keeping the
+// variation's result beside its condition.
 export const Wrapping: Story = {
-  args: { facts: storyBoards.supposed },
+  args: { facts: storyBoards.varied },
   decorators: [
     (Story) => (
-      <div style={{ maxInlineSize: '20rem' }}>
+      <div style={{ maxInlineSize: '14rem' }}>
         <Story />
       </div>
     ),

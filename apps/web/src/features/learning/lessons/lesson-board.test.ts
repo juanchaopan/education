@@ -1,8 +1,13 @@
 import type { Conclusion } from '@education/problems/lesson-content';
 import { describe, expect, it } from 'vitest';
-import { boardFacts, type AnswerProgress, type LessonBoard } from './lesson-board';
+import {
+  boardFacts,
+  type AnswerProgress,
+  type BoardScenes,
+  type LessonBoard,
+} from './lesson-board';
 
-type Shot = 'weigh' | 'swap' | 'answer' | 'suppose';
+type Shot = 'weigh' | 'swap' | 'answer' | 'suppose' | 'why' | 'reveal';
 type State = Readonly<{ shot: Shot | 'opening'; level: boolean }>;
 
 const board: LessonBoard<State, 'box' | 'ball'> = {
@@ -40,12 +45,33 @@ const conclusions: readonly Conclusion<Shot, 'box' | 'ball'>[] = [
       [2, 'ball'],
     ],
     from: 'suppose',
-    uses: ['suppose'],
+    uses: ['suppose', 'why'],
     supposed: true,
+  },
+  {
+    id: 'box-groups-two',
+    says: '那么 1 个盒子和 3 组球一样重，一共 6 个球',
+    amounts: [
+      [1, 'box'],
+      [6, 'ball', { group: 2 }],
+    ],
+    from: 'reveal',
+    uses: ['reveal'],
   },
 ];
 
-const scenes = { shots: ['weigh', 'swap', 'answer', 'suppose'], answerScene: 'answer' } as const;
+const scenes: BoardScenes<Shot> = {
+  shots: ['weigh', 'swap', 'answer', 'suppose', 'why', 'reveal'],
+  answerScene: 'answer',
+  variation: {
+    guessScene: 'suppose',
+    reasonScene: 'why',
+    revealScene: 'reveal',
+    result: 'box-groups-two',
+    keeps: ['box-balls'],
+    choices: { groups: '组数', each: '每组个数' },
+  },
+};
 const fresh: AnswerProgress = { answered: false };
 
 const facts = (state: State, progress = fresh) =>
@@ -78,7 +104,7 @@ describe('the conclusion board', () => {
         { key: '1-ball', count: 3, picture: 'ball', shape: 'round' },
       ],
       lit: false,
-      supposed: false,
+      kind: undefined,
     });
   });
 
@@ -95,6 +121,7 @@ describe('the conclusion board', () => {
   it('lights the conclusions the scene on screen uses', () => {
     expect(lit({ shot: 'answer', level: false })).toEqual(['box-groups']);
     expect(lit({ shot: 'suppose', level: false })).toEqual(['box-balls-two']);
+    expect(lit({ shot: 'reveal', level: false })).toEqual(['box-groups-two']);
   });
 
   it('lights what the last hint uses, only while the child is still answering', () => {
@@ -117,14 +144,31 @@ describe('the conclusion board', () => {
     expect(answered?.amounts.map(({ count }) => count)).toEqual([1, 9, 9]);
     expect(answered?.says).toBe('1 个盒子和 3 组球、9 个球一样重');
   });
+});
 
-  it('keeps the count written on in the scenes after the answer, and the changed condition apart', () => {
-    const later = facts({ shot: 'suppose', level: false });
-    expect(later.map(({ id, supposed }) => [id, supposed])).toEqual([
-      ['box-balls', false],
-      ['box-groups', false],
-      ['box-balls-two', true],
+describe('the conclusion board in the variation, which is another problem', () => {
+  it('puts away what the variation does not keep, and shows its condition as 假如', () => {
+    const varying = facts({ shot: 'suppose', level: false });
+    expect(varying.map(({ id, kind }) => [id, kind])).toEqual([
+      ['box-balls', undefined],
+      ['box-balls-two', 'supposed'],
     ]);
+    expect(ids({ shot: 'why', level: false })).toEqual(['box-balls', 'box-balls-two']);
+  });
+
+  it('adds what the condition came to as 那么 once revealed, and keeps that look to the end', () => {
+    const revealed = facts({ shot: 'reveal', level: false });
+    expect(revealed.map(({ id, kind }) => [id, kind])).toEqual([
+      ['box-balls', undefined],
+      ['box-balls-two', 'supposed'],
+      ['box-groups-two', 'result'],
+    ]);
+  });
+
+  it('keeps every conclusion before the variation in a lesson that declares none', () => {
+    const plain = { shots: scenes.shots, answerScene: scenes.answerScene };
+    const later = boardFacts(board, conclusions, plain, { shot: 'why', level: false }, fresh);
+    expect(later.map(({ id }) => id)).toEqual(['box-balls', 'box-groups', 'box-balls-two']);
     expect(later[1]?.amounts.map(({ count }) => count)).toEqual([1, 9, 9]);
   });
 });

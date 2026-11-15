@@ -4,7 +4,7 @@ import { expect, it, vi } from 'vitest';
 import type { AnswerStep } from '../../interaction/spoken-answer';
 import { AnswerCapsule } from './AnswerCapsule';
 
-function capsule(step: AnswerStep, { blocked = false, every = false } = {}) {
+function capsule(step: AnswerStep, { blocked = false, every = false, label = '' } = {}) {
   const on = {
     onListen: vi.fn(),
     onFinish: vi.fn(),
@@ -16,6 +16,7 @@ function capsule(step: AnswerStep, { blocked = false, every = false } = {}) {
   };
   const view = render(
     <AnswerCapsule
+      label={label || undefined}
       question={every ? 'M 和 N 什么时候相距四格？' : '一共有几根黄瓜？'}
       step={step}
       unit={every ? '秒' : '根'}
@@ -99,4 +100,10 @@ it('carries the film on after a correct answer', async () => {
   const on = capsule({ kind: 'done', assisted: false });
   await userEvent.click(screen.getByRole('button', { name: '接着看' }));
   expect(on.onContinue).toHaveBeenCalledOnce();
+});
+
+it('shows a guess recorded as it was heard, with nothing to tap and no word of right or wrong', () => {
+  capsule({ kind: 'recorded', said: [6] }, { label: '说出你猜的数' });
+  expect(screen.getByRole('region', { name: '说出你猜的数' })).toHaveTextContent('记下了6根');
+  expect(screen.queryByRole('button')).not.toBeInTheDocument();
 });

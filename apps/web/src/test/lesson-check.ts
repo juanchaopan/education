@@ -17,11 +17,13 @@ import type { LessonOutline } from '../features/learning/lessons/registry';
 import { backdrops } from '../features/learning/media/backdrops/backdrops';
 
 // What a lesson must agree with in the plugin the server keeps for its
-// problem version: the steps a model may see, the authored hints, and the
-// lesson content questions to the teacher are answered from.
+// problem version: the steps a model may see, the authored hints, the
+// variation's hints when it has rules for a variation, and the lesson
+// content questions to the teacher are answered from.
 export type PluginOutline = Readonly<{
   steps: readonly string[];
   hints: readonly string[];
+  variationHints?: readonly string[];
   lesson?: unknown;
 }>;
 
@@ -31,6 +33,7 @@ export type PluginOutline = Readonly<{
 type PluginParts = Readonly<{
   feedback?: Readonly<Record<string, unknown>>;
   answering?: Readonly<{ hints?: Readonly<Record<string, unknown>> }>;
+  variation?: Readonly<{ hints: Readonly<Record<string, unknown>> }>;
   lesson?: unknown;
 }>;
 
@@ -41,6 +44,7 @@ export function pluginOutline(plugin?: PluginParts): PluginOutline | undefined {
     plugin && {
       steps: Object.keys(plugin.feedback ?? {}),
       hints: Object.keys(plugin.answering?.hints ?? {}),
+      ...(plugin.variation && { variationHints: Object.keys(plugin.variation.hints) }),
       lesson: plugin.lesson,
     }
   );
@@ -190,6 +194,23 @@ function carriedProblems({ content }: LessonOutline, { lesson }: PluginOutline) 
   return same ? [] : ['the plugin carries other lesson content than the lesson plays'];
 }
 
+// A variation the content declares is asked by the lesson and judged by the
+// plugin's rules, with every hint the lesson gives in the plugin; a lesson
+// asks no variation its content does not declare.
+function variationProblems({ content, variation }: LessonOutline, plugin: PluginOutline) {
+  const declared = content.variation !== undefined;
+  const asked = variation !== undefined;
+  const judged = plugin.variationHints !== undefined;
+  return [
+    ...(declared && !asked ? ['the content declares a variation the lesson does not ask'] : []),
+    ...(asked && !declared ? ['the lesson asks a variation its content does not declare'] : []),
+    ...(declared && !judged ? ['the plugin has no rules for the variation'] : []),
+    ...missing(variation?.hints ?? [], plugin.variationHints ?? []).map(
+      (hint) => `variation hint ${hint} is not in the plugin`,
+    ),
+  ];
+}
+
 function pluginProblems(listed: ProblemVersion, lesson: LessonOutline, plugin?: PluginOutline) {
   if (!plugin) return [`the server has no plugin for ${versionName(listed)}`];
   const { script, answer } = lesson;
@@ -198,6 +219,7 @@ function pluginProblems(listed: ProblemVersion, lesson: LessonOutline, plugin?: 
     ...missing(script.shots, plugin.steps).map((shot) => `scene ${shot} is not a plugin step`),
     ...missing(plugin.steps, script.shots).map((step) => `plugin step ${step} is not a scene`),
     ...missing(answer.hints, plugin.hints).map((hint) => `hint ${hint} is not in the plugin`),
+    ...variationProblems(lesson, plugin),
   ];
 }
 
@@ -206,7 +228,7 @@ function pluginProblems(listed: ProblemVersion, lesson: LessonOutline, plugin?: 
 // script and recordings against the content, where its props stand against
 // its backdrop in each scene, its conclusions and their board, what its
 // scenes tell the teacher, and the server's plugin for it, with its steps,
-// hints and lesson content.
+// hints, variation and lesson content.
 export function lessonProblems(
   listed: ProblemVersion,
   lesson: LessonOutline,

@@ -36,7 +36,6 @@ const fact = (id: string, says: string, ...amounts: BoardAmount[]): BoardFact =>
   says,
   amounts,
   lit: false,
-  supposed: false,
 });
 
 const first = fact('box-gold', '1 个盒子和 2 个黄球一样重', amount(1, 'box'), amount(2, 'gold'));
@@ -54,7 +53,16 @@ const answered: BoardFact = {
 };
 const supposed: BoardFact = {
   ...fact('gold-rose-two', '假如 1 个黄球和 2 个红球一样重', amount(1, 'gold'), amount(2, 'rose')),
-  supposed: true,
+  kind: 'supposed',
+};
+const result: BoardFact = {
+  ...fact(
+    'box-groups-two',
+    '那么 1 个盒子和 2 组红球一样重，一共 4 个红球',
+    amount(1, 'box'),
+    amount(4, 'rose', { group: 2 }),
+  ),
+  kind: 'result',
   lit: true,
 };
 const many = fact(
@@ -66,12 +74,13 @@ const many = fact(
 );
 
 // The board as a lesson fills it: the first conclusion alone, three with the
-// newest in use, the count answered onto the last, a changed condition in use
-// beside the one it changes, and amounts too many to draw one by one.
+// newest in use, the count answered onto the last, the variation once it is
+// revealed, with the conclusion it keeps, its condition and what that came
+// to in use, and amounts too many to draw one by one.
 export const storyBoards = {
   one: [first],
   inUse: [first, second, { ...third, lit: true }],
   answered: [first, second, answered],
-  supposed: [first, second, supposed, answered],
+  varied: [first, supposed, result],
   many: [first, many],
 } satisfies Record<string, readonly BoardFact[]>;

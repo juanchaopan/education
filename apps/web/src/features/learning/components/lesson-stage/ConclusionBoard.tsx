@@ -6,14 +6,17 @@ import styles from './ConclusionBoard.module.css';
 
 // One conclusion on the board: amounts that all weigh the same, the sentence a
 // screen reader reads for it, whether the scene or a hint is using it now,
-// and whether it supposes a changed condition beside the one before it.
+// and, for one of the variation's, whether it is the condition the variation
+// sets, 假如, or what that came to, 那么.
 export type BoardFact = Readonly<{
   id: string;
   says: string;
   amounts: readonly BoardAmount[];
   lit: boolean;
-  supposed: boolean;
+  kind?: 'supposed' | 'result';
 }>;
+
+const tags = { supposed: '假如', result: '那么' } as const;
 
 const counted = (count: number) => Array.from({ length: count }, (_, place) => `${count}-${place}`);
 
@@ -55,14 +58,14 @@ function Amount({ count, picture, shape, group, times }: BoardAmount) {
   );
 }
 
-function Fact({ says, amounts, lit, supposed }: BoardFact) {
+function Fact({ says, amounts, lit, kind }: BoardFact) {
   return (
     <span
-      className={classNames(styles.fact, lit && styles.lit, supposed && styles.supposed)}
+      className={classNames(styles.fact, lit && styles.lit, kind && styles[kind])}
       aria-current={lit || undefined}
     >
       <span className={styles.amounts} aria-hidden="true">
-        {supposed && <span className={styles.tag}>假如</span>}
+        {kind && <span className={styles.tag}>{tags[kind]}</span>}
         {amounts.map((amount, index) => (
           <Fragment key={amount.key}>
             {index > 0 && <span className={styles.equals}>=</span>}
@@ -75,13 +78,13 @@ function Fact({ says, amounts, lit, supposed }: BoardFact) {
   );
 }
 
-// A conclusion with the changed conditions that follow it, which stay beside
-// it however the board wraps.
+// A conclusion with what follows from it, which stays beside it however the
+// board wraps: the variation's result after the condition it comes from.
 function groups(facts: readonly BoardFact[]) {
   const grouped: BoardFact[][] = [];
   for (const fact of facts) {
     const last = grouped.at(-1);
-    if (fact.supposed && last) last.push(fact);
+    if (fact.kind === 'result' && last) last.push(fact);
     else grouped.push([fact]);
   }
   return grouped;

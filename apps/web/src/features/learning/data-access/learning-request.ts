@@ -21,7 +21,7 @@ export type LearningScope = Readonly<{
   refused?: () => void;
 }>;
 
-type Resource = 'draft' | 'answer' | 'question' | 'transcription' | 'preview';
+type Resource = 'draft' | 'answer' | 'variation' | 'question' | 'transcription' | 'preview';
 
 // A request to the API under the child's session, with its CSRF token. A body
 // makes it a JSON write by POST; it gives up after ten seconds, or sooner

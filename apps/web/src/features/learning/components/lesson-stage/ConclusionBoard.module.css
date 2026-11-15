@@ -1,8 +1,8 @@
 /* A row of smoked glass capsules, centred, wrapping onto a second line when
    the picture is too narrow for them. Its size follows `--board-size`, which
    the lesson stage sets so the board grows with the picture as the subtitle
-   does. A changed condition sits close beside the one it changes, in the
-   same item, so the two never wrap apart. */
+   does. The variation's result sits close beside the condition it comes
+   from, in the same item, so the two never wrap apart. */
 .board {
   display: flex;
   flex-wrap: wrap;
@@ -82,18 +82,26 @@
   }
 }
 
-/* A changed condition: a honey dashed frame with 假如 on its corner. */
+/* The variation's condition: a honey dashed frame with 假如 on its corner.
+   What it came to: a honey solid frame with 那么. */
 .supposed {
   border-style: dashed;
   border-color: var(--dew-honey);
 }
 
-.supposed.lit {
+.result {
+  border-color: var(--dew-honey);
+}
+
+.supposed.lit,
+.result.lit {
   border-color: var(--dew-gold);
 }
 
+/* The tag sits over the gold ring of a lit capsule, never under it. */
 .tag {
   position: absolute;
+  z-index: 1;
   inset-block-start: -0.62em;
   inset-inline-start: 0.7em;
   padding: 0.08em 0.38em;
