@@ -6,15 +6,13 @@ import { RecoveryPage } from '../features/family/pages/RecoveryPage';
 import { ResetPasswordPage } from '../features/family/pages/ResetPasswordPage';
 import { VerifyEmailPage } from '../features/family/pages/VerifyEmailPage';
 import { useFamilyTimeZone } from '../shared/lib/useFamilyTimeZone';
-import { Page } from '../shared/ui/Page';
-import { StandaloneLink } from '../shared/ui/StandaloneLink';
 import { accountArt, childHomeArt } from './account-art';
+import { NotFoundPage } from './NotFoundPage';
 import { PlainLayout } from './PlainLayout';
 import { ProblemRoute } from './ProblemRoute';
 import { ReleaseUpdate } from './release/ReleaseUpdate';
 import { SiteLayout } from './SiteLayout';
 import { useDayNightTheme } from './theme/useDayNightTheme';
-import styles from './App.module.css';
 
 // Links to /child lead to the home page and keep the problem they were on
 // the way to.
@@ -45,14 +43,7 @@ export function App() {
           <Route path="/family/*" element={<FamilyPage art={accountArt} />} />
         </Route>
         <Route element={<SiteLayout />}>
-          <Route
-            path="*"
-            element={
-              <Page titleId="not-found-title" title="这条小路还没找到" className={styles.missing}>
-                <StandaloneLink to="/">回到首页</StandaloneLink>
-              </Page>
-            }
-          />
+          <Route path="*" element={<NotFoundPage />} />
         </Route>
         <Route path="/problems/:id/:version?" element={<ProblemRoute />} />
       </Routes>

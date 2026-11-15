@@ -23,3 +23,12 @@ it('offers no button without an action', () => {
   render(<EmptyState icon="sprout" title="这个分类还没有题目" description="换一个分类" />);
   expect(screen.queryByRole('button')).toBeNull();
 });
+
+it('titles a part of a page, or the whole page when it is all the page says', () => {
+  const { unmount } = render(<EmptyState icon="sprout" title="这个分类还没有题目" />);
+  expect(screen.getByRole('heading', { name: '这个分类还没有题目', level: 3 })).toBeInTheDocument();
+  expect(screen.queryByRole('paragraph')).toBeNull();
+  unmount();
+  render(<EmptyState icon="sprout" title="这条小路还没找到" headingLevel={1} />);
+  expect(screen.getByRole('heading', { name: '这条小路还没找到', level: 1 })).toBeInTheDocument();
+});
