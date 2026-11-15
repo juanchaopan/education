@@ -117,12 +117,14 @@ it('opens exact versions for a child and resets page state when switching versio
   });
 });
 
-it("goes back from a link opened directly to the child's home, with the problem's book open", async () => {
+it("goes back from a link opened directly to the child's bookshelf, with the problem's book open", async () => {
   serve();
   open(problemPath(current.id, current.version));
   await screen.findByRole('heading', { name: '练习新版' });
   await userEvent.click(screen.getByRole('button', { name: '返回' }));
-  expect(await screen.findByRole('heading', { name: '别处 /?open=fixture-book' })).toBeVisible();
+  expect(
+    await screen.findByRole('heading', { name: '别处 /books?open=fixture-book' }),
+  ).toBeVisible();
 });
 
 it('shows a parent the preview, marked so, and goes back to the parent space', async () => {
@@ -158,7 +160,7 @@ it("tells the server once that a child opened the problem's book, and nothing of
   expect(marks(previewed)).toEqual([]);
 });
 
-it('shows nobody signed in only the way to sign in and come back, asking nothing', async () => {
+it("shows nobody signed in only the way to the child's sign-in and back, asking nothing", async () => {
   const fetchProblem = serve();
   open(problemPath(current.id, current.version), { kind: 'guest' });
   expect(screen.getByRole('heading', { name: '登录后才能打开这道题' })).toBeVisible();
@@ -166,7 +168,9 @@ it('shows nobody signed in only the way to sign in and come back, asking nothing
   expect(fetchProblem).not.toHaveBeenCalled();
   await userEvent.click(screen.getByRole('link', { name: '去登录' }));
   expect(
-    await screen.findByRole('heading', { name: '别处 /?next=/problems/fixture-review/2' }),
+    await screen.findByRole('heading', {
+      name: '别处 /login/child?next=/problems/fixture-review/2',
+    }),
   ).toBeVisible();
 });
 
@@ -183,10 +187,17 @@ it('waits without asking while it is not yet known who is signed in', () => {
   expect(fetchProblem).not.toHaveBeenCalled();
 });
 
-it('goes back home from a problem that cannot be found', async () => {
+it('goes back to the bookshelf from a problem that cannot be found', async () => {
   serve();
   open('/problems/missing/1');
   await screen.findByRole('heading', { name: '这道题暂时不可用' });
+  await userEvent.click(screen.getByRole('button', { name: '返回' }));
+  expect(await screen.findByRole('heading', { name: '别处 /books' })).toBeVisible();
+});
+
+it('goes back home from a problem a visitor opened', async () => {
+  serve();
+  open(problemPath(current.id, current.version), { kind: 'guest' });
   await userEvent.click(screen.getByRole('button', { name: '返回' }));
   expect(await screen.findByRole('heading', { name: '别处 /' })).toBeVisible();
 });
@@ -196,14 +207,14 @@ it('asks a child to have the book given, and leads back to the books', async () 
   open('/problems/unassigned/1');
   expect(await screen.findByRole('heading', { name: '请家长安排这本书' })).toBeVisible();
   await userEvent.click(screen.getByRole('link', { name: '回到我的书' }));
-  expect(await screen.findByRole('heading', { name: '别处 /' })).toBeVisible();
+  expect(await screen.findByRole('heading', { name: '别处 /books' })).toBeVisible();
 });
 
 it('tells a child or a parent the book is unavailable for now, each with their own way back', async () => {
   serve();
   open('/problems/unavailable/1');
   expect(await screen.findByRole('heading', { name: '这本书暂时不可用' })).toBeVisible();
-  expect(screen.getByRole('link', { name: '回到我的书' })).toHaveAttribute('href', '/');
+  expect(screen.getByRole('link', { name: '回到我的书' })).toHaveAttribute('href', '/books');
   cleanup();
   open('/problems/unavailable/1', parent);
   expect(await screen.findByRole('heading', { name: '这本书暂时不可用' })).toBeVisible();

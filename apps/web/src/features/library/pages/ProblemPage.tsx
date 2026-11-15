@@ -1,7 +1,8 @@
 import { Fragment, useCallback, type ReactNode } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
 import type { ProblemAccessReason, ProblemOpening } from '@education/contracts';
-import { problemPath, signInPath } from '../../../shared/lib/problem-path';
+import { problemPath } from '../../../shared/lib/problem-path';
+import { signInPath } from '../../../shared/lib/sign-in-path';
 import { useLeave } from '../../../shared/lib/useLeave';
 import { EmptyState } from '../../../shared/ui/EmptyState';
 import { FullscreenFrame } from '../../../shared/ui/FullscreenFrame';
@@ -130,6 +131,8 @@ const Missing = () => (
   />
 );
 
+// The way to sign in opens on the child's tab, since children open problems;
+// either tab comes back to this problem.
 function SignInNote({ art }: { art: NoteArt }) {
   const { pathname } = useLocation();
   return (
@@ -138,7 +141,7 @@ function SignInNote({ art }: { art: NoteArt }) {
       icon="lock"
       title="登录后才能打开这道题"
       description="请先登录自己的账号。"
-      action={{ label: '去登录', to: signInPath(pathname) }}
+      action={{ label: '去登录', to: signInPath('child', pathname) }}
     />
   );
 }
@@ -149,7 +152,7 @@ function RefusalNote(props: { art: NoteArt; reason: ProblemAccessReason; viewer:
   const action =
     props.viewer.kind === 'parent'
       ? { label: '回到家长空间', to: '/family' }
-      : { label: '回到我的书', to: '/' };
+      : { label: '回到我的书', to: '/books' };
   return props.reason === 'unassigned' ? (
     <ProblemNote
       art={props.art}

@@ -1,7 +1,7 @@
 import { afterEach, expect, it, vi } from 'vitest';
 import { cleanup, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { renderFamilyPage } from '../../../test/family-page';
+import { address, renderFamilyPage } from '../../../test/family-page';
 const session = {
   role: 'parent',
   email: 'parent@example.test',
@@ -38,10 +38,10 @@ function setup(mode: 'success' | 'failure' | 'remembered' = 'success') {
 }
 async function login() {
   const user = userEvent.setup();
-  await user.click(await screen.findByRole('button', { name: '已有账号？去登录' }));
-  expect(screen.getByLabelText('登录密码')).toHaveAttribute('autocomplete', 'current-password');
+  const password = await screen.findByLabelText('登录密码');
+  expect(password).toHaveAttribute('autocomplete', 'current-password');
   await user.type(screen.getByLabelText('登录邮箱'), 'parent@example.test');
-  await user.type(screen.getByLabelText('登录密码'), 'secret phrase');
+  await user.type(password, 'secret phrase');
   await user.click(screen.getByRole('button', { name: '登录' }));
 }
 it('shows only the verification step after an unverified login and clears the account on logout', async () => {
@@ -53,7 +53,11 @@ it('shows only the verification step after an unverified login and clears the ac
   expect(await screen.findByRole('button', { name: '发送验证邮件' })).toBeVisible();
   expect(screen.queryByRole('navigation', { name: '家长空间' })).toBeNull();
   await userEvent.click(screen.getByRole('button', { name: '退出账号' }));
-  expect(await screen.findByRole('heading', { name: '家长登录' })).toBeVisible();
+  expect(await screen.findByRole('tab', { name: '家长登录' })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  );
+  expect(address()).toHaveTextContent(/^\/login\/parent$/);
   expect(screen.queryByText(session.email)).toBeNull();
 });
 it('restores the server session without asking for a password', async () => {

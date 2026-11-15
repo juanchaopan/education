@@ -99,7 +99,7 @@ it.each([
       if (mode === 'accept') {
         const message = Buffer.concat(chunks).toString();
         expect(message).toContain('Content-Type: multipart/alternative;');
-        expect(message).toContain('/family/reset');
+        expect(message).toContain('/password/reset');
         expect(message).toContain('Content-Type: text/plain; charset=utf-8');
         expect(message).toContain('Content-Type: text/html; charset=utf-8');
       }

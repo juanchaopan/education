@@ -1,12 +1,11 @@
 import { useState } from 'react';
 import { preload } from 'react-dom';
 import type { ParentSession } from '@education/contracts';
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
+import { signInPath } from '../../../shared/lib/sign-in-path';
 import { useArrivalScroll } from '../../../shared/lib/useArrivalScroll';
 import { Button } from '../../../shared/ui/Button';
 import { Icon } from '../../../shared/ui/Icon';
-import { Notice } from '../../../shared/ui/Notice';
-import { StandaloneLink } from '../../../shared/ui/StandaloneLink';
 import { AccountLayout, type AccountArt } from '../components/AccountLayout';
 import { AccountNotices } from '../components/AccountNotices';
 import { FamilyDeleted } from '../components/FamilyDeleted';
@@ -14,13 +13,9 @@ import { ParentShell } from '../components/ParentShell';
 import { SessionWaiting } from '../components/SessionWaiting';
 import { useFillFamilyTimeZone } from '../data-access/useFamilyTimeZoneSetting';
 import { useParentLogout, useParentSession } from '../data-access/useParentSession';
-import { LoginPanel } from './LoginPanel';
 import { OverviewPage } from './OverviewPage';
 import { LearningSection, PracticeSection, PrivacySection, ProfileSection } from './ParentSections';
-import { RegistrationPanel } from './RegistrationPanel';
 import { VerificationPanel } from './VerificationPanel';
-
-type Mode = 'register' | 'login';
 
 // The signed-in parent and the way out, shared by the verification step and
 // the parent space.
@@ -32,16 +27,19 @@ type Account = {
   onLogout: () => void;
 };
 
-// The parents' entrance, at every address under /family. Signed out, it is
-// the sign-up or the sign-in, and signing in opens the address asked for;
-// signed in before the email is verified, it is the verification step;
-// verified, it is the parent space. A finished deletion signs the page out
-// and keeps saying so until the parent moves on to register a new family.
-// Until the page knows the parent is verified, the scene's backdrop is
-// fetched early, while the page still asks who is signed in.
+// The parents' pages, at every address under /family. Signed out, the parent
+// is sent to the parent's sign-in, which comes back to the address asked for;
+// a parent who signed out on this page lands on the sign-in itself, since
+// the session ends while the logout is still finishing. Signed in before the
+// email is verified, it is the verification step; verified, it is the parent
+// space. A finished deletion signs the page out and keeps saying so until
+// the parent moves on to register a new family. Until the page knows the
+// parent is verified, the scene's backdrop is fetched early, while the page
+// still asks who is signed in.
 export function FamilyPage({ art }: { art: AccountArt }) {
-  const [mode, setMode] = useState<Mode>('register');
   const [deleted, setDeleted] = useState(false);
+  const { pathname, search, hash } = useLocation();
+  const navigate = useNavigate();
   const session = useParentSession();
   const logout = useParentLogout();
   if (session.data?.access !== 'verified')
@@ -49,17 +47,14 @@ export function FamilyPage({ art }: { art: AccountArt }) {
   if (deleted)
     return (
       <AccountLayout art={art} titleId="family-deleted-title" title="家庭已删除">
-        <FamilyDeleted
-          onRegister={() => {
-            setDeleted(false);
-            setMode('register');
-          }}
-        />
+        <FamilyDeleted onRegister={() => void navigate('/signup')} />
       </AccountLayout>
     );
   if (session.isPending) return <SessionWaiting label="正在确认登录状态…" />;
-  if (!session.data)
-    return <SignedOut art={art} mode={mode} failed={session.isError} onMode={setMode} />;
+  if (!session.data) {
+    const back = logout.isIdle ? pathname + search + hash : undefined;
+    return <Navigate to={signInPath('parent', back)} replace />;
+  }
   const { csrfToken } = session.data;
   const account: Account = {
     session: session.data,
@@ -67,59 +62,12 @@ export function FamilyPage({ art }: { art: AccountArt }) {
     error: logout.error?.message,
     refreshing: session.isError,
     onLogout: () => {
-      if (logout.isPending) return;
-      logout.mutate(csrfToken, {
-        onSuccess: () => {
-          setMode('login');
-          logout.reset();
-        },
-      });
+      if (!logout.isPending) logout.mutate(csrfToken);
     },
   };
   if (session.data.access === 'verified')
     return <ParentSpace {...account} onDeleted={() => setDeleted(true)} />;
   return <Unverified art={art} {...account} />;
-}
-
-// Sign-up first, since most parents arrive here new; one button switches to
-// the sign-in and back. The switch stays the same button in the same place,
-// so it keeps the focus. A session that could not be read is said once, in
-// turn with the form, since the parent can still sign in.
-function SignedOut({
-  art,
-  mode,
-  failed,
-  onMode,
-}: {
-  art: AccountArt;
-  mode: Mode;
-  failed: boolean;
-  onMode: (mode: Mode) => void;
-}) {
-  const login = mode === 'login';
-  return (
-    <AccountLayout
-      art={art}
-      titleId={login ? 'login-title' : 'registration-title'}
-      title={login ? '家长登录' : '创建家长账号'}
-      footer={
-        <>
-          {login && (
-            <StandaloneLink to="/family/recover">
-              <Icon name="lock" />
-              忘记密码
-            </StandaloneLink>
-          )}
-          <Button variant="text" onClick={() => onMode(login ? 'register' : 'login')}>
-            {login ? '还没有账号？去注册' : '已有账号？去登录'}
-          </Button>
-        </>
-      }
-    >
-      {failed && <Notice>暂时无法恢复登录状态，请稍后刷新或重新登录。</Notice>}
-      {login ? <LoginPanel /> : <RegistrationPanel />}
-    </AccountLayout>
-  );
 }
 
 // A parent signed in whose account is not verified yet sees only the

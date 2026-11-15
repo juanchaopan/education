@@ -23,7 +23,7 @@ function open() {
       <MemoryRouter initialEntries={['/join']}>
         <Routes>
           <Route path="/join" element={<ChildRegistrationPage art={accountArt} />} />
-          <Route path="/" element={<SignIn />} />
+          <Route path="/login/child" element={<SignIn />} />
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>,
@@ -46,7 +46,10 @@ it('reuses the request on network failure, clears secrets on success and never s
   );
   open();
   expect(screen.getByRole('heading', { name: '加入家庭', level: 1 })).toBeInTheDocument();
-  expect(screen.getByRole('link', { name: '已有账号？去登录' })).toHaveAttribute('href', '/');
+  expect(screen.getByRole('link', { name: '已有账号？去登录' })).toHaveAttribute(
+    'href',
+    '/login/child',
+  );
   const user = userEvent.setup();
   await user.type(screen.getByLabelText('家长给我的 KEY'), 'ABCDEFGHJKMNPQRS');
   await user.type(screen.getByLabelText('我的昵称'), '小明');

@@ -1,21 +1,19 @@
-import { Navigate, useSearchParams } from 'react-router-dom';
-import { returnPath } from '../../../shared/lib/problem-path';
-import type { AccountArt } from '../components/AccountLayout';
-import type { ChildHomeArt } from '../components/ChildHomeLayout';
+import { Navigate } from 'react-router-dom';
+import { signInPath } from '../../../shared/lib/sign-in-path';
 import { SessionWaiting } from '../components/SessionWaiting';
 import { useChildSession } from '../data-access/useChildSession';
-import { ChildHome } from './ChildHome';
-import { SignInPage } from './SignInPage';
+import { useParentSession } from '../data-access/useParentSession';
 
-// The site's home page. A signed-in child finds their books here, or, sent
-// here on the way to a problem, goes straight on to it; anyone else finds
-// the sign-in, which turns into the child's books once a child signs in.
-export function HomePage({ art, childArt }: { art: AccountArt; childArt: ChildHomeArt }) {
-  const session = useChildSession();
-  const [query] = useSearchParams();
-  const next = returnPath(query.get('next'));
-  if (session.isPending) return <SessionWaiting label="正在打开你的空间…" />;
-  if (!session.data) return <SignInPage art={art} failed={session.isError} />;
-  if (next) return <Navigate to={next} replace />;
-  return <ChildHome key={session.data.csrfToken} session={session.data} art={childArt} />;
+// The site's home address only leads on: a signed-in child to the bookshelf,
+// a signed-in parent to the parent space, anyone else to the child's
+// sign-in. The parent's session is asked for only once no child is signed
+// in; when the child's could not be checked, the sign-in says so.
+export function HomePage() {
+  const child = useChildSession();
+  const parent = useParentSession(child.data === null);
+  if (child.isPending) return <SessionWaiting label="正在打开你的空间…" />;
+  if (child.data) return <Navigate to="/books" replace />;
+  if (child.isError) return <Navigate to={signInPath('child')} replace />;
+  if (parent.isPending) return <SessionWaiting label="正在打开你的空间…" />;
+  return <Navigate to={parent.data ? '/family' : signInPath('child')} replace />;
 }

@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import type { ChildRegistrationReceipt } from '@education/contracts';
+import { signInPath } from '../../../shared/lib/sign-in-path';
 import { StandaloneLink } from '../../../shared/ui/StandaloneLink';
 import { AccountLayout, type AccountArt } from '../components/AccountLayout';
 import {
@@ -9,7 +10,7 @@ import {
 import { ChildRegistrationSuccess } from '../components/ChildRegistrationSuccess';
 import { useChildRegistration } from '../data-access/useChildRegistration';
 
-const signIn = '/';
+const signIn = signInPath('child');
 const empty: ChildRegistrationFields = { registrationKey: '', nickname: '', pin: '' };
 
 // A child joins the family with the KEY a parent gave, on the account pages'

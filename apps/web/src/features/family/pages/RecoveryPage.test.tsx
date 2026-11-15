@@ -45,13 +45,17 @@ it('folds the mail rules away until the parent asks for them', async () => {
 });
 it('strips the bearer fragment before interaction, requires password confirmation and clears sensitive mutation state', async () => {
   const token = 'r'.repeat(43);
-  window.history.replaceState({}, '', '/family/reset#token=' + token);
+  window.history.replaceState({}, '', '/password/reset#token=' + token);
   const fetcher = vi.fn().mockResolvedValue(Response.json({ status: 'reset' }));
   vi.stubGlobal('fetch', fetcher);
   const client = setup(<ResetPasswordPage art={accountArt} />);
   const user = userEvent.setup();
   expect(window.location.hash).toBe('');
   expect(fetcher).not.toHaveBeenCalled();
+  expect(screen.getByRole('link', { name: '重新申请恢复邮件' })).toHaveAttribute(
+    'href',
+    '/password/forgot',
+  );
   await user.type(screen.getByLabelText('新密码', { exact: true }), 'my new private test phrase');
   await user.type(screen.getByLabelText('再次输入新密码'), 'a different test phrase');
   await user.click(screen.getByRole('button', { name: '确认设置新密码' }));

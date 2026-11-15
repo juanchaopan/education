@@ -3,7 +3,7 @@ import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { familyDeletionPhrase } from '@education/contracts';
-import { renderFamilyPage } from '../../../test/family-page';
+import { address, renderFamilyPage } from '../../../test/family-page';
 import { FamilyDeletionPanel } from './FamilyDeletionPanel';
 
 const before = 'a'.repeat(43);
@@ -25,12 +25,21 @@ afterEach(() => {
 
 type Replies = { password?: Response; deletion?: Response };
 
+// The server: the parent signed in until the family is deleted, which ends
+// the session.
 function stubFetch(reply: Replies = {}) {
+  let deleted = false;
   const fetcher = vi.fn(async (url: string, _init?: RequestInit) => {
     if (url.endsWith('/reauthenticate')) return reply.password ?? Response.json(session);
-    if (url.endsWith('/family-deletion'))
-      return reply.deletion ?? Response.json({ status: 'deleted' });
-    if (url.endsWith('/session')) return Response.json({ ...session, csrfToken: before });
+    if (url.endsWith('/family-deletion')) {
+      if (reply.deletion) return reply.deletion;
+      deleted = true;
+      return Response.json({ status: 'deleted' });
+    }
+    if (url.endsWith('/session'))
+      return deleted
+        ? new Response(null, { status: 401 })
+        : Response.json({ ...session, csrfToken: before });
     return Response.json({}, { status: 503 });
   });
   vi.stubGlobal('fetch', fetcher);
@@ -143,7 +152,9 @@ it('shows the family page as deleted and lets the parent register a new family',
   await user.click(button());
   expect(await screen.findByRole('heading', { name: '家庭已删除' })).toBeVisible();
   expect(screen.queryByRole('heading', { name: '删除家庭' })).toBeNull();
+  expect(address()).toHaveTextContent(/^\/family\/privacy$/);
   await user.click(screen.getByRole('button', { name: '注册新的家庭' }));
-  expect(await screen.findByRole('button', { name: '已有账号？去登录' })).toBeVisible();
+  expect(await screen.findByRole('heading', { name: '创建家长账号' })).toBeVisible();
+  expect(address()).toHaveTextContent(/^\/signup$/);
   expect(screen.queryByRole('heading', { name: '家庭已删除' })).toBeNull();
 });

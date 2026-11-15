@@ -2,7 +2,7 @@ import { afterEach, expect, it, vi } from 'vitest';
 import { cleanup, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { addDays, type ChildShelfBook, type StudyDay } from '@education/contracts';
-import { renderFamilyPage } from '../../../test/family-page';
+import { address, renderFamilyPage } from '../../../test/family-page';
 
 const csrf = 'a'.repeat(43);
 const mi = '11111111-1111-4111-8111-111111111111';
@@ -269,7 +269,15 @@ it('invites a family without children to add one, and still offers its settings'
 });
 
 it('lets the parent move between the parts of the space and sign out', async () => {
-  stubFetch({ ...family, 'POST parents/logout': new Response(null, { status: 204 }) });
+  let signedIn = true;
+  stubFetch({
+    ...family,
+    'GET session': () => (signedIn ? session : new Response(null, { status: 401 })),
+    'POST parents/logout': () => {
+      signedIn = false;
+      return new Response(null, { status: 204 });
+    },
+  });
   renderFamilyPage();
   const places = await screen.findByRole('navigation', { name: '家长空间' });
   expect(within(places).getByRole('link', { name: '总览' })).toHaveAttribute(
@@ -279,5 +287,6 @@ it('lets the parent move between the parts of the space and sign out', async () 
   await userEvent.click(within(places).getByRole('link', { name: '学习记录' }));
   expect(await screen.findByRole('heading', { name: '学习记录', level: 1 })).toBeVisible();
   await userEvent.click(screen.getByRole('button', { name: '退出账号' }));
-  expect(await screen.findByRole('heading', { name: '家长登录' })).toBeVisible();
+  expect(await screen.findByLabelText('登录邮箱')).toBeInTheDocument();
+  expect(address()).toHaveTextContent(/^\/login\/parent$/);
 });
