@@ -1,5 +1,6 @@
 import { afterEach, expect, it, vi } from 'vitest';
-import { AnswerConflictError, prepareAttempt, requestHint } from './answer-request';
+import { prepareAttempt, requestHint } from './answer-request';
+import { AnswerConflictError } from './round-request';
 
 const scope = { id: 'leaf', version: 2, csrf: 'session-token' };
 const round = '00000000-0000-0000-0000-000000000000';

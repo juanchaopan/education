@@ -1,8 +1,7 @@
-import { useState } from 'react';
 import { Dewdrop } from '../../../../shared/ui/Dewdrop';
-import { Spoken } from '../../../../shared/ui/Spoken';
 import { numberList, type AnswerStep } from '../../interaction/spoken-answer';
-import { VoiceMeter } from './VoiceMeter';
+import { Capsule, Counts, Hearing, Heard, Listening, SayAgain } from './capsule-parts';
+import { NumberChoices } from './NumberChoices';
 import { WaitingDots } from './WaitingDots';
 import styles from './AnswerCapsule.module.css';
 
@@ -32,24 +31,6 @@ type Props = Handlers & {
   level?: () => number;
 };
 
-type Choosing = Pick<Props, 'choices' | 'onChoose'>;
-
-function Heard({ said, unit }: { said: readonly number[]; unit?: string }) {
-  return (
-    <span className={styles.heard}>
-      <small>我听到</small>
-      <span className={styles.numbers}>
-        {said.map((count) => (
-          <span key={count} className={styles.count}>
-            {count}
-            {unit && <span className={styles.unit}>{unit}</span>}
-          </span>
-        ))}
-      </span>
-    </span>
-  );
-}
-
 // The gold star a correct answer earns, drawn solid: the line icons are
 // outlines, and an earned star is filled.
 function Star() {
@@ -60,113 +41,26 @@ function Star() {
   );
 }
 
-const numberArt = (count: number) => <span className={styles.number}>{count}</span>;
-
-// One number to tap, which is the answer.
-function OneOf({ choices, onChoose }: Choosing) {
-  return (
-    <span className={styles.choices} role="group" aria-label="点一个数字回答">
-      {choices.map((count) => (
-        <Dewdrop
-          key={count}
-          art={numberArt(count)}
-          label={String(count)}
-          size="small"
-          onClick={() => onChoose([count])}
-        />
-      ))}
-    </span>
-  );
-}
-
-// Every number that fits: each tap lights a number or puts it out again, and
-// the lit ones are handed in together, in the order of the row.
-function EveryOf({ choices, onChoose }: Choosing) {
-  const [lit, setLit] = useState<readonly number[]>([]);
-  const chosen = choices.filter((count) => lit.includes(count));
-  const toggle = (count: number) =>
-    setLit((now) => (now.includes(count) ? now.filter((one) => one !== count) : [...now, count]));
-  return (
-    <>
-      <span className={styles.choices} role="group" aria-label="点亮每一个答案">
-        {choices.map((count) => (
-          <Dewdrop
-            key={count}
-            art={numberArt(count)}
-            label={String(count)}
-            size="small"
-            tone={lit.includes(count) ? 'ok' : 'clear'}
-            aria-pressed={lit.includes(count)}
-            onClick={() => toggle(count)}
-          />
-        ))}
-      </span>
-      <Dewdrop
-        icon="send"
-        tone="ok"
-        size="large"
-        label={chosen.length ? `交：${numberList(chosen)}` : '交'}
-        disabled={!chosen.length}
-        onClick={() => onChoose(chosen)}
-      />
-    </>
-  );
-}
-
-function SayAgain({
-  label,
-  blocked,
-  onListen,
-}: {
-  label: string;
-  blocked: boolean;
-  onListen: () => void;
-}) {
-  return (
-    <Dewdrop
-      icon="sayAgain"
-      tone="honey"
-      size="large"
-      label={label}
-      disabled={blocked}
-      onClick={onListen}
-    />
-  );
-}
-
 // What the child does after an answer was not taken: speak again, or, once
 // speech has proved unusable, tap the answer.
 function Asking({ tapping, every, choices, blocked, ...on }: Props & { tapping: boolean }) {
   if (!tapping) return <SayAgain label="再说一次" blocked={blocked} onListen={on.onListen} />;
-  return every ? (
-    <EveryOf choices={choices} onChoose={on.onChoose} />
-  ) : (
-    <OneOf choices={choices} onChoose={on.onChoose} />
-  );
+  return <NumberChoices choices={choices} every={every} onChoose={on.onChoose} />;
 }
 
 function Content(props: Props) {
   const { step, unit, blocked, level, ...on } = props;
   switch (step.kind) {
     case 'listening':
-      return (
-        <>
-          <VoiceMeter level={level} />
-          <Spoken>{step.message}</Spoken>
-          <Dewdrop icon="stop" tone="clay" label="说完了" onClick={on.onFinish} />
-        </>
-      );
+      return <Listening message={step.message} level={level} onFinish={on.onFinish} />;
     case 'hearing':
-      return (
-        <>
-          <WaitingDots label="正在听你说了什么" />
-          <Dewdrop icon="close" size="small" label="不等了" onClick={on.onStopWaiting} />
-        </>
-      );
+      return <Hearing onStopWaiting={on.onStopWaiting} />;
     case 'confirm':
       return (
         <>
-          <Heard said={step.said} unit={unit} />
+          <Heard title="我听到">
+            <Counts said={step.said} unit={unit} />
+          </Heard>
           <Dewdrop
             icon="check"
             tone="ok"
@@ -210,9 +104,8 @@ function Content(props: Props) {
 export function AnswerCapsule(props: Props) {
   if (props.step.kind === 'waiting') return null;
   return (
-    <section className={styles.capsule} aria-label="说出答案">
-      <Spoken>{props.question}</Spoken>
+    <Capsule label="说出答案" question={props.question}>
       <Content {...props} />
-    </section>
+    </Capsule>
   );
 }

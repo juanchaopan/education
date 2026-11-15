@@ -6,6 +6,7 @@ import { queryWrapper } from '../../../test/query-wrapper';
 import { readAnswerRound, recordQuestion } from './answer-request';
 import { requestTeacherReply } from './question-request';
 import { requestTranscription } from './transcription-request';
+import { answerHelp } from './useLessonAnswer';
 import { useLessonQuestion } from './useLessonQuestion';
 
 vi.mock('./transcription-request', () => ({ requestTranscription: vi.fn() }));
@@ -26,13 +27,15 @@ function recordOf(apples: number): LessonRecord {
 }
 let record = recordOf(6);
 
+// A question in the answer step counts as help on the answer's round; one in
+// any other step counts as nothing.
 function setup(stepId = 'apples') {
   const microphone = fakeMicrophone();
   return renderHook(
     ({ step }) =>
       useLessonQuestion(scope, step, () => record, {
         host: microphone.host,
-        answerStep: 'answer',
+        help: step === 'answer' ? answerHelp : undefined,
       }),
     { initialProps: { step: stepId }, wrapper: queryWrapper() },
   );

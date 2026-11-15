@@ -4,6 +4,7 @@ import { StagePlace } from '../components/lesson-stage/LessonStage';
 import { QuestionBox } from '../components/lesson-stage/QuestionBox';
 import type { LearningScope } from '../data-access/learning-request';
 import { useLessonQuestion } from '../data-access/useLessonQuestion';
+import type { QuestionHelp } from '../data-access/useQuestionHelp';
 import { questionPhase, questionWords } from '../interaction/question-words';
 import type { Subtitle } from '../interaction/subtitle';
 import { useSubtitleWords } from '../interaction/useSubtitleWords';
@@ -13,8 +14,9 @@ type Props = {
   scope: LearningScope;
   teacher: string;
   stepId: string;
-  // The step of the final answer, where a question counts as help.
-  answerStep: string;
+  // What a question in this step counts as help on, while the child is
+  // answering in it.
+  help?: QuestionHelp;
   guidance: string;
   // The lesson so far as the page has seen it, which a question carries.
   record: () => LessonRecord;
@@ -34,7 +36,7 @@ export function SceneQuestions({
   scope,
   teacher,
   stepId,
-  answerStep,
+  help,
   guidance,
   record,
   narration,
@@ -42,7 +44,7 @@ export function SceneQuestions({
   audio,
   subtitle,
 }: Props) {
-  const question = useLessonQuestion(scope, stepId, record, { answerStep, turn, audio });
+  const question = useLessonQuestion(scope, stepId, record, { help, turn, audio });
   const { voice } = question;
   const phase = questionPhase(question);
   useSubtitleWords(subtitle, 'question', questionWords(question, guidance));

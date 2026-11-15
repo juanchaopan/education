@@ -1,13 +1,11 @@
-import { queryOptions, useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import type { AttemptReceipt } from '@education/contracts';
-import {
-  AnswerConflictError,
-  prepareAttempt,
-  readAnswerRound,
-  requestHint,
-} from './answer-request';
+import { prepareAttempt, readAnswerRound, recordQuestion, requestHint } from './answer-request';
 import type { LearningScope } from './learning-request';
+import { AnswerConflictError } from './round-request';
+import { roundOptions } from './round-query';
 import { useAnswerHints, type AnswerEvents } from './useAnswerHints';
+import type { QuestionHelp } from './useQuestionHelp';
 
 // What the child answers: one number, or, when the answer is every number
 // that fits, the list of them.
@@ -37,16 +35,11 @@ const offline = '暂时连不上，请重试。';
 
 // The round of the problem the child is answering, read once while the answer
 // and the questions about it are on screen.
-export function answerRound(scope: LearningScope, enabled = true) {
-  return queryOptions({
-    queryKey: ['lesson-answer-round', scope],
-    queryFn: ({ signal }) => readAnswerRound(scope, signal),
-    retry: false,
-    staleTime: Infinity,
-    gcTime: 0,
-    enabled,
-  });
-}
+const answerRound = { name: 'lesson-answer-round', read: readAnswerRound };
+
+// A question asked while the child gives the final answer is help on the
+// answer's round.
+export const answerHelp: QuestionHelp = { round: answerRound, record: recordQuestion };
 
 const numbersOf = (input: AnswerInput): readonly number[] =>
   typeof input === 'number' ? [input] : input;
@@ -80,7 +73,7 @@ export function useLessonAnswer(
   hintIds: readonly string[],
   events: AnswerEvents = {},
 ) {
-  const round = useQuery(answerRound(scope));
+  const round = useQuery(roundOptions(answerRound, scope));
   const submit = useMutation({
     mutationFn: (attempt: Attempt) => attempt.submit(),
     onSuccess: (receipt) => {

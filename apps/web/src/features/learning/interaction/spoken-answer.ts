@@ -35,7 +35,7 @@ const opening = '正在打开麦克风…';
 const listening = '我在听，说出你的答案吧。说完停一下就好。';
 const cutShort = '这次没录上，可以再说一次。';
 
-function ask(message: string, choices = false): AnswerStep {
+export function ask(message: string, choices = false): AnswerStep {
   return { kind: 'ask', message, choices };
 }
 
@@ -89,19 +89,20 @@ function verdict(judgement: Judgement, explain: CountWords['explain']) {
   return '我还不能确定你的答案，再说一次吧。';
 }
 
-// An answer still to give: the child speaking, or what the last try came to,
-// with a wrong or unclear answer explained until the child speaks again.
-// Once speech has proved unusable the numbers stay beside the explanation,
-// so a child without a working microphone can keep answering.
-function unsettled(
+// How a spoken number is taken: in `unit`, as every number that fits when
+// `every`, with the microphone about to open by itself when `awaiting`.
+type Listened = Readonly<{ unit?: string; every: boolean; awaiting: boolean }>;
+
+// A number still to give: the child speaking, or what the last try came to,
+// with `said`, what the teacher says of the last number sent, until the
+// child speaks again. Once speech has proved unusable the numbers stay
+// beside it, so a child without a working microphone can keep answering.
+export function unsettledStep(
   voice: VoiceState,
-  judgement: Judgement,
-  { unit, explain }: CountWords,
-  every: boolean,
-  awaiting: boolean,
+  said: string | undefined,
+  { unit, every, awaiting }: Listened,
 ): AnswerStep {
   const step: AnswerStep | undefined = speaking(voice, unit, every);
-  const said = verdict(judgement, explain);
   if (step?.kind === 'ask' && step.choices && said) return { ...step, message: said };
   if (step) return step;
   return awaiting ? { kind: 'waiting' } : ask(said ?? '');
@@ -114,7 +115,8 @@ export function answerStep(
   words: CountWords,
   { every = false, awaiting = false }: Answering = {},
 ): AnswerStep {
-  return settled(judgement) ?? unsettled(voice, judgement, words, every, awaiting);
+  const said = verdict(judgement, words.explain);
+  return settled(judgement) ?? unsettledStep(voice, said, { unit: words.unit, every, awaiting });
 }
 
 // The answer given by tapping a number alone, as in a parent's preview, where
