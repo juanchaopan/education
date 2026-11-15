@@ -66,17 +66,21 @@ export type ReasonStep =
 
 const tappingWords = { instead: '可以点下面的词回答。' };
 const unheardReason = '我没听清你的理由，再说一次吧。';
+const tapInstead = '我还没听清你的理由。点一点下面的词，选出没变的和变了的。';
 
 function reasonSettled(judgement: ReasonJudgement): ReasonStep | undefined {
   return reasonClear(judgement) ? { kind: 'explained' } : sendingStep(judgement);
 }
+
+const notClear = (judgement: ReasonJudgement) =>
+  judgement.status === 'judged' && judgement.outcome === 'incorrect';
 
 // What the teacher says of the last reason sent: the lesson's own words
 // when it was not clear, a request to say it again when it could not be
 // judged.
 function reasonVerdict(judgement: ReasonJudgement, unclear: string) {
   if (judgement.status !== 'judged') return undefined;
-  return judgement.outcome === 'incorrect' ? unclear : unheardReason;
+  return notClear(judgement) ? unclear : unheardReason;
 }
 
 const heardReason = (text: string): ReasonStep =>
@@ -84,20 +88,26 @@ const heardReason = (text: string): ReasonStep =>
 
 // How the reason is taken: what the lesson says of a reason that is not
 // clear, whether the microphone is about to open by itself, and whether the
-// child taps the reason instead of saying it.
+// child taps the reason instead of saying it, as after two tries that came
+// to nothing.
 type Reasoning = Readonly<{ unclear: string; awaiting: boolean; tapping: boolean }>;
 
 // What the reason shows next, from the microphone and the server's judgement.
+// Once the child taps instead of speaking, the teacher says so, or, after a
+// tapped reason that was not clear, says the lesson's own words.
 export function reasonStep(
   voice: VoiceState,
   judgement: ReasonJudgement,
   { unclear, awaiting, tapping }: Reasoning,
 ): ReasonStep {
-  const said = reasonVerdict(judgement, unclear);
   const settled = reasonSettled(judgement);
   if (settled) return settled;
-  if (tapping) return ask(said ?? '', true);
-  return unsaidStep(voice, said, { awaiting, tapping: tappingWords, review: heardReason });
+  if (tapping) return ask(notClear(judgement) ? unclear : tapInstead, true);
+  return unsaidStep(voice, reasonVerdict(judgement, unclear), {
+    awaiting,
+    tapping: tappingWords,
+    review: heardReason,
+  });
 }
 
 // The reason tapped, as in a parent's preview: the words from the start.

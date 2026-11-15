@@ -8,6 +8,7 @@ import { usePreviewAnswer } from '../data-access/usePreviewAnswer';
 import { answerWords, hintWords, tappedStep, type CountWords } from '../interaction/spoken-answer';
 import type { Subtitle } from '../interaction/subtitle';
 import { useSubtitleWords } from '../interaction/useSubtitleWords';
+import { tappedOnly } from './tapped-only';
 
 type Props = {
   scope: LearningScope;
@@ -27,9 +28,6 @@ type Props = {
   events?: AnswerEvents;
   onDone: () => void;
 };
-
-// Only spoken steps listen or confirm, and a tapped answer never reaches one.
-const unused = () => {};
 
 // A parent previewing a lesson answers its final answer by tapping numbers,
 // with no microphone: the capsule shows the numbers from the start, the
@@ -52,16 +50,12 @@ export function TappedFinalAnswer({
     <>
       <StagePlace at="answer">
         <AnswerCapsule
+          {...tappedOnly}
           question={on.question}
           step={step}
           unit={words.unit}
           every={every}
           choices={choices}
-          blocked
-          onListen={unused}
-          onFinish={unused}
-          onStopWaiting={unused}
-          onConfirm={unused}
           onChoose={(said) => answer.submit(answerInput(said, every))}
           onRetry={answer.retry}
           onContinue={on.onDone}

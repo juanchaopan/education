@@ -1,6 +1,11 @@
 import type { Handling } from '../../interaction/stage-activation';
 import type { SceneProps } from '../../lessons/lesson-definition';
-import { pebbleLook, pebblesIn, type TemplateState } from '../../lessons/lesson-template/story';
+import {
+  pebbleLook,
+  pebblesIn,
+  putting,
+  type TemplateState,
+} from '../../lessons/lesson-template/story';
 import { AttentionCue, type Point } from '../lesson-stage/AttentionCue';
 import { Prop, PropPlace } from '../lesson-stage/Prop';
 
@@ -22,9 +27,6 @@ const bowlSpots: readonly Point[] = [
 ];
 const inBowlSize = pebbleLook.size * 0.7;
 const nextPebble = 'pebble-next';
-
-// The scenes where the child puts the pebbles in the bowl.
-const putting: readonly string[] = ['look', 'place'];
 
 // A pebble as it looks on the table and under the child's finger.
 export function Pebble({ size }: { size: number }) {
@@ -84,13 +86,13 @@ function NextPebble({ at: [x, y], handling }: { at: Point; handling: Handling })
   );
 }
 
-// The pebbles rest while the child guesses, and move only in the scenes that
-// put them in.
+// The pebbles rest while the child guesses, and move only in the scenes the
+// story puts them in.
 export function TemplateScene({ state, handling }: SceneProps<TemplateState>) {
   const { shot, inBowl } = state;
   if (shot === 'opening') return null;
   const onTable = tableSpots.slice(0, pebblesIn(shot) - inBowl);
-  const next = putting.includes(shot) ? onTable.at(-1) : undefined;
+  const next = putting[shot] ? onTable.at(-1) : undefined;
   const resting = next ? onTable.slice(0, -1) : onTable;
   return (
     <g>

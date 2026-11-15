@@ -11,12 +11,12 @@ import { guessRecorded, guessStep, tappedGuessStep } from '../interaction/variat
 import type { LessonVariationAnswer } from '../lessons/lesson-definition';
 import type { MicrophoneTurn } from '../voice/microphone-turn';
 import { SpokenNumbers } from './SpokenNumbers';
+import { nothing, tappedOnly } from './tapped-only';
 
 // How long the recorded guess stays in sight before the lesson moves on.
 const guessShownFor = 1500;
 
 const guessLabel = '说出你猜的数';
-const unused = () => {};
 
 type Props = {
   scope: LearningScope;
@@ -85,19 +85,15 @@ export function TappedGuess(props: Props) {
   return (
     <StagePlace at="answer">
       <AnswerCapsule
+        {...tappedOnly}
         label={guessLabel}
         question={settings.question}
         step={step}
         unit={settings.unit}
         choices={settings.choices}
-        blocked
-        onListen={unused}
-        onFinish={unused}
-        onStopWaiting={unused}
-        onConfirm={unused}
         onChoose={sendGuess(guess)}
         onRetry={guess.retry}
-        onContinue={unused}
+        onContinue={nothing}
       />
     </StagePlace>
   );

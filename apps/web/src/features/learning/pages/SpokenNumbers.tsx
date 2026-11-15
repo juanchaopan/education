@@ -8,6 +8,7 @@ import type { Subtitle } from '../interaction/subtitle';
 import { useListening, type ListeningFilm } from '../interaction/useListening';
 import { useSubtitleWords } from '../interaction/useSubtitleWords';
 import type { MicrophoneTurn } from '../voice/microphone-turn';
+import { nothing } from './tapped-only';
 
 type Props = {
   scope: LearningScope;
@@ -35,8 +36,6 @@ type Props = {
   onRetry: () => void;
   onContinue?: () => void;
 };
-
-const unused = () => {};
 
 // Numbers the child says out loud and confirms in the answer capsule, for
 // the final answer or for a guess: the microphone opens by itself when the
@@ -67,7 +66,7 @@ export function SpokenNumbers({ scope, stepId, film, turn, subtitle, ...asked }:
         }}
         onChoose={asked.onSend}
         onRetry={asked.onRetry}
-        onContinue={asked.onContinue ?? unused}
+        onContinue={asked.onContinue ?? nothing}
       />
     </StagePlace>
   );

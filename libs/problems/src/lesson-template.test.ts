@@ -31,11 +31,13 @@ it("judges the variation's guess of three pebbles", () => {
   expect([check(3), check(2), check('三颗')]).toEqual(['correct', 'incorrect', 'uncertain']);
 });
 
-it('counts a reason that says one more pebble went in as clear, and a negated one as not', () => {
+it('counts a reason that says one more pebble went in as clear, and one denying it as not', () => {
   const reason = (say: string) => variation!.checkReason({ say });
   expect(reason('还是一颗一颗放的，多了一颗')).toBe('correct');
+  expect(reason('放法没有变，多了一颗')).toBe('correct');
   expect(reason('因为有三颗')).toBe('correct');
   expect(reason('不是三颗')).toBe('incorrect');
+  expect(reason('没有多，还是两颗')).toBe('incorrect');
   expect(reason('碗变大了')).toBe('incorrect');
 });
 

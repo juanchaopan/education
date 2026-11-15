@@ -1,3 +1,5 @@
+import { inVariation } from '@education/problems/lesson-content';
+import { lessonTemplateLesson } from '@education/problems/lessons/lesson-template';
 import type { FilmScene, Reaction as FilmReaction } from '../../interaction/lesson-film';
 import type { StageProps } from '../../interaction/useStageDrag';
 import { entryLines, type LineId, type Shot } from './script';
@@ -17,17 +19,20 @@ export type Move = Readonly<{ kind: 'drop'; place: 'bowl' }>;
 
 type Reaction = FilmReaction<TemplateState, Shot, LineId>;
 
-// The variation's scenes, which have one pebble more.
-const varied: readonly FilmScene<Shot>[] = ['guess', 'place', 'reason', 'reveal'];
+// Whether a scene is one of the variation's, as the content declares it,
+// which has one pebble more.
+const varied = (shot: FilmScene<Shot>) =>
+  shot !== 'opening' && inVariation(lessonTemplateLesson, shot);
 
 // The pebbles on screen: two in the problem, three in the variation.
 export function pebblesIn(shot: FilmScene<Shot>) {
-  return varied.includes(shot) ? 3 : 2;
+  return varied(shot) ? 3 : 2;
 }
 
-// The scenes where the child puts the pebbles in, and the scene each moves
-// on to once the last one is in.
-const putting: Readonly<Partial<Record<Shot, Shot>>> = { look: 'count', place: 'reason' };
+// The scenes where the child puts the pebbles in, each with the scene it
+// moves on to once the last one is in. The scene draws a pebble to move
+// only in these.
+export const putting: Readonly<Partial<Record<Shot, Shot>>> = { look: 'count', place: 'reason' };
 
 // The scenes that open with every pebble in the bowl.
 const filled: readonly Shot[] = ['count', 'reason', 'reveal'];
@@ -52,7 +57,7 @@ export function respond(state: TemplateState, move: Move): Reaction | undefined 
 }
 
 // The scenes up to the count are work worth saving; the variation is practice.
-export const savesProgress = (shot: Shot) => shot === 'look' || shot === 'count';
+export const savesProgress = (shot: Shot) => !varied(shot);
 
 // What the child picks up, how big it is while carried, and the move a drop
 // on the bowl makes. Nothing in this lesson is only tapped.

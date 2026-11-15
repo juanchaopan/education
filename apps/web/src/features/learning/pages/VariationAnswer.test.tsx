@@ -30,7 +30,8 @@ const play: VariationPlay<Shot> = {
 const scope = { id: 'garden-balance', version: 1, csrf: 'token' };
 const film = { telling: false, speaking: false, chime: { play: () => {}, audio: () => undefined } };
 
-// What the preview endpoint replies, in order, and what it was sent.
+// What the preview endpoint replies, in order, each a moment later, as a
+// server does, and what it was sent.
 let replies: unknown[] = [];
 const sent = () =>
   vi.mocked(fetch).mock.calls.map(([, init]) => JSON.parse(String(init?.body)) as unknown);
@@ -39,7 +40,11 @@ beforeEach(() => {
   replies = [];
   vi.stubGlobal(
     'fetch',
-    vi.fn(async () => Response.json(replies.shift())),
+    vi.fn(async () => {
+      const reply = replies.shift();
+      await new Promise((settled) => setTimeout(settled, 20));
+      return Response.json(reply);
+    }),
   );
 });
 afterEach(() => vi.unstubAllGlobals());
@@ -79,13 +84,21 @@ it('records a tapped guess, right or wrong, and moves on after showing it a mome
 it("says the lesson's words for a reason that is not clear, then moves on once it is", async () => {
   replies = [{ outcome: 'incorrect' }, { outcome: 'independent' }];
   const { go, said } = preview('why');
-  const kept = screen.getByRole('group', { name: '没变的是' });
-  const changed = screen.getByRole('group', { name: '变了的是' });
-  await userEvent.click(within(changed).getByRole('button', { name: '组数' }));
+  const rows = () => ({
+    kept: screen.getByRole('group', { name: '没变的是' }),
+    changed: screen.getByRole('group', { name: '变了的是' }),
+  });
+  await userEvent.click(within(rows().changed).getByRole('button', { name: '组数' }));
   await userEvent.click(screen.getByRole('button', { name: '交' }));
   await waitFor(() => expect(said()).toBe('还没说清楚。再说一次。'));
   expect(go).not.toHaveBeenCalled();
-  await userEvent.click(within(changed).getByRole('button', { name: '组数' }));
+
+  // The words come back unlit, to tap afresh.
+  const { kept, changed } = rows();
+  expect(within(changed).getByRole('button', { name: '组数' })).toHaveAttribute(
+    'aria-pressed',
+    'false',
+  );
   await userEvent.click(within(kept).getByRole('button', { name: '组数' }));
   await userEvent.click(within(changed).getByRole('button', { name: '每组根数' }));
   await userEvent.click(screen.getByRole('button', { name: '交' }));

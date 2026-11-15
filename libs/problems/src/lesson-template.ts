@@ -30,10 +30,11 @@ export const lessonTemplateBook: Book = {
 // the child is meant to do or notice next.
 export const lessonTemplateSteps = sceneSteps(lessonTemplateLesson);
 
-// The pebbles still going in one at a time, and one more of them, said
-// without a negation; anything else is not clear.
+// One more pebble went in, said without denying it; what stayed the same may
+// be said with a negation, such as 「放法没有变」, so only a denial of the
+// change itself, 「不是三颗」 or 「没有多」, makes a reason not clear.
 const onePebbleMore = /多了?一颗|三颗|3\s*颗/;
-const negated = /不是|没有/;
+const deniesTheChange = /不是三颗|没有多/;
 
 const kept: readonly TemplateVariationChoice[] = ['one-by-one'];
 const changed: readonly TemplateVariationChoice[] = ['count'];
@@ -56,7 +57,8 @@ export const lessonTemplate: ProblemPlugin = {
     },
     checkGuess: wholeNumberAnswer(variationAnswer),
     checkReason: variationReason({
-      says: (text) => (onePebbleMore.test(text) && !negated.test(text) ? 'correct' : 'incorrect'),
+      says: (text) =>
+        onePebbleMore.test(text) && !deniesTheChange.test(text) ? 'correct' : 'incorrect',
       choices: Object.keys(templateVariationChoices),
       kept,
       changed,

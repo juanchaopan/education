@@ -6,7 +6,12 @@ export type UnderwayStep =
   | { kind: 'judging' }
   | { kind: 'failed'; message: string };
 
-const underwayKinds: readonly string[] = ['listening', 'hearing', 'judging', 'failed'];
+const underwayKinds: readonly string[] = [
+  'listening',
+  'hearing',
+  'judging',
+  'failed',
+] satisfies readonly UnderwayStep['kind'][];
 
 export const underway = <Step extends { kind: string }>(
   step: Step,

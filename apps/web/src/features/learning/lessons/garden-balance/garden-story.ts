@@ -1,3 +1,5 @@
+import { inVariation } from '@education/problems/lesson-content';
+import { gardenBalanceLesson } from '@education/problems/lessons/garden-balance';
 import type { FilmScene, Reaction as FilmReaction } from '../../interaction/lesson-film';
 import { entryLines, type LineId, type Shot } from './script';
 
@@ -31,8 +33,9 @@ export const opening: GardenState = {
 const balancedApples = 3;
 const groups = 3;
 
-// The variation's scenes, where each apple swaps for two cucumbers.
-const varied: readonly Scene[] = ['guess', 'swap', 'reason', 'reveal'];
+// Whether a scene is one of the variation's, as the content declares it,
+// where each apple swaps for two cucumbers.
+const varied = (shot: Scene) => shot !== 'opening' && inVariation(gardenBalanceLesson, shot);
 
 // The scenes that open with every apple already swapped: the count, and the
 // variation once its swaps are done.
@@ -52,7 +55,7 @@ export function arrive(shot: Shot): Reaction {
 
 // Cucumbers that weigh one apple: three in the problem, two in the variation.
 export function cucumbersPerApple(shot: Scene) {
-  return varied.includes(shot) ? 2 : 3;
+  return varied(shot) ? 2 : 3;
 }
 
 // The beam tilts by the weight it carries. While cabbages and apples are
@@ -114,5 +117,5 @@ export function respond(state: GardenState, move: Move): Reaction | undefined {
 // Scenes before the answer are work in progress; once the count is answered
 // the variation is practice that needs no saving.
 export function savesProgress(shot: Scene): shot is Shot {
-  return shot !== 'opening' && !varied.includes(shot);
+  return shot !== 'opening' && !varied(shot);
 }

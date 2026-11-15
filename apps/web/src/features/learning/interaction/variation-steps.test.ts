@@ -101,8 +101,14 @@ describe('the reason', () => {
     expect(reasonStep(idle, judged('assisted'), reasoning)).toEqual({ kind: 'explained' });
   });
 
-  it('turns to the words to tap once tapping, keeping what the teacher said', () => {
-    expect(reasonStep(idle, judged('incorrect'), { ...reasoning, tapping: true })).toEqual({
+  it('turns to the words to tap after tries that came to nothing, saying to tap them', () => {
+    const tapping = { ...reasoning, tapping: true };
+    expect(reasonStep(idle, judged('uncertain'), tapping)).toEqual({
+      kind: 'ask',
+      message: '我还没听清你的理由。点一点下面的词，选出没变的和变了的。',
+      choices: true,
+    });
+    expect(reasonStep(idle, judged('incorrect'), tapping)).toEqual({
       kind: 'ask',
       message: unclear,
       choices: true,

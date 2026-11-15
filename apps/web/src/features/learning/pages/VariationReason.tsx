@@ -21,6 +21,7 @@ import {
 } from '../interaction/variation-steps';
 import type { LessonVariationAnswer } from '../lessons/lesson-definition';
 import type { MicrophoneTurn } from '../voice/microphone-turn';
+import { tappedOnly } from './tapped-only';
 
 type Props = {
   scope: LearningScope;
@@ -35,8 +36,6 @@ type Props = {
   subtitle: Subtitle;
   onExplained: () => void;
 };
-
-const unused = () => {};
 
 // Whether the child still has a reason to give: none was sent yet, or the
 // last one was not clear or could not be judged.
@@ -118,14 +117,10 @@ export function TappedReason(props: Props) {
   return (
     <StagePlace at="answer">
       <ReasonCapsule
+        {...tappedOnly}
         question={settings.question}
         step={step}
         choices={props.choices}
-        blocked
-        onListen={unused}
-        onFinish={unused}
-        onStopWaiting={unused}
-        onConfirm={unused}
         onChoose={(chosen) => reason.submit(tapped(chosen))}
         onRetry={reason.retry}
       />
