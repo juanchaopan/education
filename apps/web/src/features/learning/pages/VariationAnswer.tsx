@@ -26,8 +26,9 @@ type Props<Shot extends string> = {
 
 // The variation's parts in the scenes it is answered in: the guess in its
 // guess scene, the reason in its reason scene, and the variation's own
-// hints at hand in every one of them, said by the teacher in its subtitle.
-// A child says the guess and the reason; a parent previewing taps them.
+// hints at hand in every one but the guess scene, said by the teacher in its
+// subtitle. A guess is a first thought, so it has no hint. A child says the
+// guess and the reason; a parent previewing taps them.
 function VariationParts<Shot extends string>({
   answers,
   spoken,
@@ -71,9 +72,11 @@ function VariationParts<Shot extends string>({
         ) : (
           <TappedReason {...reason} />
         ))}
-      <StagePlace at="hint">
-        <FireflyHint left={answers.hintsLeft} ready={answers.canHint} onHint={answers.askHint} />
-      </StagePlace>
+      {shot !== scenes.guessScene && (
+        <StagePlace at="hint">
+          <FireflyHint left={answers.hintsLeft} ready={answers.canHint} onHint={answers.askHint} />
+        </StagePlace>
+      )}
     </>
   );
 }

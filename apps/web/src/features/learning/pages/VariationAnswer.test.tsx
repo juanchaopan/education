@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { queryWrapper } from '../../../test/query-wrapper';
@@ -116,6 +116,15 @@ it("keeps the variation's own hint at hand in the scenes between, said by the te
   await userEvent.click(screen.getByRole('button', { name: '给我一个提示，还有 1 个' }));
   await waitFor(() => expect(said()).toBe('数一数，现在有几组？'));
   expect(sent()).toEqual([{ action: 'variation', hintId: 'groups-and-count' }]);
+});
+
+it('offers the hint from the scene after the guess on, never in the guess scene', () => {
+  preview('guess');
+  expect(screen.getByRole('region', { name: '说出你猜的数' })).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: /提示/ })).not.toBeInTheDocument();
+  cleanup();
+  preview('why');
+  expect(screen.getByRole('button', { name: '给我一个提示，还有 1 个' })).toBeInTheDocument();
 });
 
 it('shows nothing outside the scenes the variation is answered in', () => {

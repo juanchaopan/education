@@ -75,15 +75,18 @@ function GardenFilm({
   );
 }
 
-// The variation's hint and the microphone to ask the rabbit, beside what the
-// child answers in, as in every scene the variation is answered in.
-function Answering({ children }: { children?: ReactNode }) {
+// The microphone to ask the rabbit, beside what the child answers in, as in
+// every scene the variation is answered in, and the variation's hint in
+// every one but the guess scene, where a guess is a first thought.
+function Answering({ children, hint = true }: { children?: ReactNode; hint?: boolean }) {
   return (
     <>
       {children && <StagePlace at="answer">{children}</StagePlace>}
-      <StagePlace at="hint">
-        <FireflyHint left={1} ready onHint={nothing} />
-      </StagePlace>
+      {hint && (
+        <StagePlace at="hint">
+          <FireflyHint left={1} ready onHint={nothing} />
+        </StagePlace>
+      )}
       <StagePlace at="microphone">
         <AskMicrophone label="按住问小兔" holding={false} onPress={nothing} onRelease={nothing} />
       </StagePlace>
@@ -103,7 +106,7 @@ const capsuleHandlers = {
 const { guess, reason } = variationAnswer;
 
 const guessCapsule = (step: ComponentProps<typeof AnswerCapsule>['step']) => (
-  <Answering>
+  <Answering hint={false}>
     <AnswerCapsule
       {...capsuleHandlers}
       label="说出你猜的数"
