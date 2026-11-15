@@ -50,6 +50,15 @@ it('deletes the character before a dash and keeps the caret where the child edit
   expect(key).toHaveValue('ABCD-EFGH');
 });
 
+it('deletes the character after a dash when Delete is pressed just before it', async () => {
+  render(<Holder />);
+  const key = screen.getByLabelText<HTMLInputElement>('家长给我的 KEY');
+  await userEvent.type(key, 'ABCDEFGH');
+  await userEvent.type(key, '{Delete}', { initialSelectionStart: 4, initialSelectionEnd: 4 });
+  expect(key).toHaveValue('ABCD-FGH');
+  await vi.waitFor(() => expect(key.selectionStart).toBe(4));
+});
+
 it('counts the nickname up to twelve and says how far past it a longer one goes', async () => {
   render(<Holder />);
   const nickname = screen.getByLabelText('我的昵称');

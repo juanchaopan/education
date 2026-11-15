@@ -21,11 +21,13 @@ export type ChildRegistrationFormProps = ChildRegistrationFields & {
 export function ChildRegistrationForm(props: ChildRegistrationFormProps) {
   // The grouped KEY replaces what was typed, so once it is drawn the caret
   // goes back after the characters it followed.
-  const changeKey = ({ target }: ChangeEvent<HTMLInputElement>) => {
+  const changeKey = ({ target, nativeEvent }: ChangeEvent<HTMLInputElement>) => {
+    const forward = (nativeEvent as InputEvent).inputType === 'deleteContentForward';
     const edit = editRegistrationKey(
       props.registrationKey,
       target.value,
       target.selectionStart ?? target.value.length,
+      forward ? 'forward' : 'backward',
     );
     props.onChange('registrationKey', edit.value);
     requestAnimationFrame(() => {
