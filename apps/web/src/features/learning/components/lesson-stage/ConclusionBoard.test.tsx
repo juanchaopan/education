@@ -1,20 +1,13 @@
+import type { AmountDrawing } from '@education/problems/lesson-content';
 import { render, screen, within } from '@testing-library/react';
 import { expect, it } from 'vitest';
-import type { BoardShape } from './board-layout';
-import { ConclusionBoard, type BoardAmount, type BoardFact } from './ConclusionBoard';
+import { boardAmount, type BoardAmount } from './board-layout';
+import { ConclusionBoard, type BoardFact } from './ConclusionBoard';
 
-const ball = <circle cx="50%" cy="50%" r="40%" />;
+const ball = { art: <circle cx="50%" cy="50%" r="40%" />, shape: 'round' } as const;
 
-const amount = (
-  count: number,
-  drawing: Partial<Pick<BoardAmount, 'group' | 'times' | 'shape'>> = {},
-): BoardAmount => ({
-  key: `${count}-${drawing.group ?? 1}-${drawing.times ?? false}`,
-  count,
-  picture: ball,
-  shape: 'round' satisfies BoardShape,
-  ...drawing,
-});
+const amount = (count: number, drawing: AmountDrawing = {}) =>
+  boardAmount(`${count}-${drawing.group ?? 1}-${drawing.times ?? false}`, count, ball, drawing);
 
 const fact = (id: string, says: string, amounts: readonly BoardAmount[]): BoardFact => ({
   id,

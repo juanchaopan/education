@@ -1,13 +1,7 @@
 import { drawnAmounts, type Conclusion } from '@education/problems/lesson-content';
-import type { ReactNode } from 'react';
-import type { BoardShape } from '../components/lesson-stage/board-layout';
+import { boardAmount, type BoardPicture } from '../components/lesson-stage/board-layout';
 import type { BoardFact } from '../components/lesson-stage/ConclusionBoard';
 import type { FilmState } from '../interaction/lesson-film';
-
-// One of the things a lesson's conclusions are drawn with: its picture, an
-// SVG element the board scales to the size of the words, and its shape,
-// which lays out its copies.
-export type BoardPicture = Readonly<{ art: ReactNode; shape: BoardShape }>;
 
 // How a lesson whose way of teaching keeps its conclusions on the board draws
 // them: the things its amounts are drawn with, and, by conclusion id, when a
@@ -53,6 +47,14 @@ function used<Shot extends string>(
   return uses.includes(shot) || (hint !== undefined && hints.includes(hint));
 }
 
+// The lesson check makes sure the board has a picture for every thing its
+// conclusions draw, so a missing one is a definition the check never passed.
+function pictureOf(pictures: Readonly<Record<string, BoardPicture>>, picture: string) {
+  const found = pictures[picture];
+  if (!found) throw new Error(`the conclusion board has no picture for ${picture}`);
+  return found;
+}
+
 // A conclusion as the board draws it, with the amounts a lesson that keeps a
 // board declares for every conclusion, and the one written on once the count
 // is answered. Its amounts only ever grow at the end, so each is named by its
@@ -67,13 +69,9 @@ function factOf<Shot extends string>(
   return {
     id: conclusion.id,
     says: written?.says ?? conclusion.says,
-    amounts: amounts.map(([count, picture, drawing], place) => ({
-      key: `${place}-${picture}`,
-      count,
-      picture: pictures[picture]?.art,
-      shape: pictures[picture]?.shape ?? 'round',
-      ...drawing,
-    })),
+    amounts: amounts.map(([count, picture, drawing], place) =>
+      boardAmount(`${place}-${picture}`, count, pictureOf(pictures, picture), drawing),
+    ),
     lit: used(conclusion, moment),
     supposed: conclusion.supposed ?? false,
   };

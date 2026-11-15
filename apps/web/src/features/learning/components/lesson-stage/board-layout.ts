@@ -1,3 +1,6 @@
+import type { AmountDrawing } from '@education/problems/lesson-content';
+import type { ReactNode } from 'react';
+
 // How the conclusion board lays out the things of one amount, so a lesson
 // declares only how many there are and the board keeps every pile low and
 // narrow: never more than two lines of things.
@@ -9,6 +12,30 @@
 // - `tall`, a standing bottle or a frame of things: side by side, then in two
 //   rows with the longer row on top.
 export type BoardShape = 'round' | 'long' | 'tall';
+
+// One of the things conclusions are drawn with: its picture, an SVG element
+// the board scales to the size of the words, and its shape, which lays out
+// its copies.
+export type BoardPicture = Readonly<{ art: ReactNode; shape: BoardShape }>;
+
+// How many of one thing a conclusion weighs out, drawn with the thing's
+// picture as many times as it counts: in frames of `group` when given, and as
+// 「k×」 before one of them when `times` says so. `shape` lays the copies out.
+// `key` names it among the amounts of its line.
+export type BoardAmount = Readonly<{
+  key: string;
+  count: number;
+  picture: ReactNode;
+  shape: BoardShape;
+}> &
+  AmountDrawing;
+
+export const boardAmount = (
+  key: string,
+  count: number,
+  { art, shape }: BoardPicture,
+  drawing: AmountDrawing = {},
+): BoardAmount => ({ key, count, picture: art, shape, ...drawing });
 
 // The things of a pile line by line, and whether the lines are rows across
 // or columns down.
@@ -39,18 +66,15 @@ export type AmountPlan = Readonly<{
 export function amountPlan(
   count: number,
   shape: BoardShape,
-  { group, times = false }: Readonly<{ group?: number; times?: boolean }>,
+  { group, times = false }: AmountDrawing,
 ): AmountPlan {
-  if (group === undefined) {
-    return times
-      ? { times: count, things: arrangement(1, shape) }
-      : { things: arrangement(count, shape) };
-  }
-  const frames = count / group;
+  const many = count / (group ?? 1);
+  const shown = times ? 1 : many;
   return {
-    ...(times && { times: frames }),
-    frames: arrangement(times ? 1 : frames, 'tall'),
-    things: arrangement(group, shape),
+    ...(times && { times: many }),
+    ...(group === undefined
+      ? { things: arrangement(shown, shape) }
+      : { frames: arrangement(shown, 'tall'), things: arrangement(group, shape) }),
   };
 }
 

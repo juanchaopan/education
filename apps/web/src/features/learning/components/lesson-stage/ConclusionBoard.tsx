@@ -1,21 +1,8 @@
 import { Fragment, type ReactNode } from 'react';
 import { classNames } from '../../../../shared/lib/class-names';
 import { Spoken } from '../../../../shared/ui/Spoken';
-import { amountPlan, piled, type Arrangement, type BoardShape } from './board-layout';
+import { amountPlan, piled, type Arrangement, type BoardAmount } from './board-layout';
 import styles from './ConclusionBoard.module.css';
-
-// How many of one thing a conclusion weighs out, drawn with the thing's
-// picture as many times as it counts: in frames of `group` when given, and as
-// 「k×」 before one of them when `times` says so. `shape` lays the copies out.
-// `key` names it among the amounts of its line.
-export type BoardAmount = Readonly<{
-  key: string;
-  count: number;
-  picture: ReactNode;
-  shape: BoardShape;
-  group?: number;
-  times?: boolean;
-}>;
 
 // One conclusion on the board: amounts that all weigh the same, the sentence a
 // screen reader reads for it, whether the scene or a hint is using it now,
@@ -31,13 +18,13 @@ export type BoardFact = Readonly<{
 const counted = (count: number) => Array.from({ length: count }, (_, place) => `${count}-${place}`);
 
 // Copies of something laid out line by line, rows across or columns down.
-function Pile({ arrangement, children }: { arrangement: Arrangement; children: () => ReactNode }) {
+function Pile({ arrangement, children }: { arrangement: Arrangement; children: ReactNode }) {
   return (
     <span className={styles.pile} data-across={arrangement.across}>
       {arrangement.lines.map((length, line) => (
         <span key={`${line}-${length}`} className={styles.line}>
           {counted(length).map((key) => (
-            <Fragment key={key}>{children()}</Fragment>
+            <Fragment key={key}>{children}</Fragment>
           ))}
         </span>
       ))}
@@ -47,21 +34,22 @@ function Pile({ arrangement, children }: { arrangement: Arrangement; children: (
 
 function Amount({ count, picture, shape, group, times }: BoardAmount) {
   const plan = amountPlan(count, shape, { group, times });
-  const thing = () => (
-    <svg className={styles.picture} focusable="false">
-      {picture}
-    </svg>
+  const things = (
+    <Pile arrangement={plan.things}>
+      <svg className={styles.picture} focusable="false">
+        {picture}
+      </svg>
+    </Pile>
   );
-  const things = () => <Pile arrangement={plan.things}>{thing}</Pile>;
   return (
     <span className={styles.amount} data-shape={shape} data-piled={piled(plan)}>
       {plan.times !== undefined && <span className={styles.times}>{plan.times}×</span>}
       {plan.frames ? (
         <Pile arrangement={plan.frames}>
-          {() => <span className={styles.frame}>{things()}</span>}
+          <span className={styles.frame}>{things}</span>
         </Pile>
       ) : (
-        things()
+        things
       )}
     </span>
   );

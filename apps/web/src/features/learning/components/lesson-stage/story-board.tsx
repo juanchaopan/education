@@ -1,6 +1,6 @@
-import type { ReactNode } from 'react';
-import type { BoardShape } from './board-layout';
-import type { BoardAmount, BoardFact } from './ConclusionBoard';
+import type { AmountDrawing } from '@education/problems/lesson-content';
+import { boardAmount, type BoardAmount, type BoardPicture } from './board-layout';
+import type { BoardFact } from './ConclusionBoard';
 
 // Conclusions for the stories of the conclusion board and the lesson stage,
 // so they show the board without borrowing a lesson's props: the balls and
@@ -19,21 +19,12 @@ const things = {
     art: <rect x="12%" y="18%" width="76%" height="64%" rx="12%" fill="#9a6a45" stroke="#5e3b24" />,
     shape: 'tall',
   },
-} satisfies Record<string, Readonly<{ art: ReactNode; shape: BoardShape }>>;
+} satisfies Record<string, BoardPicture>;
 
 type Thing = keyof typeof things;
 
-const amount = (
-  count: number,
-  thing: Thing,
-  drawing: Pick<BoardAmount, 'group' | 'times'> = {},
-): BoardAmount => ({
-  key: `${thing}-${count}-${drawing.group ?? 1}`,
-  count,
-  picture: things[thing].art,
-  shape: things[thing].shape,
-  ...drawing,
-});
+const amount = (count: number, thing: Thing, drawing: AmountDrawing = {}) =>
+  boardAmount(`${thing}-${count}-${drawing.group ?? 1}`, count, things[thing], drawing);
 
 const fact = (id: string, says: string, ...amounts: BoardAmount[]): BoardFact => ({
   id,
