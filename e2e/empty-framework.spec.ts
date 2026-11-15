@@ -111,7 +111,7 @@ async function joinChild(browser: Browser, pool: pg.Pool, family: PasswordParent
     family.family,
   ]);
 
-  await child.getByRole('link', { name: '去孩子登录' }).click();
+  await child.getByRole('link', { name: '去登录' }).click();
   await expect(childLogin(child)).toBeVisible();
   await submitChildLogin(child, { code, pin });
   await expect(welcome(child)).toBeVisible();
@@ -234,7 +234,11 @@ test('two families use the framework and stay apart through reset, sign-in again
 
     // Signing out and in again keeps the account and its child.
     await b.parent.getByRole('button', { name: '退出账号' }).click();
-    await expect(b.parent.getByRole('heading', { name: '家长登录' })).toBeVisible();
+    await expect(b.parent).toHaveURL(/\/login\/parent$/);
+    await expect(b.parent.getByRole('tab', { name: '家长登录' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
     await submitParentLogin(b.parent, second);
     await openParentPart(b.parent, '家庭');
     await expect(resetPin(b.parent)).toBeVisible();
@@ -277,7 +281,7 @@ test('two families use the framework and stay apart through reset, sign-in again
     await signInAgain(a.child, firstLogin);
     await expect(a.child.getByRole('alert')).toContainText('不正确');
     await deleted.getByRole('button', { name: '注册新的家庭' }).click();
-    await a.parent.getByRole('button', { name: '已有账号？去登录' }).click();
+    await a.parent.getByRole('link', { name: '已有账号？去登录' }).click();
     await submitParentLogin(a.parent, first);
     await expect(a.parent.getByRole('alert')).toContainText('邮箱或密码不正确');
 

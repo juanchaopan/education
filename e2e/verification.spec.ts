@@ -19,7 +19,7 @@ test('mail link requires an explicit confirmation, strips the fragment and recov
       json: calls === 1 ? {} : { status: 'verified' },
     });
   });
-  await page.goto(`/family/verify#token=${token}`);
+  await page.goto(`/email/verify#token=${token}`);
   await expect(page.getByRole('button', { name: '确认验证邮箱' })).toBeVisible();
   expect(new URL(page.url()).hash).toBe('');
   expect(calls).toBe(0);

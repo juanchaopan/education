@@ -1,8 +1,7 @@
 import type { ReactNode } from 'react';
+import type { SignInTab } from '../../../shared/lib/sign-in-path';
 import { Icon } from '../../../shared/ui/Icon';
 import styles from './SignInTabs.module.css';
-
-export type SignInTab = 'child' | 'parent';
 
 const tabs: readonly { tab: SignInTab; label: string; icon: 'user' | 'users' }[] = [
   { tab: 'child', label: '孩子登录', icon: 'user' },

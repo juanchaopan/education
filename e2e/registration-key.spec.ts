@@ -33,7 +33,6 @@ test('verified parent generates, refreshes, reauthenticates, replaces and revoke
     await page.goto('/family');
     const origin = new URL(page.url()).origin;
     await page.context().grantPermissions(['clipboard-read', 'clipboard-write'], { origin });
-    await page.getByRole('button', { name: '已有账号？去登录' }).click();
     await page.getByLabel('登录邮箱').fill(email);
     await page.getByLabel('登录密码').fill(password);
     await page.getByRole('button', { name: '登录', exact: true }).click();

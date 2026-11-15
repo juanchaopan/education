@@ -1,21 +1,32 @@
 import { useRef, useState } from 'react';
 import type { ChildRegistrationReceipt } from '@education/contracts';
-import { Page } from '../../../shared/ui/Page';
+import { signInPath } from '../../../shared/lib/sign-in-path';
 import { StandaloneLink } from '../../../shared/ui/StandaloneLink';
-import { ChildRegistrationForm } from '../components/ChildRegistrationForm';
+import { AccountLayout, type AccountArt } from '../components/AccountLayout';
+import {
+  ChildRegistrationForm,
+  type ChildRegistrationFields,
+} from '../components/ChildRegistrationForm';
 import { ChildRegistrationSuccess } from '../components/ChildRegistrationSuccess';
 import { useChildRegistration } from '../data-access/useChildRegistration';
 
-// A child joins the family with the KEY a parent gave. Once registered, the
-// way on is the home page's sign-in, already holding the family code and the
-// nickname.
-export function ChildRegistrationPage() {
-  const [fields, setFields] = useState({ registrationKey: '', nickname: '', pin: '' });
+const empty: ChildRegistrationFields = { registrationKey: '', nickname: '', pin: '' };
+
+// A child joins the family with the KEY a parent gave, on the account pages'
+// scene. A request sent again after an unsure answer keeps its id, so the
+// server replays it rather than registering twice; a change to what the
+// fields hold makes it a new request, and a keystroke that leaves them as
+// they were, such as a space the KEY drops, does not. Once registered,
+// nothing typed is kept, and the way on is the child's sign-in, already
+// holding the family code and nickname.
+export function ChildRegistrationPage({ art }: { art: AccountArt }) {
+  const [fields, setFields] = useState(empty);
   const requestId = useRef(crypto.randomUUID());
   const [receipt, setReceipt] = useState<ChildRegistrationReceipt>();
   const [error, setError] = useState<string>();
   const registration = useChildRegistration();
-  const change = (field: keyof typeof fields, value: string) => {
+  const change = (field: keyof ChildRegistrationFields, value: string) => {
+    if (value === fields[field]) return;
     setFields((current) => ({ ...current, [field]: value }));
     requestId.current = crypto.randomUUID();
     setError(undefined);
@@ -33,39 +44,33 @@ export function ChildRegistrationPage() {
       {
         onSuccess: (result) => {
           setReceipt(result);
-          setFields({ registrationKey: '', nickname: '', pin: '' });
+          setFields(empty);
         },
         onError: (failure) => setError(failure.message),
         onSettled: () => registration.reset(),
       },
     );
   };
+  if (receipt)
+    return (
+      <AccountLayout art={art} titleId="child-joined-title" title="你已加入家庭！">
+        <ChildRegistrationSuccess receipt={receipt} />
+      </AccountLayout>
+    );
   return (
-    <Page titleId="child-title" title="孩子注册">
-      {receipt ? (
-        <>
-          <ChildRegistrationSuccess receipt={receipt} />
-          <p>
-            <StandaloneLink
-              to="/"
-              state={{ familyCode: receipt.familyCode, nickname: receipt.nickname }}
-            >
-              去孩子登录
-            </StandaloneLink>
-          </p>
-        </>
-      ) : (
-        <ChildRegistrationForm
-          {...fields}
-          pending={registration.isPending}
-          error={error}
-          onChange={change}
-          onSubmit={submit}
-        />
-      )}
-      <p>
-        <StandaloneLink to="/family">请家长帮忙，前往家长空间</StandaloneLink>
-      </p>
-    </Page>
+    <AccountLayout
+      art={art}
+      titleId="child-registration-title"
+      title="加入家庭"
+      footer={<StandaloneLink to={signInPath('child')}>已有账号？去登录</StandaloneLink>}
+    >
+      <ChildRegistrationForm
+        {...fields}
+        pending={registration.isPending}
+        error={error}
+        onChange={change}
+        onSubmit={submit}
+      />
+    </AccountLayout>
   );
 }

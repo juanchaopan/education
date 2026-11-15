@@ -31,12 +31,13 @@
     rotate: 4deg;
   }
 }
-.empty h3 {
+/* The title reads the same at every heading level. */
+.title {
   margin: var(--space-2) 0 0;
   color: var(--ink);
   font-size: var(--text-lg);
 }
-.empty p {
+.description {
   margin: 0;
   line-height: 1.8;
 }

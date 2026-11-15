@@ -47,7 +47,7 @@ export function ResetPasswordPage({ art }: { art: AccountArt }) {
   const footer = (
     <>
       {!done && (
-        <StandaloneLink to="/family/recover">
+        <StandaloneLink to="/password/forgot">
           <Icon name="mail" />
           重新申请恢复邮件
         </StandaloneLink>

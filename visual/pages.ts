@@ -41,36 +41,44 @@ export type PageState = {
 const failed = { status: 500, json: { message: 'unavailable' } };
 
 const dayStates: PageState[] = [
-  { name: 'home-sign-in', path: '/', ready: '登录', pressable: '进入我的空间' },
-  { name: 'home-sign-in-parent', path: '/?tab=parent', ready: '登录', pressable: '登录' },
-  { name: 'child-home', path: '/', ready: '我的书', last: '思维训练', api: childHomeApi },
+  { name: 'sign-in-child', path: '/login/child', ready: '登录', pressable: '进入我的空间' },
+  { name: 'sign-in-parent', path: '/login/parent', ready: '登录', pressable: '登录' },
+  {
+    name: 'sign-in-parent-session-failed',
+    path: '/family',
+    ready: '登录',
+    pressable: '登录',
+    last: '暂时无法恢复登录状态，请稍后刷新或重新登录。',
+    api: { 'GET /api/v1/session': failed },
+  },
+  { name: 'child-home', path: '/books', ready: '我的书', last: '思维训练', api: childHomeApi },
   {
     name: 'child-home-open',
-    path: `/?open=${going.id}`,
+    path: `/books?open=${going.id}`,
     ready: '我的书',
     last: '排队的小鸭子',
     api: childHomeApi,
   },
   {
     name: 'child-home-unavailable',
-    path: `/?books=unavailable&open=${unavailable.id}`,
+    path: `/books?books=unavailable&open=${unavailable.id}`,
     ready: '我的书',
     last: '儿歌和童谣',
     api: unavailableBooksApi,
   },
   {
     name: 'child-home-loading',
-    path: '/',
+    path: '/books',
     ready: '我的书',
     api: { ...childHomeApi, 'GET /api/v1/children/assignments': 'pending' },
   },
   {
     name: 'child-home-failed',
-    path: '/',
+    path: '/books',
     ready: '我的书没打开',
     api: { ...childHomeApi, 'GET /api/v1/children/assignments': failed },
   },
-  { name: 'child-home-empty', path: '/', ready: '家长还没有给你安排书', api: noBooksApi },
+  { name: 'child-home-empty', path: '/books', ready: '家长还没有给你安排书', api: noBooksApi },
   {
     name: 'problem-guest',
     path: '/problems/garden-balance/1',
@@ -108,16 +116,10 @@ const dayStates: PageState[] = [
     pressable: '开始短片',
     api: { ...parentSpaceApi, ...gardenPreview },
   },
-  { name: 'family-signed-out', path: '/family', ready: '创建家长账号' },
+  { name: 'parent-sign-up', path: '/signup', ready: '创建家长账号' },
   {
-    name: 'family-session-failed',
-    path: '/family',
-    ready: '创建家长账号',
-    api: { 'GET /api/v1/session': failed },
-  },
-  {
-    name: 'family-registration-closed',
-    path: '/family',
+    name: 'parent-sign-up-closed',
+    path: '/signup',
     ready: '创建家长账号',
     api: { 'GET /api/v1/registration-status': { status: 200, json: { enabled: false } } },
   },
@@ -206,10 +208,10 @@ const dayStates: PageState[] = [
     last: '语音转写',
     api: parentSpaceApi,
   },
-  { name: 'child-registration', path: '/join', ready: '加入我的家庭' },
-  { name: 'parent-recovery', path: '/family/recover', ready: '找回家长密码' },
-  { name: 'password-reset-without-link', path: '/family/reset', ready: '请从恢复邮件打开' },
-  { name: 'email-verification-without-link', path: '/family/verify', ready: '验证家长邮箱' },
+  { name: 'child-registration', path: '/join', ready: '加入家庭', pressable: '加入家庭' },
+  { name: 'parent-recovery', path: '/password/forgot', ready: '找回家长密码' },
+  { name: 'password-reset-without-link', path: '/password/reset', ready: '请从恢复邮件打开' },
+  { name: 'email-verification-without-link', path: '/email/verify', ready: '验证家长邮箱' },
   { name: 'not-found', path: '/visual-fixture-missing-page', ready: '这条小路还没找到' },
 ];
 
@@ -218,9 +220,9 @@ const dayStates: PageState[] = [
 // bookshelf, a lesson's title card and the page for a path that leads
 // nowhere.
 const nightPages = [
-  'home-sign-in',
+  'sign-in-child',
   'child-home',
-  'family-signed-out',
+  'parent-sign-up',
   'family-overview',
   'family-profile',
   'family-practice',

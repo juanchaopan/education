@@ -28,11 +28,11 @@ describe('SMTP outcomes', () => {
     expect(await sender.send('parent@example.test', 'a'.repeat(43))).toBe('accepted');
     const mail = sendMail.mock.calls[0]![0];
     expect(mail.from).toBe('sender@gmail.com');
-    expect(mail.text).toContain('https://school.example/family/verify#token=');
+    expect(mail.text).toContain('https://school.example/email/verify#token=');
     expect(mail.text).not.toContain('hyp.app');
     const links = [...mail.html.matchAll(/<a\b[^>]*\bhref="([^"]+)"/g)].map((match) => match[1]);
     expect(links).toEqual(
-      Array(2).fill(`https://school.example/family/verify#token=${'a'.repeat(43)}`),
+      Array(2).fill(`https://school.example/email/verify#token=${'a'.repeat(43)}`),
     );
     expect(mail.html).toContain('>验证家长邮箱</a>');
     expect(mail.html).toContain('<html lang="zh-CN">');

@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
-import { returnPath } from '../../../shared/lib/problem-path';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { returnPath, signInPath, type SignInTab } from '../../../shared/lib/sign-in-path';
 import { Icon } from '../../../shared/ui/Icon';
 import { LinkButton } from '../../../shared/ui/LinkButton';
 import { Loading } from '../../../shared/ui/Loading';
@@ -9,36 +9,23 @@ import { StandaloneLink } from '../../../shared/ui/StandaloneLink';
 import { AccountLayout, type AccountArt } from '../components/AccountLayout';
 import { ChildLoginForm, type ChildLoginFields } from '../components/ChildLoginForm';
 import { ForgotPin } from '../components/ForgotPin';
-import { SignInTabs, type SignInTab } from '../components/SignInTabs';
+import { SignInTabs } from '../components/SignInTabs';
 import { rememberedChild, rememberChild } from '../data-access/child-locator';
-import { useChildLogin } from '../data-access/useChildSession';
+import { useChildLogin, useChildSession } from '../data-access/useChildSession';
 import { useParentSession } from '../data-access/useParentSession';
 import { LoginPanel } from './LoginPanel';
 import styles from './SignInPage.module.css';
 
-type Props = {
-  art: AccountArt;
-  // Whether it could not be found out if a child is signed in; the child can
-  // still sign in, and is told the account is safe.
-  failed?: boolean;
-};
-
-// The home page for someone not signed in as a child: the child's sign-in and
-// the parent's, as two tabs. The tab chosen is kept in the address, the
-// child's by default. A sign-in on the way to a problem returns to it.
-export function SignInPage({ art, failed }: Props) {
-  const [query, setQuery] = useSearchParams();
-  const tab: SignInTab = query.get('tab') === 'parent' ? 'parent' : 'child';
-  const choose = (chosen: SignInTab) =>
-    setQuery(
-      (current) => {
-        const next = new URLSearchParams(current);
-        if (chosen === 'parent') next.set('tab', 'parent');
-        else next.delete('tab');
-        return next;
-      },
-      { replace: true },
-    );
+// The sign-in: the child's and the parent's, as two tabs, each at its own
+// address. Switching tabs keeps the page to come back to and what a child's
+// registration handed on, and takes the place of the tab left in the
+// history, so going back leaves the sign-in. Signing in goes on to that page,
+// or to the child's books or the parent space; a child arriving signed in
+// goes straight on, a parent arriving signed in is offered the way on.
+export function SignInPage({ art, tab }: { art: AccountArt; tab: SignInTab }) {
+  const navigate = useNavigate();
+  const { search, state } = useLocation();
+  const next = returnPath(new URLSearchParams(search).get('next'));
   return (
     <AccountLayout
       art={art}
@@ -47,17 +34,13 @@ export function SignInPage({ art, failed }: Props) {
       titleHidden
       footer={tab === 'child' ? <ChildWaysOn /> : <ParentWaysOn />}
     >
-      <SignInTabs tab={tab} onTab={choose}>
-        {tab === 'child' ? (
-          <>
-            {failed && (
-              <Notice tone="error">暂时无法确认登录状态，请稍后刷新。你的账号不会丢失。</Notice>
-            )}
-            <ChildSignIn />
-          </>
-        ) : (
-          <ParentSignIn next={returnPath(query.get('next'))} />
-        )}
+      <SignInTabs
+        tab={tab}
+        onTab={(chosen) =>
+          void navigate({ pathname: signInPath(chosen), search }, { replace: true, state })
+        }
+      >
+        {tab === 'child' ? <ChildSignIn next={next} /> : <ParentSignIn next={next} />}
       </SignInTabs>
     </AccountLayout>
   );
@@ -77,8 +60,8 @@ function ChildWaysOn() {
 function ParentWaysOn() {
   return (
     <>
-      <StandaloneLink to="/family">创建账号</StandaloneLink>
-      <StandaloneLink to="/family/recover">
+      <StandaloneLink to="/signup">创建账号</StandaloneLink>
+      <StandaloneLink to="/password/forgot">
         <Icon name="lock" />
         忘记密码
       </StandaloneLink>
@@ -86,10 +69,27 @@ function ParentWaysOn() {
   );
 }
 
+// A child already signed in goes straight on. When it could not be found out
+// whether one is, the child can still sign in and is told the account is
+// safe.
+function ChildSignIn({ next }: { next?: string }) {
+  const session = useChildSession();
+  if (session.isPending) return <Loading label="正在确认登录状态…" />;
+  if (session.data) return <Navigate to={next ?? '/books'} replace />;
+  return (
+    <>
+      {session.isError && (
+        <Notice tone="error">暂时无法确认登录状态，请稍后刷新。你的账号不会丢失。</Notice>
+      )}
+      <ChildLogin />
+    </>
+  );
+}
+
 // The child's sign-in starts from the family code and nickname a child just
-// registered with, or those this device remembers. Once signed in, the home
-// page turns into the child's books, or the problem the child came for.
-function ChildSignIn() {
+// registered with, or those this device remembers. Once the child is signed
+// in, the session it brings sends the page on.
+function ChildLogin() {
   const location = useLocation();
   const [fields, setFields] = useState<ChildLoginFields>(() => {
     const state = location.state as { familyCode?: unknown; nickname?: unknown } | null;
@@ -129,10 +129,10 @@ function ChildSignIn() {
   );
 }
 
-// A parent already signed in goes on to the parent space; otherwise the
-// parent signs in here and goes on to the problem they came for, or to the
-// parent space.
-function ParentSignIn({ next }: { next?: string }) {
+// A parent already signed in is offered the way on; otherwise the parent
+// signs in here and goes on. A session that could not be read is said once,
+// above the form, since the parent can still sign in.
+function ParentSignIn({ next = '/family' }: { next?: string }) {
   const session = useParentSession();
   const navigate = useNavigate();
   if (session.isPending) return <Loading label="正在确认登录状态…" />;
@@ -140,8 +140,13 @@ function ParentSignIn({ next }: { next?: string }) {
     return (
       <div className={styles.signedIn}>
         <p>已经登录家长账号</p>
-        <LinkButton to="/family">进入家长空间</LinkButton>
+        <LinkButton to={next}>进入家长空间</LinkButton>
       </div>
     );
-  return <LoginPanel onSignedIn={() => navigate(next ?? '/family', { replace: true })} />;
+  return (
+    <>
+      {session.isError && <Notice>暂时无法恢复登录状态，请稍后刷新或重新登录。</Notice>}
+      <LoginPanel onSignedIn={() => void navigate(next, { replace: true })} />
+    </>
+  );
 }

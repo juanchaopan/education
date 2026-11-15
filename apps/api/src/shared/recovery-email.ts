@@ -1,6 +1,6 @@
 import { accountEmail, accountLink } from './account-email.js';
 export function recoveryEmail(origin: string, token: string) {
-  const link = accountLink(origin, '/family/reset', token);
+  const link = accountLink(origin, '/password/reset', token);
   const instructions =
     '链接 30 分钟有效，只能使用一次。提交新密码后，家庭的旧登录状态和未使用注册 KEY 将失效。';
   return {

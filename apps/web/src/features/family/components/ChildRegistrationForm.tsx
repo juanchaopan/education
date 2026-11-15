@@ -1,47 +1,46 @@
+import type { ChangeEvent } from 'react';
 import { Button } from '../../../shared/ui/Button';
 import { Form } from '../../../shared/ui/Form';
-import { Hint } from '../../../shared/ui/Hint';
-import { Icon } from '../../../shared/ui/Icon';
 import { Notice } from '../../../shared/ui/Notice';
 import { TextField } from '../../../shared/ui/TextField';
-import { IntroductionLayout } from './IntroductionLayout';
+import { NicknameHint } from './NicknameHint';
+import { editRegistrationKey } from './registration-key';
 
-export type ChildRegistrationFormProps = {
-  registrationKey: string;
-  nickname: string;
-  pin: string;
+export type ChildRegistrationFields = { registrationKey: string; nickname: string; pin: string };
+export type ChildRegistrationFormProps = ChildRegistrationFields & {
   pending?: boolean;
   error?: string;
-  onChange: (field: 'registrationKey' | 'nickname' | 'pin', value: string) => void;
+  onChange: (field: keyof ChildRegistrationFields, value: string) => void;
   onSubmit: () => void;
 };
 
+// A child joins the family: the KEY a parent gave, grouped in fours as it is
+// typed, a nickname with its count, and a new six-digit PIN. Only what a
+// child must know is written beside the fields; the rules for the nickname
+// and the PIN come back from the server when an answer breaks them.
 export function ChildRegistrationForm(props: ChildRegistrationFormProps) {
-  return (
-    <IntroductionLayout
-      titleId="child-form-title"
-      title="加入我的家庭"
-      introduction={
-        <>
-          <Icon name="key" badge />
-          <h2>我们一起，迈出第一步</h2>
-          <p>请家长把注册 KEY 给你。它像一张邀请卡，帮助你加入自己的家庭。</p>
-          <p>慢慢填就好。遇到困难，可以请家长陪你一起完成。</p>
-        </>
-      }
-    >
-      <ChildRegistrationFields {...props} />
-    </IntroductionLayout>
-  );
-}
-
-function ChildRegistrationFields(props: ChildRegistrationFormProps) {
+  // The grouped KEY replaces what was typed, so once it is drawn the caret
+  // goes back after the characters it followed.
+  const changeKey = ({ target, nativeEvent }: ChangeEvent<HTMLInputElement>) => {
+    const forward = (nativeEvent as InputEvent).inputType === 'deleteContentForward';
+    const edit = editRegistrationKey(
+      props.registrationKey,
+      target.value,
+      target.selectionStart ?? target.value.length,
+      forward ? 'forward' : 'backward',
+    );
+    props.onChange('registrationKey', edit.value);
+    requestAnimationFrame(() => {
+      if (document.activeElement === target) target.setSelectionRange(edit.caret, edit.caret);
+    });
+  };
   return (
     <Form onSubmit={props.onSubmit} aria-busy={props.pending}>
       <TextField
         id="child-key"
         label="家长给我的 KEY"
-        hint="复制、粘贴四组字符，也可以自己输入；有无短横线都可以。"
+        icon="key"
+        placeholder="XXXX-XXXX-XXXX-XXXX"
         name="registration-key"
         autoComplete="off"
         autoCapitalize="characters"
@@ -50,12 +49,13 @@ function ChildRegistrationFields(props: ChildRegistrationFormProps) {
         required
         value={props.registrationKey}
         disabled={props.pending}
-        onChange={(event) => props.onChange('registrationKey', event.target.value)}
+        onChange={changeKey}
       />
       <TextField
         id="child-nickname"
         label="我的昵称"
-        hint="用 1–12 个汉字、字母或数字，不需要填真实姓名。"
+        icon="user"
+        hint={<NicknameHint nickname={props.nickname} />}
         name="username"
         autoComplete="username"
         maxLength={64}
@@ -67,7 +67,8 @@ function ChildRegistrationFields(props: ChildRegistrationFormProps) {
       <TextField
         id="child-pin"
         label="设置六位数字 PIN"
-        hint="像一个小密码，可以以 0 开头。选一组不全相同、也不连续的数字，只告诉家长。"
+        icon="lock"
+        hint="只告诉家长"
         name="password"
         type="password"
         inputMode="numeric"
@@ -84,7 +85,6 @@ function ChildRegistrationFields(props: ChildRegistrationFormProps) {
       <Button type="submit" disabled={props.pending}>
         {props.pending ? '正在加入，请稍等…' : '加入家庭'}
       </Button>
-      <Hint>注册成功后，KEY 就完成任务了。以后无需重复注册。</Hint>
     </Form>
   );
 }

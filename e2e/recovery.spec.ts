@@ -13,7 +13,6 @@ test('login links to recovery and identical receipts preserve privacy with expli
     await route.fulfill({ json: { status: 'requested' } });
   });
   await page.goto('/family');
-  await page.getByRole('button', { name: '已有账号？去登录' }).click();
   await page.getByRole('link', { name: '忘记密码' }).click();
   await page.getByLabel('注册邮箱', { exact: true }).fill('parent@example.test');
   await page.getByRole('button', { name: '发送恢复邮件', exact: true }).click();
@@ -36,7 +35,7 @@ test('opening a recovery link never resets automatically, removes the fragment a
     });
     await route.fulfill({ json: { status: 'reset' } });
   });
-  await page.goto(`/family/reset#token=${token}`);
+  await page.goto(`/password/reset#token=${token}`);
   await expect(page.getByRole('heading', { name: '设置新的家长密码' })).toBeVisible();
   expect(new URL(page.url()).hash).toBe('');
   expect(calls).toBe(0);
@@ -61,7 +60,7 @@ test('used links and network uncertainty have a recovery path and do not retry m
     calls++;
     await route.fulfill({ status: 400, json: { message: 'private backend detail' } });
   });
-  await page.goto(`/family/reset#token=${token}`);
+  await page.goto(`/password/reset#token=${token}`);
   await page.getByLabel('新密码', { exact: true }).fill('my new private test phrase');
   await page.getByLabel('再次输入新密码').fill('my new private test phrase');
   await page.getByRole('button', { name: '确认设置新密码' }).click();

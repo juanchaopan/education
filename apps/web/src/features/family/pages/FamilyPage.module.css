@@ -1,7 +1,0 @@
-/* While the page asks who is signed in, the dots wait in the middle of the
-   screen, where the page is about to appear. */
-.waiting {
-  display: grid;
-  place-items: center;
-  min-block-size: 100dvh;
-}

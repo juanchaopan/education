@@ -28,7 +28,7 @@ test('real registration persists a pending parent; duplicate submissions have th
   const email = `browser-${randomUUID()}@example.test`;
   emails.push(email);
   const submit = async () => {
-    await page.goto('/family');
+    await page.goto('/signup');
     await expect(page.getByRole('button', { name: '提交注册' })).toBeEnabled();
     await page.screenshot({ path: testInfo.outputPath('registration-form.png'), fullPage: true });
     await page.getByLabel('家长邮箱').fill(email);
@@ -61,7 +61,7 @@ test('server failure preserves input and the page fits a touch viewport', async 
   await page.route('**/api/v1/parents/register', (route) =>
     route.fulfill({ status: 503, json: {} }),
   );
-  await page.goto('/family');
+  await page.goto('/signup');
   await page.getByLabel('家长邮箱').fill('fixture@example.test');
   await page.getByLabel('设置密码').fill('a private browser test phrase');
   await page.getByRole('button', { name: '提交注册' }).click();

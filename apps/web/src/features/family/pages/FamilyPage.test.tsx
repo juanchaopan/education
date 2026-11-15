@@ -1,96 +1,100 @@
 import { afterEach, expect, it, vi } from 'vitest';
 import { cleanup, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { renderFamilyPage } from '../../../test/family-page';
+import { address, renderFamilyPage } from '../../../test/family-page';
 
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
 });
-const password = 'a private phrase for this family';
 
-function setup(response: () => Promise<Response>, path?: string) {
-  const fetcher = vi
-    .fn()
-    .mockImplementation((_url: string, options?: RequestInit) =>
-      _url.endsWith('/session')
-        ? Promise.resolve(Response.json({}, { status: 401 }))
-        : options?.method === 'POST'
-          ? response()
-          : Promise.resolve(Response.json({ enabled: true })),
-    );
-  vi.stubGlobal('fetch', fetcher);
-  renderFamilyPage(path);
-  return fetcher;
+const parent = {
+  role: 'parent',
+  email: 'parent@example.test',
+  emailVerified: true,
+  access: 'verified',
+  csrfToken: 'p'.repeat(43),
+};
+
+type Session = 'in' | 'out' | 'unknown';
+
+// The server: the parent signed out, signed in, or a session that cannot be
+// read just now; signing in and out change it. Every other read of the
+// parent space waits.
+function serve(session: Session) {
+  let state = session;
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (url: string) => {
+      if (url.endsWith('/api/v1/session')) {
+        if (state === 'unknown') return new Response(null, { status: 503 });
+        return state === 'in' ? Response.json(parent) : new Response(null, { status: 401 });
+      }
+      if (url.endsWith('/parents/login')) {
+        state = 'in';
+        return Response.json(parent);
+      }
+      if (url.endsWith('/parents/logout')) {
+        state = 'out';
+        return new Response(null, { status: 204 });
+      }
+      return new Promise<Response>(() => {});
+    }),
+  );
 }
 
-async function fillAndSubmit() {
-  const user = userEvent.setup();
-  await user.type(await screen.findByLabelText('家长邮箱'), 'parent@example.test');
-  await user.type(screen.getByLabelText('设置密码'), password);
-  await user.click(screen.getByRole('button', { name: '提交注册' }));
+async function signIn() {
+  await userEvent.type(await screen.findByLabelText('登录邮箱'), parent.email);
+  await userEvent.type(screen.getByLabelText('登录密码'), 'correct horse battery');
+  await userEvent.click(screen.getByRole('button', { name: '登录' }));
 }
 
-it('opens on the sign-up with its privacy note and counts the password towards its length', async () => {
-  setup(() => new Promise(() => {}));
-  expect(await screen.findByRole('heading', { name: '创建家长账号' })).toBeVisible();
-  expect(screen.getByLabelText('家长邮箱')).toHaveAccessibleDescription(
-    '请使用您自己的邮箱，不需要填写孩子的信息。',
+it('sends a signed-out parent to the parent sign-in, which comes back to the address asked for', async () => {
+  const scrolled = vi.fn();
+  Element.prototype.scrollIntoView = scrolled;
+  serve('out');
+  renderFamilyPage('/family/privacy?x=1#family-deletion-title');
+  expect(await screen.findByRole('tab', { name: '家长登录' })).toHaveAttribute(
+    'aria-selected',
+    'true',
   );
-  await userEvent.type(screen.getByLabelText('设置密码'), 'short');
-  expect(screen.getByLabelText('设置密码')).toHaveAccessibleDescription(
-    '可以是一句话 · 还差 10 个字符',
+  expect(address()).toHaveTextContent(
+    /^\/login\/parent\?next=%2Ffamily%2Fprivacy%3Fx%3D1%23family-deletion-title$/,
   );
-});
-
-it('asks a signed-out parent to sign in at any address of the parent space', async () => {
-  setup(() => new Promise(() => {}), '/family/privacy');
-  expect(await screen.findByRole('heading', { name: '创建家长账号' })).toBeVisible();
   expect(screen.queryByRole('heading', { name: '隐私与数据' })).toBeNull();
+  await signIn();
+  expect(await screen.findByRole('navigation', { name: '家长空间' })).toBeInTheDocument();
+  expect(address()).toHaveTextContent(/^\/family\/privacy\?x=1#family-deletion-title$/);
 });
 
-it('shows an honest pending-verification receipt without claiming mail was sent', async () => {
-  const fetcher = setup(async () =>
-    Response.json({ status: 'pending-verification', mail: 'not-sent' }, { status: 202 }),
+it.each(['/family/verify#token=secret', '/family/reset?x=1#token=secret&y=2'])(
+  'keeps the mail token of %s out of the sign-in address',
+  async (path) => {
+    serve('out');
+    renderFamilyPage(path);
+    expect(await screen.findByRole('tab', { name: '家长登录' })).toBeInTheDocument();
+    expect(address()).toHaveTextContent(/^\/login\/parent\?next=%2Ffamily%2F(verify|reset)/);
+    expect(address()).not.toHaveTextContent(/token|secret/);
+  },
+);
+
+it('says on the sign-in when the session could not be read', async () => {
+  serve('unknown');
+  renderFamilyPage('/family');
+  expect(await screen.findByText('暂时无法恢复登录状态，请稍后刷新或重新登录。')).toBeVisible();
+  expect(address()).toHaveTextContent(/^\/login\/parent\?next=%2Ffamily$/);
+  expect(screen.getByLabelText('登录邮箱')).toBeInTheDocument();
+});
+
+it('lands a parent who signs out on the parent sign-in itself', async () => {
+  serve('in');
+  renderFamilyPage('/family/profile');
+  await userEvent.click(await screen.findByRole('button', { name: '退出账号' }));
+  expect(await screen.findByLabelText('登录邮箱')).toBeInTheDocument();
+  expect(address()).toHaveTextContent(/^\/login\/parent$/);
+  expect(screen.getByRole('link', { name: '忘记密码' })).toHaveAttribute(
+    'href',
+    '/password/forgot',
   );
-  await fillAndSubmit();
-  expect(await screen.findByRole('heading', { name: '注册申请已受理' })).toBeVisible();
-  expect(screen.getByText(/尚未发送验证邮件/)).toBeVisible();
-  expect(screen.queryByLabelText('设置密码')).toBeNull();
-  expect(fetcher.mock.calls.filter((call) => call[1]?.method === 'POST')).toHaveLength(1);
-});
-
-it('keeps typed inputs after a server failure and allows a deliberate retry', async () => {
-  setup(async () => Response.json({ message: 'private backend error' }, { status: 503 }));
-  await fillAndSubmit();
-  expect(await screen.findByRole('alert')).toHaveTextContent('暂时无法完成注册');
-  expect(screen.getByLabelText('设置密码')).toHaveValue(password);
-  expect(screen.getByRole('button', { name: '提交注册' })).toBeEnabled();
-  expect(screen.queryByText('private backend error')).toBeNull();
-});
-
-it('prevents repeat submission while a request is pending', async () => {
-  const fetcher = setup(() => new Promise(() => {}));
-  await fillAndSubmit();
-  expect(screen.getByRole('button', { name: '正在保存，请稍等…' })).toBeDisabled();
-  expect(fetcher.mock.calls.filter((call) => call[1]?.method === 'POST')).toHaveLength(1);
-});
-
-it('explains a lost response in Chinese without claiming registration failed or succeeded', async () => {
-  setup(async () => {
-    throw new TypeError('Failed to fetch');
-  });
-  await fillAndSubmit();
-  expect(await screen.findByRole('alert')).toHaveTextContent('暂时无法确认注册结果');
-  expect(screen.queryByText('Failed to fetch')).toBeNull();
-  expect(screen.getByLabelText('设置密码')).toHaveValue(password);
-});
-
-it('switches between sign-up and sign-in with the same button, which keeps the focus', async () => {
-  setup(() => new Promise(() => {}));
-  const user = userEvent.setup();
-  await user.click(await screen.findByRole('button', { name: '已有账号？去登录' }));
-  expect(screen.getByRole('heading', { name: '家长登录' })).toBeVisible();
-  expect(screen.getByRole('button', { name: '还没有账号？去注册' })).toHaveFocus();
-  expect(screen.getByRole('link', { name: '忘记密码' })).toHaveAttribute('href', '/family/recover');
+  expect(screen.getByRole('link', { name: '创建账号' })).toHaveAttribute('href', '/signup');
 });

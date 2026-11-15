@@ -38,7 +38,6 @@ for (const verified of [false, true]) {
       await pool.end();
     }
     await page.goto('/family');
-    await page.getByRole('button', { name: '已有账号？去登录' }).click();
     await page.getByLabel('登录邮箱').fill(email);
     await page.getByLabel('登录密码').fill('wrong password');
     await page.getByRole('button', { name: '登录', exact: true }).click();
@@ -66,10 +65,18 @@ for (const verified of [false, true]) {
       await restored.goto(new URL('/family', page.url()).href);
       await expect(restored.getByRole('heading', { name: signedIn, level: 1 })).toBeVisible();
       await restored.getByRole('button', { name: '退出账号' }).click();
-      await expect(restored.getByRole('heading', { name: '家长登录' })).toBeVisible();
+      await expect(restored).toHaveURL(/\/login\/parent$/);
+      await expect(restored.getByRole('tab', { name: '家长登录' })).toHaveAttribute(
+        'aria-selected',
+        'true',
+      );
       // The first context still carries the revoked cookie; the server must reject it.
       await page.reload();
-      await expect(page.getByRole('heading', { name: '创建家长账号' })).toBeVisible();
+      await expect(page).toHaveURL(/\/login\/parent\?next=%2Ffamily$/);
+      await expect(page.getByRole('tab', { name: '家长登录' })).toHaveAttribute(
+        'aria-selected',
+        'true',
+      );
       await expect(page.getByRole('heading', { name: signedIn, level: 1 })).toHaveCount(0);
     } finally {
       await context.close();

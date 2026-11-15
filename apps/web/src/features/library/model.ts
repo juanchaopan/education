@@ -14,10 +14,12 @@ export type Viewer =
 export type NoteArt = Readonly<{ backdrop: string; teacher: string }>;
 
 // Where the back button leads from a problem opened directly: the parent
-// space for a parent; for a child, the home page with the problem's book
-// opened, once the book is known; the home page for anyone else.
+// space for a parent; for a child, the bookshelf with the problem's book
+// opened, once the book is known; the home page, which leads each on to
+// where they belong, for anyone else.
 export function homeOf(viewer: Viewer, book?: string) {
   if (viewer.kind === 'parent') return '/family';
-  if (viewer.kind === 'child' && book) return `/?open=${encodeURIComponent(book)}`;
+  if (viewer.kind === 'child')
+    return book ? `/books?${new URLSearchParams({ open: book })}` : '/books';
   return '/';
 }
