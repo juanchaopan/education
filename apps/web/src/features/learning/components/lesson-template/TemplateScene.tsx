@@ -1,22 +1,29 @@
 import type { Handling } from '../../interaction/stage-activation';
 import type { SceneProps } from '../../lessons/lesson-definition';
-import { pebbleLook, pebbles, type TemplateState } from '../../lessons/lesson-template/story';
+import {
+  pebbleLook,
+  pebblesIn,
+  putting,
+  type TemplateState,
+} from '../../lessons/lesson-template/story';
 import { AttentionCue, type Point } from '../lesson-stage/AttentionCue';
 import { Prop, PropPlace } from '../lesson-stage/Prop';
 
 // The template lesson's own picture, drawn on the shared stage's 1200×675
-// world: two pebbles on the table and a bowl to put them in. It draws only
-// the lesson's things; the stage lays in the backdrop, the teacher and every
-// control.
+// world: pebbles on the table and a bowl to put them in, two in the problem
+// and three in the variation. It draws only the lesson's things; the stage
+// lays in the backdrop, the teacher and every control.
 
 const bowl: Point = [720, 400];
 const tableSpots: readonly Point[] = [
   [470, 410],
   [560, 400],
+  [515, 448],
 ];
 const bowlSpots: readonly Point[] = [
   [702, 392],
   [740, 396],
+  [721, 380],
 ];
 const inBowlSize = pebbleLook.size * 0.7;
 const nextPebble = 'pebble-next';
@@ -79,20 +86,22 @@ function NextPebble({ at: [x, y], handling }: { at: Point; handling: Handling })
   );
 }
 
+// The pebbles rest while the child guesses, and move only in the scenes the
+// story puts them in.
 export function TemplateScene({ state, handling }: SceneProps<TemplateState>) {
   const { shot, inBowl } = state;
   if (shot === 'opening') return null;
-  const onTable = tableSpots.slice(0, pebbles - inBowl);
-  const next = shot === 'look' ? onTable.at(-1) : undefined;
+  const onTable = tableSpots.slice(0, pebblesIn(shot) - inBowl);
+  const next = putting[shot] ? onTable.at(-1) : undefined;
   const resting = next ? onTable.slice(0, -1) : onTable;
   return (
     <g>
       <Bowl highlight={!!next} over={handling.over === 'bowl'} />
       {bowlSpots.slice(0, inBowl).map((spot) => (
-        <RestingPebble key={`bowl-${spot[0]}`} at={spot} size={inBowlSize} />
+        <RestingPebble key={`bowl-${spot[0]}-${spot[1]}`} at={spot} size={inBowlSize} />
       ))}
       {resting.map((spot) => (
-        <RestingPebble key={`table-${spot[0]}`} at={spot} size={pebbleLook.size} />
+        <RestingPebble key={`table-${spot[0]}-${spot[1]}`} at={spot} size={pebbleLook.size} />
       ))}
       {next && <NextPebble at={next} handling={handling} />}
       {next && <AttentionCue kind="arrow" from={next} to={bowl} />}

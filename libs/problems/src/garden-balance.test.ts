@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { gardenBalance, gardenBalanceSteps } from './garden-balance.js';
-import { gardenVariationChoices } from './lessons/garden-balance.js';
+import { gardenBalanceLesson, gardenVariationChoices } from './lessons/garden-balance.js';
 import { problemRegistry } from './server.js';
 
-const { answering, variation, checkStep } = gardenBalance;
+const { answering, variation } = gardenBalance;
 
 describe('garden balance', () => {
   it('is a first grade 学而思 maths problem in the maintained registry', () => {
@@ -33,21 +33,25 @@ describe('garden balance', () => {
     }
   });
 
+  it("states neither the variation's result nor its reason in any scene's prompt", () => {
+    for (const { prompt } of Object.values(gardenBalanceSteps)) {
+      expect(prompt).not.toMatch(/6|六根|还是三组|组数没变/);
+    }
+  });
+
+  it('says the question before anything else, and the variation only once it is asked', () => {
+    const { lines, scenes } = gardenBalanceLesson;
+    expect(lines.hello.text).toContain('一棵青菜和几根黄瓜一样重？');
+    const asked = ['change', 'swap', 'why'] as const;
+    for (const line of asked) expect(lines[line].text).not.toMatch(/6|六|还是三组/);
+    expect(scenes.reveal.entry).toEqual(['reveal']);
+  });
+
   it('first says in every hint what the child is looking for, without the count', () => {
     for (const hint of Object.values(answering?.hints ?? {})) {
       expect(hint).toMatch(/^我们在找一棵青菜和几根黄瓜一样重。/);
       expect(hint).not.toMatch(/9|九/);
     }
-  });
-
-  it('answers the closing question by rule only when it is said the right way round', async () => {
-    const status = async (stepId: string, answer: string) =>
-      (await checkStep?.({ stepId, answer }))?.status;
-    expect(await status('end', '还是三组，每组变成两根')).toBe('correct');
-    expect(await status('end', '组数没变，根数变了')).toBe('correct');
-    for (const unclear of ['每组变了', '组数变了，根数没变', '不是三组，也不是两根', '黄瓜变少了'])
-      expect(await status('end', unclear)).toBe('uncertain');
-    expect(await status('bridge', '还是三组，每组两根')).toBe('uncertain');
   });
 });
 
@@ -94,6 +98,7 @@ describe('garden balance variation', () => {
   });
 
   it('judges the dew drops by the lesson choices: groups kept, the count in each changed', () => {
+    expect(gardenBalanceLesson.variation?.choices).toBe(gardenVariationChoices);
     expect(Object.keys(gardenVariationChoices)).toEqual(['groups', 'per-group']);
     const choose = (kept: string[], changed: string[]) =>
       variation?.checkReason({ choose: { kept, changed } });

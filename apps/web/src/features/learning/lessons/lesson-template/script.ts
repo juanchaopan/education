@@ -2,8 +2,11 @@ import { lessonTemplateLesson } from '@education/problems/lessons/lesson-templat
 import type { CountWords } from '../../interaction/spoken-answer';
 import { narratedScript } from '../lesson-script';
 import ask from './assets/ask.mp3';
-import bye from './assets/bye.mp3';
 import look from './assets/look.mp3';
+import place from './assets/place.mp3';
+import reveal from './assets/reveal.mp3';
+import three from './assets/three.mp3';
+import why from './assets/why.mp3';
 
 // The template for a new lesson, copied to `lessons/<problem id>/` and
 // `components/<problem id>/`; see the handbook's 从模板加一道题. It is never
@@ -19,7 +22,10 @@ import look from './assets/look.mp3';
 export const { lines, shots, entryLines } = narratedScript(lessonTemplateLesson, {
   look,
   ask,
-  bye,
+  three,
+  place,
+  why,
+  reveal,
 });
 
 export type LineId = keyof typeof lines;
@@ -36,3 +42,16 @@ export const answerWords: CountWords = {
   unit: '颗',
   explain: ([count]) => `${count} 颗还不对。一颗一颗地数数碗里的小石子。`,
 };
+
+// The variation's answers: the guess of how many pebbles the bowl holds
+// once three go in, said in 颗 or tapped from the same numbers as the count;
+// the reason, with what the teacher says when it is not clear; and the
+// variation's own hint, in the plugin.
+export const variationAnswer = {
+  guess: { question: '假如桌上有三颗小石子，碗里一共有几颗？', unit: '颗', choices: answerChoices },
+  reason: {
+    question: '和你猜的一样吗？说说为什么。',
+    unclear: '还没说清楚。看看碗里：小石子是怎样放进去的？一共放了几颗？再说一次。',
+  },
+  hints: ['count-three'],
+} as const;

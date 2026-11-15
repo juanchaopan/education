@@ -4,15 +4,24 @@ import { DraftNotice } from '../components/DraftNotice';
 import { StagePlace } from '../components/lesson-stage/LessonStage';
 import type { LearningScope } from '../data-access/learning-request';
 import type { AnswerEvents } from '../data-access/useAnswerHints';
+import { answerHelp } from '../data-access/useLessonAnswer';
 import type { useLessonDraft } from '../data-access/useLessonDraft';
+import { variationHelp } from '../data-access/useLessonVariation';
 import { useStudyTime } from '../data-access/useStudyTime';
 import type { FilmState } from '../interaction/lesson-film';
 import type { Subtitle } from '../interaction/subtitle';
 import type { LessonFilm } from '../interaction/useLessonFilm';
-import { guidance, shotAfter, type LessonDefinition } from '../lessons/lesson-definition';
+import {
+  guidance,
+  shotAfter,
+  variationPlay,
+  type LessonDefinition,
+  type VariationPlay,
+} from '../lessons/lesson-definition';
 import type { MicrophoneTurn } from '../voice/microphone-turn';
 import { flowAnswers } from './flows/flow-answers';
 import { SceneQuestions } from './SceneQuestions';
+import { VariationAnswer } from './VariationAnswer';
 
 // How long the draft notice tells the child the lesson picked up where it was
 // left, long enough to reach its button, and how long it tells them a save
@@ -20,11 +29,11 @@ import { SceneQuestions } from './SceneQuestions';
 const resumedFor = 6000;
 const savedFor = 3000;
 
-// What the controls read of a lesson: its content's flow and answer scene,
-// its script and its answer settings.
+// What the controls read of a lesson: its content's flow, answer scene and
+// variation, its script, its answer settings and its variation's.
 type PanelLesson<Shot extends string> = Pick<
   LessonDefinition<FilmState<Shot>, Shot, string, unknown, string, object>,
-  'content' | 'script' | 'answer'
+  'content' | 'script' | 'answer' | 'variation'
 >;
 
 // What the controls need from the playing film: the scene on screen, a way
@@ -70,15 +79,27 @@ function useDraftMoment<Shot extends string>(
   return saved ? 'saved' : undefined;
 }
 
+// A question counts as help on what the child is answering in its scene:
+// the final answer in the answer scene, the variation in the scenes the
+// variation is answered in.
+function questionHelp<Shot extends string>(
+  shot: Shot,
+  answerScene: Shot,
+  play?: VariationPlay<Shot>,
+) {
+  if (shot === answerScene) return answerHelp;
+  return play?.answering.includes(shot) ? variationHelp : undefined;
+}
+
 // The controls a signed-in child has in the picture: the draft's notice under
 // the tools; the answer part of the lesson's flow, which for 逐幕探究 is the
 // final count in the answer scene, which the microphone listens for by
-// itself, and the hints; in every scene a question about it, which in the
-// answer scene counts as help. A correct answer ends the saved work, so its
-// draft is discarded, and the film plays on from the scene after the answer.
-// The controls appear once the child pressed to start or resume the lesson;
-// from that press on, the time the child works on the page counts as study
-// time.
+// itself, and the hints; the variation's guess and reason in its scenes; in
+// every scene a question about it, which counts as help while the child
+// answers. A correct answer ends the saved work, so its draft is discarded,
+// and the film plays on from the scene after the answer. The controls appear
+// once the child pressed to start or resume the lesson; from that press on,
+// the time the child works on the page counts as study time.
 export function LessonPanels<Shot extends string>({
   lesson,
   teacher,
@@ -98,6 +119,7 @@ export function LessonPanels<Shot extends string>({
   if (shot === 'opening') return null;
   const { answer, script, content } = lesson;
   const { answerScene } = content;
+  const play = variationPlay(lesson);
   const FlowAnswer = flowAnswers[content.flow];
   return (
     <>
@@ -131,11 +153,21 @@ export function LessonPanels<Shot extends string>({
           if (next) film.go(next);
         }}
       />
+      <VariationAnswer
+        mode="practice"
+        play={play}
+        shot={shot}
+        scope={scope}
+        film={film}
+        turn={turn}
+        subtitle={subtitle}
+        go={film.go}
+      />
       <SceneQuestions
         scope={scope}
         teacher={teacher}
         stepId={shot}
-        answerStep={answerScene}
+        help={questionHelp(shot, answerScene, play)}
         guidance={guidance(script, shot)}
         record={record}
         narration={film}

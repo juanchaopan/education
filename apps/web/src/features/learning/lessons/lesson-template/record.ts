@@ -1,7 +1,7 @@
 import type { KeyActionOf, ScenePictureOf } from '@education/problems/lesson-content';
 import type { lessonTemplateLesson } from '@education/problems/lessons/lesson-template';
 import type { LessonRecording } from '../../interaction/lesson-record';
-import { pebbles, type Move, type TemplateState } from './story';
+import { pebblesIn, type Move, type TemplateState } from './story';
 
 // How the template tells the teacher what is on screen and what the child
 // did, in the words its content declares: the pebbles still on the table and
@@ -10,10 +10,10 @@ import { pebbles, type Move, type TemplateState } from './story';
 type Picture = ScenePictureOf<typeof lessonTemplateLesson>;
 type Action = KeyActionOf<typeof lessonTemplateLesson>;
 
-function picture({ inBowl }: TemplateState): Picture {
+function picture({ shot, inBowl }: TemplateState): Picture {
   return {
     things: [
-      { place: 'table', thing: 'pebble', count: pebbles - inBowl },
+      { place: 'table', thing: 'pebble', count: pebblesIn(shot) - inBowl },
       { place: 'bowl', thing: 'pebble', count: inBowl },
     ],
     states: [],

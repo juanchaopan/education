@@ -65,7 +65,7 @@ test('a child opens the garden problem from a given book, resumes it and is judg
     // Without a microphone the answer is tapped once the question is told.
     // A wrong count is explained and the numbers stay; a hint, which first
     // says what the child is looking for, makes the correct count a helped
-    // one.
+    // one. The variation then sets its condition and asks for a guess.
     const numbers = answer.getByRole('group', { name: '点一个数字回答' });
     await numbers.getByRole('button', { name: '6', exact: true }).click({ timeout: 30_000 });
     await expect(caption).toHaveText(/6 是一开始苹果的个数/);
@@ -77,7 +77,7 @@ test('a child opens the garden problem from a given book, resumes it and is judg
     await expect(caption).toHaveText(/答对了！这次用了提示/);
     await answer.screenshot({ path: info.outputPath('answer-assisted.png') });
     await answer.getByRole('button', { name: '接着看' }).click();
-    await expect(caption).toHaveText(/现在换个条件/);
+    await expect(caption).toHaveText(/假如每个苹果只换两根黄瓜/);
 
     // Back home the book is no longer new: the child opened one of its
     // problems.

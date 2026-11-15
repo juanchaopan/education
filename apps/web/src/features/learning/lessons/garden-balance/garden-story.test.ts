@@ -61,11 +61,27 @@ it('swaps each apple for a group of cucumbers with the beam level, then asks for
   expect(cucumbersPerApple('answer')).toBe(3);
 });
 
-it('keeps three groups of two in the variation and closes with what changed', () => {
-  expect(arrive('variation').say).toEqual(['change']);
-  expect(cucumbersPerApple('variation')).toBe(2);
-  const done = respond(play(arrive('variation').state, replace, replace), replace);
-  expect(done).toMatchObject({ say: ['changeDone'], state: { shot: 'end', replaced: 3 } });
+it('lets the apples rest while the child guesses the variation', () => {
+  const guessing = arrive('guess');
+  expect(guessing.say).toEqual(['change']);
+  expect(guessing.state.replaced).toBe(0);
+  expect(cucumbersPerApple('guess')).toBe(2);
+  expect(respond(guessing.state, replace)).toBeUndefined();
+});
+
+it('swaps the apples in twos without saying the total, then asks why', () => {
+  expect(arrive('swap').say).toEqual(['swap']);
+  const two = play(arrive('swap').state, replace, replace);
+  expect(two.replaced).toBe(2);
+  expect(respond(arrive('swap').state, replace)?.say).toEqual([]);
+  const done = respond(two, replace);
+  expect(done).toMatchObject({ say: ['why'], state: { shot: 'reason', replaced: 3 } });
+});
+
+it('reveals the variation with every apple swapped in twos', () => {
+  expect(arrive('reveal')).toMatchObject({ say: ['reveal'], state: { replaced: 3 } });
+  expect(cucumbersPerApple('reveal')).toBe(2);
+  expect(respond(arrive('reason').state, replace)).toBeUndefined();
 });
 
 it('ignores any move that is not the current prop', () => {

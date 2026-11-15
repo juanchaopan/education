@@ -1,3 +1,5 @@
+import { inVariation } from '@education/problems/lesson-content';
+import { gardenBalanceLesson } from '@education/problems/lessons/garden-balance';
 import type { FilmScene, Reaction as FilmReaction } from '../../interaction/lesson-film';
 import { entryLines, type LineId, type Shot } from './script';
 
@@ -31,6 +33,14 @@ export const opening: GardenState = {
 const balancedApples = 3;
 const groups = 3;
 
+// Whether a scene is one of the variation's, as the content declares it,
+// where each apple swaps for two cucumbers.
+const varied = (shot: Scene) => shot !== 'opening' && inVariation(gardenBalanceLesson, shot);
+
+// The scenes that open with every apple already swapped: the count, and the
+// variation once its swaps are done.
+const swapped: readonly Scene[] = ['answer', 'reason', 'reveal'];
+
 // A scene as it first appears, which is also where a saved lesson resumes.
 export function arrive(shot: Shot): Reaction {
   const state: GardenState = {
@@ -38,14 +48,14 @@ export function arrive(shot: Shot): Reaction {
     shot,
     leaves: shot === 'leaves' ? 2 : 1,
     apples: shot === 'leaves' || shot === 'apples' ? 6 : balancedApples,
-    replaced: shot === 'answer' || shot === 'end' ? groups : 0,
+    replaced: swapped.includes(shot) ? groups : 0,
   };
   return { state, say: entryLines[shot], chime: [] };
 }
 
 // Cucumbers that weigh one apple: three in the problem, two in the variation.
 export function cucumbersPerApple(shot: Scene) {
-  return shot === 'variation' || shot === 'end' ? 2 : 3;
+  return varied(shot) ? 2 : 3;
 }
 
 // The beam tilts by the weight it carries. While cabbages and apples are
@@ -62,13 +72,16 @@ function react(state: GardenState, chime: readonly number[], say: readonly LineI
   return { state, say, chime };
 }
 
+// The scenes where the child swaps the apples: the problem's, where the
+// rabbit says how each swap goes, and the variation's, where it says nothing
+// of the total before the child has given the reason.
 function replaceApple(state: GardenState): Reaction | undefined {
   if (state.replaced >= groups) return;
   const replaced = state.replaced + 1;
   const next = { ...state, replaced };
   const chime = [390 + replaced * 40, 490 + replaced * 50];
-  if (state.shot === 'variation')
-    return replaced === groups ? { ...arrive('end'), chime } : react(next, chime);
+  if (state.shot === 'swap')
+    return replaced === groups ? { ...arrive('reason'), chime } : react(next, chime);
   if (replaced === 1) return react(next, chime, ['bridgeOne']);
   if (replaced === 2) return react(next, chime, ['bridgeTwo']);
   return { ...arrive('answer'), chime };
@@ -91,17 +104,18 @@ function tap(state: GardenState, { part }: Tap): Reaction | undefined {
   const { shot } = state;
   if (part === 'exchange' && shot === 'exchange' && !state.revealed)
     return { ...react({ ...state, revealed: true }, [360, 440, 540], ['three']), then: 'bridge' };
-  if (part === 'replace' && (shot === 'bridge' || shot === 'variation')) return replaceApple(state);
+  if (part === 'replace' && (shot === 'bridge' || shot === 'swap')) return replaceApple(state);
 }
 
 // The rules of each scene: only the current prop moves the story on, and any
-// other move changes nothing.
+// other move changes nothing. The guess and the reason are answered in the
+// answer capsule, so the apples rest while the child guesses.
 export function respond(state: GardenState, move: Move): Reaction | undefined {
   return move.kind === 'drop' ? drop(state, move) : tap(state, move);
 }
 
 // Scenes before the answer are work in progress; once the count is answered
-// the rest of the lesson is practice that needs no saving.
+// the variation is practice that needs no saving.
 export function savesProgress(shot: Scene): shot is Shot {
-  return shot !== 'opening' && shot !== 'variation' && shot !== 'end';
+  return shot !== 'opening' && !varied(shot);
 }

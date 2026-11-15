@@ -18,16 +18,20 @@ const swapped = picture(
   ],
   'level',
 );
-const swappedInTwos = picture(
-  [
-    ['left-pan', 'cabbage', 1],
-    ['right-pan', 'apple', 0],
-    ['right-pan', 'group-of-two', 3],
-    ['basket', 'cucumber', 2],
-  ],
-  'level',
-  'two-each-sign',
-);
+// The variation: three apples against one cabbage, then each swapped for
+// two cucumbers, beside the basket of two under its sign.
+const inTwos = (apples: number) =>
+  picture(
+    [
+      ['left-pan', 'cabbage', 1],
+      ['right-pan', 'apple', apples],
+      ['right-pan', 'group-of-two', 3 - apples],
+      ['basket', 'cucumber', 2],
+    ],
+    'level',
+    'two-each-sign',
+  );
+const swappedInTwos = inTwos(0);
 
 // The garden balance's pictures as its page records them at the end of each
 // scene, a scene the child leaves by a move ending with the picture that move
@@ -61,8 +65,10 @@ export const gardenPictures: Readonly<Record<Shot, ScenePicture>> = {
   ),
   bridge: swapped,
   answer: swapped,
-  variation: swappedInTwos,
-  end: swappedInTwos,
+  guess: inTwos(3),
+  swap: swappedInTwos,
+  reason: swappedInTwos,
+  reveal: swappedInTwos,
 };
 
 const gardenActions: LessonRecord['actions'] = [
@@ -70,7 +76,7 @@ const gardenActions: LessonRecord['actions'] = [
   { stepId: 'apples', action: 'apple-to-basket', times: 3 },
   { stepId: 'exchange', action: 'apple-tapped', times: 1 },
   { stepId: 'bridge', action: 'apple-swapped', times: 3 },
-  { stepId: 'variation', action: 'apple-swapped', times: 3 },
+  { stepId: 'swap', action: 'apple-swapped', times: 3 },
 ];
 
 // The record a page that played the garden from its start sends from a

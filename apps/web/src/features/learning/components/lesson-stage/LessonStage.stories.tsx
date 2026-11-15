@@ -181,6 +181,6 @@ export const KeepingConclusionsUpright: Story = {
   parameters: { frame: 'upright' },
 };
 export const KeepingConclusionsOnAPhone: Story = {
-  args: { controls: keeping(storyBoards.supposed, answering) },
+  args: { controls: keeping(storyBoards.varied, answering) },
   parameters: { frame: 'phone' },
 };

@@ -1,15 +1,20 @@
+import { gardenVariationChoices } from '@education/problems/lessons/garden-balance';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import type { ComponentProps } from 'react';
+import type { ComponentProps, ReactNode } from 'react';
 import type { Handling } from '../../interaction/stage-activation';
 import { gardenLesson } from '../../lessons/garden-balance/definition';
 import { arrive, type GardenState } from '../../lessons/garden-balance/garden-story';
-import { lines } from '../../lessons/garden-balance/script';
+import { lines, variationAnswer } from '../../lessons/garden-balance/script';
 import { boardFacts } from '../../lessons/lesson-board';
 import { stageLook } from '../../lessons/lesson-definition';
 import { backdrops } from '../../media/backdrops/backdrops';
+import { AnswerCapsule } from '../lesson-stage/AnswerCapsule';
+import { AskMicrophone } from '../lesson-stage/AskMicrophone';
 import { ClearingOutline } from '../lesson-stage/ClearingOutline';
 import { ConclusionBoard } from '../lesson-stage/ConclusionBoard';
+import { FireflyHint } from '../lesson-stage/FireflyHint';
 import { BoardPlace, LessonStage, StagePlace } from '../lesson-stage/LessonStage';
+import { ReasonCapsule } from '../lesson-stage/ReasonCapsule';
 import { establishing, framed } from '../lesson-stage/stage-look';
 import { StoryFrame, type FrameShape } from '../lesson-stage/StoryFrame';
 import { Subtitle } from '../lesson-stage/Subtitle';
@@ -22,16 +27,27 @@ type FilmArgs = Omit<ComponentProps<typeof LessonStage>, 'look' | 'shot' | 'chil
   line?: string;
   // The child has said the count right.
   answered?: boolean;
+  // What the child answers in, with the hints and the microphone beside it.
+  answering?: ReactNode;
   frame?: FrameShape;
 };
 
 const look = stageLook(gardenLesson);
 const { content } = gardenLesson;
+const nothing = () => {};
 
 // The garden scenes on the lesson stage, as the lesson page shows them, with
-// the conclusions found so far on the board and the rabbit's line in its
-// subtitle.
-function GardenFilm({ state, handling, line, answered = false, frame, ...stage }: FilmArgs) {
+// the conclusions found so far on the board, the rabbit's line in its
+// subtitle and, while the child answers, the capsule beside it.
+function GardenFilm({
+  state,
+  handling,
+  line,
+  answered = false,
+  answering,
+  frame,
+  ...stage
+}: FilmArgs) {
   const facts = boardFacts(gardenLesson.board, content.conclusions, content, state, { answered });
   return (
     <StoryFrame shape={frame}>
@@ -49,6 +65,7 @@ function GardenFilm({ state, handling, line, answered = false, frame, ...stage }
             <StagePlace at="subtitle">
               <Subtitle teacher={look.teacher} text={line} />
             </StagePlace>
+            {answering}
           </>
         }
       >
@@ -57,6 +74,63 @@ function GardenFilm({ state, handling, line, answered = false, frame, ...stage }
     </StoryFrame>
   );
 }
+
+// The microphone to ask the rabbit, beside what the child answers in, as in
+// every scene the variation is answered in, and the variation's hint in
+// every one but the guess scene, where a guess is a first thought.
+function Answering({ children, hint = true }: { children?: ReactNode; hint?: boolean }) {
+  return (
+    <>
+      {children && <StagePlace at="answer">{children}</StagePlace>}
+      {hint && (
+        <StagePlace at="hint">
+          <FireflyHint left={1} ready onHint={nothing} />
+        </StagePlace>
+      )}
+      <StagePlace at="microphone">
+        <AskMicrophone label="按住问小兔" holding={false} onPress={nothing} onRelease={nothing} />
+      </StagePlace>
+    </>
+  );
+}
+
+const capsuleHandlers = {
+  blocked: false,
+  onListen: nothing,
+  onFinish: nothing,
+  onStopWaiting: nothing,
+  onConfirm: nothing,
+  onRetry: nothing,
+};
+
+const { guess, reason } = variationAnswer;
+
+const guessCapsule = (step: ComponentProps<typeof AnswerCapsule>['step']) => (
+  <Answering hint={false}>
+    <AnswerCapsule
+      {...capsuleHandlers}
+      label="说出你猜的数"
+      question={guess.question}
+      step={step}
+      unit={guess.unit}
+      choices={guess.choices}
+      onChoose={nothing}
+      onContinue={nothing}
+    />
+  </Answering>
+);
+
+const reasonCapsule = (step: ComponentProps<typeof ReasonCapsule>['step']) => (
+  <Answering>
+    <ReasonCapsule
+      {...capsuleHandlers}
+      question={reason.question}
+      step={step}
+      choices={gardenVariationChoices}
+      onChoose={nothing}
+    />
+  </Answering>
+);
 
 const meta = {
   title: 'Learning/Garden balance',
@@ -97,17 +171,72 @@ export const CountTheCucumbers: Story = {
 export const NineCucumbers: Story = {
   args: { state: arrive('answer').state, line: lines.bridgeDone.text, answered: true },
 };
-export const TwoEachInstead: Story = {
-  args: { state: arrive('end').state, line: lines.changeDone.text },
-};
 // A phone held upright: the painting fills it, and the scale spans its width.
 export const OnAnUprightPhone: Story = {
   args: { state: arrive('answer').state, line: lines.bridgeDone.text, frame: 'phone' },
 };
-// On a phone the board wraps onto a second line once the variation sets its
-// condition beside the one it changes.
-export const TwoEachOnAnUprightPhone: Story = {
-  args: { state: arrive('end').state, line: lines.changeDone.text, frame: 'phone' },
+
+// The variation, another problem: the board keeps only the cabbage that
+// weighs three apples beside the 假如 condition, the basket shows the new
+// condition, and the apples rest while the child guesses. The guess heard,
+// to agree with or say again.
+export const VariationGuessHeard: Story = {
+  args: {
+    state: arrive('guess').state,
+    line: '我听到你说「六根」，是 6 吗？',
+    answering: guessCapsule({ kind: 'confirm', heard: '六根', said: [6] }),
+  },
+};
+// The guess recorded, neither right nor wrong, a moment before the lesson
+// moves on by itself.
+export const VariationGuessRecorded: Story = {
+  args: {
+    state: arrive('guess').state,
+    line: lines.change.text,
+    answering: guessCapsule({ kind: 'recorded', said: [6] }),
+  },
+};
+// The child swaps the apples in twos; the rabbit says nothing of the total.
+export const VariationSwap: Story = {
+  args: {
+    state: { ...arrive('swap').state, replaced: 1 },
+    line: lines.swap.text,
+    answering: <Answering />,
+  },
+};
+export const VariationReasonHeard: Story = {
+  args: {
+    state: arrive('reason').state,
+    line: '我听到你说「还是三组，只是每组变成了两根」，对吗？',
+    answering: reasonCapsule({ kind: 'confirm', heard: '还是三组，只是每组变成了两根' }),
+  },
+};
+// Speech cannot be used, or two tries came to nothing: the two rows of words.
+export const VariationReasonChoices: Story = {
+  args: {
+    state: arrive('reason').state,
+    line: lines.why.text,
+    answering: reasonCapsule({ kind: 'ask', message: '', choices: true }),
+  },
+};
+// A reason that was not clear: the rabbit's words in the subtitle, the honey
+// drop to say it again and the firefly hint at hand.
+export const VariationReasonUnclear: Story = {
+  args: {
+    state: arrive('reason').state,
+    line: reason.unclear,
+    answering: reasonCapsule({ kind: 'ask', message: reason.unclear, choices: false }),
+  },
+};
+// Revealed: the 那么 result follows the 假如 condition, three frames of two.
+export const VariationReveal: Story = {
+  args: { state: arrive('reveal').state, line: lines.reveal.text },
+};
+export const VariationReasonOnAnUprightPhone: Story = {
+  args: { ...VariationReasonChoices.args, frame: 'phone' },
+};
+export const VariationRevealOnAnUprightPhone: Story = {
+  args: { ...VariationReveal.args, frame: 'phone' },
 };
 
 // The backdrop's clearing and the part of the world the props take up, over

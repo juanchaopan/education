@@ -1,4 +1,9 @@
-import { drawnAmounts, type Conclusion } from '@education/problems/lesson-content';
+import {
+  drawnAmounts,
+  inVariation,
+  type Conclusion,
+  type LessonContent,
+} from '@education/problems/lesson-content';
 import { boardAmount, type BoardPicture } from '../components/lesson-stage/board-layout';
 import type { BoardFact } from '../components/lesson-stage/ConclusionBoard';
 import type { FilmState } from '../interaction/lesson-film';
@@ -17,12 +22,12 @@ export type LessonBoard<State, Picture extends string> = Readonly<{
 // visit, and the last of the authored hints received.
 export type AnswerProgress = Readonly<{ answered: boolean; hint?: string }>;
 
-// Where a lesson's scenes stand in teaching order, and which one asks for
-// the count, as its content declares them.
-export type BoardScenes<Shot extends string> = Readonly<{
-  shots: readonly Shot[];
-  answerScene: Shot;
-}>;
+// Where a lesson's scenes stand in teaching order, which one asks for the
+// count, and its variation, as its content declares them.
+export type BoardScenes<Shot extends string> = Pick<
+  LessonContent<Shot, string, string>,
+  'shots' | 'answerScene' | 'variation'
+>;
 
 // What the board knows of the film when it draws a conclusion: the scene on
 // screen, whether the count is answered, and the hint the child is using.
@@ -40,6 +45,18 @@ function shown<State, Shot extends string>(
   return now > first || (now === first && (found?.[id]?.(state) ?? true));
 }
 
+// The variation is another problem: once it starts, the board keeps of the
+// problem only the conclusions the variation still uses, beside the
+// variation's own.
+function inSight<Shot extends string>(
+  { id, from }: Conclusion<Shot, string>,
+  scenes: BoardScenes<Shot>,
+  shot: Shot,
+) {
+  if (!scenes.variation || !inVariation(scenes, shot)) return true;
+  return scenes.variation.keeps.includes(id) || inVariation(scenes, from);
+}
+
 function used<Shot extends string>(
   { uses = [], hints = [] }: Conclusion<Shot, string>,
   { shot, hint }: Moment<Shot>,
@@ -55,6 +72,16 @@ function pictureOf(pictures: Readonly<Record<string, BoardPicture>>, picture: st
   return found;
 }
 
+// What a conclusion of the variation is on the board: the condition it
+// sets, 假如, or what that came to, 那么.
+function kindOf<Shot extends string>(
+  { id, supposed }: Conclusion<Shot, string>,
+  { variation }: BoardScenes<Shot>,
+): BoardFact['kind'] {
+  if (supposed) return 'supposed';
+  return variation?.result === id ? 'result' : undefined;
+}
+
 // A conclusion as the board draws it, with the amounts a lesson that keeps a
 // board declares for every conclusion, and the one written on once the count
 // is answered. Its amounts only ever grow at the end, so each is named by its
@@ -62,6 +89,7 @@ function pictureOf(pictures: Readonly<Record<string, BoardPicture>>, picture: st
 function factOf<Shot extends string>(
   conclusion: Conclusion<Shot, string>,
   pictures: Readonly<Record<string, BoardPicture>>,
+  scenes: BoardScenes<Shot>,
   moment: Moment<Shot>,
 ): BoardFact {
   const written = moment.answered ? conclusion.answer : undefined;
@@ -73,15 +101,16 @@ function factOf<Shot extends string>(
       boardAmount(`${place}-${picture}`, count, pictureOf(pictures, picture), drawing),
     ),
     lit: used(conclusion, moment),
-    supposed: conclusion.supposed ?? false,
+    kind: kindOf(conclusion, scenes),
   };
 }
 
 // The conclusions a lesson's board shows in a state of its film, drawn as
 // the board draws them, in the order the lesson's content lists them; the
-// title card shows none. The count is answered once the child got it right
-// in this visit, or once the film has moved past the scene that asks for it.
-// A hint lights what it uses only while the child is still answering.
+// title card shows none, and the variation only what it keeps beside its
+// own. The count is answered once the child got it right in this visit, or
+// once the film has moved past the scene that asks for it. A hint lights
+// what it uses only while the child is still answering.
 export function boardFacts<State extends FilmState<Shot>, Shot extends string>(
   board: LessonBoard<State, string>,
   conclusions: readonly Conclusion<Shot, string>[],
@@ -99,6 +128,9 @@ export function boardFacts<State extends FilmState<Shot>, Shot extends string>(
     hint: shot === answerScene && !answered ? progress.hint : undefined,
   };
   return conclusions
-    .filter((conclusion) => shown(conclusion, board, scenes, shot, state))
-    .map((conclusion) => factOf(conclusion, board.pictures, moment));
+    .filter(
+      (conclusion) =>
+        shown(conclusion, board, scenes, shot, state) && inSight(conclusion, scenes, shot),
+    )
+    .map((conclusion) => factOf(conclusion, board.pictures, scenes, moment));
 }

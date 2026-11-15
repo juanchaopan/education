@@ -3,7 +3,8 @@ import type { TeacherRole } from '../lesson-definition';
 import type { Shot } from './script';
 
 // The scale fills the frame while it is halved and weighed, the single apple
-// is seen up close, and the swaps keep the whole scale in view.
+// is seen up close, and the swaps keep the whole scale in view, the
+// variation's as well.
 const halving: Camera = { zoom: 1.1, x: -1, y: 1.8 };
 const swapping: Camera = { zoom: 1.11, y: 1 };
 
@@ -13,8 +14,10 @@ export const gardenCameras: Record<Shot, Camera> = {
   exchange: { zoom: 1.19, x: 3, y: 3 },
   bridge: swapping,
   answer: swapping,
-  variation: swapping,
-  end: swapping,
+  guess: swapping,
+  swap: swapping,
+  reason: swapping,
+  reveal: swapping,
 };
 
 // The rabbit stands at the scale's left.
@@ -25,7 +28,7 @@ export const gardenTeacher: TeacherRole = {
 };
 
 // The scale with its pans raised as high as they go, the cues that point at
-// it, the basket beside it and the note under it in the last scene.
+// it, and the basket beside it with the variation's sign under it.
 export const gardenStaging: Box = { x: 380, y: 210, width: 690, height: 340 };
 
 // The warm morning colours taken from the garden backdrop.

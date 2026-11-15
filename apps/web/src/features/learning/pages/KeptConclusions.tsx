@@ -5,10 +5,14 @@ import type { FilmState } from '../interaction/lesson-film';
 import { boardFacts, type AnswerProgress, type LessonBoard } from '../lessons/lesson-board';
 
 // What the board reads of a lesson: its scenes in teaching order, the scene
-// that asks for the count and the conclusions its content declares, and how
-// its board draws them, if its way of teaching keeps them on the board.
+// that asks for the count, its variation, which the board shows as another
+// problem, and the conclusions its content declares; and how its board draws
+// them, if its way of teaching keeps them on the board.
 type BoardLesson<State, Shot extends string> = Readonly<{
-  content: Pick<LessonContent<Shot, string, string>, 'shots' | 'answerScene' | 'conclusions'>;
+  content: Pick<
+    LessonContent<Shot, string, string>,
+    'shots' | 'answerScene' | 'variation' | 'conclusions'
+  >;
   board?: LessonBoard<State, string>;
 }>;
 

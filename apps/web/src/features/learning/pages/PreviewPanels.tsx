@@ -3,14 +3,15 @@ import type { AnswerEvents } from '../data-access/useAnswerHints';
 import type { FilmState } from '../interaction/lesson-film';
 import type { Subtitle } from '../interaction/subtitle';
 import type { LessonFilm } from '../interaction/useLessonFilm';
-import { shotAfter, type LessonDefinition } from '../lessons/lesson-definition';
+import { shotAfter, variationPlay, type LessonDefinition } from '../lessons/lesson-definition';
 import type { MicrophoneTurn } from '../voice/microphone-turn';
 import { flowAnswers } from './flows/flow-answers';
+import { VariationAnswer } from './VariationAnswer';
 
 type Props<Shot extends string> = {
   lesson: Pick<
     LessonDefinition<FilmState<Shot>, Shot, string, unknown, string, object>,
-    'content' | 'script' | 'answer'
+    'content' | 'script' | 'answer' | 'variation'
   >;
   scope: LearningScope;
   film: Pick<
@@ -23,10 +24,11 @@ type Props<Shot extends string> = {
 };
 
 // The controls a parent previewing a lesson has in the picture beside the
-// film's own: only the answer part of the lesson's flow, tapped, with its
-// hints. No microphone, no questions to the teacher and no draft: the
-// preview keeps nothing. A correct answer plays the film on from the scene
-// after the answer, as it does for a child.
+// film's own: the answer part of the lesson's flow, tapped, with its hints,
+// and its variation, tapped too. No microphone, no questions to the teacher
+// and no draft: the preview keeps nothing. A correct answer plays the film
+// on from the scene after the answer, and the variation moves on as it does
+// for a child.
 export function PreviewPanels<Shot extends string>({
   lesson,
   scope,
@@ -41,20 +43,32 @@ export function PreviewPanels<Shot extends string>({
   const { answerScene } = content;
   const FlowAnswer = flowAnswers[content.flow];
   return (
-    <FlowAnswer
-      mode="preview"
-      answer={answer}
-      answerScene={answerScene}
-      shot={shot}
-      scope={scope}
-      film={film}
-      turn={turn}
-      subtitle={subtitle}
-      events={answerEvents}
-      onDone={() => {
-        const next = shotAfter(script, answerScene);
-        if (next) film.go(next);
-      }}
-    />
+    <>
+      <FlowAnswer
+        mode="preview"
+        answer={answer}
+        answerScene={answerScene}
+        shot={shot}
+        scope={scope}
+        film={film}
+        turn={turn}
+        subtitle={subtitle}
+        events={answerEvents}
+        onDone={() => {
+          const next = shotAfter(script, answerScene);
+          if (next) film.go(next);
+        }}
+      />
+      <VariationAnswer
+        mode="preview"
+        play={variationPlay(lesson)}
+        shot={shot}
+        scope={scope}
+        film={film}
+        turn={turn}
+        subtitle={subtitle}
+        go={film.go}
+      />
+    </>
   );
 }

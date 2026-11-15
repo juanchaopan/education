@@ -1,15 +1,15 @@
 import { useRef, useState } from 'react';
 import type { LessonRecord } from '@education/contracts';
 import type { LearningScope } from './learning-request';
-import { useQuestionHelp } from './useQuestionHelp';
+import { useQuestionHelp, type QuestionHelp } from './useQuestionHelp';
 import { useQuestionReply } from './useQuestionReply';
 import { useVoiceInput } from './useVoiceInput';
 import type { VoiceOptions } from './voice-input';
 
 type Options = VoiceOptions & {
-  // The step in which the child gives the final answer, where a question is
-  // help and is recorded as such.
-  answerStep?: string;
+  // What a question asked in this step counts as help on, when the child is
+  // answering in it.
+  help?: QuestionHelp;
 };
 
 const unrecorded: LessonRecord = { now: { things: [], states: [] }, ended: [], actions: [] };
@@ -25,14 +25,13 @@ export function useLessonQuestion(
   scope: LearningScope,
   stepId: string,
   record: () => LessonRecord,
-  { answerStep, ...voiceOptions }: Options = {},
+  { help: counting, ...voiceOptions }: Options = {},
 ) {
   const voice = useVoiceInput(scope, stepId, 'hold', voiceOptions);
   const teacher = useQuestionReply(scope);
   const askedIn = useRef({ stepId, record: unrecorded });
   const [asked, setAsked] = useState<string>();
-  const answering = stepId === answerStep;
-  const help = useQuestionHelp(scope, answering);
+  const help = useQuestionHelp(scope, counting);
 
   return {
     voice: voice.state,
@@ -51,7 +50,7 @@ export function useLessonQuestion(
     drop: voice.cancel,
     async send() {
       if (voice.state.status !== 'review' || !voice.state.text.trim()) return;
-      if (answering && !(await help.counted())) return;
+      if (!(await help.counted())) return;
       const text = voice.confirm();
       if (!text) return;
       setAsked(text);

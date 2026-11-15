@@ -14,7 +14,6 @@ const fact = (id: string, says: string, amounts: readonly BoardAmount[]): BoardF
   says,
   amounts,
   lit: false,
-  supposed: false,
 });
 
 const board = () => screen.getByRole('list', { name: '记住的结论' });
@@ -90,20 +89,22 @@ it('marks the conclusion in use as the current one', () => {
   expect(screen.getByText('用到的').parentElement).toHaveAttribute('aria-current', 'true');
 });
 
-it('keeps a supposed condition beside the one it changes, tagged 假如 and read as one', () => {
-  const says = '假如 1 个黄球和 2 个红球一样重';
+it("tags the variation's condition 假如 and keeps what it came to, tagged 那么, beside it", () => {
+  const supposed = '假如 1 个黄球和 2 个红球一样重';
+  const result = '那么 1 个盒子和 2 组红球一样重';
   render(
     <ConclusionBoard
       facts={[
-        fact('original', '1 个黄球和 3 个红球一样重', [amount(1), amount(3)]),
-        { ...fact('supposed', says, [amount(1), amount(2)]), supposed: true },
-        fact('later', '1 个盒子和 2 组红球一样重', [amount(1), amount(6, { group: 3 })]),
+        fact('kept', '1 个盒子和 2 个黄球一样重', [amount(1), amount(2)]),
+        { ...fact('supposed', supposed, [amount(1), amount(2)]), kind: 'supposed' },
+        { ...fact('result', result, [amount(1), amount(4, { group: 2 })]), kind: 'result' },
       ]}
     />,
   );
-  const [pair, later] = within(board()).getAllByRole('listitem');
-  expect(pair).toHaveTextContent('1 个黄球和 3 个红球一样重');
-  expect(pair).toHaveTextContent(says);
-  expect(later).toHaveTextContent('1 个盒子和 2 组红球一样重');
-  expect(drawn(says)?.textContent).toBe('假如=');
+  const [kept, varied] = within(board()).getAllByRole('listitem');
+  expect(kept).toHaveTextContent('1 个盒子和 2 个黄球一样重');
+  expect(varied).toHaveTextContent(supposed);
+  expect(varied).toHaveTextContent(result);
+  expect(drawn(supposed)?.textContent).toBe('假如=');
+  expect(drawn(result)?.textContent).toBe('那么=');
 });

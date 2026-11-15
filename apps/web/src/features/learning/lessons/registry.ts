@@ -8,22 +8,24 @@ import type { LessonBoard } from './lesson-board';
 import type {
   LessonAnswer,
   LessonDefinition,
+  LessonVariationAnswer,
   ProblemVersion,
   Script,
   TeacherRole,
 } from './lesson-definition';
 
 // What the checks read of a lesson's definition: its content, with its
-// version, flow, backdrop, scenes, answer scene, lines, conclusions and
-// record words; its script's lines, scenes, entry lines and each scene's
-// framing; its answer's hints; the library teacher it picks; where its props
-// stand; how its board draws the conclusions; and the picture each scene
-// first shows, as a question would carry it. Every lesson's definition gives
-// one, whatever its own types.
+// version, flow, backdrop, scenes, answer scene, variation, lines,
+// conclusions and record words; its script's lines, scenes, entry lines and
+// each scene's framing; its answer's hints and its variation's; the library
+// teacher it picks; where its props stand; how its board draws the
+// conclusions; and the picture each scene first shows, as a question would
+// carry it. Every lesson's definition gives one, whatever its own types.
 export type LessonOutline = Readonly<{
   content: AnyLessonContent;
   script: Pick<Script<string, string>, 'lines' | 'shots' | 'entryLines' | 'cameras'>;
   answer: Pick<LessonAnswer, 'hints'>;
+  variation?: Pick<LessonVariationAnswer, 'hints'>;
   teacher: Pick<TeacherRole, 'id'>;
   staging: Box;
   board?: LessonBoard<never, string>;

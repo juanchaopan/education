@@ -21,6 +21,11 @@ it('passes every check a registered lesson must pass, against its own plugin', (
   expect(narrationProblems(templateLesson, voiceConfig, record)).toEqual([]);
 });
 
+it('asks a variation, as every 逐幕探究 lesson copied from it does', () => {
+  expect(templateLesson.content.variation).toBeDefined();
+  expect(templateLesson.variation.hints).toEqual(Object.keys(lessonTemplate.variation!.hints));
+});
+
 it('tells the teacher where the pebbles are and each one put in the bowl', () => {
   const { picture, action } = templateLesson.record;
   const start = arrive('look').state;
@@ -28,6 +33,10 @@ it('tells the teacher where the pebbles are and each one put in the bowl', () =>
   expect(picture(moved).things).toEqual([
     { place: 'table', thing: 'pebble', count: 1 },
     { place: 'bowl', thing: 'pebble', count: 1 },
+  ]);
+  expect(picture(arrive('guess').state).things).toEqual([
+    { place: 'table', thing: 'pebble', count: 3 },
+    { place: 'bowl', thing: 'pebble', count: 0 },
   ]);
   expect(action(start, { kind: 'drop', place: 'bowl' }, true)).toBe('pebble-to-bowl');
   expect(action(start, { kind: 'drop', place: 'bowl' }, false)).toBeUndefined();

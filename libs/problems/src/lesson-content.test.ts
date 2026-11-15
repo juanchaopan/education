@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   drawnAtMost,
+  inVariation,
   lessonContentProblems,
   lessonFlows,
   pictureProblems,
@@ -149,17 +150,107 @@ describe('the lesson content check', () => {
     ]);
   });
 
-  it('finds a supposed conclusion with none found before it to stand beside', () => {
-    const beside =
-      'conclusion four-marbles supposes a change but has no conclusion on the board to stand beside';
-    expect(keeping(supposed)).toEqual([beside]);
-    expect(
-      keeping({ ...counted, from: 'after', uses: [] }, { ...supposed, from: 'count' }),
-    ).toEqual([beside]);
+  it('finds a changed condition set before the final answer is right', () => {
+    expect(keeping(counted, { ...supposed, from: 'count' })).toEqual([
+      'conclusion four-marbles supposes a change before the variation starts',
+    ]);
   });
 
   it('finds two conclusions with the same id', () => {
     expect(keeping(counted, counted)).toEqual(['conclusion three-marbles is declared twice']);
+  });
+});
+
+// The marbles again, then a variation with four of them: the child guesses
+// how many are in the cup, says why, and hears what it came to.
+const varied: AnyLessonContent = {
+  ...fixture,
+  shots: ['roll', 'count', 'guess', 'why', 'reveal'],
+  lines: {
+    start: fixture.lines.start!,
+    howMany: fixture.lines.howMany!,
+    four: { scene: 'guess', text: '假如有四颗弹珠，杯子里会有几颗？' },
+    why: { scene: 'why', text: '说说为什么。' },
+    reveal: { scene: 'reveal', text: '杯子里有四颗。' },
+  },
+  scenes: {
+    roll: fixture.scenes.roll!,
+    count: fixture.scenes.count!,
+    guess: { prompt: '假如有四颗弹珠，孩子猜一猜。', entry: ['four'] },
+    why: { prompt: '孩子说说为什么。', entry: ['why'] },
+    reveal: { prompt: '老师说出结果。', entry: ['reveal'] },
+  },
+  conclusions: [
+    { ...counted, uses: ['count'] },
+    { ...supposed, from: 'guess' },
+    { id: 'four-in-cup', says: '那么杯子里有 4 颗弹珠', from: 'reveal' },
+  ],
+  variation: {
+    guessScene: 'guess',
+    reasonScene: 'why',
+    revealScene: 'reveal',
+    result: 'four-in-cup',
+    keeps: [],
+    choices: { cups: '杯子数', marbles: '弹珠数' },
+  },
+};
+const variation = varied.variation!;
+const varying = (change: Partial<NonNullable<AnyLessonContent['variation']>>) =>
+  lessonContentProblems({ ...varied, variation: { ...variation, ...change } });
+
+describe("the check of a lesson's variation", () => {
+  it('passes a variation that guesses, reasons and reveals after the final answer', () => {
+    expect(lessonContentProblems(varied)).toEqual([]);
+  });
+
+  it('tells the variation scenes from the problem before them, and none in a lesson without one', () => {
+    expect(varied.shots.map((shot) => inVariation(varied, shot))).toEqual([
+      false,
+      false,
+      true,
+      true,
+      true,
+    ]);
+    expect(fixture.shots.map((shot) => inVariation(fixture, shot))).toEqual([false, false, false]);
+  });
+
+  it('finds scenes the lesson does not have, or out of order', () => {
+    expect(varying({ reasonScene: 'later' })).toEqual([
+      'variation scene later is not a scene',
+      'the variation does not guess, reason and reveal after the answer scene, in that order',
+    ]);
+    expect(varying({ guessScene: 'why', reasonScene: 'guess' })).toEqual([
+      'the variation does not guess, reason and reveal after the answer scene, in that order',
+      'conclusion four-marbles supposes a change before the variation starts',
+    ]);
+  });
+
+  it('finds kept conclusions the problem did not find before the variation', () => {
+    expect(varying({ keeps: ['three-marbles'] })).toEqual([]);
+    expect(varying({ keeps: ['five-marbles', 'four-in-cup'] })).toEqual([
+      'the variation keeps five-marbles, which is not a conclusion found before it',
+      'the variation keeps four-in-cup, which is not a conclusion found before it',
+    ]);
+  });
+
+  it('finds a result missing, found outside the reveal, or not right after its condition', () => {
+    const outOfPlace = (result: string) =>
+      `the variation's result ${result} is not found in reveal right after its condition`;
+    expect(varying({ result: 'five-in-cup' })).toEqual([outOfPlace('five-in-cup')]);
+    expect(varying({ result: 'three-marbles' })).toEqual([outOfPlace('three-marbles')]);
+    const [problem, condition, result] = varied.conclusions;
+    expect(
+      lessonContentProblems({ ...varied, conclusions: [condition!, problem!, result!] }),
+    ).toEqual([outOfPlace('four-in-cup')]);
+  });
+
+  it('finds fewer than two reasons to tap, or one with no words', () => {
+    expect(varying({ choices: { cups: '杯子数' } })).toEqual([
+      'the variation has fewer than two reasons to tap',
+    ]);
+    expect(varying({ choices: { cups: '杯子数', marbles: ' ' } })).toEqual([
+      'reason marbles has no words',
+    ]);
   });
 });
 

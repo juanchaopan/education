@@ -66,10 +66,30 @@ export function movesToTheAnswer(page: Page): FilmMove[] {
   ];
 }
 
-// The rest of the film after a correct count: the same three apples swapped
-// for two cucumbers each.
+// The variation's swaps: the same three apples swapped for two cucumbers
+// each, the rabbit silent until it asks why.
 export function movesInTheVariation(page: Page): FilmMove[] {
-  return [swap(page, []), swap(page, []), swap(page, ['change-done'])];
+  return [swap(page, []), swap(page, []), swap(page, ['why'])];
+}
+
+// The variation's guess tapped, as a child whose browser has no microphone
+// gives it: recorded, after which the lesson moves on by itself.
+export async function guessSix(page: Page) {
+  const guess = page.getByRole('region', { name: '说出你猜的数' });
+  const numbers = guess.getByRole('group', { name: '点一个数字回答' });
+  await numbers.getByRole('button', { name: '6', exact: true }).click({ timeout: 30_000 });
+  await expect(guess).toContainText('记下了');
+}
+
+// The reason tapped in the two rows: the groups kept, the cucumbers in each
+// changed.
+export async function tapTheReason(page: Page) {
+  const reason = page.getByRole('region', { name: '说说为什么' });
+  const kept = reason.getByRole('group', { name: '没变的是' });
+  const changed = reason.getByRole('group', { name: '变了的是' });
+  await kept.getByRole('button', { name: '组数' }).click({ timeout: 30_000 });
+  await changed.getByRole('button', { name: '每组根数' }).click();
+  await reason.getByRole('button', { name: '交' }).click();
 }
 
 // Starts the film and plays it to the question of the count, hearing each
@@ -81,7 +101,8 @@ export async function hearToTheAnswer(page: Page, narration: Listener) {
 }
 
 // A signed-in child at the question of the count taps 9, as one whose
-// browser has no microphone does, and plays the variation to its last line.
+// browser has no microphone does, and plays the variation to its last line:
+// the guess, the swaps, the reason and what it came to.
 export async function answerAndHearTheVariation(page: Page, narration: Listener) {
   const answer = page.getByRole('region', { name: '说出答案' });
   const numbers = answer.getByRole('group', { name: '点一个数字回答' });
@@ -89,5 +110,9 @@ export async function answerAndHearTheVariation(page: Page, narration: Listener)
   await expect(gardenFilm(page).caption).toHaveText(/答对了/);
   await answer.getByRole('button', { name: '接着看' }).click();
   await narration.heard(['change']);
+  await guessSix(page);
+  await narration.heard(['swap']);
   await play(movesInTheVariation(page), ({ says }) => narration.heard(says));
+  await tapTheReason(page);
+  await narration.heard(['reveal']);
 }

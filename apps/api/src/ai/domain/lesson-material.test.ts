@@ -1,6 +1,9 @@
 import type { LessonRecord, ScenePicture } from '@education/contracts';
 import { backdropScenery } from '@education/problems/backdrops';
-import type { ScenePicture as DeclaredPicture } from '@education/problems/lesson-content';
+import {
+  inVariation,
+  type ScenePicture as DeclaredPicture,
+} from '@education/problems/lesson-content';
 import { gardenBalanceLesson as garden } from '@education/problems/lessons/garden-balance';
 import { describe, expect, it } from 'vitest';
 import { gardenPictures as pictures, gardenRecordAt } from './garden-record-fixtures.js';
@@ -19,6 +22,12 @@ const materialAt = (shot: Shot, record = gardenRecordAt(shot)) =>
   lessonMaterial(garden, shot, record, true);
 const told = (shot: Shot) => JSON.stringify(materialAt(shot));
 
+// A conclusion the teacher may not know yet in the scene at `at`: one found
+// later, or one the problem finds in that very scene. The variation's own
+// conditions and result are said on arriving at the scene that finds them.
+const unknownAt = (at: number, from: Shot) =>
+  shots.indexOf(from) > at || (shots.indexOf(from) === at && !inVariation(garden, from));
+
 describe('the lesson so far', () => {
   it.each(shots.map((shot, at) => [shot, at] as const))(
     'from %s holds nothing of a later scene',
@@ -30,7 +39,7 @@ describe('the lesson so far', () => {
           expect(text).not.toContain(line.text);
       }
       for (const { says, from } of conclusions)
-        if (shots.indexOf(from) >= at) expect(text).not.toContain(says);
+        if (unknownAt(at, from)) expect(text).not.toContain(says);
     },
   );
 
@@ -44,16 +53,28 @@ describe('the lesson so far', () => {
   );
 
   it('writes the final answer on its conclusion past the scene that asks for it', () => {
-    expect(materialAt('variation')?.found).toEqual([
+    expect(materialAt('guess')?.found).toEqual([
       '1 棵青菜和 3 个苹果一样重',
       '1 个苹果和 3 根黄瓜一样重',
       '1 棵青菜和 3 组黄瓜一样重，一共 9 根黄瓜',
     ]);
   });
 
+  it("tells the variation's condition apart from the problem's conclusions, its result only once revealed", () => {
+    const supposed = '假如 1 个苹果和 2 根黄瓜一样重';
+    expect(materialAt('guess')?.variation).toEqual([supposed]);
+    expect(materialAt('reason')?.variation).toEqual([supposed]);
+    expect(told('reason')).not.toMatch(/6 根|六根/);
+    expect(materialAt('reveal')?.variation).toEqual([
+      supposed,
+      '那么 1 棵青菜和 3 组黄瓜一样重，一共 6 根黄瓜',
+    ]);
+    expect(materialAt('answer')).not.toHaveProperty('variation');
+  });
+
   it('tells a scene past the one that asks for the answer only to a child who answered right', () => {
-    expect(lessonMaterial(garden, 'variation', gardenRecordAt('variation'), false)).toBeUndefined();
-    expect(lessonMaterial(garden, 'end', gardenRecordAt('end'), false)).toBeUndefined();
+    expect(lessonMaterial(garden, 'guess', gardenRecordAt('guess'), false)).toBeUndefined();
+    expect(lessonMaterial(garden, 'reveal', gardenRecordAt('reveal'), false)).toBeUndefined();
     expect(lessonMaterial(garden, 'answer', gardenRecordAt('answer'), false)).toBeDefined();
   });
 
@@ -84,12 +105,12 @@ describe('the lesson so far', () => {
   });
 
   it("tells the child's key actions with their scene and how many times", () => {
-    expect(materialAt('end')?.done).toEqual([
+    expect(materialAt('reveal')?.done).toEqual([
       '第 1 幕：把一棵青菜拖进篮子',
       '第 2 幕：从右盘拿走一个苹果放进篮子（3 次）',
       '第 3 幕：碰了碰苹果',
       '第 4 幕：把一个苹果换成一组黄瓜（3 次）',
-      '第 6 幕：把一个苹果换成一组黄瓜（3 次）',
+      '第 7 幕：把一个苹果换成一组黄瓜（3 次）',
     ]);
   });
 
@@ -135,7 +156,7 @@ describe('a picture in words', () => {
     expect(pictureText(recordWords, { things: [], states: ['apples-down'] })).toBe(
       '苹果这边沉下去了。',
     );
-    expect(pictureText(recordWords, pictures.end)).toBe(
+    expect(pictureText(recordWords, pictures.reveal)).toBe(
       '天平左盘（画面左边）：1 棵青菜；天平右盘（画面右边）：3 组黄瓜，每组 2 根；天平右边的篮子：2 根黄瓜。天平是平的，篮子上写着「一个苹果换两根」。',
     );
   });
@@ -164,7 +185,7 @@ describe('a record that does not fit the lesson', () => {
     ],
     [
       'the picture of a later scene',
-      { ...record, ended: [{ stepId: 'end', picture: pictures.end }] },
+      { ...record, ended: [{ stepId: 'reveal', picture: pictures.reveal }] },
     ],
     [
       'the picture of the scene asked about as an earlier one',

@@ -61,7 +61,7 @@ test('a line that does not come out holds the scene until the child hears it aga
   await play(moves.slice(0, 3));
   await moves[3]!.move();
   const { film, caption } = gardenFilm(page);
-  await expect(caption).toHaveText(/平了。现在，一棵青菜和三个苹果一样重。/);
+  await expect(caption).toHaveText(/平了！一棵青菜和三个苹果一样重。/);
   await expect(film).toHaveAttribute('data-narration-failure', /\w+/, { timeout: 20_000 });
   const again = film.getByRole('button', { name: '再听一次' });
   await expect(again).toBeVisible();
