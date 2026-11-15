@@ -40,7 +40,9 @@ test('parent types the phrase, confirms the password and deletes the family', as
     const cookies = await page.context().cookies();
     expect(cookies.map(({ name }) => name)).not.toContain('__Host-education_session');
     await deleted.getByRole('button', { name: '注册新的家庭' }).click();
-    await expect(page.getByRole('button', { name: '已有账号？去登录' })).toBeVisible();
+    await expect(page).toHaveURL(/\/signup$/);
+    await expect(page.getByRole('heading', { name: '创建家长账号' })).toBeVisible();
+    await expect(page.getByRole('link', { name: '已有账号？去登录' })).toBeVisible();
   } finally {
     if (family) {
       await removeFamilies(pool, [family]);

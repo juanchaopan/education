@@ -159,7 +159,11 @@ test('register on A, log in on B, refresh on A, rotate and revoke across instanc
   // Reload obtains the new token's CSRF proof before the UI sends logout.
   await page.reload();
   await page.getByRole('button', { name: '退出账号' }).click();
-  await expect(page.getByRole('heading', { name: '家长登录' })).toBeVisible();
+  await expect(page).toHaveURL(/\/login\/parent$/);
+  await expect(page.getByRole('tab', { name: '家长登录' })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  );
   expect((await context.request.get(`${other}/api/v1/session`)).status()).toBe(401);
   expect(await database('SELECT count(*) FROM parent_sessions;')).toBe('0');
   const a = (await compose(['ps', '-q', 'app-a'])).output.trim();
@@ -191,7 +195,7 @@ test('database outage fails readiness and registration without losing form input
   request,
 }, info) => {
   const email = `outage-${randomUUID()}@example.test`;
-  await page.goto('/family');
+  await page.goto('/signup');
   await page.getByLabel('家长邮箱').fill(email);
   await page.getByLabel('设置密码').fill(password);
   await expect(page.getByRole('button', { name: '提交注册' })).toBeEnabled();

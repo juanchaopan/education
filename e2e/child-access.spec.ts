@@ -31,7 +31,6 @@ test('parent confirms password, resets a child PIN and the old browser loses acc
     );
     // Signing in at the family's page opens that page.
     await page.goto('/family/profile');
-    await page.getByRole('button', { name: '已有账号？去登录' }).click();
     await page.getByLabel('登录邮箱').fill(email);
     await page.getByLabel('登录密码').fill(password);
     await page.getByRole('button', { name: '登录', exact: true }).click();

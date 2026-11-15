@@ -114,15 +114,16 @@ eachPage('every control is big enough to tap', touch, async (page) => {
   expect(await smallTargets(page)).toEqual([]);
 });
 
-// The parent's sign-up has no site header; its brand leads home, where the
-// child's sign-in is the first tab.
+// The parent's sign-up has no site header; its footer leads to the parent's
+// sign-in, and its brand leads home, which sends a visitor to the child's
+// sign-in.
 test('taps open the parent login and turn the child’s remember switch', async ({
   page,
 }, testInfo) => {
   test.skip(!touch(testInfo.project.name), 'checked in another viewport');
-  const signedOut = pageStates.find((state) => state.name === 'family-signed-out')!;
-  await checkPageState(page, signedOut, async () => {
-    await page.getByRole('button', { name: '已有账号？去登录' }).tap();
+  const signUp = pageStates.find((state) => state.name === 'parent-sign-up')!;
+  await checkPageState(page, signUp, async () => {
+    await page.getByRole('link', { name: '已有账号？去登录' }).tap();
     await expect(page.getByLabel('登录邮箱')).toBeVisible();
     await page.getByRole('link', { name: '小小探索家首页' }).tap();
     await expect(page.getByRole('tab', { name: '孩子登录' })).toHaveAttribute(

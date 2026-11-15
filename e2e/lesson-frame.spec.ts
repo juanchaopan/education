@@ -14,7 +14,7 @@ import { gardenFilm } from './garden-film.js';
 // the child where they came from.
 
 const lesson = '/problems/garden-balance/1';
-const opened = `/?open=${gardenBook.id}`;
+const opened = `/books?open=${gardenBook.id}`;
 
 // Where the page is, as the child would read it.
 const address = (page: Page) => {
@@ -90,7 +90,7 @@ test("goes back from a link opened directly to the child's home, the problem's b
   await page.goto(lesson);
   await expect(page.getByRole('button', { name: /开始短片/ })).toBeVisible({ timeout: 30_000 });
   await back(page).click();
-  await expect.poll(() => address(page)).toBe('/?open=g1-math-xueersi');
+  await expect.poll(() => address(page)).toBe('/books?open=g1-math-xueersi');
   await expect(page.getByRole('heading', { name: '我的书' })).toBeVisible();
   await expect(gardenLink(page)).toBeVisible();
 });

@@ -80,7 +80,7 @@ test('titles use the self-hosted LXGW WenKai from the site itself', async ({ pag
   page.on('request', (request) => {
     if (request.resourceType() === 'font') fontHosts.add(new URL(request.url()).origin);
   });
-  await page.goto('/');
+  await page.goto('/login/child');
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
   await page.evaluate(() => document.fonts.ready);
   expect((await titleFont(page)).status).toBe('loaded');
@@ -91,7 +91,7 @@ test('titles fall back to kaishu and then the body font when the title font fail
   page,
 }) => {
   await page.route('**/title-font-*.woff2', (route) => route.abort());
-  await page.goto('/');
+  await page.goto('/login/child');
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
   await page.evaluate(() => document.fonts.ready);
   const font = await titleFont(page);

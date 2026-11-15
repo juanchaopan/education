@@ -50,11 +50,12 @@ test('child signs in, returns across browser contexts, remembers only the locato
     });
     try {
       const next = await restored.newPage();
-      await next.goto(new URL('/child', page.url()).href);
+      await next.goto(new URL('/', page.url()).href);
       await expect(myBooks(next)).toBeVisible();
-      await expect(next).toHaveURL(/\/$/);
+      await expect(next).toHaveURL(/\/books$/);
       await next.getByRole('button', { name: /小鹿/ }).click();
       await next.getByRole('menuitem', { name: '退出登录' }).click();
+      await expect(next).toHaveURL(/\/login\/child$/);
       await expect(next.getByRole('tab', { name: '孩子登录' })).toBeVisible();
       await expect(next.getByLabel('我的家庭码', { exact: true })).toHaveValue(code);
       await expect(next.getByLabel('我的昵称', { exact: true })).toHaveValue('小鹿');

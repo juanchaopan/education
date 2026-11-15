@@ -26,11 +26,10 @@ export async function submitParentLogin(page: Page, { email, password }: Passwor
   await page.getByRole('button', { name: '登录', exact: true }).click();
 }
 
-// Opens the parent space signed out, switches to login and signs in, which
-// lands on the overview.
+// Opens the parent space signed out, which leads to the parent login, and
+// signs in there, which returns to the parent space's overview.
 export async function signInWithPassword(page: Page, parent: PasswordParent) {
   await page.goto('/family');
-  await page.getByRole('button', { name: '已有账号？去登录' }).click();
   await submitParentLogin(page, parent);
   await expect(page.getByRole('heading', { name: '总览', level: 1 })).toBeVisible();
 }
