@@ -3,13 +3,14 @@ import { lessonContent } from '../lesson-content.js';
 // 一年级试卷第 7 题：两棵青菜和六个苹果一样重，一个苹果和三根黄瓜一样重，
 // 一棵青菜和几根黄瓜一样重？The rabbit halves the scale, weighs one apple
 // against cucumbers and swaps each apple for its cucumbers, then asks for the
-// count; a variation with two cucumbers to an apple follows. The scene
-// prompts never state the final count.
+// count; a variation with two cucumbers to an apple follows. The scale is
+// called 天平 everywhere the child hears or reads it, and the scene prompts
+// never state the final count.
 export const gardenBalanceLesson = lessonContent({
   problem: { id: 'garden-balance', version: 1 },
   flow: 'scene-by-scene',
   backdrop: 'garden-morning',
-  vocabulary: ['青菜', '苹果', '黄瓜', '天平', '秤盘', '一样重', '一组', '每组', '几根'],
+  vocabulary: ['青菜', '苹果', '黄瓜', '天平', '一样重', '一组', '每组', '几根'],
   shots: ['leaves', 'apples', 'exchange', 'bridge', 'answer', 'variation', 'end'],
   answerScene: 'answer',
   lines: {
@@ -20,13 +21,13 @@ export const gardenBalanceLesson = lessonContent({
       text: '可我只想称一棵。你能把一棵青菜，拖进旁边的篮子吗？',
     },
     tip: { scene: 'apples', text: '呀，苹果这边沉下去了。' },
-    halve: { scene: 'apples', text: '拿走几个苹果，看看秤什么时候能回到中间。' },
+    halve: { scene: 'apples', text: '拿走几个苹果，看看天平什么时候能回到中间。' },
     balanced: { scene: 'apples', text: '平了。现在，一棵青菜和三个苹果一样重。' },
     one: { scene: 'exchange', text: '那一个苹果，能换几根黄瓜呢？碰一碰这个苹果。' },
     three: { scene: 'exchange', text: '看，三根黄瓜。和一个苹果一样重。' },
     bridge: {
       scene: 'bridge',
-      text: '刚才一个苹果能换三根黄瓜。这里还剩三个苹果。先换其中一个，看看秤盘会不会动。',
+      text: '刚才一个苹果能换三根黄瓜。这里还剩三个苹果。先换其中一个，看看天平会不会歪。',
     },
     bridgeOne: {
       scene: 'bridge',
@@ -38,7 +39,7 @@ export const gardenBalanceLesson = lessonContent({
     },
     bridgeDone: {
       scene: 'answer',
-      text: '三个苹果，一个个换成了三组黄瓜。每换一次，秤都还是平的。看看一共有几根。',
+      text: '三个苹果，一个个换成了三组黄瓜。每换一次，天平都还是平的。看看一共有几根。',
     },
     change: {
       scene: 'variation',
@@ -89,8 +90,13 @@ export const gardenBalanceLesson = lessonContent({
   // Each conclusion is found in one scene and needed in the scenes after it.
   // The opening's two cabbages and six apples are replaced by the first
   // conclusion and stay on the opening scale only. The swaps use the second,
-  // and leave one cabbage weighing three groups, on which the count of nine
-  // is written once the child has said it. The variation's two cucumbers to
+  // and leave one cabbage weighing three groups. The board plans for that
+  // last line from the start: every amount counts single things, so the three
+  // cucumbers one apple weighs are drawn one by one, and the three groups are
+  // the same nine cucumbers in frames of three, as the swaps framed them on
+  // the scale, never a picture of their own. Once the child has said nine,
+  // only the sentence gains the count: the frames already show the nine
+  // cucumbers and the swaps that made them. The variation's two cucumbers to
   // an apple stand beside the three they change.
   conclusions: [
     {
@@ -130,15 +136,12 @@ export const gardenBalanceLesson = lessonContent({
       says: '1 棵青菜和 3 组黄瓜一样重',
       amounts: [
         [1, 'cabbage'],
-        [3, 'group'],
+        [9, 'cucumber', { group: 3 }],
       ],
       from: 'answer',
       uses: ['answer'],
       hints: ['count-groups'],
-      answer: {
-        amount: [9, 'cucumber', { times: true }],
-        says: '1 棵青菜和 3 组黄瓜一样重，一共 9 根黄瓜',
-      },
+      answer: { says: '1 棵青菜和 3 组黄瓜一样重，一共 9 根黄瓜' },
     },
   ],
   // One scale stands in the middle of every scene, with the basket at its

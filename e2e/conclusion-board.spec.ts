@@ -70,14 +70,17 @@ test('writes the count on once said right, and sets the changed condition beside
   page,
 }) => {
   await signInAtTheGardenAnswer(page);
-  await acceptEveryAnswer(page, gardenApi, { outcome: 'assisted', hint: '先看第一架秤。' });
+  await acceptEveryAnswer(page, gardenApi, {
+    outcome: 'assisted',
+    hint: '我们在找一棵青菜和几根黄瓜一样重。看上面第一条。',
+  });
   await page.goto(lesson);
   await page.getByRole('button', { name: /接着上次的地方/ }).click({ timeout: 60_000 });
   const { film } = gardenFilm(page);
   const { items, conclusion } = boardOf(page);
   await expect(items).toHaveCount(3);
 
-  // The first hint looks back at the first scale, which lights up.
+  // The first hint looks back at the first line on the board, which lights up.
   await film.getByRole('button', { name: /给我一个提示/ }).click({ timeout: 30_000 });
   await expect(conclusion(cabbageApples)).toHaveAttribute('aria-current', 'true');
 

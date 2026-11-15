@@ -33,6 +33,13 @@ describe('garden balance', () => {
     }
   });
 
+  it('first says in every hint what the child is looking for, without the count', () => {
+    for (const hint of Object.values(answering?.hints ?? {})) {
+      expect(hint).toMatch(/^我们在找一棵青菜和几根黄瓜一样重。/);
+      expect(hint).not.toMatch(/9|九/);
+    }
+  });
+
   it('answers the closing question by rule only when it is said the right way round', async () => {
     const status = async (stepId: string, answer: string) =>
       (await checkStep?.({ stepId, answer }))?.status;
@@ -47,11 +54,14 @@ describe('garden balance', () => {
 describe('garden balance variation', () => {
   const reason = (say: string) => variation?.checkReason({ say });
 
-  it('has its own one or two hints', () => {
+  it('has its own one or two hints, each first saying what is looked for, without the count', () => {
     const hints = Object.values(variation?.hints ?? {});
     expect(hints.length).toBeGreaterThanOrEqual(1);
     expect(hints.length).toBeLessThanOrEqual(2);
-    expect(hints).toContain('数一数，现在有几组？每组有几根？');
+    for (const hint of hints) {
+      expect(hint).toMatch(/^我们在找每个苹果只换两根时，一棵青菜和几根黄瓜一样重。/);
+      expect(hint).not.toMatch(/6|六/);
+    }
   });
 
   it('judges the guess of six cucumbers, never counting words as wrong', () => {
