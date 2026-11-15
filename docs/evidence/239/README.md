@@ -48,4 +48,13 @@
 
 ## 样稿和实现对照
 
-对照随实现一起补上。
+实现的图是菜园题 story 的视觉基准截图转成的 JPEG，字体是霞鹜文楷，没有样稿的接缝。每一行从左到右是样稿、选定的样子和实现；选定的样子只有一张作答那一幕的图，答对之前和答对以后共用。
+
+| 状态                       | 样稿                                     | 选定的样子                     | 实现                                       |
+| -------------------------- | ---------------------------------------- | ------------------------------ | ------------------------------------------ |
+| 桌面，作答那一幕，答对之前 | ![](prototype-desktop-answer-before.jpg) | ![](chosen-desktop-answer.jpg) | ![](implemented-desktop-answer-before.jpg) |
+| 桌面，作答那一幕，答对以后 | ![](prototype-desktop-answer-after.jpg)  | ![](chosen-desktop-answer.jpg) | ![](implemented-desktop-answer-after.jpg)  |
+| 桌面，变化题揭晓以后       | ![](prototype-desktop-reveal.jpg)        | ![](chosen-desktop-reveal.jpg) | ![](implemented-desktop-variation.jpg)     |
+| 手机竖屏，变化题揭晓以后   | ![](prototype-phone-reveal.jpg)          | ![](chosen-phone-reveal.jpg)   | ![](implemented-phone-variation.jpg)       |
+
+板本身和选定的样子一致：一棵青菜等于三个苹果（摆成三角），一个苹果等于三根黄瓜，一棵青菜等于三个框、每框三根黄瓜。答对以后板上不添任何画面，只有读屏读的那句话加上「一共 9 根黄瓜」，所以第二行的实现图和第一行一样。揭晓以后「假如」条后面的「那么」结果条和变化题的揭晓由 [#218](https://github.com/juanchaopan/education/issues/218) 做，还不在最后两行的实现图里；这两张图里的板只有三条原有的结论和「假如」条。
