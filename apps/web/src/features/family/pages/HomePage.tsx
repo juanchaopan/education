@@ -11,9 +11,8 @@ import { useParentSession } from '../data-access/useParentSession';
 export function HomePage() {
   const child = useChildSession();
   const parent = useParentSession(child.data === null);
-  if (child.isPending) return <SessionWaiting label="正在打开你的空间…" />;
+  if (child.isPending || (child.data === null && parent.isPending))
+    return <SessionWaiting label="正在打开你的空间…" />;
   if (child.data) return <Navigate to="/books" replace />;
-  if (child.isError) return <Navigate to={signInPath('child')} replace />;
-  if (parent.isPending) return <SessionWaiting label="正在打开你的空间…" />;
   return <Navigate to={parent.data ? '/family' : signInPath('child')} replace />;
 }

@@ -10,7 +10,6 @@ import {
 import { ChildRegistrationSuccess } from '../components/ChildRegistrationSuccess';
 import { useChildRegistration } from '../data-access/useChildRegistration';
 
-const signIn = signInPath('child');
 const empty: ChildRegistrationFields = { registrationKey: '', nickname: '', pin: '' };
 
 // A child joins the family with the KEY a parent gave, on the account pages'
@@ -52,7 +51,7 @@ export function ChildRegistrationPage({ art }: { art: AccountArt }) {
   if (receipt)
     return (
       <AccountLayout art={art} titleId="child-joined-title" title="你已加入家庭！">
-        <ChildRegistrationSuccess receipt={receipt} signIn={signIn} />
+        <ChildRegistrationSuccess receipt={receipt} />
       </AccountLayout>
     );
   return (
@@ -60,7 +59,7 @@ export function ChildRegistrationPage({ art }: { art: AccountArt }) {
       art={art}
       titleId="child-registration-title"
       title="加入家庭"
-      footer={<StandaloneLink to={signIn}>已有账号？去登录</StandaloneLink>}
+      footer={<StandaloneLink to={signInPath('child')}>已有账号？去登录</StandaloneLink>}
     >
       <ChildRegistrationForm
         {...fields}
