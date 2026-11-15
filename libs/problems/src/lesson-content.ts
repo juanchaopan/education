@@ -19,8 +19,25 @@ import type { BackdropId } from './backdrops.js';
 export const lessonFlows = ['scene-by-scene', 'derive-and-solve'] as const;
 export type LessonFlow = (typeof lessonFlows)[number];
 
-// How many of one of the lesson's pictures, for example three apples.
-export type Amount<Picture extends string> = readonly [count: number, picture: Picture];
+// How the board draws an amount. It draws every single thing, as many as the
+// count, unless told otherwise: `group` gathers them into frames of that many,
+// the way a scene gathered them, and `times` writes how many there are, of
+// things or of frames, as 「k×」 before one of them, where drawing them all
+// would make the board too tall or too wide.
+export type AmountDrawing = Readonly<{ group?: number; times?: boolean }>;
+
+// How many of one of the lesson's pictures, for example three apples. The
+// count always counts single things, so a thing keeps one unit across the
+// lesson however its amounts are drawn.
+export type Amount<Picture extends string> = readonly [
+  count: number,
+  picture: Picture,
+  drawing?: AmountDrawing,
+];
+
+// The most single things, or frames, the board draws one by one in an
+// amount; past it an amount writes 「k×」.
+export const drawnAtMost = 8;
 
 // One conclusion a scene finds:
 // - `says`, the sentence a screen reader reads for it;
@@ -30,7 +47,7 @@ export type Amount<Picture extends string> = readonly [count: number, picture: P
 // - `from`, the first scene that finds it;
 // - `uses` and `hints`, the scenes, and the answer's hints, that use it;
 // - `answer`, what it says once the child has answered right, with the
-//   amount the board then writes on;
+//   amount the board then writes on, if any;
 // - `supposed`, a changed condition, which comes right after the
 //   conclusion it changes.
 export type Conclusion<Shot extends string, Picture extends string> = Readonly<{
@@ -251,14 +268,52 @@ function recordWordProblems({ recordWords }: AnyLessonContent) {
     .map(([id]) => `record word ${id} is empty or longer than ${recordWordMaxLength} characters`);
 }
 
+// The amounts the board draws for a conclusion: its own, and the one it
+// writes on once the answer is right.
+export const drawnAmounts = ({ amounts, answer }: AnyConclusion) => [
+  ...(amounts ?? []),
+  ...(answer?.amount ? [answer.amount] : []),
+];
+
+// Frames split an amount into whole groups of two or more.
+const dividedBy = (count: number, group: number) =>
+  Number.isInteger(group) && group >= 2 && count % group === 0;
+
+// One by one the board draws no more than so many things, or frames, and
+// 「k×」 needs more than one to multiply. `many` counts the frames, or the
+// things when there are no frames, and `each` the things in a frame.
+function crowdProblems(amount: string, many: number, each: number, times: boolean) {
+  return [
+    ...(times && many < 2 ? [`${amount} as 「k×」 with nothing to multiply`] : []),
+    ...(each > drawnAtMost ? [`${amount} in frames of more than ${drawnAtMost}`] : []),
+    ...(!times && many > drawnAtMost
+      ? [`${amount} one by one, more than ${drawnAtMost}, with no 「k×」`]
+      : []),
+  ];
+}
+
+// What the board would draw of an amount: whole things, in frames that
+// divide them, and no more one by one than it can.
+function drawnProblems(id: string, [count, picture, drawing = {}]: Amount<string>) {
+  const amount = `conclusion ${id} draws ${count} ${picture}`;
+  if (!Number.isInteger(count) || count < 1) return [`${amount}, which is not a count`];
+  const { group, times = false } = drawing;
+  if (group !== undefined && !dividedBy(count, group)) {
+    return [`${amount} in frames of ${group}, which do not divide them`];
+  }
+  const each = group ?? 1;
+  return crowdProblems(amount, count / each, each, times);
+}
+
 // A conclusion is first found in one of the scenes and used only from there
 // on; a supposed one stands beside the conclusion before it, which is found
-// by then.
+// by then; its amounts are counts of single things the board can draw.
 function conclusionProblems(
-  { id, from, uses = [], supposed }: AnyConclusion,
+  conclusion: AnyConclusion,
   before: AnyConclusion | undefined,
   shots: readonly string[],
 ) {
+  const { id, from, uses = [], supposed } = conclusion;
   const first = shots.indexOf(from);
   if (first < 0) return [`conclusion ${id} first shows in ${from}, which is not a scene`];
   const beside = !supposed || (before !== undefined && shots.indexOf(before.from) <= first);
@@ -269,6 +324,7 @@ function conclusionProblems(
     ...(beside
       ? []
       : [`conclusion ${id} supposes a change but has no conclusion on the board to stand beside`]),
+    ...drawnAmounts(conclusion).flatMap((amount) => drawnProblems(id, amount)),
   ];
 }
 
@@ -276,7 +332,8 @@ function conclusionProblems(
 // scene, scenes that say nothing on arriving or arrive with another scene's
 // lines, a flow not in the list or whose needs the scenes do not meet, record
 // words empty or too long, and conclusions declared twice, found in no scene,
-// used before they are found, or supposed with nothing to stand beside.
+// used before they are found, supposed with nothing to stand beside, or with
+// amounts the board cannot draw.
 export function lessonContentProblems(content: AnyLessonContent) {
   const { shots, conclusions } = content;
   const ids = conclusions.map(({ id }) => id);

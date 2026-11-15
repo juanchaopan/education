@@ -135,7 +135,10 @@ export const gardenBalanceLesson = lessonContent({
       from: 'answer',
       uses: ['answer'],
       hints: ['count-groups'],
-      answer: { amount: [9, 'cucumber'], says: '1 棵青菜和 3 组黄瓜一样重，一共 9 根黄瓜' },
+      answer: {
+        amount: [9, 'cucumber', { times: true }],
+        says: '1 棵青菜和 3 组黄瓜一样重，一共 9 根黄瓜',
+      },
     },
   ],
   // One scale stands in the middle of every scene, with the basket at its

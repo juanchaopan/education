@@ -413,11 +413,12 @@
   }
 
   /* The board's row is kept from the first scene, as tall as one line of
-     capsules, so the first conclusion found moves nothing below it. */
+     capsules whose things pile two lines high, so the first conclusion
+     found moves nothing below it. */
   .place[data-at='board'] {
     grid-area: board;
     max-inline-size: none;
-    min-block-size: calc(var(--board-size) * 1.62 + 3px);
+    min-block-size: calc(var(--board-size) * 2.1 + 6px);
   }
 
   .place[data-at='subtitle'],

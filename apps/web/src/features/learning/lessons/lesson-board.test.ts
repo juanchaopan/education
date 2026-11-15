@@ -5,12 +5,12 @@ import { boardFacts, type AnswerProgress, type LessonBoard } from './lesson-boar
 type Shot = 'weigh' | 'swap' | 'answer' | 'suppose';
 type State = Readonly<{ shot: Shot | 'opening'; level: boolean }>;
 
-const board: LessonBoard<State, 'box' | 'ball' | 'group'> = {
-  pictures: { box: 'box', ball: 'ball', group: 'group' },
+const board: LessonBoard<State, 'box' | 'ball'> = {
+  pictures: { box: { art: 'box', shape: 'tall' }, ball: { art: 'ball', shape: 'round' } },
   found: { 'box-balls': ({ level }) => level },
 };
 
-const conclusions: readonly Conclusion<Shot, 'box' | 'ball' | 'group'>[] = [
+const conclusions: readonly Conclusion<Shot, 'box' | 'ball'>[] = [
   {
     id: 'box-balls',
     says: '1 个盒子和 3 个球一样重',
@@ -26,11 +26,11 @@ const conclusions: readonly Conclusion<Shot, 'box' | 'ball' | 'group'>[] = [
     says: '1 个盒子和 3 组球一样重',
     amounts: [
       [1, 'box'],
-      [3, 'group'],
+      [9, 'ball', { group: 3 }],
     ],
     from: 'answer',
     uses: ['answer'],
-    answer: { amount: [9, 'ball'], says: '1 个盒子和 3 组球、9 个球一样重' },
+    answer: { amount: [9, 'ball', { times: true }], says: '1 个盒子和 3 组球、9 个球一样重' },
   },
   {
     id: 'box-balls-two',
@@ -68,18 +68,28 @@ describe('the conclusion board', () => {
     expect(ids({ shot: 'answer', level: false })).toEqual(['box-balls', 'box-groups']);
   });
 
-  it('draws each conclusion with its amounts in order and the pictures for them', () => {
+  it('draws each conclusion with its amounts in order and the pictures and shapes for them', () => {
     const [first] = facts({ shot: 'swap', level: false });
     expect(first).toEqual({
       id: 'box-balls',
       says: '1 个盒子和 3 个球一样重',
       amounts: [
-        { key: '0-box', count: 1, picture: 'box' },
-        { key: '1-ball', count: 3, picture: 'ball' },
+        { key: '0-box', count: 1, picture: 'box', shape: 'tall' },
+        { key: '1-ball', count: 3, picture: 'ball', shape: 'round' },
       ],
       lit: false,
       supposed: false,
     });
+  });
+
+  it('passes on how an amount is drawn: in frames, or as 「k×」', () => {
+    const groups = facts({ shot: 'answer', level: false }, { answered: true }).find(
+      ({ id }) => id === 'box-groups',
+    );
+    expect(groups?.amounts.slice(1)).toEqual([
+      { key: '1-ball', count: 9, picture: 'ball', shape: 'round', group: 3 },
+      { key: '2-ball', count: 9, picture: 'ball', shape: 'round', times: true },
+    ]);
   });
 
   it('lights the conclusions the scene on screen uses', () => {
@@ -102,9 +112,9 @@ describe('the conclusion board', () => {
   it('writes the count on only once the child has answered it right', () => {
     const answering = { shot: 'answer', level: false } as const;
     const unanswered = facts(answering).find(({ id }) => id === 'box-groups');
-    expect(unanswered?.amounts.map(({ count }) => count)).toEqual([1, 3]);
+    expect(unanswered?.amounts.map(({ count }) => count)).toEqual([1, 9]);
     const answered = facts(answering, { answered: true }).find(({ id }) => id === 'box-groups');
-    expect(answered?.amounts.map(({ count }) => count)).toEqual([1, 3, 9]);
+    expect(answered?.amounts.map(({ count }) => count)).toEqual([1, 9, 9]);
     expect(answered?.says).toBe('1 个盒子和 3 组球、9 个球一样重');
   });
 
@@ -115,6 +125,6 @@ describe('the conclusion board', () => {
       ['box-groups', false],
       ['box-balls-two', true],
     ]);
-    expect(later[1]?.amounts.map(({ count }) => count)).toEqual([1, 3, 9]);
+    expect(later[1]?.amounts.map(({ count }) => count)).toEqual([1, 9, 9]);
   });
 });

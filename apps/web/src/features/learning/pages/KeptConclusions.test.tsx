@@ -20,7 +20,7 @@ const lesson = {
       },
     ],
   },
-  board: { pictures: { pebble: <circle cx="50%" cy="50%" r="40%" /> } },
+  board: { pictures: { pebble: { art: <circle cx="50%" cy="50%" r="40%" />, shape: 'round' } } },
 } as const;
 
 function keep(shot: State['shot'], answered = false) {

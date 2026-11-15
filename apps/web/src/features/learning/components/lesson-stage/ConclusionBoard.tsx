@@ -1,11 +1,21 @@
 import { Fragment, type ReactNode } from 'react';
 import { classNames } from '../../../../shared/lib/class-names';
 import { Spoken } from '../../../../shared/ui/Spoken';
+import { amountPlan, piled, type Arrangement, type BoardShape } from './board-layout';
 import styles from './ConclusionBoard.module.css';
 
-// How many of one thing a conclusion weighs out, drawn as the number and a
-// small picture of the thing. `key` names it among the amounts of its line.
-export type BoardAmount = Readonly<{ key: string; count: number; picture: ReactNode }>;
+// How many of one thing a conclusion weighs out, drawn with the thing's
+// picture as many times as it counts: in frames of `group` when given, and as
+// 「k×」 before one of them when `times` says so. `shape` lays the copies out.
+// `key` names it among the amounts of its line.
+export type BoardAmount = Readonly<{
+  key: string;
+  count: number;
+  picture: ReactNode;
+  shape: BoardShape;
+  group?: number;
+  times?: boolean;
+}>;
 
 // One conclusion on the board: amounts that all weigh the same, the sentence a
 // screen reader reads for it, whether the scene or a hint is using it now,
@@ -18,13 +28,41 @@ export type BoardFact = Readonly<{
   supposed: boolean;
 }>;
 
-function Amount({ count, picture }: BoardAmount) {
+const counted = (count: number) => Array.from({ length: count }, (_, place) => `${count}-${place}`);
+
+// Copies of something laid out line by line, rows across or columns down.
+function Pile({ arrangement, children }: { arrangement: Arrangement; children: () => ReactNode }) {
   return (
-    <span className={styles.amount}>
-      <span className={styles.count}>{count}</span>
-      <svg className={styles.picture} focusable="false">
-        {picture}
-      </svg>
+    <span className={styles.pile} data-across={arrangement.across}>
+      {arrangement.lines.map((length, line) => (
+        <span key={`${line}-${length}`} className={styles.line}>
+          {counted(length).map((key) => (
+            <Fragment key={key}>{children()}</Fragment>
+          ))}
+        </span>
+      ))}
+    </span>
+  );
+}
+
+function Amount({ count, picture, shape, group, times }: BoardAmount) {
+  const plan = amountPlan(count, shape, { group, times });
+  const thing = () => (
+    <svg className={styles.picture} focusable="false">
+      {picture}
+    </svg>
+  );
+  const things = () => <Pile arrangement={plan.things}>{thing}</Pile>;
+  return (
+    <span className={styles.amount} data-shape={shape} data-piled={piled(plan)}>
+      {plan.times !== undefined && <span className={styles.times}>{plan.times}×</span>}
+      {plan.frames ? (
+        <Pile arrangement={plan.frames}>
+          {() => <span className={styles.frame}>{things()}</span>}
+        </Pile>
+      ) : (
+        things()
+      )}
     </span>
   );
 }
@@ -62,11 +100,11 @@ function groups(facts: readonly BoardFact[]) {
 }
 
 // The conclusions a lesson has found so far, kept in sight across its scenes:
-// a row of glass capsules along the top of the picture, each written with
-// numbers and small pictures of the props rather than words. A new one fades
-// in at its place and glows once; the ones the scene or a hint is using
-// glow gold. A screen reader reads each as a sentence and hears new ones as
-// they arrive.
+// a row of glass capsules along the top of the picture, each drawn with the
+// props themselves, as many as it counts, rather than words or numbers. A new
+// one fades in at its place and glows once; the ones the scene or a hint is
+// using glow gold. A screen reader reads each as a sentence and hears new
+// ones as they arrive.
 export function ConclusionBoard({ facts }: { facts: readonly BoardFact[] }) {
   return (
     <ol className={styles.board} aria-label="记住的结论" aria-live="polite">
