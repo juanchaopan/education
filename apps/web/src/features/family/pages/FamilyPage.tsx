@@ -5,13 +5,13 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { useArrivalScroll } from '../../../shared/lib/useArrivalScroll';
 import { Button } from '../../../shared/ui/Button';
 import { Icon } from '../../../shared/ui/Icon';
-import { Loading } from '../../../shared/ui/Loading';
 import { Notice } from '../../../shared/ui/Notice';
 import { StandaloneLink } from '../../../shared/ui/StandaloneLink';
 import { AccountLayout, type AccountArt } from '../components/AccountLayout';
 import { AccountNotices } from '../components/AccountNotices';
 import { FamilyDeleted } from '../components/FamilyDeleted';
 import { ParentShell } from '../components/ParentShell';
+import { SessionWaiting } from '../components/SessionWaiting';
 import { useFillFamilyTimeZone } from '../data-access/useFamilyTimeZoneSetting';
 import { useParentLogout, useParentSession } from '../data-access/useParentSession';
 import { LoginPanel } from './LoginPanel';
@@ -19,7 +19,6 @@ import { OverviewPage } from './OverviewPage';
 import { LearningSection, PracticeSection, PrivacySection, ProfileSection } from './ParentSections';
 import { RegistrationPanel } from './RegistrationPanel';
 import { VerificationPanel } from './VerificationPanel';
-import styles from './FamilyPage.module.css';
 
 type Mode = 'register' | 'login';
 
@@ -58,12 +57,7 @@ export function FamilyPage({ art }: { art: AccountArt }) {
         />
       </AccountLayout>
     );
-  if (session.isPending)
-    return (
-      <div className={styles.waiting}>
-        <Loading label="正在确认登录状态…" />
-      </div>
-    );
+  if (session.isPending) return <SessionWaiting label="正在确认登录状态…" />;
   if (!session.data)
     return <SignedOut art={art} mode={mode} failed={session.isError} onMode={setMode} />;
   const { csrfToken } = session.data;
