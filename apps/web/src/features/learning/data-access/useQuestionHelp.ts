@@ -18,10 +18,12 @@ const noRound: RoundSource = {
 
 // A question asked of the teacher while the child is answering is help, like
 // a hint: it is recorded on the round before the question goes out, once per
-// round, so a right answer after it never counts as done alone. `help` says
-// what the question counts as help on in the scene asked about, if anything,
-// and so whether a round is needed at all. `failed` tells that the question
-// in hand could not be recorded yet.
+// round and per part of the problem, so a right answer after it never counts
+// as done alone. The final answer and the variation that follows it share a
+// round, so each part records its own help. `help` says what the question
+// counts as help on in the scene asked about, if anything, and so whether a
+// round is needed at all. `failed` tells that the question in hand could not
+// be recorded yet.
 export function useQuestionHelp(scope: LearningScope, help?: QuestionHelp) {
   const round = useQuery(roundOptions(help?.round ?? noRound, scope, help !== undefined));
   const record = useMutation({
@@ -32,7 +34,7 @@ export function useQuestionHelp(scope: LearningScope, help?: QuestionHelp) {
   async function recorded(on: QuestionHelp) {
     const id = round.data?.round ?? (await round.refetch()).data?.round;
     if (!id) return false;
-    if (record.isSuccess && record.variables.id === id) return true;
+    if (record.isSuccess && record.variables.id === id && record.variables.on === on) return true;
     try {
       await record.mutateAsync({ id, on });
       return true;
