@@ -11,6 +11,7 @@ import {
   entryLines,
   lines,
   shots,
+  variationAnswer,
   type LineId,
   type Shot,
 } from './script';
@@ -26,11 +27,12 @@ import {
 } from './story';
 
 // 数一数小石子, the template for a new lesson: the child puts two pebbles in a
-// bowl and says how many are in it. It follows 逐幕探究 and plays on the
-// library's morning forest picnic, which its content names, with the
-// squirrel. A new lesson copies this definition, its content in
-// @education/problems and its folders, and is registered with one line in
-// registry.ts.
+// bowl and says how many are in it, then does the variation with three:
+// guesses, puts them in, says why and hears what it came to. It follows
+// 逐幕探究 and plays on the library's morning forest picnic, which its
+// content names, with the squirrel. A new lesson copies this definition, its
+// content in @education/problems and its folders, and is registered with one
+// line in registry.ts.
 export const templateLesson = {
   content: lessonTemplateLesson,
   title: '碗里有几颗小石子？',
@@ -49,5 +51,6 @@ export const templateLesson = {
     choices: answerChoices,
     hints: answerHints,
   },
+  variation: variationAnswer,
   Scene: TemplateScene,
 } satisfies LessonDefinition<TemplateState, Shot, LineId, Move, 'pebble', typeof pebbleLook>;
