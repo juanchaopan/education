@@ -6,13 +6,20 @@ import {
   signInAtTheGardenStart,
 } from './child-at-the-answer.js';
 import { play } from './film-play.js';
-import { gardenFilm, movesToTheAnswer } from './garden-film.js';
+import {
+  gardenFilm,
+  guessSix,
+  movesInTheVariation,
+  movesToTheAnswer,
+  tapTheReason,
+} from './garden-film.js';
 
 // The garden keeps what each scene finds on the conclusion board along the
 // top of its picture: from the second scene on, the conclusions found so far
-// stay in sight, the ones in use glow, the count is written on once the
-// child has said it, and the variation's changed condition stands beside the
-// one it changes. A screen reader reads each as a sentence.
+// stay in sight, the ones in use glow, and the count is written on once the
+// child has said it. The variation is another problem: the board keeps only
+// the conclusion it still uses beside its 假如 condition, and adds the 那么
+// result once revealed. A screen reader reads each as a sentence.
 
 const lesson = '/problems/garden-balance/1';
 
@@ -20,6 +27,7 @@ const cabbageApples = '1 棵青菜和 3 个苹果一样重';
 const appleCucumbers = '1 个苹果和 3 根黄瓜一样重';
 const cabbageGroups = '1 棵青菜和 3 组黄瓜一样重';
 const supposed = '假如 1 个苹果和 2 根黄瓜一样重';
+const twoEach = '那么 1 棵青菜和 3 组黄瓜一样重，一共 6 根黄瓜';
 
 // Every recording downloads before the film can start, which can take a while
 // with the other tests running beside this one.
@@ -66,9 +74,10 @@ test('keeps each conclusion found in sight, lighting the one in use', async ({ p
   ]);
 });
 
-test('writes the count on once said right, and sets the changed condition beside the first', async ({
+test('writes the count on once said right, then shows the variation as another problem', async ({
   page,
 }) => {
+  test.setTimeout(240_000);
   await signInAtTheGardenAnswer(page);
   await acceptEveryAnswer(page, gardenApi, {
     outcome: 'assisted',
@@ -89,11 +98,18 @@ test('writes the count on once said right, and sets the changed condition beside
   await numbers.getByRole('button', { name: '9', exact: true }).click({ timeout: 30_000 });
   await expect(conclusion(`${cabbageGroups}，一共 9 根黄瓜`)).toBeVisible();
 
+  // The variation keeps only the cabbage that weighs three apples beside
+  // its condition, which is in use while the child guesses, swaps and says
+  // why.
   await answer.getByRole('button', { name: '接着看' }).click();
   await expect(conclusion(supposed)).toHaveAttribute('aria-current', 'true');
-  await expect(items).toHaveText([
-    reading(cabbageApples),
-    reading(appleCucumbers, supposed),
-    reading(`${cabbageGroups}，一共 9 根黄瓜`),
-  ]);
+  await expect(items).toHaveText([reading(cabbageApples), reading(supposed)]);
+
+  await guessSix(page);
+  await play(movesInTheVariation(page));
+  await tapTheReason(page);
+
+  // Revealed, what it came to follows the condition, in the same item.
+  await expect(conclusion(twoEach)).toHaveAttribute('aria-current', 'true', { timeout: 30_000 });
+  await expect(items).toHaveText([reading(cabbageApples), reading(supposed, twoEach)]);
 });

@@ -49,19 +49,30 @@ export const signInAtTheGardenStart = (page: Page) => signInAtTheStart(page, gar
 // gives any.
 type Answers = Readonly<{ outcome?: 'independent' | 'assisted'; hint?: string }>;
 
+type Command = { action?: string; attemptId?: string } | null;
+
 // A server that opens the answer round of the lesson behind `api` and takes
 // each answer the child submits as correct, without help unless told
-// otherwise. It gives hints only when told their words, and never answers a
-// question to the teacher.
+// otherwise, and then the variation of that round: its guess recorded and
+// its reason clear, with the same outcome. It gives hints only when told
+// their words, and never answers a question to the teacher.
 export async function acceptEveryAnswer(
   page: Page,
   api: string,
   { outcome = 'independent', hint }: Answers = {},
 ) {
+  const judged = (body: NonNullable<Command>) => {
+    if (body.action === 'hint' && hint) return { hint };
+    return { attemptId: body.attemptId, outcome };
+  };
   await page.route(`**${api}/answer`, (route) => {
-    const body = route.request().postDataJSON() as { action?: string; attemptId?: string } | null;
-    if (!body) return route.fulfill({ json: { round } });
-    if (body.action === 'hint' && hint) return route.fulfill({ json: { hint } });
-    return route.fulfill({ json: { attemptId: body.attemptId, outcome } });
+    const body = route.request().postDataJSON() as Command;
+    return route.fulfill({ json: body ? judged(body) : { round } });
+  });
+  await page.route(`**${api}/variation`, (route) => {
+    const body = route.request().postDataJSON() as Command;
+    return route.fulfill({
+      json: body ? judged(body) : { round, guessed: false, explained: false },
+    });
   });
 }

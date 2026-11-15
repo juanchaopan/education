@@ -1,7 +1,9 @@
 /* The glass of a dew drop drawn as a pill around its words: the light
    catches its upper left and its lower half deepens; lit, its glass turns
    green. It is never smaller than a finger can hit and grows with the
-   picture it is laid into, as the drops beside it do. */
+   picture it is laid into, as the drops beside it do; its words follow the
+   capsule's size, a little smaller, so two rows of them fit an upright
+   phone. */
 .drop {
   --face: var(--dew-face);
   --deep: var(--dew-depth);
@@ -9,7 +11,7 @@
   flex: none;
   place-items: center;
   min-block-size: max(var(--touch-target), 4.5cqmin);
-  padding: 0 0.9em;
+  padding: 0 0.65em;
   border: 1.5px solid var(--dew-rim);
   border-radius: var(--radius-pill);
   color: var(--dew-ink);
@@ -27,7 +29,7 @@
     0 0.4em 0.9em var(--dew-shadow);
   backdrop-filter: var(--glass-filter) saturate(1.25);
   font-family: var(--font-display);
-  font-size: var(--text-lg);
+  font-size: 0.9em;
   font-weight: 700;
   white-space: nowrap;
   cursor: pointer;
