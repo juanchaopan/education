@@ -1,6 +1,13 @@
 import { FamilyCode } from './family.js';
 import { Type, type Static } from '@sinclair/typebox';
 
+// How long a child's nickname may be, counted in Unicode code points once it
+// is normalized and trimmed, as the server stores it. The registration page
+// counts a nickname being typed the same way.
+export const childNicknameLength = 12;
+export const nicknameCharacters = (nickname: string) =>
+  Array.from(nickname.normalize('NFKC').trim()).length;
+
 export const ChildRegistration = Type.Object(
   {
     requestId: Type.String({ pattern: '^[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$' }),
