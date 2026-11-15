@@ -1,12 +1,8 @@
-import { useMutation } from '@tanstack/react-query';
-import { HintReceipt, PreviewOutcome, type PreviewCommand } from '@education/contracts';
-import type { TSchema } from '@sinclair/typebox';
-import { postLearning, type LearningScope } from './learning-request';
+import { HintReceipt, PreviewOutcome } from '@education/contracts';
+import type { LearningScope } from './learning-request';
 import { useAnswerHints, type AnswerEvents } from './useAnswerHints';
 import { correct, judgementOf, type AnswerInput } from './useLessonAnswer';
-
-const preview = <R extends TSchema>(scope: LearningScope, command: PreviewCommand, reply: R) =>
-  postLearning(scope, 'preview', JSON.stringify(command), reply);
+import { preview, usePreviewSubmission } from './usePreviewSubmission';
 
 // A parent's answer while previewing a problem: the answer is judged on the
 // server by the problem's own rules and the authored hints come one by one,
@@ -17,17 +13,17 @@ export function usePreviewAnswer(
   hintIds: readonly string[],
   events: AnswerEvents = {},
 ) {
-  const submit = useMutation({
-    mutationFn: ({ input }: { input: AnswerInput }) =>
+  const answer = usePreviewSubmission(
+    ({ input }: { input: AnswerInput }) =>
       preview(
         scope,
         { action: 'submit', input: typeof input === 'number' ? input : [...input] },
         PreviewOutcome,
       ),
-    onSuccess: (receipt) => {
+    (receipt) => {
       if (correct(receipt)) events.onCorrect?.();
     },
-  });
+  );
   const hints = useAnswerHints(
     hintIds,
     (hintId) => preview(scope, { action: 'hint', hintId }, HintReceipt),
@@ -35,13 +31,8 @@ export function usePreviewAnswer(
   );
   return {
     ...hints,
-    judgement: judgementOf(submit),
-    submit(input: AnswerInput) {
-      if (!submit.isPending) submit.mutate({ input });
-    },
-    retry() {
-      const last = submit.variables;
-      if (last && !submit.isPending) submit.mutate(last);
-    },
+    judgement: judgementOf(answer.submission),
+    submit: (input: AnswerInput) => answer.submit({ input }),
+    retry: answer.retry,
   };
 }

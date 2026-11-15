@@ -196,14 +196,6 @@ export function shotAfter<Shot extends string>(
   return index < 0 ? undefined : shots[index + 1];
 }
 
-// One of the lesson's scenes by its name, if it is one.
-export function sceneNamed<Shot extends string>(
-  { shots }: Readonly<{ shots: readonly Shot[] }>,
-  name: string,
-): Shot | undefined {
-  return shots.find((shot) => shot === name);
-}
-
 // The scene a saved step comes back to: one of the lesson's scenes, past its
 // first, which a new start reaches anyway.
 export function resumed<Shot extends string>(
@@ -218,19 +210,19 @@ export function resumed<Shot extends string>(
 // declares them, the scenes from the guess to the reason, in which the child
 // answers, the hints are at hand and a question counts as help, the scene a
 // recorded guess moves on to, and its answers.
-export type VariationPlay = Readonly<{
-  scenes: LessonVariation<string>;
-  answering: readonly string[];
-  afterGuess: string;
+export type VariationPlay<Shot extends string> = Readonly<{
+  scenes: LessonVariation<Shot>;
+  answering: readonly Shot[];
+  afterGuess: Shot;
   answer: LessonVariationAnswer;
 }>;
 
-export function variationPlay(
+export function variationPlay<Shot extends string>(
   lesson: Readonly<{
-    content: Pick<LessonContent<string, string, string>, 'shots' | 'variation'>;
+    content: Pick<LessonContent<Shot, string, string>, 'shots' | 'variation'>;
     variation?: LessonVariationAnswer;
   }>,
-): VariationPlay | undefined {
+): VariationPlay<Shot> | undefined {
   const { shots, variation: scenes } = lesson.content;
   const answer = lesson.variation;
   if (!scenes || !answer) return undefined;

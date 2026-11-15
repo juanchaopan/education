@@ -1,3 +1,4 @@
+import { gardenVariationChoices } from '@education/problems/lessons/garden-balance';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import type { ComponentProps, ReactNode } from 'react';
 import type { Handling } from '../../interaction/stage-activation';
@@ -122,7 +123,7 @@ const reasonCapsule = (step: ComponentProps<typeof ReasonCapsule>['step']) => (
       {...capsuleHandlers}
       question={reason.question}
       step={step}
-      choices={content.variation?.choices ?? {}}
+      choices={gardenVariationChoices}
       onChoose={nothing}
     />
   </Answering>

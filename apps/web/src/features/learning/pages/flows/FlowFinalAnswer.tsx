@@ -2,7 +2,7 @@ import { SpokenFinalAnswer } from '../SpokenFinalAnswer';
 import { TappedFinalAnswer } from '../TappedFinalAnswer';
 import type { FlowAnswerProps } from './flow-answer';
 
-type Props = Omit<FlowAnswerProps, 'answerScene' | 'shot' | 'variation' | 'go'> & {
+type Props = Omit<FlowAnswerProps, 'answerScene' | 'shot'> & {
   // The answer is every number that fits, sent as a list; otherwise it is
   // one number.
   every?: boolean;

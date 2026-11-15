@@ -1,20 +1,9 @@
-import { useMutation } from '@tanstack/react-query';
-import {
-  HintReceipt,
-  PreviewOutcome,
-  type PreviewCommand,
-  type VariationReason,
-} from '@education/contracts';
-import type { TSchema } from '@sinclair/typebox';
-import { postLearning, type LearningScope } from './learning-request';
+import { HintReceipt, PreviewOutcome, type VariationReason } from '@education/contracts';
+import type { LearningScope } from './learning-request';
 import { useAnswerHints } from './useAnswerHints';
 import { judgementOf } from './useLessonAnswer';
-import { reasonJudgementOf, type VariationAnswers } from './useLessonVariation';
-
-const preview = <R extends TSchema>(scope: LearningScope, command: PreviewCommand, reply: R) =>
-  postLearning(scope, 'preview', JSON.stringify(command), reply);
-
-const nothingKept = { guessed: false, explained: false };
+import { nothingRecorded, reasonJudgementOf, type VariationAnswers } from './useLessonVariation';
+import { preview, usePreviewSubmission } from './usePreviewSubmission';
 
 // A parent's variation while previewing a problem: the guess and the reason
 // are judged on the server by the problem's own rules and the variation's
@@ -24,14 +13,12 @@ export function usePreviewVariation(
   scope: LearningScope,
   hintIds: readonly string[],
 ): VariationAnswers {
-  const guess = useMutation({
-    mutationFn: ({ input }: { input: number }) =>
-      preview(scope, { action: 'variation', guess: input }, PreviewOutcome),
-  });
-  const reason = useMutation({
-    mutationFn: ({ said }: { said: VariationReason }) =>
-      preview(scope, { action: 'variation', reason: said }, PreviewOutcome),
-  });
+  const guess = usePreviewSubmission(({ input }: { input: number }) =>
+    preview(scope, { action: 'variation', guess: input }, PreviewOutcome),
+  );
+  const reason = usePreviewSubmission((said: VariationReason) =>
+    preview(scope, { action: 'variation', reason: said }, PreviewOutcome),
+  );
   const hints = useAnswerHints(
     hintIds,
     (hintId) => preview(scope, { action: 'variation', hintId }, HintReceipt),
@@ -39,24 +26,16 @@ export function usePreviewVariation(
   );
   return {
     ...hints,
-    recorded: nothingKept,
+    recorded: nothingRecorded,
     guess: {
-      judgement: judgementOf(guess),
-      submit(input) {
-        if (!guess.isPending) guess.mutate({ input });
-      },
-      retry() {
-        if (guess.variables && !guess.isPending) guess.mutate(guess.variables);
-      },
+      judgement: judgementOf(guess.submission),
+      submit: (input) => guess.submit({ input }),
+      retry: guess.retry,
     },
     reason: {
-      judgement: reasonJudgementOf(reason),
-      submit(said) {
-        if (!reason.isPending) reason.mutate({ said });
-      },
-      retry() {
-        if (reason.variables && !reason.isPending) reason.mutate(reason.variables);
-      },
+      judgement: reasonJudgementOf(reason.submission),
+      submit: reason.submit,
+      retry: reason.retry,
     },
   };
 }

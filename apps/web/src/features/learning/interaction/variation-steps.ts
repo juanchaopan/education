@@ -1,7 +1,14 @@
-import type { Judgement } from '../data-access/useLessonAnswer';
+import { correct, type Judgement } from '../data-access/useLessonAnswer';
 import type { ReasonJudgement } from '../data-access/useLessonVariation';
 import type { VoiceState } from '../data-access/voice-input';
-import { ask, unsettledStep, voiceStep, type AnswerStep, type VoiceStep } from './spoken-answer';
+import {
+  ask,
+  numbersHeard,
+  sendingStep,
+  unsaidStep,
+  type AnswerStep,
+  type VoiceStep,
+} from './spoken-answer';
 import { retryable } from './voice-message';
 
 // The variation's two answers. The guess is a number, said and confirmed as
@@ -11,13 +18,21 @@ import { retryable } from './voice-message';
 // tries in a row were not heard or could not be judged, the child taps what
 // stayed and what changed instead.
 
-// A guess the child cannot answer over: being judged, waiting for a retry,
-// or recorded, whether it was right or wrong.
+type Judged = Extract<Judgement, { status: 'judged' }>;
+
+// Whether the guess is recorded, right or wrong; one that could not be
+// judged is said again.
+export const guessRecorded = (judgement: Judgement): judgement is Judged =>
+  judgement.status === 'judged' && judgement.outcome !== 'uncertain';
+
+// Whether the reason was judged clear, with or without help.
+export const reasonClear = (judgement: ReasonJudgement) =>
+  judgement.status === 'judged' && correct(judgement);
+
+// A guess the child cannot answer over: on its way, or recorded.
 function guessSettled(judgement: Judgement): AnswerStep | undefined {
-  if (judgement.status === 'judging') return { kind: 'judging' };
-  if (judgement.status === 'failed') return { kind: 'failed', message: judgement.message };
-  if (judgement.status === 'judged' && judgement.outcome !== 'uncertain')
-    return { kind: 'recorded', said: judgement.said };
+  if (guessRecorded(judgement)) return { kind: 'recorded', said: judgement.said };
+  return sendingStep(judgement);
 }
 
 const unclearGuess = '我没听出你猜的是几，再说一次吧。';
@@ -32,7 +47,7 @@ export function guessStep(
 ): AnswerStep {
   return (
     guessSettled(judgement) ??
-    unsettledStep(voice, guessVerdict(judgement), { unit, every: false, awaiting })
+    unsaidStep(voice, guessVerdict(judgement), numbersHeard(awaiting, unit))
   );
 }
 
@@ -53,11 +68,7 @@ const tappingWords = { instead: '可以点下面的词回答。' };
 const unheardReason = '我没听清你的理由，再说一次吧。';
 
 function reasonSettled(judgement: ReasonJudgement): ReasonStep | undefined {
-  if (judgement.status === 'judging') return { kind: 'judging' };
-  if (judgement.status === 'failed') return { kind: 'failed', message: judgement.message };
-  if (judgement.status !== 'judged') return;
-  if (judgement.outcome === 'independent' || judgement.outcome === 'assisted')
-    return { kind: 'explained' };
+  return reasonClear(judgement) ? { kind: 'explained' } : sendingStep(judgement);
 }
 
 // What the teacher says of the last reason sent: the lesson's own words
@@ -71,20 +82,10 @@ function reasonVerdict(judgement: ReasonJudgement, unclear: string) {
 const heardReason = (text: string): ReasonStep =>
   text.trim() ? { kind: 'confirm', heard: text } : ask(unheardReason);
 
-// A reason still to say: the child speaking, or what the last try came to,
-// with `said`, what the teacher says of the last reason sent, until the
-// child speaks again.
-function unsaidReason(voice: VoiceState, said: string | undefined, awaiting: boolean) {
-  const step = voiceStep(voice, tappingWords, heardReason);
-  if (step?.kind === 'ask' && step.choices && said) return { ...step, message: said };
-  if (step) return step;
-  return awaiting ? ({ kind: 'waiting' } as const) : ask(said ?? '');
-}
-
 // How the reason is taken: what the lesson says of a reason that is not
 // clear, whether the microphone is about to open by itself, and whether the
 // child taps the reason instead of saying it.
-export type Reasoning = Readonly<{ unclear: string; awaiting: boolean; tapping: boolean }>;
+type Reasoning = Readonly<{ unclear: string; awaiting: boolean; tapping: boolean }>;
 
 // What the reason shows next, from the microphone and the server's judgement.
 export function reasonStep(
@@ -95,7 +96,8 @@ export function reasonStep(
   const said = reasonVerdict(judgement, unclear);
   const settled = reasonSettled(judgement);
   if (settled) return settled;
-  return tapping ? ask(said ?? '', true) : unsaidReason(voice, said, awaiting);
+  if (tapping) return ask(said ?? '', true);
+  return unsaidStep(voice, said, { awaiting, tapping: tappingWords, review: heardReason });
 }
 
 // The reason tapped, as in a parent's preview: the words from the start.
@@ -105,7 +107,7 @@ export function tappedReasonStep(judgement: ReasonJudgement, unclear: string): R
 
 // What a try at saying the reason came to: still under way, nothing heard
 // or nothing that could be judged, or judged.
-export type ReasonTry = 'trying' | 'missed' | 'judged';
+type ReasonTry = 'trying' | 'missed' | 'judged';
 
 export function reasonTry(voice: VoiceState, judgement: ReasonJudgement): ReasonTry {
   if (voice.status === 'unheard') return 'missed';

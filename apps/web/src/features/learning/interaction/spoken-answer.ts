@@ -57,7 +57,7 @@ function failed(
 
 // The child speaking, or what the last try came to: what was heard is read
 // by `review`, and `tapping` says what to tap instead of speaking.
-export function voiceStep<Heard>(
+function voiceStep<Heard>(
   state: VoiceState,
   tapping: Alternative,
   review: (text: string) => Heard,
@@ -81,6 +81,33 @@ export function voiceStep<Heard>(
   }
 }
 
+// How something still to say is heard: whether the microphone is about to
+// open by itself, what to tap instead of speaking, and how what was heard is
+// read.
+export type Hearing<Heard> = Readonly<{
+  awaiting: boolean;
+  tapping: Alternative;
+  review: (text: string) => Heard;
+}>;
+
+// Whether a step offers what to tap in place of speaking.
+const tappingNow = (step: { kind: string }) =>
+  step.kind === 'ask' && 'choices' in step && step.choices === true;
+
+// Something still to say: the child speaking, or what the last try came to,
+// with `said`, what the teacher says of the last thing sent, until the
+// child speaks again. Once speech has proved unusable what to tap stays
+// beside it, so a child without a working microphone can keep answering.
+export function unsaidStep<Heard extends { kind: string }>(
+  voice: VoiceState,
+  said: string | undefined,
+  { awaiting, tapping, review }: Hearing<Heard>,
+) {
+  const step = voiceStep(voice, tapping, review);
+  if (!step) return awaiting ? ({ kind: 'waiting' } as const) : ask(said ?? '');
+  return said && tappingNow(step) ? { ...step, message: said } : step;
+}
+
 function review(text: string, unit: string | undefined, every: boolean): AnswerStep {
   const said = spokenNumbers(text, unit);
   if (said && (every || said.length === 1)) return { kind: 'confirm', heard: text, said };
@@ -88,12 +115,31 @@ function review(text: string, unit: string | undefined, every: boolean): AnswerS
   return ask(`我听到的是「${text}」，没听出是几。${again}`);
 }
 
+// Numbers to say, as the final answer and a guess are said: in `unit`, as
+// every number that fits when `every`.
+export function numbersHeard(
+  awaiting: boolean,
+  unit: string | undefined,
+  every = false,
+): Hearing<AnswerStep> {
+  return { awaiting, tapping: tappingNumbers, review: (text) => review(text, unit, every) };
+}
+
+// What any answer shows while what was sent is on its way: being judged, or
+// waiting for a retry once the request failed.
+export function sendingStep(
+  judgement: Readonly<{ status: string }> & Partial<Readonly<{ message: string }>>,
+) {
+  if (judgement.status === 'judging') return { kind: 'judging' } as const;
+  if (judgement.status === 'failed')
+    return { kind: 'failed', message: judgement.message ?? '' } as const;
+}
+
 // A judgement the child cannot answer over: being judged, waiting for a retry,
 // or a correct answer.
 function settled(judgement: Judgement): AnswerStep | undefined {
-  if (judgement.status === 'judging') return { kind: 'judging' };
-  if (judgement.status === 'failed') return { kind: 'failed', message: judgement.message };
-  if (judgement.status !== 'judged') return;
+  const sending = sendingStep(judgement);
+  if (sending || judgement.status !== 'judged') return sending;
   const { outcome } = judgement;
   if (outcome === 'independent' || outcome === 'assisted')
     return { kind: 'done', assisted: outcome === 'assisted' };
@@ -105,25 +151,6 @@ function verdict(judgement: Judgement, explain: CountWords['explain']) {
   return '我还不能确定你的答案，再说一次吧。';
 }
 
-// How a spoken number is taken: in `unit`, as every number that fits when
-// `every`, with the microphone about to open by itself when `awaiting`.
-type Listened = Readonly<{ unit?: string; every: boolean; awaiting: boolean }>;
-
-// A number still to give: the child speaking, or what the last try came to,
-// with `said`, what the teacher says of the last number sent, until the
-// child speaks again. Once speech has proved unusable the numbers stay
-// beside it, so a child without a working microphone can keep answering.
-export function unsettledStep(
-  voice: VoiceState,
-  said: string | undefined,
-  { unit, every, awaiting }: Listened,
-): AnswerStep {
-  const step = voiceStep(voice, tappingNumbers, (text) => review(text, unit, every));
-  if (step?.kind === 'ask' && step.choices && said) return { ...step, message: said };
-  if (step) return step;
-  return awaiting ? { kind: 'waiting' } : ask(said ?? '');
-}
-
 // What the answer shows next, from the microphone and the server's judgement.
 export function answerStep(
   voice: VoiceState,
@@ -132,7 +159,7 @@ export function answerStep(
   { every = false, awaiting = false }: Answering = {},
 ): AnswerStep {
   const said = verdict(judgement, words.explain);
-  return settled(judgement) ?? unsettledStep(voice, said, { unit: words.unit, every, awaiting });
+  return settled(judgement) ?? unsaidStep(voice, said, numbersHeard(awaiting, words.unit, every));
 }
 
 // The answer given by tapping a number alone, as in a parent's preview, where

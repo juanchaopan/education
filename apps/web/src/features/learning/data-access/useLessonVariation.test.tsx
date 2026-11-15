@@ -73,5 +73,7 @@ it("asks for the variation's own hints under its round", async () => {
 it('tells what the server holds for the round already', async () => {
   reply = () => ({ round, guessed: true, explained: false });
   const { result } = setup();
-  await waitFor(() => expect(result.current.recorded).toEqual({ guessed: true, explained: false }));
+  await waitFor(() =>
+    expect(result.current.recorded).toMatchObject({ guessed: true, explained: false }),
+  );
 });

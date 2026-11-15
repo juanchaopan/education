@@ -13,29 +13,29 @@ import type { MicrophoneTurn } from '../voice/microphone-turn';
 import { SpokenGuess, TappedGuess } from './VariationGuess';
 import { SpokenReason, TappedReason } from './VariationReason';
 
-type Props = {
-  play: VariationPlay;
+type Props<Shot extends string> = {
+  play: VariationPlay<Shot>;
   // The scene on screen, one of those the child answers the variation in.
-  shot: string;
+  shot: Shot;
   scope: LearningScope;
   film: ListeningFilm;
   turn: MicrophoneTurn;
   subtitle: Subtitle;
-  go: (shot: string) => void;
+  go: (shot: Shot) => void;
 };
 
 // The variation's parts in the scenes it is answered in: the guess in its
 // guess scene, the reason in its reason scene, and the variation's own
 // hints at hand in every one of them, said by the teacher in its subtitle.
 // A child says the guess and the reason; a parent previewing taps them.
-function VariationParts({
+function VariationParts<Shot extends string>({
   answers,
   spoken,
   play,
   shot,
   go,
   ...on
-}: Props & Readonly<{ answers: VariationAnswers; spoken: boolean }>) {
+}: Props<Shot> & Readonly<{ answers: VariationAnswers; spoken: boolean }>) {
   useSubtitleWords(on.subtitle, 'hint', hintWords(answers));
   const { scenes, answer } = play;
   const guess = {
@@ -78,19 +78,27 @@ function VariationParts({
   );
 }
 
-function SpokenVariation(props: Props) {
+function SpokenVariation<Shot extends string>(props: Props<Shot>) {
   const answers = useLessonVariation(props.scope, props.play.answer.hints);
   return <VariationParts {...props} answers={answers} spoken />;
 }
 
-function TappedVariation(props: Props) {
+function TappedVariation<Shot extends string>(props: Props<Shot>) {
   const answers = usePreviewVariation(props.scope, props.play.answer.hints);
   return <VariationParts {...props} answers={answers} spoken={false} />;
 }
 
-// A lesson's variation, once the final answer is right: a child says the
-// guess and the reason, and what they come to is recorded; a parent
-// previewing the lesson taps them, judged the same way, and nothing is kept.
-export function VariationAnswer({ mode, ...props }: Props & Readonly<{ mode: ProblemMode }>) {
-  return mode === 'preview' ? <TappedVariation {...props} /> : <SpokenVariation {...props} />;
+// A lesson's variation, once the final answer is right, in whatever flow
+// the lesson follows: a child says the guess and the reason, and what they
+// come to is recorded; a parent previewing the lesson taps them, judged the
+// same way, and nothing is kept. It shows only in the scenes the variation
+// is answered in.
+export function VariationAnswer<Shot extends string>({
+  mode,
+  ...props
+}: Omit<Props<Shot>, 'play'> & Readonly<{ mode: ProblemMode; play?: VariationPlay<Shot> }>) {
+  const { play } = props;
+  if (!play?.answering.includes(props.shot)) return null;
+  const parts = { ...props, play };
+  return mode === 'preview' ? <TappedVariation {...parts} /> : <SpokenVariation {...parts} />;
 }

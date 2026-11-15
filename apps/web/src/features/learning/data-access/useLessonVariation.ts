@@ -32,6 +32,12 @@ export function reasonJudgementOf({ isPending, error, data }: ReasonSubmission):
   return data ? { status: 'judged', outcome: data.outcome } : { status: 'open' };
 }
 
+type Recorded = Readonly<{ guessed: boolean; explained: boolean }>;
+
+// What the server holds of a variation before anything is sent, and all a
+// preview ever holds.
+export const nothingRecorded: Recorded = { guessed: false, explained: false };
+
 // What the variation's part of the page works with, whether a child does it
 // or a parent previews it: the variation's own hints, what the server holds
 // already for this round, and the guess and the reason, each with how it
@@ -43,7 +49,7 @@ export type VariationAnswers = Readonly<{
   hintsLeft: number;
   canHint: boolean;
   askHint: () => void;
-  recorded: Readonly<{ guessed: boolean; explained: boolean }>;
+  recorded: Recorded;
   guess: Readonly<{ judgement: Judgement; submit: (input: number) => void; retry: () => void }>;
   reason: Readonly<{
     judgement: ReasonJudgement;
@@ -65,13 +71,14 @@ export const variationHelp: QuestionHelp = {
   record: recordVariationQuestion,
 };
 
-const nothingYet = { guessed: false, explained: false };
-
 // A child's variation: the guessed number and the reason, each sent once per
 // attempt under the round of the answer judged right, and the variation's
 // own hints in their order, each recorded so that a later right guess or
 // clear reason counts as helped.
-export function useLessonVariation(scope: LearningScope, hintIds: readonly string[]) {
+export function useLessonVariation(
+  scope: LearningScope,
+  hintIds: readonly string[],
+): VariationAnswers {
   const round = useQuery(roundOptions(variationRound, scope));
   const guess = useRoundAttempt(round, (id, input: number) =>
     prepareVariationAnswer(scope, { action: 'guess', round: id, input }),
@@ -85,15 +92,14 @@ export function useLessonVariation(scope: LearningScope, hintIds: readonly strin
     id === undefined ? undefined : (hintId) => requestVariationHint(scope, id, hintId),
     {},
   );
-  const { guessed, explained } = round.data ?? nothingYet;
   return {
     ...hints,
-    recorded: { guessed, explained },
+    recorded: round.data ?? nothingRecorded,
     guess: { judgement: judgementOf(guess.submission), submit: guess.submit, retry: guess.retry },
     reason: {
       judgement: reasonJudgementOf(reason.submission),
       submit: reason.submit,
       retry: reason.retry,
     },
-  } satisfies VariationAnswers;
+  };
 }

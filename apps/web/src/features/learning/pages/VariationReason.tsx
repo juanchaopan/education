@@ -13,6 +13,7 @@ import { useSubtitleWords } from '../interaction/useSubtitleWords';
 import {
   missesAfter,
   missesBeforeTapping,
+  reasonClear,
   reasonStep,
   reasonTry,
   reasonWords,
@@ -37,14 +38,10 @@ type Props = {
 
 const unused = () => {};
 
-const clear = (judgement: ReasonJudgement) =>
-  judgement.status === 'judged' &&
-  (judgement.outcome === 'independent' || judgement.outcome === 'assisted');
-
 // Whether the child still has a reason to give: none was sent yet, or the
 // last one was not clear or could not be judged.
 const giving = (judgement: ReasonJudgement) =>
-  judgement.status === 'open' || (judgement.status === 'judged' && !clear(judgement));
+  judgement.status === 'open' || (judgement.status === 'judged' && !reasonClear(judgement));
 
 // The tapped reason as it is sent.
 const tapped = ({ kept, changed }: ChosenReason) => ({
@@ -54,7 +51,7 @@ const tapped = ({ kept, changed }: ChosenReason) => ({
 // Once the reason is clear the lesson moves on at once to say what the
 // variation came to.
 function useExplained({ reason, explained, onExplained }: Props) {
-  useMoveOn(clear(reason.judgement) || explained, onExplained, 0);
+  useMoveOn(reasonClear(reason.judgement) || explained, onExplained, 0);
 }
 
 // How many tries in a row came to nothing, counted as each try ends.

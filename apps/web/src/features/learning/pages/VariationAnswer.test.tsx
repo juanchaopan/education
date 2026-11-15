@@ -7,7 +7,9 @@ import type { VariationPlay } from '../lessons/lesson-definition';
 import { createMicrophoneTurn } from '../voice/microphone-turn';
 import { VariationAnswer } from './VariationAnswer';
 
-const play: VariationPlay = {
+type Shot = 'answer' | 'guess' | 'swap' | 'why' | 'reveal';
+
+const play: VariationPlay<Shot> = {
   scenes: {
     guessScene: 'guess',
     reasonScene: 'why',
@@ -42,7 +44,7 @@ beforeEach(() => {
 });
 afterEach(() => vi.unstubAllGlobals());
 
-function preview(shot: string) {
+function preview(shot: Shot) {
   const go = vi.fn();
   const subtitle = createSubtitle();
   const Wrapper = queryWrapper();
@@ -101,4 +103,11 @@ it("keeps the variation's own hint at hand in the scenes between, said by the te
   await userEvent.click(screen.getByRole('button', { name: '给我一个提示，还有 1 个' }));
   await waitFor(() => expect(said()).toBe('数一数，现在有几组？'));
   expect(sent()).toEqual([{ action: 'variation', hintId: 'groups-and-count' }]);
+});
+
+it('shows nothing outside the scenes the variation is answered in', () => {
+  preview('answer');
+  expect(screen.queryByRole('button', { name: /提示/ })).not.toBeInTheDocument();
+  preview('reveal');
+  expect(screen.queryByRole('button', { name: /提示/ })).not.toBeInTheDocument();
 });

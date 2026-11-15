@@ -13,7 +13,6 @@ import type { Subtitle } from '../interaction/subtitle';
 import type { LessonFilm } from '../interaction/useLessonFilm';
 import {
   guidance,
-  sceneNamed,
   shotAfter,
   variationPlay,
   type LessonDefinition,
@@ -22,6 +21,7 @@ import {
 import type { MicrophoneTurn } from '../voice/microphone-turn';
 import { flowAnswers } from './flows/flow-answers';
 import { SceneQuestions } from './SceneQuestions';
+import { VariationAnswer } from './VariationAnswer';
 
 // How long the draft notice tells the child the lesson picked up where it was
 // left, long enough to reach its button, and how long it tells them a save
@@ -30,7 +30,7 @@ const resumedFor = 6000;
 const savedFor = 3000;
 
 // What the controls read of a lesson: its content's flow, answer scene and
-// variation, its script and its answer settings.
+// variation, its script, its answer settings and its variation's.
 type PanelLesson<Shot extends string> = Pick<
   LessonDefinition<FilmState<Shot>, Shot, string, unknown, string, object>,
   'content' | 'script' | 'answer' | 'variation'
@@ -82,7 +82,11 @@ function useDraftMoment<Shot extends string>(
 // A question counts as help on what the child is answering in its scene:
 // the final answer in the answer scene, the variation in the scenes the
 // variation is answered in.
-function questionHelp(shot: string, answerScene: string, play?: VariationPlay) {
+function questionHelp<Shot extends string>(
+  shot: Shot,
+  answerScene: Shot,
+  play?: VariationPlay<Shot>,
+) {
   if (shot === answerScene) return answerHelp;
   return play?.answering.includes(shot) ? variationHelp : undefined;
 }
@@ -90,12 +94,12 @@ function questionHelp(shot: string, answerScene: string, play?: VariationPlay) {
 // The controls a signed-in child has in the picture: the draft's notice under
 // the tools; the answer part of the lesson's flow, which for 逐幕探究 is the
 // final count in the answer scene, which the microphone listens for by
-// itself, and the hints, then the variation's guess and reason; in every
-// scene a question about it, which counts as help while the child answers.
-// A correct answer ends the saved work, so its draft is discarded, and the
-// film plays on from the scene after the answer. The controls appear once
-// the child pressed to start or resume the lesson; from that press on, the
-// time the child works on the page counts as study time.
+// itself, and the hints; the variation's guess and reason in its scenes; in
+// every scene a question about it, which counts as help while the child
+// answers. A correct answer ends the saved work, so its draft is discarded,
+// and the film plays on from the scene after the answer. The controls appear
+// once the child pressed to start or resume the lesson; from that press on,
+// the time the child works on the page counts as study time.
 export function LessonPanels<Shot extends string>({
   lesson,
   teacher,
@@ -137,7 +141,6 @@ export function LessonPanels<Shot extends string>({
         mode="practice"
         answer={answer}
         answerScene={answerScene}
-        variation={play}
         shot={shot}
         scope={scope}
         film={film}
@@ -149,10 +152,16 @@ export function LessonPanels<Shot extends string>({
           const next = shotAfter(script, answerScene);
           if (next) film.go(next);
         }}
-        go={(name) => {
-          const next = sceneNamed(script, name);
-          if (next) film.go(next);
-        }}
+      />
+      <VariationAnswer
+        mode="practice"
+        play={play}
+        shot={shot}
+        scope={scope}
+        film={film}
+        turn={turn}
+        subtitle={subtitle}
+        go={film.go}
       />
       <SceneQuestions
         scope={scope}
