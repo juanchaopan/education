@@ -197,7 +197,8 @@ describe('the conclusion check', () => {
     hints: ['look-again'],
     answer: { amount: [1, 'bowl'], says: '桌上有 1 颗小石子，在 1 个碗里' },
   } satisfies Conclusions[number];
-  const pictures = { pebble: 'pebble', bowl: 'bowl' };
+  const pebble = { art: 'pebble', shape: 'round' } as const;
+  const pictures = { pebble, bowl: { art: 'bowl', shape: 'round' } } as const;
   const declaring = (board: LessonOutline['board'], ...conclusions: Conclusions) =>
     problems({ content: { ...content, conclusions }, board });
   const keeping = (...conclusions: Conclusions) => declaring({ pictures }, ...conclusions);
@@ -220,7 +221,7 @@ describe('the conclusion check', () => {
   });
 
   it('finds an amount, or the answer written on, drawn with a picture the board lacks', () => {
-    expect(declaring({ pictures: { pebble: 'pebble' } }, counted)).toEqual([
+    expect(declaring({ pictures: { pebble } }, counted)).toEqual([
       'conclusion one-pebble draws bowl, which has no picture',
     ]);
   });

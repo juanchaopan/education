@@ -1,16 +1,15 @@
-import type { Conclusion } from '@education/problems/lesson-content';
-import type { ReactNode } from 'react';
+import { drawnAmounts, type Conclusion } from '@education/problems/lesson-content';
+import { boardAmount, type BoardPicture } from '../components/lesson-stage/board-layout';
 import type { BoardFact } from '../components/lesson-stage/ConclusionBoard';
 import type { FilmState } from '../interaction/lesson-film';
 
 // How a lesson whose way of teaching keeps its conclusions on the board draws
-// them: the small pictures its amounts are drawn with, each an SVG element
-// the board scales to the size of the words, and, by conclusion id, when a
+// them: the things its amounts are drawn with, and, by conclusion id, when a
 // conclusion counts as found in the scene that first shows it, for example
 // once the scale is level. A conclusion with no such rule shows from its
 // scene's start. The conclusions themselves are the lesson's content.
 export type LessonBoard<State, Picture extends string> = Readonly<{
-  pictures: Readonly<Record<Picture, ReactNode>>;
+  pictures: Readonly<Record<Picture, BoardPicture>>;
   found?: Readonly<Record<string, (state: State) => boolean>>;
 }>;
 
@@ -48,25 +47,31 @@ function used<Shot extends string>(
   return uses.includes(shot) || (hint !== undefined && hints.includes(hint));
 }
 
+// The lesson check makes sure the board has a picture for every thing its
+// conclusions draw, so a missing one is a definition the check never passed.
+function pictureOf(pictures: Readonly<Record<string, BoardPicture>>, picture: string) {
+  const found = pictures[picture];
+  if (!found) throw new Error(`the conclusion board has no picture for ${picture}`);
+  return found;
+}
+
 // A conclusion as the board draws it, with the amounts a lesson that keeps a
-// board declares for every conclusion. Its amounts only ever grow at the
-// end, so each is named by its place in the line.
+// board declares for every conclusion, and the one written on once the count
+// is answered. Its amounts only ever grow at the end, so each is named by its
+// place in the line.
 function factOf<Shot extends string>(
   conclusion: Conclusion<Shot, string>,
-  pictures: Readonly<Record<string, ReactNode>>,
+  pictures: Readonly<Record<string, BoardPicture>>,
   moment: Moment<Shot>,
 ): BoardFact {
   const written = moment.answered ? conclusion.answer : undefined;
-  const drawn = conclusion.amounts ?? [];
-  const amounts = written?.amount ? [...drawn, written.amount] : drawn;
+  const amounts = written ? drawnAmounts(conclusion) : (conclusion.amounts ?? []);
   return {
     id: conclusion.id,
     says: written?.says ?? conclusion.says,
-    amounts: amounts.map(([count, picture], place) => ({
-      key: `${place}-${picture}`,
-      count,
-      picture: pictures[picture],
-    })),
+    amounts: amounts.map(([count, picture, drawing], place) =>
+      boardAmount(`${place}-${picture}`, count, pictureOf(pictures, picture), drawing),
+    ),
     lit: used(conclusion, moment),
     supposed: conclusion.supposed ?? false,
   };

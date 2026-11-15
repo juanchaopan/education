@@ -46,6 +46,9 @@ function checkStep({ stepId, answer: text }: { stepId: string; answer: string })
 const kept: readonly GardenVariationChoice[] = ['groups'];
 const changed: readonly GardenVariationChoice[] = ['per-group'];
 
+// Every hint first says what the child is looking for, then points at what
+// the board keeps in sight: the first line when one cabbage's three apples
+// are needed, and the groups on the right pan when the cucumbers are counted.
 export const gardenBalance: ProblemPlugin = {
   summary: {
     ...gardenBalanceLesson.problem,
@@ -55,15 +58,20 @@ export const gardenBalance: ProblemPlugin = {
   },
   answering: {
     hints: {
-      'one-cabbage': '先看第一架秤：一棵青菜和几个苹果一样重？',
-      'count-groups': '数一数：右盘有三组黄瓜，每组三根。可以一组一组地数。',
+      'one-cabbage':
+        '我们在找一棵青菜和几根黄瓜一样重。看上面第一条：一棵青菜和三个苹果一样重，每个苹果都换成了一组黄瓜。',
+      'count-groups':
+        '我们在找一棵青菜和几根黄瓜一样重。右盘有三组黄瓜，每组三根，一组一组地数一数。',
     },
     checkCompletion: wholeNumberAnswer(answer),
   },
   // A reason that does not say both halves the right way round, such as
   // 「变成两组了」 or 「每组还是三根」, is not clear.
   variation: {
-    hints: { 'groups-and-count': '数一数，现在有几组？每组有几根？' },
+    hints: {
+      'groups-and-count':
+        '我们在找每个苹果只换两根时，一棵青菜和几根黄瓜一样重。数一数，现在有几组？每组有几根？',
+    },
     checkGuess: wholeNumberAnswer(variationAnswer),
     checkReason: variationReason({
       says: (text) => (explainsChange(text) ? 'correct' : 'incorrect'),

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  drawnAtMost,
   lessonContentProblems,
   lessonFlows,
   pictureProblems,
@@ -159,6 +160,54 @@ describe('the lesson content check', () => {
 
   it('finds two conclusions with the same id', () => {
     expect(keeping(counted, counted)).toEqual(['conclusion three-marbles is declared twice']);
+  });
+});
+
+describe('the amounts a conclusion draws', () => {
+  const drawing = (...amounts: AnyLessonContent['conclusions'][number]['amounts'] & {}) =>
+    keeping({ ...counted, amounts });
+
+  it(`passes up to ${drawnAtMost} things or frames drawn one by one, and 「k×」 past that`, () => {
+    expect(drawing([1, 'marble'], [drawnAtMost, 'marble'])).toEqual([]);
+    expect(
+      drawing([12, 'marble', { group: 3 }], [24, 'marble', { group: 8, times: true }]),
+    ).toEqual([]);
+    expect(drawing([1, 'marble'], [64, 'marble', { times: true }])).toEqual([]);
+  });
+
+  it('finds an amount that counts nothing, or frames that do not divide it', () => {
+    expect(
+      drawing([0, 'marble'], [7, 'marble', { group: 2 }], [4, 'marble', { group: 1 }]),
+    ).toEqual([
+      'conclusion three-marbles draws 0 marble, which is not a count',
+      'conclusion three-marbles draws 7 marble in frames of 2, which do not divide them',
+      'conclusion three-marbles draws 4 marble in frames of 1, which do not divide them',
+    ]);
+  });
+
+  it(`finds more than ${drawnAtMost} things or frames drawn with no 「k×」, and 「k×」 with nothing to multiply`, () => {
+    expect(
+      drawing(
+        [drawnAtMost + 1, 'marble'],
+        [30, 'marble', { group: 3 }],
+        [18, 'marble', { group: 9, times: true }],
+        [1, 'marble', { times: true }],
+        [3, 'marble', { group: 3, times: true }],
+      ),
+    ).toEqual([
+      `conclusion three-marbles draws ${drawnAtMost + 1} marble one by one, more than ${drawnAtMost}, with no 「k×」`,
+      `conclusion three-marbles draws 30 marble in more than ${drawnAtMost} frames, with no 「k×」`,
+      `conclusion three-marbles draws 18 marble in frames of more than ${drawnAtMost}`,
+      'conclusion three-marbles draws 1 marble as 「k×」 with nothing to multiply',
+      'conclusion three-marbles draws 3 marble as 「k×」 with nothing to multiply',
+    ]);
+  });
+
+  it('checks the amount written on once the answer is right too', () => {
+    const answer = { amount: [9, 'marble'] as const, says: '一共 9 颗' };
+    expect(keeping({ ...counted, answer })).toEqual([
+      `conclusion three-marbles draws 9 marble one by one, more than ${drawnAtMost}, with no 「k×」`,
+    ]);
   });
 });
 

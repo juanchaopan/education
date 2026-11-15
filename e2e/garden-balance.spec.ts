@@ -63,13 +63,16 @@ test('a child opens the garden problem from a given book, resumes it and is judg
     const answer = page.getByRole('region', { name: '说出答案' });
 
     // Without a microphone the answer is tapped once the question is told.
-    // A wrong count is explained and the numbers stay; a hint makes the
-    // correct count a helped one.
+    // A wrong count is explained and the numbers stay; a hint, which first
+    // says what the child is looking for, makes the correct count a helped
+    // one.
     const numbers = answer.getByRole('group', { name: '点一个数字回答' });
     await numbers.getByRole('button', { name: '6', exact: true }).click({ timeout: 30_000 });
     await expect(caption).toHaveText(/6 是一开始苹果的个数/);
     await film.getByRole('button', { name: /给我一个提示/ }).click();
-    await expect(caption).toHaveText(/先看第一架秤：一棵青菜和几个苹果一样重？$/);
+    await expect(caption).toHaveText(
+      /我们在找一棵青菜和几根黄瓜一样重。看上面第一条：一棵青菜和三个苹果一样重，每个苹果都换成了一组黄瓜。$/,
+    );
     await numbers.getByRole('button', { name: '9', exact: true }).click();
     await expect(caption).toHaveText(/答对了！这次用了提示/);
     await answer.screenshot({ path: info.outputPath('answer-assisted.png') });

@@ -1,5 +1,6 @@
 import { KeyAction, ScenePicture } from '@education/contracts';
 import {
+  drawnAmounts,
   lessonContentProblems,
   pictureProblems,
   type AnyLessonContent,
@@ -127,13 +128,6 @@ function answeringProblems(
   ];
 }
 
-// What a board draws for a conclusion: its amounts, and the amount written
-// on once the answer is right.
-const drawnOf = ({ amounts, answer }: AnyConclusion) => [
-  ...(amounts ?? []),
-  ...(answer?.amount ? [answer.amount] : []),
-];
-
 // A board draws every conclusion, each with amounts and with pictures it
 // has, says when only conclusions there are count as found, and leaves the
 // props below it along the top of a wide picture.
@@ -147,7 +141,7 @@ function boardProblems({ board, content, staging }: LessonOutline) {
       .map(({ id }) => `conclusion ${id} has no amounts to draw on the board`),
     ...content.conclusions.flatMap((conclusion) =>
       missing(
-        drawnOf(conclusion).map(([, picture]) => picture),
+        drawnAmounts(conclusion).map(([, picture]) => picture),
         pictures,
       ).map((picture) => `conclusion ${conclusion.id} draws ${picture}, which has no picture`),
     ),
