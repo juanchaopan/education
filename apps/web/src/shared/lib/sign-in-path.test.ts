@@ -23,6 +23,9 @@ it.each([
   ['a leading backslash', '\\\\example.com'],
   ['a tab the browser drops', '/\t/example.com'],
   ['a line break the browser drops', '/\n/example.com'],
+  ['a dot segment that resolves to another host', '/.//example.com/family'],
+  ['an escaped dot segment', '/%2e//example.com'],
+  ['a parent segment that resolves to another host', '/a/..//example.com/x?y#z'],
 ])('ignores %s', (_name, next) => {
   expect(returnPath(next)).toBeUndefined();
 });

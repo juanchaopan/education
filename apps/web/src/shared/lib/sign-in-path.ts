@@ -9,6 +9,11 @@ export function signInPath(tab: SignInTab, next?: string) {
 
 const thisSite = 'https://this-site.invalid';
 
+// A path that leads off this site: one that starts with two slashes, which a
+// link takes for another host, or holds a backslash, which a browser reads
+// as a slash, or holds the tabs and line breaks a browser silently drops.
+const leadsAway = (path: string) => path.startsWith('//') || /[\\\p{Cc}]/u.test(path);
+
 function onThisSite(path: string) {
   try {
     return new URL(path, thisSite);
@@ -19,13 +24,13 @@ function onThisSite(path: string) {
 
 // The page a sign-in comes back to: a path on this site, with its query and
 // its "#" part, written as the browser reads it. Anything that could lead
-// elsewhere is ignored: a whole address of another site or scheme, a path the
-// browser would take for another host ("//", or a backslash, which it reads
-// as a slash), the tabs and line breaks it silently drops, or no path at all.
+// elsewhere is ignored: a whole address of another site or scheme, no path
+// at all, or a path that leads away either as written or once the browser
+// has resolved its dot segments ("/.//host" reads as "//host").
 export function returnPath(next: string | null | undefined) {
-  if (!next?.startsWith('/') || next.startsWith('//')) return undefined;
-  if (/[\\\p{Cc}]/u.test(next)) return undefined;
+  if (!next?.startsWith('/') || leadsAway(next)) return undefined;
   const url = onThisSite(next);
   if (url?.origin !== thisSite) return undefined;
-  return url.pathname + url.search + url.hash;
+  const path = url.pathname + url.search + url.hash;
+  return leadsAway(path) ? undefined : path;
 }
