@@ -1,0 +1,26 @@
+/* The family code sits in a sunken trough, like the input it is typed into
+   at sign-in, with its name above it. */
+.code {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border: 1.5px solid var(--control-edge);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+.label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--ink-soft);
+  font-size: var(--text-sm);
+  font-weight: 700;
+}
+.value {
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  overflow-wrap: anywhere;
+}

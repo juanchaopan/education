@@ -24,11 +24,12 @@ function ToHome() {
 }
 
 // Three layouts: the pages that bring their own frame across the screen —
-// the home page, which is the sign-in or the signed-in child's books, and
-// the parents' pages with their scene or their own navigation; the few other
-// pages under the site's brand; and a problem's page, which fills the screen
-// on its own with a back button. The update notice lies over all of them.
-// Every page keeps to the day and night of the family's clock.
+// the home page, which is the sign-in or the signed-in child's books, the
+// account pages with their scene, and the parents' pages with their own
+// navigation; the page for a path that leads nowhere, under the site's
+// brand; and a problem's page, which fills the screen on its own with a back
+// button. The update notice lies over all of them. Every page keeps to the
+// day and night of the family's clock.
 export function App() {
   useDayNightTheme(useFamilyTimeZone());
   return (
@@ -37,13 +38,13 @@ export function App() {
         <Route element={<PlainLayout />}>
           <Route path="/" element={<HomePage art={accountArt} childArt={childHomeArt} />} />
           <Route path="/child" element={<ToHome />} />
+          <Route path="/join" element={<ChildRegistrationPage art={accountArt} />} />
           <Route path="/family/recover" element={<RecoveryPage art={accountArt} />} />
           <Route path="/family/reset" element={<ResetPasswordPage art={accountArt} />} />
           <Route path="/family/verify" element={<VerifyEmailPage art={accountArt} />} />
           <Route path="/family/*" element={<FamilyPage art={accountArt} />} />
         </Route>
         <Route element={<SiteLayout />}>
-          <Route path="/join" element={<ChildRegistrationPage />} />
           <Route
             path="*"
             element={
