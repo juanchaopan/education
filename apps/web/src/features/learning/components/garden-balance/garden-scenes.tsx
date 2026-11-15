@@ -152,6 +152,9 @@ function CucumberGroup({ x, count, fresh }: { x: number; count: number; fresh: b
   );
 }
 
+// The variation's condition in the picture: the basket of two cucumbers
+// under its sign, which stays in sight while the child guesses, swaps and
+// says why. What the swaps come to is never written in the picture.
 function SpareCucumbers() {
   return (
     <g transform="translate(978 414)">
@@ -167,18 +170,15 @@ function SpareCucumbers() {
 
 // One cabbage against the three apples it weighs; each apple in turn becomes
 // its group of cucumbers, three each in the problem and two in the variation.
+// The apples are lit and tapped only in the scenes that swap them.
 function SwapScene({ state }: { state: GardenState }) {
   const { shot, replaced } = state;
-  const swapping = shot === 'bridge' || shot === 'variation';
+  const swapping = shot === 'bridge' || shot === 'swap';
+  const each = cucumbersPerApple(shot);
   const next = groupSpots[replaced];
   const right = groupSpots.map((x, i) =>
     i < replaced ? (
-      <CucumberGroup
-        key={`group-${x}`}
-        x={x}
-        count={cucumbersPerApple(shot)}
-        fresh={i === replaced - 1}
-      />
+      <CucumberGroup key={`group-${x}`} x={x} count={each} fresh={i === replaced - 1} />
     ) : (
       <Part
         key={`apple-${x}`}
@@ -200,24 +200,7 @@ function SwapScene({ state }: { state: GardenState }) {
         tilt={0}
       />
       {swapping && next !== undefined && <Arrow from={[817 + next, 232]} to={[817 + next, 285]} />}
-      {(shot === 'variation' || shot === 'end') && <SpareCucumbers />}
-      {shot === 'end' && (
-        <>
-          <rect
-            x="505"
-            y="495"
-            width="310"
-            height="48"
-            rx="18"
-            fill="url(#garden-paper)"
-            stroke="#95572f"
-            strokeWidth="2"
-          />
-          <BoardText x={660} y={526} size={22}>
-            组数一样，每组的根数变了
-          </BoardText>
-        </>
-      )}
+      {each === 2 && <SpareCucumbers />}
     </>
   );
 }

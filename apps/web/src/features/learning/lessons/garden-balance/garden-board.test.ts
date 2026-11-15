@@ -3,13 +3,17 @@ import { describe, expect, it } from 'vitest';
 import { boardFacts, type AnswerProgress } from '../lesson-board';
 import { gardenBoard } from './garden-board';
 import { arrive, respond, type GardenState, type Move } from './garden-story';
-import { shots } from './script';
 
-const scenes = { shots, answerScene: 'answer' } as const;
 const unanswered: AnswerProgress = { answered: false };
 
 function facts(state: GardenState, progress = unanswered) {
-  return boardFacts(gardenBoard, gardenBalanceLesson.conclusions, scenes, state, progress);
+  return boardFacts(
+    gardenBoard,
+    gardenBalanceLesson.conclusions,
+    gardenBalanceLesson,
+    state,
+    progress,
+  );
 }
 
 // The board as the child sees it: each conclusion's sentence, with a mark
@@ -38,6 +42,7 @@ const appleCucumbers = '1 个苹果和 3 根黄瓜一样重';
 const cabbageGroups = '1 棵青菜和 3 组黄瓜一样重';
 const counted = '1 棵青菜和 3 组黄瓜一样重，一共 9 根黄瓜';
 const supposed = '假如 1 个苹果和 2 根黄瓜一样重';
+const twoEach = '那么 1 棵青菜和 3 组黄瓜一样重，一共 6 根黄瓜';
 
 const round = (count: number) => ({ count, shape: 'round' });
 const cucumbers = (count: number) => ({ count, shape: 'long' });
@@ -99,19 +104,18 @@ describe('the garden conclusion board', () => {
       cabbageForFramedCucumbers,
     );
   });
+});
 
-  it('sets the two cucumbers to an apple beside the three in the variation', () => {
-    expect(board(arrive('variation').state)).toEqual([
-      cabbageApples,
-      appleCucumbers,
-      `${supposed} *`,
-      counted,
-    ]);
-    expect(board(arrive('end').state)).toEqual([
-      cabbageApples,
-      `${appleCucumbers} *`,
-      `${supposed} *`,
-      counted,
-    ]);
+describe('the garden conclusion board in the variation', () => {
+  it('keeps only the cabbage weighing three apples beside the two cucumbers to an apple', () => {
+    for (const shot of ['guess', 'swap', 'reason'] as const)
+      expect(board(arrive(shot).state)).toEqual([cabbageApples, `${supposed} *`]);
+  });
+
+  it('adds what the variation came to once revealed: the cabbage weighing three frames of two', () => {
+    const revealed = arrive('reveal').state;
+    expect(board(revealed)).toEqual([cabbageApples, supposed, `${twoEach} *`]);
+    expect(drawn(revealed, 'cabbage-two-each')).toEqual([round(1), { ...cucumbers(6), group: 2 }]);
+    expect(facts(revealed).map(({ kind }) => kind)).toEqual([undefined, 'supposed', 'result']);
   });
 });

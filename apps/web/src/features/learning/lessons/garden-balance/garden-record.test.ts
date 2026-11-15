@@ -79,14 +79,19 @@ it('counts the groups of three swapped in, then of two in the variation, beside 
     { place: 'right-pan', thing: 'apple', count: 1 },
     { place: 'right-pan', thing: 'group-of-three', count: 2 },
   ]);
-  expect(gardenRecording.picture(arrive('end').state)).toEqual({
+  expect(gardenRecording.picture(arrive('guess').state)).toEqual({
     things: [
       { place: 'left-pan', thing: 'cabbage', count: 1 },
-      { place: 'right-pan', thing: 'apple', count: 0 },
-      { place: 'right-pan', thing: 'group-of-two', count: 3 },
+      { place: 'right-pan', thing: 'apple', count: 3 },
+      { place: 'right-pan', thing: 'group-of-two', count: 0 },
       { place: 'basket', thing: 'cucumber', count: 2 },
     ],
     states: ['level', 'two-each-sign'],
+  });
+  expect(gardenRecording.picture(arrive('reason').state).things).toContainEqual({
+    place: 'right-pan',
+    thing: 'group-of-two',
+    count: 3,
   });
 });
 
@@ -96,6 +101,15 @@ it('ends the swapping scene with every apple swapped, as the count is asked of i
   expect(record.ended).toEqual([{ stepId: 'bridge', picture: asked }]);
   expect(asked.things).toContainEqual({ place: 'right-pan', thing: 'group-of-three', count: 3 });
   expect(record.actions).toEqual([{ stepId: 'bridge', action: 'apple-swapped', times: 3 }]);
+});
+
+it("records the variation's swaps, and nothing while the child guesses", () => {
+  expect(play('guess', tapped('replace')).actions).toEqual([]);
+  const swapped = play('swap', tapped('replace'), tapped('replace'), tapped('replace'));
+  expect(swapped.actions).toEqual([{ stepId: 'swap', action: 'apple-swapped', times: 3 }]);
+  expect(swapped.ended).toEqual([
+    { stepId: 'swap', picture: gardenRecording.picture(arrive('reason').state) },
+  ]);
 });
 
 it('records only the moves a scene takes', () => {

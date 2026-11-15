@@ -25,6 +25,7 @@ import {
   entryLines,
   lines,
   shots,
+  variationAnswer,
   type LineId,
   type Shot,
 } from './script';
@@ -33,10 +34,10 @@ type Piece = keyof typeof movableProps;
 
 // 菜园天平：一棵青菜和几根黄瓜一样重。The rabbit halves the scale, weighs one
 // apple against cucumbers and swaps each apple for its cucumbers, then asks
-// for the count; a variation with two cucumbers to an apple follows. It plays
-// on the library's morning garden, which its content names, with the scale
-// on its round workbench, and keeps what each scene finds on the conclusion
-// board.
+// for the count; a variation with two cucumbers to an apple follows, guessed,
+// swapped and explained before it is revealed. It plays on the library's
+// morning garden, which its content names, with the scale on its round
+// workbench, and keeps what each scene finds on the conclusion board.
 export const gardenLesson = {
   content: gardenBalanceLesson,
   title: '一棵青菜有多重？',
@@ -60,6 +61,7 @@ export const gardenLesson = {
     choices: answerChoices,
     hints: answerHints,
   },
+  variation: variationAnswer,
   board: gardenBoard,
   Scene: GardenScene,
 } satisfies LessonDefinition<GardenState, Shot, LineId, Move, Piece, MovableLook>;

@@ -1,4 +1,3 @@
-import { uncertainFeedback, type TeachingFeedback } from '@education/contracts';
 import { sceneSteps, variationReason, wholeNumberAnswer } from './lesson-rules.js';
 import {
   gardenBalanceLesson,
@@ -29,18 +28,6 @@ const negated = /不是|没有变成/;
 // for two cucumbers: still three groups, each holding fewer.
 function explainsChange(text: string) {
   return groupsKept.test(text) && countChanged.test(text) && !negated.test(text);
-}
-
-// The closing question has a short authored answer: the groups stay three and
-// each group holds fewer. Anything else is left to the model.
-function checkStep({ stepId, answer: text }: { stepId: string; answer: string }): TeachingFeedback {
-  if (stepId === 'end' && explainsChange(text))
-    return {
-      status: 'correct',
-      stepId,
-      instruction: '说得对！还是三组，只是每组从三根变成了两根。',
-    };
-  return uncertainFeedback(stepId);
 }
 
 const kept: readonly GardenVariationChoice[] = ['groups'];
@@ -82,5 +69,4 @@ export const gardenBalance: ProblemPlugin = {
   },
   feedback: gardenBalanceSteps,
   lesson: gardenBalanceLesson,
-  checkStep,
 };
