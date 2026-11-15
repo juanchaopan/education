@@ -3,11 +3,11 @@ import type { BackdropId } from './backdrops.js';
 // What a lesson says and finds, declared once for each problem and read by the
 // site and the server alike: the lesson flow it follows, the library backdrop
 // it plays on, its scenes in teaching order, the scene that asks for the final
-// answer, what a model may see of each scene, the words the teacher says in
-// each, the conclusions its scenes find, and the words its scenes and the
-// child's key actions are told in when the child asks the teacher. It holds no
-// judging rules, which only the server's plugins have, so the site may load
-// it.
+// answer, its variation, what a model may see of each scene, the words the
+// teacher says in each, the conclusions its scenes find, and the words its
+// scenes and the child's key actions are told in when the child asks the
+// teacher. It holds no judging rules, which only the server's plugins have,
+// so the site may load it.
 
 // The lesson flows a problem can follow, the skeleton of its lesson; see the
 // handbook's 课堂流程清单. `scene-by-scene` is 逐幕探究: each scene finds a
@@ -48,8 +48,7 @@ export const drawnAtMost = 8;
 // - `uses` and `hints`, the scenes, and the answer's hints, that use it;
 // - `answer`, what it says once the child has answered right, with the
 //   amount the board then writes on, if any;
-// - `supposed`, a changed condition, which comes right after the
-//   conclusion it changes.
+// - `supposed`, a changed condition the variation sets, 假如.
 export type Conclusion<Shot extends string, Picture extends string> = Readonly<{
   id: string;
   says: string;
@@ -59,6 +58,25 @@ export type Conclusion<Shot extends string, Picture extends string> = Readonly<{
   hints?: readonly string[];
   answer?: Readonly<{ amount?: Amount<Picture>; says: string }>;
   supposed?: boolean;
+}>;
+
+// The variation a lesson ends with once its final answer is right: another
+// problem, with one key condition changed. `guessScene` sets the condition
+// and asks the child to guess what comes of it, the child works it out by
+// hand in the scenes after it, `reasonScene` asks why it came out so, and
+// `revealScene` says what it came to: the conclusion `result`, 那么, which
+// it finds right after the condition. `keeps` names the problem's
+// conclusions the variation still uses, which the board keeps in sight while
+// it puts the others away; `choices` are what the child may tap as kept and
+// as changed when saying the reason is not possible, by id, with the words
+// the drops show. The server's rule judges the ids, so both read them here.
+export type LessonVariation<Shot extends string> = Readonly<{
+  guessScene: Shot;
+  reasonScene: Shot;
+  revealScene: Shot;
+  result: string;
+  keeps: readonly string[];
+  choices: Readonly<Record<string, string>>;
 }>;
 
 // A line the teacher says, and the scene it is said in.
@@ -118,6 +136,7 @@ export type LessonContent<
   vocabulary: readonly string[];
   shots: readonly [Shot, ...Shot[]];
   answerScene: Shot;
+  variation?: LessonVariation<Shot>;
   lines: Readonly<Record<Line, LessonLine<Shot>>>;
   scenes: Readonly<Record<Shot, LessonScene<Line>>>;
   conclusions: readonly Conclusion<Shot, Picture>[];
@@ -126,8 +145,8 @@ export type LessonContent<
 
 // A lesson's content with its scene, line, picture and record word names kept
 // exact: the scenes are named by `shots` and the lines by `lines`, so a scene,
-// an entry line, the answer scene or a conclusion's scene that names anything
-// else does not compile.
+// an entry line, the answer scene, a variation's scene or a conclusion's
+// scene that names anything else does not compile.
 export function lessonContent<
   const Shot extends string,
   const Line extends string,
@@ -136,10 +155,11 @@ export function lessonContent<
 >(
   content: Omit<
     LessonContent<Shot, Line, Picture, Words>,
-    'answerScene' | 'lines' | 'scenes' | 'conclusions'
+    'answerScene' | 'variation' | 'lines' | 'scenes' | 'conclusions'
   > &
     Readonly<{
       answerScene: NoInfer<Shot>;
+      variation?: LessonVariation<NoInfer<Shot>>;
       lines: Readonly<Record<Line, LessonLine<NoInfer<Shot>>>>;
       scenes: Readonly<Record<NoInfer<Shot>, LessonScene<NoInfer<Line>>>>;
       conclusions: readonly Conclusion<NoInfer<Shot>, Picture>[];
@@ -167,6 +187,16 @@ export type ScenePictureOf<Content> = ScenePicture<
   keyof RecordWordsOf<Content>['states'] & string
 >;
 export type KeyActionOf<Content> = keyof RecordWordsOf<Content>['actions'] & string;
+
+// Whether a scene is one of the scenes of the variation a lesson declares,
+// its guess scene or one after it: another problem, which the board and the
+// teacher tell apart from the one before it.
+export function inVariation<Shot extends string>(
+  { shots, variation }: Pick<LessonContent<Shot, string, string>, 'shots' | 'variation'>,
+  shot: Shot,
+) {
+  return variation !== undefined && shots.indexOf(shot) >= shots.indexOf(variation.guessScene);
+}
 
 const missing = (from: readonly string[], within: readonly string[]) =>
   from.filter((name) => !within.includes(name));
@@ -247,6 +277,55 @@ function flowProblems(content: AnyLessonContent) {
   return rules ? rules(content) : [`the lesson follows flow ${flow}, which is not in the list`];
 }
 
+// The variation's scenes follow the final answer in the order the child
+// meets them.
+function variationOrderProblems(
+  { shots, answerScene }: AnyLessonContent,
+  { guessScene, reasonScene, revealScene }: LessonVariation<string>,
+) {
+  const scenes = [guessScene, reasonScene, revealScene];
+  const order = [answerScene, ...scenes].map((shot) => shots.indexOf(shot));
+  const inOrder = order.every((at, index) => index === 0 || at > (order[index - 1] ?? at));
+  return [
+    ...scenes
+      .filter((shot) => !shots.includes(shot))
+      .map((shot) => `variation scene ${shot} is not a scene`),
+    ...(inOrder
+      ? []
+      : ['the variation does not guess, reason and reveal after the answer scene, in that order']),
+  ];
+}
+
+// The variation keeps only conclusions the problem found before it, finds
+// its result in its reveal right after the condition it sets, and offers at
+// least two reasons to tap, each with its words.
+function variationProblems(content: AnyLessonContent) {
+  const { variation, conclusions } = content;
+  if (!variation) return [];
+  const { revealScene, result, keeps, choices } = variation;
+  const at = (id: string) => conclusions.findIndex((conclusion) => conclusion.id === id);
+  const kept = (id: string) => {
+    const found = conclusions[at(id)];
+    return found !== undefined && !inVariation(content, found.from);
+  };
+  const placed =
+    conclusions[at(result)]?.from === revealScene && conclusions[at(result) - 1]?.supposed === true;
+  const words = Object.entries(choices);
+  return [
+    ...variationOrderProblems(content, variation),
+    ...keeps
+      .filter((id) => !kept(id))
+      .map((id) => `the variation keeps ${id}, which is not a conclusion found before it`),
+    ...(placed
+      ? []
+      : [
+          `the variation's result ${result} is not found in ${revealScene} right after its condition`,
+        ]),
+    ...(words.length >= 2 ? [] : ['the variation has fewer than two reasons to tap']),
+    ...words.filter(([, word]) => !word.trim()).map(([id]) => `reason ${id} has no words`),
+  ];
+}
+
 // The longest record word a lesson may declare.
 export const recordWordMaxLength = 30;
 
@@ -305,47 +384,51 @@ function drawnProblems(id: string, [count, picture, drawing = {}]: Amount<string
   return crowdProblems(amount, count / each, each, times);
 }
 
+// A changed condition is set once the final answer is right: in the
+// variation, when the lesson declares one.
+function supposedEarly(content: AnyLessonContent, from: string) {
+  const { shots, answerScene, variation } = content;
+  if (variation) return !inVariation(content, from);
+  return shots.indexOf(from) <= shots.indexOf(answerScene);
+}
+
 // A conclusion is first found in one of the scenes and used only from there
-// on; a supposed one stands beside the conclusion before it, which is found
-// by then; its amounts are counts of single things the board can draw.
-function conclusionProblems(
-  conclusion: AnyConclusion,
-  before: AnyConclusion | undefined,
-  shots: readonly string[],
-) {
+// on; a changed condition is set in the variation; its amounts are counts
+// of single things the board can draw.
+function conclusionProblems(content: AnyLessonContent, conclusion: AnyConclusion) {
+  const { shots } = content;
   const { id, from, uses = [], supposed } = conclusion;
   const first = shots.indexOf(from);
   if (first < 0) return [`conclusion ${id} first shows in ${from}, which is not a scene`];
-  const beside = !supposed || (before !== undefined && shots.indexOf(before.from) <= first);
   return [
     ...uses
       .filter((shot) => shots.indexOf(shot) < first)
       .map((shot) => `conclusion ${id} is used in ${shot}, which is not a scene from ${from} on`),
-    ...(beside
-      ? []
-      : [`conclusion ${id} supposes a change but has no conclusion on the board to stand beside`]),
+    ...(supposed && supposedEarly(content, from)
+      ? [`conclusion ${id} supposes a change before the variation starts`]
+      : []),
     ...drawnAmounts(conclusion).flatMap((amount) => drawnProblems(id, amount)),
   ];
 }
 
 // Everything wrong with a lesson's content, or nothing: lines said in no
 // scene, scenes that say nothing on arriving or arrive with another scene's
-// lines, a flow not in the list or whose needs the scenes do not meet, record
-// words empty or too long, and conclusions declared twice, found in no scene,
-// used before they are found, supposed with nothing to stand beside, or with
-// amounts the board cannot draw.
+// lines, a flow not in the list or whose needs the scenes do not meet, a
+// variation out of order, keeping what the problem never found, with its
+// result out of place or with too few reasons to tap, record words empty or
+// too long, and conclusions declared twice, found in no scene, used before
+// they are found, supposing a change before the variation, or with amounts
+// the board cannot draw.
 export function lessonContentProblems(content: AnyLessonContent) {
-  const { shots, conclusions } = content;
-  const ids = conclusions.map(({ id }) => id);
+  const ids = content.conclusions.map(({ id }) => id);
   return [
     ...lineProblems(content),
     ...flowProblems(content),
+    ...variationProblems(content),
     ...recordWordProblems(content),
     ...ids
       .filter((id, index) => ids.indexOf(id) !== index)
       .map((id) => `conclusion ${id} is declared twice`),
-    ...conclusions.flatMap((conclusion, index) =>
-      conclusionProblems(conclusion, conclusions[index - 1], shots),
-    ),
+    ...content.conclusions.flatMap((conclusion) => conclusionProblems(content, conclusion)),
   ];
 }

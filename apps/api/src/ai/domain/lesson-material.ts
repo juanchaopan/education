@@ -2,6 +2,7 @@ import type { LessonRecord, ScenePicture } from '@education/contracts';
 import { backdropScenery } from '@education/problems/backdrops';
 import {
   declaresAction,
+  inVariation,
   pictureProblems,
   type AnyLessonContent,
   type AnyRecordWords,
@@ -19,13 +20,16 @@ export type SceneMaterial = Readonly<{
 
 // The lesson so far, as a model may see it when a child asks a question: the
 // earlier scenes, the scene asked about, the conclusions found before it, the
-// child's key actions and the backdrop's scenery. Nothing of a later scene is
-// in it, and the final answer only once the lesson is past the scene that
-// asks for it.
+// child's key actions and the backdrop's scenery. In the variation, which is
+// another problem, `found` holds the problem's conclusions and `variation`
+// the variation's own conditions and result. Nothing of a later scene is in
+// it, and the final answer only once the lesson is past the scene that asks
+// for it.
 export type LessonMaterial = Readonly<{
   earlier: readonly SceneMaterial[];
   now: SceneMaterial;
   found: readonly string[];
+  variation?: readonly string[];
   done: readonly string[];
   scenery: string;
 }>;
@@ -103,13 +107,24 @@ const allSaid = ({ lines }: AnyLessonContent, shot: string) =>
 const entrySaid = ({ scenes, lines }: AnyLessonContent, shot: string) =>
   (scenes[shot]?.entry ?? []).map((line) => lines[line]?.text ?? '');
 
-// The conclusions found before the scene at `at`, the final answer written on
-// only past the scene that asks for it.
-function found({ shots, answerScene, conclusions }: AnyLessonContent, at: number) {
+// The conclusions told for a question in the scene at `at`, the final answer
+// written on only past the scene that asks for it: those found before it,
+// or, in the variation, the problem's conclusions apart from the variation's
+// own conditions and result, each from the scene that says it on arriving.
+function conclusionsAt(content: AnyLessonContent, at: number) {
+  const { shots, answerScene, conclusions } = content;
   const answered = at > shots.indexOf(answerScene);
-  return conclusions
-    .filter(({ from }) => shots.indexOf(from) < at)
-    .map(({ says, answer }) => (answered && answer ? answer.says : says));
+  const told = ({ says, answer }: AnyLessonContent['conclusions'][number]) =>
+    answered && answer ? answer.says : says;
+  const before = conclusions.filter(({ from }) => shots.indexOf(from) < at);
+  if (!inVariation(content, shots[at] ?? '')) return { found: before.map(told) };
+  const varied = ({ from }: { from: string }) => inVariation(content, from);
+  return {
+    found: before.filter((conclusion) => !varied(conclusion)).map(told),
+    variation: conclusions
+      .filter((conclusion) => varied(conclusion) && shots.indexOf(conclusion.from) <= at)
+      .map(told),
+  };
 }
 
 // The child's key actions in the lesson's words, each with its scene.
@@ -146,7 +161,7 @@ export function lessonMaterial(
   return {
     earlier,
     now: sceneMaterial(content, at, entrySaid(content, stepId), record.now),
-    found: found(content, at),
+    ...conclusionsAt(content, at),
     done: done(content, record),
     scenery: backdropScenery[content.backdrop],
   };
