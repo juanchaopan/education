@@ -38,6 +38,18 @@ it('groups the KEY in fours as it is typed or pasted', async () => {
   expect(key).toHaveValue('ABCD-EFGH-JKMN-PQRS');
 });
 
+it('deletes the character before a dash and keeps the caret where the child edits', async () => {
+  render(<Holder />);
+  const key = screen.getByLabelText<HTMLInputElement>('家长给我的 KEY');
+  await userEvent.type(key, 'ABCDEFGH');
+  expect(key).toHaveValue('ABCD-EFGH');
+  await userEvent.type(key, '{Backspace}', { initialSelectionStart: 5, initialSelectionEnd: 5 });
+  expect(key).toHaveValue('ABCE-FGH');
+  await vi.waitFor(() => expect(key.selectionStart).toBe(3));
+  await userEvent.keyboard('D');
+  expect(key).toHaveValue('ABCD-EFGH');
+});
+
 it('counts the nickname up to twelve and says how far past it a longer one goes', async () => {
   render(<Holder />);
   const nickname = screen.getByLabelText('我的昵称');

@@ -1,9 +1,10 @@
+import type { ChangeEvent } from 'react';
 import { Button } from '../../../shared/ui/Button';
 import { Form } from '../../../shared/ui/Form';
 import { Notice } from '../../../shared/ui/Notice';
 import { TextField } from '../../../shared/ui/TextField';
 import { NicknameHint } from './NicknameHint';
-import { groupRegistrationKey } from './registration-key';
+import { editRegistrationKey } from './registration-key';
 
 export type ChildRegistrationFields = { registrationKey: string; nickname: string; pin: string };
 export type ChildRegistrationFormProps = ChildRegistrationFields & {
@@ -18,6 +19,19 @@ export type ChildRegistrationFormProps = ChildRegistrationFields & {
 // child must know is written beside the fields; the rules for the nickname
 // and the PIN come back from the server when an answer breaks them.
 export function ChildRegistrationForm(props: ChildRegistrationFormProps) {
+  // The grouped KEY replaces what was typed, so once it is drawn the caret
+  // goes back after the characters it followed.
+  const changeKey = ({ target }: ChangeEvent<HTMLInputElement>) => {
+    const edit = editRegistrationKey(
+      props.registrationKey,
+      target.value,
+      target.selectionStart ?? target.value.length,
+    );
+    props.onChange('registrationKey', edit.value);
+    requestAnimationFrame(() => {
+      if (document.activeElement === target) target.setSelectionRange(edit.caret, edit.caret);
+    });
+  };
   return (
     <Form onSubmit={props.onSubmit} aria-busy={props.pending}>
       <TextField
@@ -33,9 +47,7 @@ export function ChildRegistrationForm(props: ChildRegistrationFormProps) {
         required
         value={props.registrationKey}
         disabled={props.pending}
-        onChange={(event) =>
-          props.onChange('registrationKey', groupRegistrationKey(event.target.value))
-        }
+        onChange={changeKey}
       />
       <TextField
         id="child-nickname"

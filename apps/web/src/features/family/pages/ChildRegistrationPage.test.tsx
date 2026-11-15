@@ -30,33 +30,44 @@ function open() {
   );
 }
 
-it('reuses the request on network failure, clears secrets on success and never stores inputs', async () => {
+// The server: each request body is kept; the answers are given in turn.
+function serve(...answers: (() => Response)[]) {
   const calls: string[] = [];
   vi.stubGlobal(
     'fetch',
     vi.fn(async (_url, init) => {
       calls.push(init.body);
-      if (calls.length === 1) throw new Error('network interrupted');
-      return Response.json({
-        status: 'registered',
-        familyCode: 'ABCD-EFGH-JKMN',
-        nickname: '小明',
-      });
+      return answers[Math.min(calls.length, answers.length) - 1]!();
     }),
   );
+  return calls;
+}
+
+const lost = () => {
+  throw new Error('network interrupted');
+};
+const registered = () =>
+  Response.json({ status: 'registered', familyCode: 'ABCD-EFGH-JKMN', nickname: '小明' });
+
+async function fillAndJoin() {
+  const user = userEvent.setup();
+  await user.type(screen.getByLabelText('家长给我的 KEY'), 'ABCDEFGHJKMNPQRS');
+  await user.type(screen.getByLabelText('我的昵称'), '小明');
+  await user.type(screen.getByLabelText('设置六位数字 PIN'), '018274');
+  await user.click(screen.getByRole('button', { name: '加入家庭' }));
+  return user;
+}
+
+it('reuses the request on network failure, clears secrets on success and never stores inputs', async () => {
+  const calls = serve(lost, registered);
   open();
   expect(screen.getByRole('heading', { name: '加入家庭', level: 1 })).toBeInTheDocument();
   expect(screen.getByRole('link', { name: '已有账号？去登录' })).toHaveAttribute(
     'href',
     '/login/child',
   );
-  const user = userEvent.setup();
-  await user.type(screen.getByLabelText('家长给我的 KEY'), 'ABCDEFGHJKMNPQRS');
-  await user.type(screen.getByLabelText('我的昵称'), '小明');
-  const pin = screen.getByLabelText('设置六位数字 PIN');
-  expect(pin).toHaveAttribute('autocomplete', 'new-password');
-  await user.type(pin, '018274');
-  await user.click(screen.getByRole('button', { name: '加入家庭' }));
+  expect(screen.getByLabelText('设置六位数字 PIN')).toHaveAttribute('autocomplete', 'new-password');
+  const user = await fillAndJoin();
   expect(await screen.findByRole('alert')).toHaveTextContent('暂时无法确认结果');
   expect(calls).toHaveLength(1);
   expect(JSON.parse(calls[0]!)).toMatchObject({ key: 'ABCD-EFGH-JKMN-PQRS' });
@@ -74,21 +85,24 @@ it('reuses the request on network failure, clears secrets on success and never s
   );
 });
 
+it('keeps the request when a keystroke leaves the fields as they were', async () => {
+  const calls = serve(lost, registered);
+  open();
+  const user = await fillAndJoin();
+  expect(await screen.findByRole('alert')).toHaveTextContent('暂时无法确认结果');
+  await user.type(screen.getByLabelText('家长给我的 KEY'), ' ');
+  expect(screen.getByLabelText('家长给我的 KEY')).toHaveValue('ABCD-EFGH-JKMN-PQRS');
+  await user.click(screen.getByRole('button', { name: '加入家庭' }));
+  expect(await screen.findByRole('heading', { name: '你已加入家庭！' })).toBeVisible();
+  expect(calls[0]).toBe(calls[1]);
+});
+
 it('starts a new request once a field changes after a failure', async () => {
-  const calls: string[] = [];
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async (_url, init) => {
-      calls.push(init.body);
-      return Response.json({ message: '这个 KEY 已使用、已撤销或已过期。' }, { status: 409 });
-    }),
+  const calls = serve(() =>
+    Response.json({ message: '这个 KEY 已使用、已撤销或已过期。' }, { status: 409 }),
   );
   open();
-  const user = userEvent.setup();
-  await user.type(screen.getByLabelText('家长给我的 KEY'), 'ABCDEFGHJKMNPQRS');
-  await user.type(screen.getByLabelText('我的昵称'), '小明');
-  await user.type(screen.getByLabelText('设置六位数字 PIN'), '018274');
-  await user.click(screen.getByRole('button', { name: '加入家庭' }));
+  const user = await fillAndJoin();
   expect(await screen.findByRole('alert')).toHaveTextContent('这个 KEY 已使用');
   await user.type(screen.getByLabelText('我的昵称'), '呀');
   expect(screen.queryByRole('alert')).not.toBeInTheDocument();

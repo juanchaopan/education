@@ -14,9 +14,11 @@ const empty: ChildRegistrationFields = { registrationKey: '', nickname: '', pin:
 
 // A child joins the family with the KEY a parent gave, on the account pages'
 // scene. A request sent again after an unsure answer keeps its id, so the
-// server replays it rather than registering twice; any change to the fields
-// makes it a new request. Once registered, nothing typed is kept, and the way
-// on is the child's sign-in, already holding the family code and nickname.
+// server replays it rather than registering twice; a change to what the
+// fields hold makes it a new request, and a keystroke that leaves them as
+// they were, such as a space the KEY drops, does not. Once registered,
+// nothing typed is kept, and the way on is the child's sign-in, already
+// holding the family code and nickname.
 export function ChildRegistrationPage({ art }: { art: AccountArt }) {
   const [fields, setFields] = useState(empty);
   const requestId = useRef(crypto.randomUUID());
@@ -24,6 +26,7 @@ export function ChildRegistrationPage({ art }: { art: AccountArt }) {
   const [error, setError] = useState<string>();
   const registration = useChildRegistration();
   const change = (field: keyof ChildRegistrationFields, value: string) => {
+    if (value === fields[field]) return;
     setFields((current) => ({ ...current, [field]: value }));
     requestId.current = crypto.randomUUID();
     setError(undefined);
