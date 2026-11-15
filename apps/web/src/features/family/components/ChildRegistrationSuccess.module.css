@@ -17,10 +17,12 @@
   font-size: var(--text-sm);
   font-weight: 700;
 }
+/* The code is one string to read and copy, so it stays on one line; its size
+   follows the width of the screen so the longest code fits a phone. */
 .value {
   font-family: var(--font-display);
-  font-size: var(--text-xl);
+  font-size: clamp(1.125rem, 6.2vw, var(--text-xl));
   font-weight: 700;
   letter-spacing: 0.06em;
-  overflow-wrap: anywhere;
+  white-space: nowrap;
 }
