@@ -16,7 +16,7 @@
 
 4. 供应商核实完成后，设置 Actions Variables `STAGING_MAIL_PROVIDER_APPROVED=true` 和 `STAGING_MAIL_ENABLED=true`，手动运行 main 的 staging workflow。缺配置或核实开关会拒绝候选发布；不能为了部署成功跳过校验。生产不自动启用。
 
-发布脚本只向候选服务端环境传递必要配置；应用使用 `MAIL_ENABLED`、`MAIL_PROVIDER_APPROVED`、`GMAIL_USER`、`GMAIL_APP_PASSWORD`、`MAIL_PAYLOAD_KEY`。候选的随机 `@example.invalid` 账号冒烟不会发送邮件，因为注册和登录本身不会发信；验证邮件须登录后显式请求，恢复邮件由 `/family/recover` 的显式申请触发。
+发布脚本只向候选服务端环境传递必要配置；应用使用 `MAIL_ENABLED`、`MAIL_PROVIDER_APPROVED`、`GMAIL_USER`、`GMAIL_APP_PASSWORD`、`MAIL_PAYLOAD_KEY`。候选的随机 `@example.invalid` 账号冒烟不会发送邮件，因为注册和登录本身不会发信；验证邮件须登录后显式请求，恢复邮件由 `/password/forgot` 的显式申请触发。
 
 ## 验收与恢复
 
