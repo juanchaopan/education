@@ -21,7 +21,6 @@
 
 .group {
   display: flex;
-  align-items: stretch;
   gap: 0.25em;
 }
 
@@ -166,8 +165,9 @@
   font-weight: 800;
 }
 
-/* A pile's lines: rows stacked down, the later ones tucked a little under
-   the first, or columns side by side whose copies overlap down each. */
+/* A pile's lines: rows stacked down, or columns side by side. Rows of
+   things tuck a little under the first and the copies down a column
+   overlap; rows of frames keep apart, so no frame covers another. */
 .pile {
   display: flex;
   flex-direction: column;
@@ -185,7 +185,7 @@
   align-items: center;
 }
 
-.pile[data-across='true'] > .line + .line {
+.pile[data-across='true'] > .line + .line:not(:has(> .frame)) {
   margin-block-start: calc(-1 * var(--overlap));
 }
 

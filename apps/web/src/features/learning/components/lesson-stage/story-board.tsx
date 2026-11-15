@@ -24,7 +24,12 @@ const things = {
 type Thing = keyof typeof things;
 
 const amount = (count: number, thing: Thing, drawing: AmountDrawing = {}) =>
-  boardAmount(`${thing}-${count}-${drawing.group ?? 1}`, count, things[thing], drawing);
+  boardAmount(
+    `${thing}-${count}-${drawing.group ?? 1}-${drawing.times ?? false}`,
+    count,
+    things[thing],
+    drawing,
+  );
 
 const fact = (id: string, says: string, ...amounts: BoardAmount[]): BoardFact => ({
   id,

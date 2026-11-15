@@ -185,16 +185,18 @@ describe('the amounts a conclusion draws', () => {
     ]);
   });
 
-  it(`finds more than ${drawnAtMost} drawn one by one, and 「k×」 with nothing to multiply`, () => {
+  it(`finds more than ${drawnAtMost} things or frames drawn with no 「k×」, and 「k×」 with nothing to multiply`, () => {
     expect(
       drawing(
         [drawnAtMost + 1, 'marble'],
+        [30, 'marble', { group: 3 }],
         [18, 'marble', { group: 9, times: true }],
         [1, 'marble', { times: true }],
         [3, 'marble', { group: 3, times: true }],
       ),
     ).toEqual([
       `conclusion three-marbles draws ${drawnAtMost + 1} marble one by one, more than ${drawnAtMost}, with no 「k×」`,
+      `conclusion three-marbles draws 30 marble in more than ${drawnAtMost} frames, with no 「k×」`,
       `conclusion three-marbles draws 18 marble in frames of more than ${drawnAtMost}`,
       'conclusion three-marbles draws 1 marble as 「k×」 with nothing to multiply',
       'conclusion three-marbles draws 3 marble as 「k×」 with nothing to multiply',

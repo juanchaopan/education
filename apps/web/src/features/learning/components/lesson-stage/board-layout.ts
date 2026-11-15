@@ -2,8 +2,10 @@ import type { AmountDrawing } from '@education/problems/lesson-content';
 import type { ReactNode } from 'react';
 
 // How the conclusion board lays out the things of one amount, so a lesson
-// declares only how many there are and the board keeps every pile low and
-// narrow: never more than two lines of things.
+// declares only how many there are and the board keeps each pile low and
+// narrow: never more than two lines of things, or of frames each holding
+// such a pile. How tall a whole board may grow is the author's call, checked
+// on the lesson's screenshots.
 //
 // A thing's shape decides how its copies sit together:
 // - `round`, an apple: side by side, then in two rows with the shorter row on

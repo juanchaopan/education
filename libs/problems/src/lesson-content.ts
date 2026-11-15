@@ -283,12 +283,12 @@ const dividedBy = (count: number, group: number) =>
 // 「k×」 needs more than one to multiply. `many` counts the frames, or the
 // things when there are no frames, and `each` the things in a frame.
 function crowdProblems(amount: string, many: number, each: number, times: boolean) {
+  const drawn =
+    each > 1 ? `in more than ${drawnAtMost} frames` : `one by one, more than ${drawnAtMost}`;
   return [
     ...(times && many < 2 ? [`${amount} as 「k×」 with nothing to multiply`] : []),
     ...(each > drawnAtMost ? [`${amount} in frames of more than ${drawnAtMost}`] : []),
-    ...(!times && many > drawnAtMost
-      ? [`${amount} one by one, more than ${drawnAtMost}, with no 「k×」`]
-      : []),
+    ...(!times && many > drawnAtMost ? [`${amount} ${drawn}, with no 「k×」`] : []),
   ];
 }
 
