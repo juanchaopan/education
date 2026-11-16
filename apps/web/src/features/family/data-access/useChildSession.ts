@@ -2,7 +2,7 @@ import { clearFamilyManagement } from './family-cache';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Value } from '@sinclair/typebox/value';
 import { ChildSession, type ChildLogin } from '@education/contracts';
-import { sessionRequest } from './session-request';
+import { busyMessage, refusedAsBusy, sessionRequest } from './session-request';
 
 const key = ['child-session'];
 async function request(path: string, body?: object, csrf?: string) {
@@ -14,6 +14,7 @@ async function request(path: string, body?: object, csrf?: string) {
 }
 async function read(response: Response): Promise<ChildSession> {
   if (!response.ok) {
+    if (await refusedAsBusy(response)) throw new Error(busyMessage);
     const messages: Record<number, string> = {
       400: '请检查家庭码、昵称和六位数字 PIN，再试一次。',
       401: '家庭码、昵称或 PIN 不正确，或登录已失效。请检查后重试，也可以请家长帮忙。',

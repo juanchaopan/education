@@ -23,10 +23,13 @@ afterEach(() => {
 });
 
 type Session = 'none' | 'parent' | 'child' | 'unknown';
+// What the server answers a sign-in with, a 429 body, instead of signing in.
+type Refusal = { message: string; reason?: string };
 
 // The server: nobody signed in until a sign-in succeeds, unless the parent
 // or a child already is, or the child's session cannot be checked just now.
-function serve(session: Session = 'none') {
+// With a refusal, every sign-in is refused with it.
+function serve(session: Session = 'none', refusal?: Refusal) {
   let state = session;
   const fetch = vi.fn(async (url: string) => {
     if (url.endsWith('/api/v1/session'))
@@ -35,6 +38,7 @@ function serve(session: Session = 'none') {
       if (state === 'unknown') return new Response(null, { status: 503 });
       return state === 'child' ? Response.json(child) : new Response(null, { status: 401 });
     }
+    if (refusal && url.endsWith('/login')) return Response.json(refusal, { status: 429 });
     if (url.endsWith('/parents/login')) {
       state = 'parent';
       return Response.json(parent);
@@ -72,6 +76,13 @@ async function parentSignsIn() {
   await userEvent.click(screen.getByRole('button', { name: '登录' }));
 }
 
+async function childSignsIn() {
+  await userEvent.type(await screen.findByLabelText('我的家庭码'), 'ABCD-EFGH-JKMN');
+  await userEvent.type(screen.getByLabelText('我的昵称'), '小鹿');
+  await userEvent.type(screen.getByLabelText('我的六位 PIN'), '018274');
+  await userEvent.click(screen.getByRole('button', { name: '进入我的空间' }));
+}
+
 it('gives each tab its own address and keeps the page to come back to when switching', async () => {
   serve();
   open('/login/child?next=%2Fproblems%2Fgarden-balance%2F1');
@@ -93,10 +104,7 @@ it('gives each tab its own address and keeps the page to come back to when switc
 it('signs a child in, remembers the family code and nickname, and opens the books', async () => {
   const fetch = serve();
   open('/login/child');
-  await userEvent.type(await screen.findByLabelText('我的家庭码'), 'ABCD-EFGH-JKMN');
-  await userEvent.type(screen.getByLabelText('我的昵称'), '小鹿');
-  await userEvent.type(screen.getByLabelText('我的六位 PIN'), '018274');
-  await userEvent.click(screen.getByRole('button', { name: '进入我的空间' }));
+  await childSignsIn();
   await vi.waitFor(() =>
     expect(fetch).toHaveBeenCalledWith('/api/v1/children/login', expect.anything()),
   );
@@ -106,6 +114,29 @@ it('signs a child in, remembers the family code and nickname, and opens the book
     familyCode: 'ABCD-EFGH-JKMN',
     nickname: '小鹿',
   });
+});
+
+it.each([
+  [
+    'too many failed attempts',
+    { message: '尝试较多，请稍后再试。' },
+    '尝试有点多，休息一会儿再试，也可以请家长帮忙。',
+    '尝试较多，请稍后再试。',
+  ],
+  [
+    'a busy server',
+    { message: '现在登录的人有点多，请过几秒再试。', reason: 'busy' },
+    '现在登录的人有点多，请过几秒再试。',
+    '现在登录的人有点多，请过几秒再试。',
+  ],
+])('tells a child and a parent refused for %s what to do', async (_name, refusal, kid, adult) => {
+  serve('none', refusal);
+  open('/login/child');
+  await childSignsIn();
+  expect(await screen.findByRole('alert')).toHaveTextContent(kid);
+  await userEvent.click(screen.getByRole('tab', { name: '家长登录' }));
+  await parentSignsIn();
+  expect(await screen.findByRole('alert')).toHaveTextContent(adult);
 });
 
 it('fills in the family code and nickname a child just registered with, across the tabs', async () => {
