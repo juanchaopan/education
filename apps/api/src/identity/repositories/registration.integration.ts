@@ -31,7 +31,7 @@ const email = () => {
 };
 const familyCount = async () =>
   Number((await pool.query('SELECT count(*) FROM families')).rows[0].count);
-const busy = { statusCode: 429, reason: authenticationBusy };
+const busy = { statusCode: 429, reason: authenticationBusy, retryAfter: 5 };
 afterAll(async () => {
   await pool.query(
     'DELETE FROM families WHERE id IN (SELECT family_id FROM parents WHERE email = ANY($1))',
@@ -100,6 +100,7 @@ it('shares per-email limits across service instances and stores only pseudonymou
   await expect(second(async () => {}, address, '127.0.0.2')).rejects.toMatchObject({
     statusCode: 429,
     reason: undefined,
+    retryAfter: undefined,
   });
   const rows = await pool.query('SELECT bucket FROM registration_attempts');
   expect(rows.rows.every((row: { bucket: string }) => /^[a-f0-9]{64}$/.test(row.bucket))).toBe(

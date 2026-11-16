@@ -32,7 +32,6 @@ import Fastify, {
   type FastifyRequest,
 } from 'fastify';
 import { Type } from '@sinclair/typebox';
-import { authenticationBusy } from '@education/contracts';
 import { registerCatalog, type OpenProblem } from './catalog/routes/catalog.js';
 import { registerParentRegistration } from './identity/routes/registration.js';
 import type { RegistrationService } from './identity/services/registration.js';
@@ -178,10 +177,9 @@ function httpErrorStatus(error: FastifyError) {
   return 503;
 }
 
-// How many seconds a refused family waits: a few while the server is busy
-// checking other passwords and PINs, a minute after too many attempts.
+// How many seconds a refused family waits: what the refusal names, else a minute.
 const retryAfter = (error: FastifyError) =>
-  error instanceof RequestError && error.reason === authenticationBusy ? '5' : '60';
+  String((error instanceof RequestError && error.retryAfter) || 60);
 
 // The request log records each error's category; the reply carries only a
 // message meant for families, and a refusal's reason when it has one.

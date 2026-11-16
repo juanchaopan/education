@@ -1,7 +1,7 @@
 import { randomBytes } from 'node:crypto';
 import type { ChildLogin, ChildSession } from '@education/contracts';
 import type { AuthAdmission } from '../domain/authentication.js';
-import { childIdentity } from '../domain/admission-policy.js';
+import { childSignInIdentity } from '../domain/admission-policy.js';
 import { childLocator, childSessionLifetime } from '../domain/child-session.js';
 import type { ChildSessionRepository } from '../repositories/child-session.js';
 import { tokenHash, csrfToken, validToken, csrfMatches } from './session-security.js';
@@ -49,7 +49,7 @@ async function login(deps: Dependencies, input: ChildLogin, source: string, prev
       if (!issued) throw denied();
       return { token, maxAge: childSessionLifetime, view: viewFor(account.nickname, token) };
     },
-    childIdentity(familyCode, nickname),
+    childSignInIdentity(familyCode, nickname),
     source,
     'child-login',
     familyCode,

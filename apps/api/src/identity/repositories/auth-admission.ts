@@ -1,15 +1,18 @@
 import { createHmac } from 'node:crypto';
 import { isIP, SocketAddress } from 'node:net';
-import { drizzle } from 'drizzle-orm/node-postgres';
-import { sql } from 'drizzle-orm';
 import type pg from 'pg';
-import { authenticationBusy } from '@education/contracts';
+import { authenticationBusy, authenticationBusyMessage } from '@education/contracts';
 import type { AuthAdmission } from '../domain/authentication.js';
-import { admissionPolicy, failureWatch, type Budget } from '../domain/admission-policy.js';
+import {
+  admissionPolicy,
+  failureWatch,
+  type AdmissionPolicy,
+  type Budget,
+} from '../domain/admission-policy.js';
 import { RequestError } from '../../shared/request-error.js';
 
 const limited = () => new RequestError(429, '尝试较多，请稍后再试。');
-const busy = () => new RequestError(429, '现在登录的人有点多，请过几秒再试。', authenticationBusy);
+const busy = () => new RequestError(429, authenticationBusyMessage, authenticationBusy, 5);
 
 // The stored name of a budget: an HMAC under the deployment's rate-limit key,
 // so the table never holds an email, family code, nickname or address.
@@ -19,10 +22,6 @@ export const pseudonym = (secret: string, name: string) =>
 // More failed sign-ins in one 15-minute window than the watch allows: how many,
 // and when the window began.
 export type FailureWarning = { failures: number; windowStart: string };
-type Watch = { failures: string; warned: string; warn: (warning: FailureWarning) => void };
-
-// Places taken in budgets: their stored names and the moment they were taken.
-type Reservation = { names: string[]; at: string };
 
 // IPv6 addresses count by their /64 network, which one household or device
 // usually holds whole; IPv4 addresses count one by one.
@@ -38,71 +37,102 @@ function sourceGroup(source: string) {
     .join(':');
 }
 
-// One database lock orders every instance's changes to the attempt rows.
-type Transaction = Parameters<Parameters<ReturnType<typeof drizzle>['transaction']>[0]>[0];
-async function inAttemptLock<T>(client: pg.PoolClient, work: (tx: Transaction) => Promise<T>) {
-  return drizzle(client).transaction(async (tx) => {
-    await tx.execute(sql`SELECT pg_advisory_xact_lock(1717, 0)`);
-    return work(tx);
-  });
+// One database lock, held to the end of a transaction, orders every
+// instance's changes to the attempt rows.
+const lockAttempts = (client: pg.PoolClient) =>
+  client.query('SELECT pg_advisory_xact_lock(1717, 0)');
+
+async function inAttemptLock<T>(client: pg.PoolClient, work: () => Promise<T>) {
+  await client.query('BEGIN');
+  try {
+    await lockAttempts(client);
+    const result = await work();
+    await client.query('COMMIT');
+    return result;
+  } catch (error) {
+    await client.query('ROLLBACK').catch(() => undefined);
+    throw error;
+  }
 }
 
-// Takes a place in every budget, or none when one of them is full.
+// Empties a budget within a transaction the caller holds, such as resetting a
+// child's PIN.
+export async function emptyBudget(client: pg.PoolClient, secret: string, name: string) {
+  await lockAttempts(client);
+  await client.query('DELETE FROM registration_attempts WHERE bucket=$1', [
+    pseudonym(secret, name),
+  ]);
+}
+
+// Takes a place in every budget, or none when one of them is full, and
+// returns the moment the places were taken.
 function reserveBudgets(client: pg.PoolClient, budgets: Budget[]) {
-  return inAttemptLock(client, async (tx): Promise<Reservation> => {
-    await tx.execute(
-      sql`DELETE FROM registration_attempts WHERE attempted_at < now() - interval '25 hours'`,
+  const names = budgets.map(({ name }) => name);
+  return inAttemptLock(client, async () => {
+    await client.query(
+      "DELETE FROM registration_attempts WHERE attempted_at < now() - interval '25 hours'",
     );
-    for (const { name, recent, daily } of budgets) {
-      const result = await tx.execute<{ recent: number; daily: number }>(sql`
-        SELECT count(*) FILTER (WHERE attempted_at > now() - interval '15 minutes')::int AS recent,
-          count(*)::int AS daily FROM registration_attempts
-        WHERE bucket = ${name} AND attempted_at > now() - interval '24 hours'`);
-      const count = result.rows[0]!;
-      if (count.recent >= recent || count.daily >= daily) throw limited();
-    }
-    const at = (await tx.execute<{ at: string }>(sql`SELECT now()::text AS at`)).rows[0]!.at;
-    for (const { name } of budgets) {
-      await tx.execute(
-        sql`INSERT INTO registration_attempts (bucket, attempted_at) VALUES (${name}, ${at}::timestamptz)`,
-      );
-    }
-    return { names: budgets.map(({ name }) => name), at };
+    const counts = await client.query<{ bucket: string; recent: number; daily: number }>(
+      `SELECT bucket, count(*) FILTER (WHERE attempted_at > now() - interval '15 minutes')::int AS recent,
+         count(*)::int AS daily FROM registration_attempts
+       WHERE bucket = ANY($1::text[]) AND attempted_at > now() - interval '24 hours' GROUP BY bucket`,
+      [names],
+    );
+    const used = new Map(counts.rows.map((row) => [row.bucket, row]));
+    const full = ({ name, recent, daily }: Budget) => {
+      const count = used.get(name);
+      return !!count && (count.recent >= recent || count.daily >= daily);
+    };
+    if (budgets.some(full)) throw limited();
+    const inserted = await client.query<{ at: string }>(
+      'INSERT INTO registration_attempts (bucket) SELECT unnest($1::text[]) RETURNING attempted_at::text AS at',
+      [names],
+    );
+    return inserted.rows[0]!.at;
   });
 }
 
-// Gives back one place in each budget of a reservation and, after a sign-in,
-// empties the budget of the account signed in to.
-function giveBack(client: pg.PoolClient, { names, at }: Reservation, emptied?: string) {
-  return inAttemptLock(client, async (tx) => {
-    for (const name of names)
-      await tx.execute(sql`
-        DELETE FROM registration_attempts WHERE ctid IN (
-          SELECT ctid FROM registration_attempts
-          WHERE bucket = ${name} AND attempted_at = ${at}::timestamptz LIMIT 1)`);
-    if (emptied) await tx.execute(sql`DELETE FROM registration_attempts WHERE bucket = ${emptied}`);
-  });
+// Gives back one place in each named budget taken at `at` and, after a
+// sign-in, empties the budget of the account signed in to.
+function giveBack(client: pg.PoolClient, names: string[], at: string, emptied?: string) {
+  return inAttemptLock(client, () =>
+    client.query(
+      `DELETE FROM registration_attempts WHERE ctid IN (
+         SELECT DISTINCT ON (bucket) ctid FROM registration_attempts
+         WHERE bucket = ANY($1::text[]) AND attempted_at = $2::timestamptz)
+       OR bucket = $3`,
+      [names, at, emptied ?? null],
+    ),
+  );
 }
 
 // Counts one failure for the whole site. The first failure past the threshold
-// in a window marks the window as warned and returns the warning; every other
-// failure, on any instance, finds the mark or stays under the threshold.
-function watchFailure(client: pg.PoolClient, watch: Watch) {
-  return inAttemptLock(client, async (tx): Promise<FailureWarning | undefined> => {
-    await tx.execute(sql`INSERT INTO registration_attempts (bucket) VALUES (${watch.failures})`);
-    const windowStart = sql`date_bin('15 minutes', now(), timestamptz '2000-01-01 00:00:00+00')`;
-    const result = await tx.execute<{ failures: number; warned: number; window_start: string }>(sql`
-      SELECT count(*) FILTER (WHERE bucket = ${watch.failures})::int AS failures,
-        count(*) FILTER (WHERE bucket = ${watch.warned})::int AS warned,
-        ${windowStart}::text AS window_start
-      FROM registration_attempts
-      WHERE bucket IN (${watch.failures}, ${watch.warned}) AND attempted_at >= ${windowStart}`);
-    const { failures, warned, window_start } = result.rows[0]!;
-    if (failures <= failureWatch.threshold || warned > 0) return undefined;
-    await tx.execute(
-      sql`INSERT INTO registration_attempts (bucket, attempted_at) VALUES (${watch.warned}, ${windowStart})`,
+// in a window marks the window as warned and returns the warning; once a
+// window is marked, failures in it are not counted again on any instance.
+function watchFailure(client: pg.PoolClient, failures: string, warned: string) {
+  return inAttemptLock(client, async (): Promise<FailureWarning | undefined> => {
+    const window = (
+      await client.query<{ start: string; warned: boolean; failures: number }>(
+        `SELECT w.start::text AS start,
+           EXISTS (SELECT 1 FROM registration_attempts WHERE bucket = $2 AND attempted_at = w.start) AS warned,
+           (SELECT count(*)::int FROM registration_attempts WHERE bucket = $1 AND attempted_at >= w.start) AS failures
+         FROM (SELECT date_bin('15 minutes', now(), timestamptz '2000-01-01 00:00:00+00') AS start) w`,
+        [failures, warned],
+      )
+    ).rows[0]!;
+    if (window.warned) return undefined;
+    await client.query(
+      'DELETE FROM registration_attempts WHERE bucket = $1 AND attempted_at < $2::timestamptz',
+      [failures, window.start],
     );
-    return { failures, windowStart: window_start };
+    await client.query('INSERT INTO registration_attempts (bucket) VALUES ($1)', [failures]);
+    const count = window.failures + 1;
+    if (count <= failureWatch.threshold) return undefined;
+    await client.query(
+      'INSERT INTO registration_attempts (bucket, attempted_at) VALUES ($1, $2::timestamptz)',
+      [warned, window.start],
+    );
+    return { failures: count, windowStart: window.start };
   });
 }
 
@@ -118,26 +148,23 @@ async function claimSlot(client: pg.PoolClient) {
   return false;
 }
 
-// Runs a sign-in whose reservation only a failure keeps. A failure, including
-// an error after the password was checked, keeps its places and counts for the
-// whole site. Bookkeeping that fails is let go: the attempt's own outcome is
-// what the family sees, and a place not given back counts more, never less.
+// Runs a sign-in whose places only a failure keeps. A failure, including an
+// error after the password was checked, keeps its places. Bookkeeping that
+// fails is let go: the attempt's own outcome is what the family sees, and a
+// place not given back counts more, never less.
 async function countingFailures<T>(
-  client: pg.PoolClient,
   work: () => Promise<T>,
-  reservation: Reservation,
-  account: string | undefined,
-  watch: Watch,
+  failed: () => Promise<unknown>,
+  succeeded: () => Promise<unknown>,
 ) {
   let result: T;
   try {
     result = await work();
   } catch (error) {
-    const warning = await watchFailure(client, watch).catch(() => undefined);
-    if (warning) watch.warn(warning);
+    await failed().catch(() => undefined);
     throw error;
   }
-  await giveBack(client, reservation, account).catch(() => undefined);
+  await succeeded().catch(() => undefined);
   return result;
 }
 
@@ -151,7 +178,29 @@ export function createAuthAdmission(
 ): AuthAdmission {
   let active = 0;
   const stored = (name: string) => pseudonym(secret, name);
-  const watch = { failures: stored(failureWatch.name), warned: stored(failureWatch.warned), warn };
+  const watched = { failures: stored(failureWatch.name), warned: stored(failureWatch.warned) };
+  const admitOn = async <T>(
+    client: pg.PoolClient,
+    work: () => Promise<T>,
+    policy: AdmissionPolicy,
+  ) => {
+    const budgets = policy.budgets.map((budget) => ({ ...budget, name: stored(budget.name) }));
+    const names = budgets.map(({ name }) => name);
+    const at = await reserveBudgets(client, budgets);
+    if (!(await claimSlot(client))) {
+      await giveBack(client, names, at);
+      throw busy();
+    }
+    if (policy.counts === 'every-attempt') return work();
+    return countingFailures(
+      work,
+      async () => {
+        const warning = await watchFailure(client, watched.failures, watched.warned);
+        if (warning) warn(warning);
+      },
+      () => giveBack(client, names, at, policy.account && stored(policy.account)),
+    );
+  };
   return async (work, identity, source, scope = 'authentication', family) => {
     if (active >= 2) throw busy();
     active++;
@@ -159,17 +208,7 @@ export function createAuthAdmission(
     try {
       client = await pool.connect();
       const policy = admissionPolicy(scope, { identity, source: sourceGroup(source), family });
-      const reservation = await reserveBudgets(
-        client,
-        policy.budgets.map((budget) => ({ ...budget, name: stored(budget.name) })),
-      );
-      if (!(await claimSlot(client))) {
-        await giveBack(client, reservation);
-        throw busy();
-      }
-      if (policy.counts === 'every-attempt') return await work();
-      const account = policy.account && stored(policy.account);
-      return await countingFailures(client, work, reservation, account, watch);
+      return await admitOn(client, work, policy);
     } finally {
       // Closing the dedicated connection releases session locks even after a query failure.
       client?.release(true);

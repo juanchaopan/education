@@ -2,8 +2,8 @@ import type pg from 'pg';
 import type { ChildAccess } from '@education/contracts';
 import type { ChildAccessRepository } from './child-access.js';
 import { withParentSession } from './session-transaction.js';
-import { pseudonym } from './auth-admission.js';
-import { childAccountBudget, childIdentity } from '../domain/admission-policy.js';
+import { emptyBudget } from './auth-admission.js';
+import { childAccountBudget, childSignInIdentity } from '../domain/admission-policy.js';
 import { RequestError } from '../../shared/request-error.js';
 
 export function createChildAccessRepository(
@@ -69,8 +69,5 @@ async function clearChildAttempts(
     await client.query<{ code: string | null }>('SELECT code FROM families WHERE id=$1', [familyId])
   ).rows[0]!;
   if (!family.code) return;
-  const bucket = pseudonym(secret, childAccountBudget(childIdentity(family.code, nickname)));
-  // The same lock orders admission reservations.
-  await client.query('SELECT pg_advisory_xact_lock(1717,0)');
-  await client.query('DELETE FROM registration_attempts WHERE bucket=$1', [bucket]);
+  await emptyBudget(client, secret, childAccountBudget(childSignInIdentity(family.code, nickname)));
 }

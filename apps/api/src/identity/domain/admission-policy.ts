@@ -33,13 +33,32 @@ export const failureWatch = {
 
 // The account a child's sign-in names, and the budget of that account's
 // failed attempts. A successful sign-in or a new PIN empties this budget.
-export const childIdentity = (familyCode: string, nickname: string) =>
+export const childSignInIdentity = (familyCode: string, nickname: string) =>
   JSON.stringify([familyCode, nickname]);
 export const childAccountBudget = (identity: string) => `child:${identity}`;
 
-const perSource = { recent: 30, daily: 200 };
-const perEmail = { recent: 10, daily: 50 };
-const deployment = { recent: 100, daily: 500 };
+type Limits = { recent: number; daily: number };
+const perSource: Limits = { recent: 30, daily: 200 };
+const perEmail: Limits = { recent: 10, daily: 50 };
+const deployment: Limits = { recent: 100, daily: 500 };
+
+// The budgets of a request that names an account: the deployment, the source
+// and the account it names, each kind of request under its own prefix.
+type AccountRequest = { prefix: string; kind: string; source: Limits; account: Limits };
+const emailRequest = (prefix: string): AccountRequest => ({
+  prefix,
+  kind: 'email',
+  source: perSource,
+  account: perEmail,
+});
+// A registration KEY is short-lived and redeemed once, so a source tries few
+// of them while one KEY may be tried by a whole family's devices.
+const keyRedemption: AccountRequest = {
+  prefix: 'child-registration:',
+  kind: 'key',
+  source: { recent: 10, daily: 50 },
+  account: { recent: 5, daily: 500 },
+};
 
 export function admissionPolicy(scope: AuthScope, attempt: Attempt): AdmissionPolicy {
   switch (scope) {
@@ -48,15 +67,25 @@ export function admissionPolicy(scope: AuthScope, attempt: Attempt): AdmissionPo
     case 'parent-login':
       return parentSignIn(attempt);
     case 'child-registration':
-      return everyAttempt(keyRedemption(attempt));
+      return everyAttempt(keyRedemption, attempt);
     case 'authentication':
-      return everyAttempt(accountRequest('', attempt));
+      return everyAttempt(emailRequest(''), attempt);
     default:
-      return everyAttempt(accountRequest(`${scope}:`, attempt));
+      return everyAttempt(emailRequest(`${scope}:`), attempt);
   }
 }
 
-const everyAttempt = (budgets: Budget[]): AdmissionPolicy => ({ budgets, counts: 'every-attempt' });
+function everyAttempt(request: AccountRequest, { identity, source }: Attempt): AdmissionPolicy {
+  const { prefix, kind } = request;
+  return {
+    counts: 'every-attempt',
+    budgets: [
+      { name: `${prefix}authentication`, ...deployment },
+      { name: `${prefix}ip:${source}`, ...request.source },
+      ...(identity ? [{ name: `${prefix}${kind}:${identity}`, ...request.account }] : []),
+    ],
+  };
+}
 
 function failures(shared: Budget[], account: Budget | undefined): AdmissionPolicy {
   return account
@@ -79,23 +108,4 @@ function parentSignIn({ identity, source }: Attempt): AdmissionPolicy {
     [{ name: `parent-login:ip:${source}`, ...perSource }],
     identity ? { name: `parent-login:email:${identity}`, ...perEmail } : undefined,
   );
-}
-
-// A registration KEY is short-lived and redeemed once, so a source tries few
-// of them while one KEY may be tried by a whole family's devices.
-function keyRedemption({ identity, source }: Attempt): Budget[] {
-  const prefix = 'child-registration:';
-  return [
-    { name: `${prefix}authentication`, ...deployment },
-    { name: `${prefix}ip:${source}`, recent: 10, daily: 50 },
-    ...(identity ? [{ name: `${prefix}key:${identity}`, recent: 5, daily: 500 }] : []),
-  ];
-}
-
-function accountRequest(prefix: string, { identity, source }: Attempt): Budget[] {
-  return [
-    { name: `${prefix}authentication`, ...deployment },
-    { name: `${prefix}ip:${source}`, ...perSource },
-    ...(identity ? [{ name: `${prefix}email:${identity}`, ...perEmail }] : []),
-  ];
 }

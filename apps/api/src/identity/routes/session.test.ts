@@ -1,5 +1,5 @@
 import { afterEach, expect, it, vi } from 'vitest';
-import { authenticationBusy } from '@education/contracts';
+import { authenticationBusy, authenticationBusyMessage } from '@education/contracts';
 import { buildApp } from '../../app.js';
 import { RequestError } from '../../shared/request-error.js';
 const origin = 'https://education.example';
@@ -113,13 +113,14 @@ it('returns limited and sanitized failures without setting a cookie', async () =
   expect(failed.body).not.toContain('SQL');
   expect(failed.headers['set-cookie']).toBeUndefined();
 });
-it('tells a busy server from too many attempts and asks to retry in a few seconds', async () => {
+it('passes on the reason and the wait a busy refusal names', async () => {
   const { login, sessions } = setup();
-  const message = '现在登录的人有点多，请过几秒再试。';
-  sessions.login.mockRejectedValueOnce(new RequestError(429, message, authenticationBusy));
+  sessions.login.mockRejectedValueOnce(
+    new RequestError(429, authenticationBusyMessage, authenticationBusy, 5),
+  );
   const busy = await login();
   expect(busy.statusCode).toBe(429);
   expect(busy.headers['retry-after']).toBe('5');
-  expect(busy.json()).toEqual({ message, reason: authenticationBusy });
+  expect(busy.json()).toEqual({ message: authenticationBusyMessage, reason: authenticationBusy });
   expect(busy.headers['set-cookie']).toBeUndefined();
 });

@@ -8,7 +8,13 @@ export {
 export * from './catalog.js';
 export * from './calendar.js';
 
-export { ParentLogin, ParentSession, authenticationBusy, AuthenticationBusy } from './session.js';
+export {
+  ParentLogin,
+  ParentSession,
+  authenticationBusy,
+  authenticationBusyMessage,
+  AuthenticationBusy,
+} from './session.js';
 export * from './verification.js';
 
 export * from './recovery.js';

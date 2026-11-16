@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { admissionPolicy, childAccountBudget, childIdentity } from './admission-policy.js';
+import { admissionPolicy, childAccountBudget, childSignInIdentity } from './admission-policy.js';
 
 const attempt = { identity: 'a@example.test', source: '203.0.113.7' };
 
@@ -23,7 +23,7 @@ it('counts only failed parent sign-ins, by source and by email, apart from regis
 });
 
 it('counts only failed child sign-ins, by source, family and child account, with no site-wide limit', () => {
-  const identity = childIdentity('ABCDEFGHJKMN', '小鹿');
+  const identity = childSignInIdentity('ABCDEFGHJKMN', '小鹿');
   expect(childAccountBudget(identity)).toBe('child:["ABCDEFGHJKMN","小鹿"]');
   expect(
     admissionPolicy('child-login', { identity, source: 'source', family: 'ABCDEFGHJKMN' }),

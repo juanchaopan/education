@@ -1,6 +1,6 @@
 import type { Static, TSchema } from '@sinclair/typebox';
 import { Value } from '@sinclair/typebox/value';
-import { AuthenticationBusy } from '@education/contracts';
+import { AuthenticationBusy, authenticationBusyMessage } from '@education/contracts';
 
 // A request to the API under the browser's session. A request with a body is
 // a write: it is sent as JSON with the session request header, by POST unless
@@ -25,17 +25,14 @@ export function sessionRequest(
   });
 }
 
-// What a sign-in or password confirmation says when the server is busy
-// checking others: the attempt was not counted, and a retry in a few seconds
+// Throws what a sign-in or password confirmation tells the person when it was
+// refused because the server was busy checking others, rather than after too
+// many attempts: the attempt was not counted, and a retry in a few seconds
 // gets through.
-export const busyMessage = '现在登录的人有点多，请过几秒再试。';
-
-// Whether a sign-in or password confirmation was refused because the server
-// was busy, rather than after too many attempts.
-export async function refusedAsBusy(response: Response) {
-  if (response.status !== 429) return false;
+export async function throwIfBusy(response: Response) {
+  if (response.status !== 429) return;
   const body: unknown = await response.json().catch(() => null);
-  return Value.Check(AuthenticationBusy, body);
+  if (Value.Check(AuthenticationBusy, body)) throw new Error(authenticationBusyMessage);
 }
 
 // What a failed read tells the person: a message for each status that has its

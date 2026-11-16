@@ -7,7 +7,11 @@ import { createChildPin, createPinMaterial } from '../services/child-pin.js';
 import { hashParentPassword, verifyParentPassword } from '../services/password.js';
 import { tokenHash } from '../services/session-security.js';
 import { createAuthAdmission, pseudonym, type FailureWarning } from './auth-admission.js';
-import { childAccountBudget, childIdentity, failureWatch } from '../domain/admission-policy.js';
+import {
+  childAccountBudget,
+  childSignInIdentity,
+  failureWatch,
+} from '../domain/admission-policy.js';
 import { createSessionRepository } from './postgres-session.js';
 import { buildApp } from '../../app.js';
 import { createSessionService } from '../services/session.js';
@@ -82,7 +86,7 @@ async function setup(warn?: (warning: FailureWarning) => void) {
     service: serviceFor(),
     other: serviceFor(),
     input: { familyCode: code, nickname: '小鹿', pin },
-    account: childAccountBudget(childIdentity(code, '小鹿')),
+    account: childAccountBudget(childSignInIdentity(code, '小鹿')),
   };
 }
 it('isolates same-named children by family, persists hash-only sessions across instances, and revokes on logout', async () => {
