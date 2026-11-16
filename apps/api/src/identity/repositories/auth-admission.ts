@@ -1,14 +1,21 @@
 import { createHmac } from 'node:crypto';
-import { isIP } from 'node:net';
-import { SocketAddress } from 'node:net';
+import { isIP, SocketAddress } from 'node:net';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { sql } from 'drizzle-orm';
 import type pg from 'pg';
-import type { AuthAdmission, AuthScope } from '../domain/authentication.js';
+import type { AuthAdmission } from '../domain/authentication.js';
+import { admissionBudgets, type Budget } from '../domain/admission-policy.js';
 import { RequestError } from '../../shared/request-error.js';
 
 const busy = () => new RequestError(429, '尝试较多，请稍后再试。');
 
+// The stored name of a budget: an HMAC under the deployment's rate-limit key,
+// so the table never holds an email, family code, nickname or address.
+export const pseudonym = (secret: string, name: string) =>
+  createHmac('sha256', secret).update(name).digest('hex');
+
+// IPv6 addresses count by their /64 network, which one household or device
+// usually holds whole; IPv4 addresses count one by one.
 function sourceGroup(source: string) {
   if (isIP(source) !== 6) return source;
   const address = new SocketAddress({ address: source, family: 'ipv6' }).address;
@@ -21,27 +28,29 @@ function sourceGroup(source: string) {
     .join(':');
 }
 
-type Budget = { key: string; recent: number; daily: number };
-async function reserveBudget(client: pg.PoolClient, budgets: Budget[]) {
+// Takes a place in every budget, or none when one of them is full. One
+// database lock orders the reservations of every instance.
+async function reserveBudgets(client: pg.PoolClient, budgets: Budget[]) {
   await drizzle(client).transaction(async (tx) => {
     await tx.execute(sql`SELECT pg_advisory_xact_lock(1717, 0)`);
     await tx.execute(
       sql`DELETE FROM registration_attempts WHERE attempted_at < now() - interval '25 hours'`,
     );
-    for (const { key, recent, daily } of budgets) {
+    for (const { name, recent, daily } of budgets) {
       const result = await tx.execute<{ recent: number; daily: number }>(sql`
         SELECT count(*) FILTER (WHERE attempted_at > now() - interval '15 minutes')::int AS recent,
           count(*)::int AS daily FROM registration_attempts
-        WHERE bucket = ${key} AND attempted_at > now() - interval '24 hours'`);
+        WHERE bucket = ${name} AND attempted_at > now() - interval '24 hours'`);
       const count = result.rows[0]!;
       if (count.recent >= recent || count.daily >= daily) throw busy();
     }
-    for (const { key } of budgets) {
-      await tx.execute(sql`INSERT INTO registration_attempts (bucket) VALUES (${key})`);
+    for (const { name } of budgets) {
+      await tx.execute(sql`INSERT INTO registration_attempts (bucket) VALUES (${name})`);
     }
   });
 }
 
+// Password and PIN hashing runs in one of four slots shared by every instance.
 async function claimSlot(client: pg.PoolClient) {
   for (let slot = 0; slot < 4; slot++) {
     const result = await client.query<{ acquired: boolean }>(
@@ -55,18 +64,17 @@ async function claimSlot(client: pg.PoolClient) {
 
 export function createAuthAdmission(pool: pg.Pool, secret: string): AuthAdmission {
   let active = 0;
-  const bucket = (value: string) => createHmac('sha256', secret).update(value).digest('hex');
   return async (work, identity, source, scope = 'authentication', family) => {
     if (active >= 2) throw busy();
     active++;
     let client: pg.PoolClient | undefined;
     try {
       client = await pool.connect();
-      const budgets =
-        scope === 'child-login'
-          ? childLoginBudgets(identity, source, family, bucket)
-          : admissionBudgets(scope, identity, source, bucket);
-      await reserveBudget(client, budgets);
+      const budgets = admissionBudgets(scope, { identity, source: sourceGroup(source), family });
+      await reserveBudgets(
+        client,
+        budgets.map((budget) => ({ ...budget, name: pseudonym(secret, budget.name) })),
+      );
       await claimSlot(client);
       return await work();
     } finally {
@@ -75,45 +83,4 @@ export function createAuthAdmission(pool: pg.Pool, secret: string): AuthAdmissio
       active--;
     }
   };
-}
-
-function childLoginBudgets(
-  identity: string,
-  source: string,
-  family: string | undefined,
-  bucket: (value: string) => string,
-): Budget[] {
-  return [
-    { key: bucket('authentication'), recent: 100, daily: 500 },
-    { key: bucket(`ip:${sourceGroup(source)}`), recent: 30, daily: 200 },
-    ...(family ? [{ key: bucket(`family:${family}`), recent: 50, daily: 200 }] : []),
-    ...(identity ? [{ key: bucket(`child:${identity}`), recent: 5, daily: 20 }] : []),
-  ];
-}
-
-function admissionBudgets(
-  scope: AuthScope,
-  identity: string,
-  source: string,
-  bucket: (value: string) => string,
-): Budget[] {
-  const prefix = scope === 'authentication' ? '' : `${scope}:`;
-  const redeem = scope === 'child-registration';
-  return [
-    { key: bucket(`${prefix}authentication`), recent: 100, daily: 500 },
-    {
-      key: bucket(`${prefix}ip:${sourceGroup(source)}`),
-      recent: redeem ? 10 : 30,
-      daily: redeem ? 50 : 200,
-    },
-    ...(identity
-      ? [
-          {
-            key: bucket(`${prefix}${redeem ? 'key' : 'email'}:${identity}`),
-            recent: redeem ? 5 : 10,
-            daily: redeem ? 500 : 50,
-          },
-        ]
-      : []),
-  ];
 }

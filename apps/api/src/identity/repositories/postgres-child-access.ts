@@ -1,8 +1,9 @@
-import { createHmac } from 'node:crypto';
 import type pg from 'pg';
 import type { ChildAccess } from '@education/contracts';
 import type { ChildAccessRepository } from './child-access.js';
 import { withParentSession } from './session-transaction.js';
+import { pseudonym } from './auth-admission.js';
+import { childAccountBudget, childIdentity } from '../domain/admission-policy.js';
 import { RequestError } from '../../shared/request-error.js';
 
 export function createChildAccessRepository(
@@ -56,6 +57,8 @@ export function createChildAccessRepository(
   };
 }
 
+// A new PIN empties the child's own budget of sign-in attempts; the family and
+// source budgets keep their counts.
 async function clearChildAttempts(
   client: pg.PoolClient,
   familyId: string,
@@ -66,10 +69,8 @@ async function clearChildAttempts(
     await client.query<{ code: string | null }>('SELECT code FROM families WHERE id=$1', [familyId])
   ).rows[0]!;
   if (!family.code) return;
-  const bucket = createHmac('sha256', secret)
-    .update(`child:${JSON.stringify([family.code, nickname])}`)
-    .digest('hex');
-  // The same lock protects admission reservations; source/family/global budgets remain intact.
+  const bucket = pseudonym(secret, childAccountBudget(childIdentity(family.code, nickname)));
+  // The same lock orders admission reservations.
   await client.query('SELECT pg_advisory_xact_lock(1717,0)');
   await client.query('DELETE FROM registration_attempts WHERE bucket=$1', [bucket]);
 }

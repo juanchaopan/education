@@ -1,4 +1,5 @@
 import { expect, it, vi } from 'vitest';
+import type { AuthAdmission } from '../domain/authentication.js';
 import { createSessionService } from './session.js';
 
 const account = {
@@ -19,20 +20,21 @@ function setup() {
   };
   const verify = vi.fn().mockResolvedValue(true);
   const admitted = vi.fn();
-  const admit = async <T>(work: () => Promise<T>) => {
-    admitted();
+  const admit: AuthAdmission = async (work, ...args) => {
+    admitted(...args);
     return work();
   };
   const service = createSessionService({ repository, verify, admit, dummyHash: 'dummy-hash' });
   return { repository, verify, admit, admitted, service };
 }
 it('normalizes only email, rotates the token, and stores only a token hash', async () => {
-  const { service, repository, verify } = setup();
+  const { service, repository, verify, admitted } = setup();
   const result = await service.login(
     { email: ' A@EXAMPLE.TEST ', password: '  exact password  ' },
     'ip',
     'x'.repeat(43),
   );
+  expect(admitted).toHaveBeenCalledWith('a@example.test', 'ip', 'parent-login');
   expect(repository.find).toHaveBeenCalledWith('a@example.test');
   expect(verify).toHaveBeenCalledWith('stored-hash', '  exact password  ');
   expect(result.token).toMatch(/^[\w-]{43}$/);
@@ -86,5 +88,5 @@ it('reads the session for a page and logs out without spending the login budgets
   }
   expect(admitted).not.toHaveBeenCalled();
   await expect(service.read(undefined, 'ip')).rejects.toMatchObject({ statusCode: 401 });
-  expect(admitted).toHaveBeenCalledOnce();
+  expect(admitted).toHaveBeenCalledExactlyOnceWith('', 'ip');
 });
