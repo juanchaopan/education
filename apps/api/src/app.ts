@@ -177,6 +177,10 @@ function httpErrorStatus(error: FastifyError) {
   return 503;
 }
 
+// How many seconds a refused family waits: what the refusal names, else a minute.
+const retryAfter = (error: FastifyError) =>
+  String((error instanceof RequestError && error.retryAfter) || 60);
+
 // The request log records each error's category; the reply carries only a
 // message meant for families, and a refusal's reason when it has one.
 function registerErrors(app: FastifyInstance) {
@@ -184,7 +188,7 @@ function registerErrors(app: FastifyInstance) {
     const invalid = error.validation !== undefined;
     const status = error instanceof RequestError ? error.statusCode : httpErrorStatus(error);
     if (!(error instanceof RequestError)) noteError(request, error, status);
-    if (status === 429) reply.header('Retry-After', '60');
+    if (status === 429) reply.header('Retry-After', retryAfter(error));
     void reply
       .code(status)
       .header('Cache-Control', 'no-store')

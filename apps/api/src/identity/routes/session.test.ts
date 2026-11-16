@@ -1,4 +1,5 @@
 import { afterEach, expect, it, vi } from 'vitest';
+import { authenticationBusy, authenticationBusyMessage } from '@education/contracts';
 import { buildApp } from '../../app.js';
 import { RequestError } from '../../shared/request-error.js';
 const origin = 'https://education.example';
@@ -105,9 +106,21 @@ it('returns limited and sanitized failures without setting a cookie', async () =
   const limited = await login();
   expect(limited.statusCode).toBe(429);
   expect(limited.headers['retry-after']).toBe('60');
+  expect(limited.json()).toEqual({ message: '尝试较多，请稍后再试。' });
   sessions.login.mockRejectedValueOnce(new Error('private email and SQL'));
   const failed = await login();
   expect(failed.statusCode).toBe(503);
   expect(failed.body).not.toContain('SQL');
   expect(failed.headers['set-cookie']).toBeUndefined();
+});
+it('passes on the reason and the wait a busy refusal names', async () => {
+  const { login, sessions } = setup();
+  sessions.login.mockRejectedValueOnce(
+    new RequestError(429, authenticationBusyMessage, authenticationBusy, 5),
+  );
+  const busy = await login();
+  expect(busy.statusCode).toBe(429);
+  expect(busy.headers['retry-after']).toBe('5');
+  expect(busy.json()).toEqual({ message: authenticationBusyMessage, reason: authenticationBusy });
+  expect(busy.headers['set-cookie']).toBeUndefined();
 });

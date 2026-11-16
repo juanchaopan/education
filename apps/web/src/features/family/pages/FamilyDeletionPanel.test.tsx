@@ -128,6 +128,21 @@ it('does not ask to delete when the password is wrong', async () => {
   expect(onDeleted).not.toHaveBeenCalled();
 });
 
+it('tells a busy server from too many password confirmations', async () => {
+  const busy = { message: '现在登录的人有点多，请过几秒再试。', reason: 'busy' };
+  for (const [reply, shown] of [
+    [Response.json(busy, { status: 429 }), '现在登录的人有点多，请过几秒再试。'],
+    [Response.json({ message: '尝试较多，请稍后再试。' }, { status: 429 }), '密码确认次数较多'],
+  ] as const) {
+    const { fetcher } = setup({ password: reply });
+    const user = await fillIn();
+    await user.click(button());
+    expect(await screen.findByRole('alert')).toHaveTextContent(shown);
+    expect(calls(fetcher, '/family-deletion')).toHaveLength(0);
+    cleanup();
+  }
+});
+
 it('shows why the server could not accept the deletion, or that the outcome is unsure', async () => {
   const message = '暂时无法确认删除是否已经受理，请稍后重新登录查看。';
   for (const [reply, shown] of [

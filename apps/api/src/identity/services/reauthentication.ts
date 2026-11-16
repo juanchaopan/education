@@ -12,6 +12,8 @@ type Dependencies = {
   admit: AuthAdmission;
   verify: (hash: string, password: string) => Promise<boolean>;
 };
+// Confirming the password again is a parent sign-in to the same account, so it
+// spends the same budgets as signing in.
 export function createReauthenticationService({
   sessions,
   repository,
@@ -42,6 +44,7 @@ export function createReauthenticationService({
         },
         session.email,
         source,
+        'parent-login',
       );
     },
   };

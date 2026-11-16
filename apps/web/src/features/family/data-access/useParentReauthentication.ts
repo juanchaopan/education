@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Value } from '@sinclair/typebox/value';
 import { ParentSession } from '@education/contracts';
-import { sessionRequest } from './session-request';
+import { sessionRequest, throwIfBusy } from './session-request';
 import { replaceParentSession } from './family-cache';
 
 async function confirmPassword(password: string, csrf: string): Promise<ParentSession> {
@@ -13,6 +13,7 @@ async function confirmPassword(password: string, csrf: string): Promise<ParentSe
   }
   if (response.status === 401) throw new Error('密码不正确，或登录状态已失效，请重新登录。');
   if (response.status === 403) throw new Error('请刷新状态后重新确认家长密码。');
+  await throwIfBusy(response);
   if (response.status === 429) throw new Error('密码确认次数较多，请稍后再试。');
   if (!response.ok) throw new Error('暂时无法确认家长密码，请稍后重试。');
   const value: unknown = await response.json().catch(() => null);

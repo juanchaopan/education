@@ -32,9 +32,10 @@ async function findSession(
 }
 
 // `current` reads the session a page asks about, also on the way to logging
-// out, without spending the login budgets: a session token is 32 random bytes
-// that cannot be guessed, and reading one hashes no password. `read`, which
-// lets a parent into the parent endpoints, spends them for a missing session.
+// out, without spending any budget: a session token is 32 random bytes that
+// cannot be guessed, and reading one hashes no password. `read`, which lets a
+// parent into the parent endpoints, spends the authentication budgets for a
+// missing session. Signing in spends the parent sign-in budgets.
 export function createSessionService({ repository, admit, verify, dummyHash }: Dependencies) {
   const reject = (source: string, status = 401): Promise<never> =>
     admit(
@@ -77,6 +78,7 @@ export function createSessionService({ repository, admit, verify, dummyHash }: D
       },
       email,
       source,
+      'parent-login',
     );
   };
   const logout = async (token: string | undefined, csrf: string | undefined, source: string) => {

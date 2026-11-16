@@ -1,5 +1,5 @@
 import { replaceParentSession } from './family-cache';
-import { sessionRequest } from './session-request';
+import { sessionRequest, throwIfBusy } from './session-request';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Value } from '@sinclair/typebox/value';
 import { ParentSession, type ParentLogin } from '@education/contracts';
@@ -14,6 +14,7 @@ async function request(path: string, body?: object, csrf?: string) {
 }
 async function read(response: Response): Promise<ParentSession> {
   if (!response.ok) {
+    await throwIfBusy(response);
     if (response.status === 401) throw new Error('邮箱或密码不正确，或登录状态已失效。');
     if (response.status === 429) throw new Error('尝试较多，请稍后再试。');
     if (response.status === 403) throw new Error('请刷新页面后重试。');

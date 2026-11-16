@@ -1,5 +1,6 @@
 import type { Static, TSchema } from '@sinclair/typebox';
 import { Value } from '@sinclair/typebox/value';
+import { AuthenticationBusy, authenticationBusyMessage } from '@education/contracts';
 
 // A request to the API under the browser's session. A request with a body is
 // a write: it is sent as JSON with the session request header, by POST unless
@@ -22,6 +23,16 @@ export function sessionRequest(
       ...(csrf && { 'X-CSRF-Token': csrf }),
     },
   });
+}
+
+// Throws what a sign-in or password confirmation tells the person when it was
+// refused because the server was busy checking others, rather than after too
+// many attempts: the attempt was not counted, and a retry in a few seconds
+// gets through.
+export async function throwIfBusy(response: Response) {
+  if (response.status !== 429) return;
+  const body: unknown = await response.json().catch(() => null);
+  if (Value.Check(AuthenticationBusy, body)) throw new Error(authenticationBusyMessage);
 }
 
 // What a failed read tells the person: a message for each status that has its
