@@ -1,6 +1,6 @@
 # 变化题作答记录
 
-逐幕探究的变化题怎样判、记什么、怎样导出。课堂上的做法（先猜、再动手、再说理由、最后揭晓）见手册的[逐幕探究](interactive-lesson-authoring.md#逐幕探究)；这里写服务端的规则、数据、接口和家庭导出。题目页怎样提交由 [#218](https://github.com/juanchaopan/education/issues/218) 做，家长摘要怎样显示由 [#219](https://github.com/juanchaopan/education/issues/219) 做，两者都按这里的接口和结果。
+逐幕探究的变化题怎样判、记什么、怎样导出。课堂上的做法（先猜、再动手、再说理由、最后揭晓）见手册的[逐幕探究](interactive-lesson-authoring.md#逐幕探究)；这里写服务端的规则、数据、接口和家庭导出。题目页怎样提交由 [#218](https://github.com/juanchaopan/education/issues/218) 做；家长的学习摘要怎样显示变化题的结果见 [题目的版本](problem-versions.md#结果只有三种)，由 [#255](https://github.com/juanchaopan/education/issues/255) 和 [#256](https://github.com/juanchaopan/education/issues/256) 做。两者都按这里的接口和结果。
 
 ## 判定
 
@@ -60,6 +60,8 @@
 - 猜数和理由各自取所有轮里最好的结果：有一轮独立做到（猜数独立答对、理由独立说清）就是「独立做到」；否则有一轮提示后做到就是「提示后做到」；否则是「还没做到」。
 - 「还缺」列出还没有独立做到的部分（猜数、理由）。
 - 做到过一次就算做到，后来哪一轮做差了不改变状态；每一轮的结果都在明细里按时间列出。
+
+家长的学习摘要按同一条规则取一个版本里的结果，三种状态对应独立完成、提示后完成和还没完成，见 [题目的版本](problem-versions.md#结果只有三种)。
 
 ## 接口
 
