@@ -1,12 +1,13 @@
 import { afterAll, expect, it } from 'vitest';
-import { randomUUID, createHmac } from 'node:crypto';
+import { randomUUID } from 'node:crypto';
 import pg from 'pg';
 import { createChildSessionRepository } from './postgres-child-session.js';
 import { createChildSessionService } from '../services/child-session.js';
 import { createChildPin, createPinMaterial } from '../services/child-pin.js';
 import { hashParentPassword, verifyParentPassword } from '../services/password.js';
 import { tokenHash } from '../services/session-security.js';
-import { createAuthAdmission } from './auth-admission.js';
+import { createAuthAdmission, pseudonym, type FailureWarning } from './auth-admission.js';
+import { childAccountBudget, childIdentity, failureWatch } from '../domain/admission-policy.js';
 import { createSessionRepository } from './postgres-session.js';
 import { buildApp } from '../../app.js';
 import { createSessionService } from '../services/session.js';
@@ -24,18 +25,21 @@ const pool = new pg.Pool({
 const families: string[] = [];
 const pepper = 'ab'.repeat(32);
 const pin = '018274';
+const wrongPin = '937261';
 const headers = {
   origin: 'https://education.example',
   'content-type': 'application/json',
   'x-education-request': 'session',
 };
+// Tests that hash a PIN for each of dozens of sign-ins.
+const manyHashes = 60_000;
 
 const repository = createChildSessionRepository(pool);
 afterAll(async () => {
   await pool.query('DELETE FROM families WHERE id=ANY($1::uuid[])', [families]);
   await pool.end();
 });
-async function setup() {
+async function setup(warn?: (warning: FailureWarning) => void) {
   const family = randomUUID(),
     child = randomUUID();
   const code = randomUUID().replaceAll('-', '').slice(0, 12).toUpperCase();
@@ -51,18 +55,34 @@ async function setup() {
   const serviceFor = () =>
     createChildSessionService({
       repository: createChildSessionRepository(pool),
-      admit: createAuthAdmission(pool, secret),
+      admit: createAuthAdmission(pool, secret, warn),
       material: createPinMaterial(pepper),
       verify: verifyParentPassword,
       dummyHash,
     });
+  const attempts = async (name: string) =>
+    (
+      await pool.query<{ n: number }>(
+        'SELECT count(*)::int n FROM registration_attempts WHERE bucket=$1',
+        [pseudonym(secret, name)],
+      )
+    ).rows[0]!.n;
+  const record = (name: string, count: number, age = '1 minute') =>
+    pool.query(
+      `INSERT INTO registration_attempts(bucket,attempted_at) SELECT $1,now()-$2::interval FROM generate_series(1,$3)`,
+      [pseudonym(secret, name), age, count],
+    );
   return {
     family,
     child,
     secret,
+    serviceFor,
+    attempts,
+    record,
     service: serviceFor(),
     other: serviceFor(),
     input: { familyCode: code, nickname: '小鹿', pin },
+    account: childAccountBudget(childIdentity(code, '小鹿')),
   };
 }
 it('isolates same-named children by family, persists hash-only sessions across instances, and revokes on logout', async () => {
@@ -135,7 +155,7 @@ it('shares per-child budgets across instances and IPs, and groups nickname and f
   const a = await setup();
   for (let i = 0; i < 5; i++)
     await expect(
-      a.service.login({ ...a.input, pin: '937261' }, `source-${i}`),
+      a.service.login({ ...a.input, pin: wrongPin }, `source-${i}`),
     ).rejects.toMatchObject({ statusCode: 401 });
   await expect(
     a.other.login({ ...a.input, nickname: ' 小鹿 ' }, 'another-source'),
@@ -143,21 +163,72 @@ it('shares per-child budgets across instances and IPs, and groups nickname and f
   const b = await setup();
   expect((await b.service.login(b.input, 'another-source')).view.role).toBe('child');
 });
-it('enforces the family budget even when attackers rotate nicknames, and retains only pseudonymous buckets', async () => {
+it(
+  'never limits successful sign-ins, and a success empties the child budget but not the family or source budget',
+  async () => {
+    const a = await setup();
+    for (let i = 0; i < 31; i++)
+      expect((await a.service.login(a.input, 'classroom')).view.role).toBe('child');
+    const wrong = { ...a.input, pin: wrongPin };
+    for (let i = 0; i < 4; i++)
+      await expect(a.service.login(wrong, 'classroom')).rejects.toMatchObject({ statusCode: 401 });
+    await a.other.login(a.input, 'classroom');
+    expect(await a.attempts(a.account)).toBe(0);
+    expect(await a.attempts(`family:${a.input.familyCode}`)).toBe(4);
+    expect(await a.attempts('child-login:ip:classroom')).toBe(4);
+    for (let i = 0; i < 5; i++)
+      await expect(a.service.login(wrong, 'classroom')).rejects.toMatchObject({ statusCode: 401 });
+    await expect(a.other.login(a.input, 'classroom')).rejects.toMatchObject({
+      statusCode: 429,
+      reason: undefined,
+    });
+  },
+  manyHashes,
+);
+it('lets no more failures through than the child budget holds when they arrive at once', async () => {
   const a = await setup();
-  const admit = createAuthAdmission(pool, a.secret);
-  for (let i = 0; i < 50; i++)
-    await admit(
-      async () => {},
-      JSON.stringify([a.input.familyCode, `name${i}`]),
-      `source-${i}`,
-      'child-login',
-      a.input.familyCode,
-    );
-  await expect(a.other.login(a.input, 'fresh-source')).rejects.toMatchObject({ statusCode: 429 });
-  const rows = (await pool.query('SELECT bucket FROM registration_attempts')).rows;
-  expect(rows.every((row) => /^[a-f0-9]{64}$/.test(row.bucket))).toBe(true);
+  await a.record(a.account, 3);
+  const results = await Promise.allSettled(
+    Array.from({ length: 4 }, (_, i) =>
+      a.serviceFor().login({ ...a.input, pin: wrongPin }, `parallel-${i}`),
+    ),
+  );
+  const statuses = results.map((result) =>
+    result.status === 'rejected' ? (result.reason as { statusCode: number }).statusCode : 200,
+  );
+  expect(statuses.sort()).toEqual([401, 401, 429, 429]);
+  expect(await a.attempts(a.account)).toBe(5);
 });
+it('warns once per window when failures across the site pass the threshold, and still lets a child sign in', async () => {
+  const warnings: FailureWarning[] = [];
+  const a = await setup((warning) => warnings.push(warning));
+  await a.record(failureWatch.name, failureWatch.threshold, '0 seconds');
+  await expect(a.service.login({ ...a.input, pin: wrongPin }, 'one')).rejects.toMatchObject({
+    statusCode: 401,
+  });
+  expect(warnings).toEqual([
+    { failures: failureWatch.threshold + 1, windowStart: expect.any(String) },
+  ]);
+  await expect(a.other.login({ ...a.input, pin: wrongPin }, 'two')).rejects.toMatchObject({
+    statusCode: 401,
+  });
+  expect(warnings).toHaveLength(1);
+  expect((await a.other.login(a.input, 'three')).view.role).toBe('child');
+});
+it(
+  'enforces the family budget even when attackers rotate nicknames, and retains only pseudonymous buckets',
+  async () => {
+    const a = await setup();
+    for (let i = 0; i < 50; i++)
+      await expect(
+        a.service.login({ ...a.input, nickname: `name${i}`, pin: wrongPin }, `source-${i}`),
+      ).rejects.toMatchObject({ statusCode: 401 });
+    await expect(a.other.login(a.input, 'fresh-source')).rejects.toMatchObject({ statusCode: 429 });
+    const rows = (await pool.query('SELECT bucket FROM registration_attempts')).rows;
+    expect(rows.every((row) => /^[a-f0-9]{64}$/.test(row.bucket))).toBe(true);
+  },
+  manyHashes,
+);
 it('rotates between parent and child sessions without retaining the old browser authority', async () => {
   const a = await setup();
   const parent = (
@@ -331,33 +402,24 @@ it('rechecks the current epoch after waiting for a concurrent family revocation 
   }
 });
 
-it('enforces daily child and family ceilings and the deployment budget shared with parent authentication', async () => {
+it('enforces daily child and family ceilings', async () => {
   const a = await setup();
-  const bucket = (value: string) => createHmac('sha256', a.secret).update(value).digest('hex');
-  const identity = JSON.stringify([a.input.familyCode, a.input.nickname]);
-  const cases = [
-    { key: `child:${identity}`, count: 20, age: '1 hour' },
-    { key: `family:${a.input.familyCode}`, count: 200, age: '1 hour' },
-    { key: 'authentication', count: 100, age: '1 minute' },
-  ];
-  for (const item of cases) {
-    const key = bucket(item.key);
+  for (const item of [
+    { name: a.account, count: 20 },
+    { name: `family:${a.input.familyCode}`, count: 200 },
+  ]) {
     try {
-      await pool.query(
-        `INSERT INTO registration_attempts(bucket,attempted_at) SELECT $1,now()-$2::interval FROM generate_series(1,$3)`,
-        [key, item.age, item.count],
-      );
+      await a.record(item.name, item.count, '1 hour');
       await expect(a.other.login(a.input, 'fresh-source')).rejects.toMatchObject({
         statusCode: 429,
       });
-      if (item.key === 'authentication')
-        await expect(
-          createAuthAdmission(pool, a.secret)(async () => {}, 'new-parent', 'other-source'),
-        ).rejects.toMatchObject({ statusCode: 429 });
     } finally {
-      await pool.query('DELETE FROM registration_attempts WHERE bucket=$1', [key]);
+      await pool.query('DELETE FROM registration_attempts WHERE bucket=$1', [
+        pseudonym(a.secret, item.name),
+      ]);
     }
   }
+  expect((await a.other.login(a.input, 'fresh-source')).view.role).toBe('child');
 });
 it('reads the session and logs out without spending login attempts, so the child still signs in', async () => {
   const a = await setup();

@@ -62,7 +62,13 @@ export async function createApplication(env: NodeJS.ProcessEnv = process.env) {
   const config = readConfig(env);
   const mailConfig = readMailConfig(env);
   const { pool, ledgerPool } = createPools(env, config);
-  const admit = pool ? createAuthAdmission(pool, config.rateLimitKey!) : undefined;
+  // A surge of failed sign-ins is written to the application's log. Failures
+  // happen only while requests run, so the application below exists by then.
+  const admit = pool
+    ? createAuthAdmission(pool, config.rateLimitKey!, (warning) =>
+        app.log.warn({ outcome: 'sign-in-failures', ...warning }, 'Many failed sign-ins'),
+      )
+    : undefined;
   const registration = pool
     ? createRegistrationService({
         save: createRegistrationStore(pool),

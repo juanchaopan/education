@@ -2,7 +2,7 @@ import { afterAll, expect, it } from 'vitest';
 import pg from 'pg';
 import { randomUUID, createHash } from 'node:crypto';
 import { createSessionRepository } from './postgres-session.js';
-import { createAuthAdmission } from './auth-admission.js';
+import { createAuthAdmission, pseudonym } from './auth-admission.js';
 import { createSessionService } from '../services/session.js';
 import { hashParentPassword, verifyParentPassword } from '../services/password.js';
 import { buildApp } from '../../app.js';
@@ -17,6 +17,8 @@ const repository = createSessionRepository(pool);
 const families: string[] = [];
 const password = 'a secret phrase for parent authentication';
 const digest = (token: string) => createHash('sha256').update(token).digest('hex');
+// Tests that hash a password for each of dozens of sign-ins.
+const manyHashes = 60_000;
 afterAll(async () => {
   await pool.query('DELETE FROM families WHERE id=ANY($1::uuid[])', [families]);
   await pool.end();
@@ -39,7 +41,14 @@ async function setup(verified = false) {
     dummyHash: await hashParentPassword('test-only-dummy-password'),
   });
   const input = { email, password };
-  return { family, email, input, secret, admit, service };
+  const attempts = async (name: string) =>
+    (
+      await pool.query<{ n: number }>(
+        'SELECT count(*)::int n FROM registration_attempts WHERE bucket=$1',
+        [pseudonym(secret, name)],
+      )
+    ).rows[0]!.n;
+  return { family, email, input, secret, admit, service, attempts };
 }
 it('stores only hashes, rotates old cookie and revokes logout across independent service instances', async () => {
   const { service, input, secret } = await setup(true);
@@ -100,17 +109,59 @@ it('rechecks credentials and family epoch atomically before issuing a session', 
   await pool.query('UPDATE families SET auth_epoch=auth_epoch+1 WHERE id=$1', [family]);
   expect(await repository.issue(current, digest('must-not-be-issued-either'))).toBe(false);
 });
-it('shares failed login, registration and per-source budgets across instances', async () => {
-  const { service, input, secret, admit } = await setup();
-  for (let index = 0; index < 9; index++) await admit(async () => {}, input.email, 'ip');
+it(
+  'never limits successful sign-ins, and a success empties the email budget but not the source budget',
+  async () => {
+    const { service, input, attempts } = await setup(true);
+    for (let index = 0; index < 31; index++)
+      expect((await service.login(input, 'shared-source')).view.email).toBe(input.email);
+    const wrong = { ...input, password: 'incorrect' };
+    for (let index = 0; index < 9; index++)
+      await expect(service.login(wrong, 'shared-source')).rejects.toMatchObject({
+        statusCode: 401,
+      });
+    await service.login(input, 'shared-source');
+    expect(await attempts(`parent-login:email:${input.email}`)).toBe(0);
+    for (let index = 0; index < 10; index++)
+      await expect(service.login(wrong, `source-${index}`)).rejects.toMatchObject({
+        statusCode: 401,
+      });
+    await expect(service.login(input, 'fresh-source')).rejects.toMatchObject({
+      statusCode: 429,
+      reason: undefined,
+    });
+    expect(await attempts('parent-login:ip:shared-source')).toBe(9);
+  },
+  manyHashes,
+);
+it('keeps failed parent sign-ins apart from the registration and verification budgets', async () => {
+  const { service, input, admit, attempts } = await setup(true);
+  for (let index = 0; index < 10; index++) await admit(async () => {}, input.email, 'ip');
+  await expect(admit(async () => {}, input.email, 'other-ip')).rejects.toMatchObject({
+    statusCode: 429,
+  });
   await expect(service.login({ ...input, password: 'incorrect' }, 'ip')).rejects.toMatchObject({
     statusCode: 401,
   });
-  const second = createAuthAdmission(pool, secret);
-  await expect(second(async () => {}, input.email, 'other-ip')).rejects.toMatchObject({
-    statusCode: 429,
-  });
+  expect((await service.login(input, 'ip')).view.email).toBe(input.email);
+  expect(await attempts(`email:${input.email}`)).toBe(10);
+  expect(await attempts('ip:ip')).toBe(10);
 });
+it(
+  'limits failed sign-ins from one source across many emails',
+  async () => {
+    const { service, input } = await setup(true);
+    for (let index = 0; index < 30; index++)
+      await expect(
+        service.login({ email: `missing-${index}@example.test`, password }, 'guessing-source'),
+      ).rejects.toMatchObject({ statusCode: 401 });
+    await expect(service.login(input, 'guessing-source')).rejects.toMatchObject({
+      statusCode: 429,
+    });
+    expect((await service.login(input, 'another-source')).view.email).toBe(input.email);
+  },
+  manyHashes,
+);
 it('returns own account only, denies old cookies and cross-site writes using real HTTP and SQL', async () => {
   const first = await setup(true);
   const second = await setup();

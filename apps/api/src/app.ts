@@ -32,6 +32,7 @@ import Fastify, {
   type FastifyRequest,
 } from 'fastify';
 import { Type } from '@sinclair/typebox';
+import { authenticationBusy } from '@education/contracts';
 import { registerCatalog, type OpenProblem } from './catalog/routes/catalog.js';
 import { registerParentRegistration } from './identity/routes/registration.js';
 import type { RegistrationService } from './identity/services/registration.js';
@@ -177,6 +178,11 @@ function httpErrorStatus(error: FastifyError) {
   return 503;
 }
 
+// How many seconds a refused family waits: a few while the server is busy
+// checking other passwords and PINs, a minute after too many attempts.
+const retryAfter = (error: FastifyError) =>
+  error instanceof RequestError && error.reason === authenticationBusy ? '5' : '60';
+
 // The request log records each error's category; the reply carries only a
 // message meant for families, and a refusal's reason when it has one.
 function registerErrors(app: FastifyInstance) {
@@ -184,7 +190,7 @@ function registerErrors(app: FastifyInstance) {
     const invalid = error.validation !== undefined;
     const status = error instanceof RequestError ? error.statusCode : httpErrorStatus(error);
     if (!(error instanceof RequestError)) noteError(request, error, status);
-    if (status === 429) reply.header('Retry-After', '60');
+    if (status === 429) reply.header('Retry-After', retryAfter(error));
     void reply
       .code(status)
       .header('Cache-Control', 'no-store')

@@ -2,8 +2,9 @@ import { afterAll, expect, it } from 'vitest';
 import pg from 'pg';
 import { randomUUID } from 'node:crypto';
 import { verify } from 'argon2';
+import { authenticationBusy } from '@education/contracts';
 import { createRegistrationStore } from './postgres-registration.js';
-import { createAuthAdmission } from './auth-admission.js';
+import { createAuthAdmission, pseudonym } from './auth-admission.js';
 import { createRegistrationService } from '../services/registration.js';
 import { hashParentPassword } from '../services/password.js';
 
@@ -30,6 +31,7 @@ const email = () => {
 };
 const familyCount = async () =>
   Number((await pool.query('SELECT count(*) FROM families')).rows[0].count);
+const busy = { statusCode: 429, reason: authenticationBusy };
 afterAll(async () => {
   await pool.query(
     'DELETE FROM families WHERE id IN (SELECT family_id FROM parents WHERE email = ANY($1))',
@@ -97,6 +99,7 @@ it('shares per-email limits across service instances and stores only pseudonymou
   for (let count = 0; count < 10; count++) await first(async () => {}, address, '127.0.0.1');
   await expect(second(async () => {}, address, '127.0.0.2')).rejects.toMatchObject({
     statusCode: 429,
+    reason: undefined,
   });
   const rows = await pool.query('SELECT bucket FROM registration_attempts');
   expect(rows.rows.every((row: { bucket: string }) => /^[a-f0-9]{64}$/.test(row.bucket))).toBe(
@@ -112,18 +115,28 @@ it('aggregates equivalent IPv6 addresses to the same /64 source budget', async (
   );
 });
 
-it('enforces global hash slots and releases a slot after a failing operation', async () => {
+it('refuses as busy while every hash slot is taken, gives the places back, and releases a slot after a failing operation', async () => {
   const clients = await Promise.all(Array.from({ length: 4 }, () => pool.connect()));
+  const secret = randomUUID();
+  const address = email();
   try {
     for (const [slot, client] of clients.entries())
       await client.query('SELECT pg_advisory_lock(1718,$1)', [slot]);
-    const admit = createAuthAdmission(pool, randomUUID());
-    await expect(admit(async () => {}, email(), 'ip', 'recovery')).rejects.toMatchObject({
-      statusCode: 429,
-    });
+    const admit = createAuthAdmission(pool, secret);
+    await expect(admit(async () => {}, address, 'ip', 'recovery')).rejects.toMatchObject(busy);
+    await expect(admit(async () => {}, address, 'ip', 'parent-login')).rejects.toMatchObject(busy);
   } finally {
     for (const client of clients) client.release(true);
   }
+  const kept = await pool.query<{ n: number }>(
+    'SELECT count(*)::int n FROM registration_attempts WHERE bucket=ANY($1)',
+    [
+      [`recovery:email:${address}`, `parent-login:email:${address}`].map((n) =>
+        pseudonym(secret, n),
+      ),
+    ],
+  );
+  expect(kept.rows[0]!.n).toBe(0);
   const admit = createAuthAdmission(pool, randomUUID());
   await expect(
     admit(
@@ -137,7 +150,7 @@ it('enforces global hash slots and releases a slot after a failing operation', a
   expect(await admit(async () => 'recovered', email(), 'ip')).toBe('recovered');
 });
 
-it('rejects excess local work without an unbounded hash queue', async () => {
+it('rejects excess local work as busy without an unbounded hash queue', async () => {
   const admit = createAuthAdmission(pool, randomUUID());
   const release = signal();
   const started = [signal(), signal()];
@@ -153,9 +166,7 @@ it('rejects excess local work without an unbounded hash queue', async () => {
   );
   try {
     await Promise.all(started.map((signal) => signal.promise));
-    await expect(admit(async () => {}, email(), 'ip', 'recovery')).rejects.toMatchObject({
-      statusCode: 429,
-    });
+    await expect(admit(async () => {}, email(), 'ip', 'recovery')).rejects.toMatchObject(busy);
   } finally {
     release.resolve();
     await Promise.all(work);

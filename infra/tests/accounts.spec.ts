@@ -301,12 +301,14 @@ test('child login survives a server restart, shares authentication and logout ac
     ).status(),
   ).toBe(204);
   expect((await context.request.get(`${origin}/api/v1/children/session`)).status()).toBe(401);
-  for (let i = 0; i < 5; i++) {
+  // The successful sign-in above took nothing from the child's budget, so all
+  // five wrong PINs are checked and the sixth attempt is refused.
+  for (let i = 0; i < 6; i++) {
     const wrong = await context.request.post(`${i % 2 ? origin : other}/api/v1/children/login`, {
       headers,
       data: { ...data, pin: '937261' },
     });
-    expect(wrong.status()).toBe(i < 4 ? 401 : 429);
+    expect(wrong.status()).toBe(i < 5 ? 401 : 429);
   }
 });
 
@@ -329,7 +331,7 @@ async function registeredChild(request: import('@playwright/test').APIRequestCon
 test('parent resets on A, revoking all child tokens on B without allowing stale replay to revoke a new login', async ({
   playwright,
 }) => {
-  // Previous independent scenarios intentionally exhaust the shared localhost budget.
+  // Earlier scenarios leave attempts in the localhost budgets; this one starts from none.
   await database('TRUNCATE registration_attempts;');
   const parent = await playwright.request.newContext({ ignoreHTTPSErrors: true });
   const child = await playwright.request.newContext({ ignoreHTTPSErrors: true });

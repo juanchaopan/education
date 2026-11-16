@@ -16,3 +16,12 @@ export const ParentSession = Type.Object({
   csrfToken: Type.String({ pattern: '^[A-Za-z0-9_-]{43}$' }),
 });
 export type ParentSession = Static<typeof ParentSession>;
+
+// The reason a 429 carries when the server is busy checking other passwords
+// and PINs: the attempt was not counted, and trying again in a few seconds
+// works. A 429 for too many failed attempts carries no reason.
+export const authenticationBusy = 'busy';
+export const AuthenticationBusy = Type.Object({
+  message: Type.String(),
+  reason: Type.Literal(authenticationBusy),
+});
