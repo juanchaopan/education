@@ -1,4 +1,4 @@
-import type { ChangeEvent } from 'react';
+import { useLayoutEffect, useState, type ChangeEvent } from 'react';
 import { Button } from '../../../shared/ui/Button';
 import { Form } from '../../../shared/ui/Form';
 import { Notice } from '../../../shared/ui/Notice';
@@ -14,13 +14,27 @@ export type ChildRegistrationFormProps = ChildRegistrationFields & {
   onSubmit: () => void;
 };
 
+// Where the caret goes once the grouped KEY of one edit is in the field.
+type CaretPlacement = { input: HTMLInputElement; value: string; caret: number };
+
 // A child joins the family: the KEY a parent gave, grouped in fours as it is
 // typed, a nickname with its count, and a new six-digit PIN. Only what a
 // child must know is written beside the fields; the rules for the nickname
 // and the PIN come back from the server when an answer breaks them.
 export function ChildRegistrationForm(props: ChildRegistrationFormProps) {
-  // The grouped KEY replaces what was typed, so once it is drawn the caret
-  // goes back after the characters it followed.
+  const [placement, setPlacement] = useState<CaretPlacement>();
+  // Writing the grouped KEY into the field moves the caret to its end. The
+  // caret goes back after the characters it followed in the same commit,
+  // before the browser handles another key, so a key pressed right after
+  // lands where the child is editing however quickly it follows. Every edit
+  // is a new placement, so the form draws again even when grouping leaves
+  // the KEY as it was and only the typed character is taken back out.
+  useLayoutEffect(() => {
+    if (!placement) return;
+    const { input, value, caret } = placement;
+    if (input.value === value && document.activeElement === input)
+      input.setSelectionRange(caret, caret);
+  }, [placement, props.registrationKey]);
   const changeKey = ({ target, nativeEvent }: ChangeEvent<HTMLInputElement>) => {
     const forward = (nativeEvent as InputEvent).inputType === 'deleteContentForward';
     const edit = editRegistrationKey(
@@ -30,9 +44,7 @@ export function ChildRegistrationForm(props: ChildRegistrationFormProps) {
       forward ? 'forward' : 'backward',
     );
     props.onChange('registrationKey', edit.value);
-    requestAnimationFrame(() => {
-      if (document.activeElement === target) target.setSelectionRange(edit.caret, edit.caret);
-    });
+    setPlacement({ input: target, ...edit });
   };
   return (
     <Form onSubmit={props.onSubmit} aria-busy={props.pending}>
