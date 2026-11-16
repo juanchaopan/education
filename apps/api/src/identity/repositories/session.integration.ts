@@ -2,7 +2,8 @@ import { afterAll, expect, it } from 'vitest';
 import pg from 'pg';
 import { randomUUID, createHash } from 'node:crypto';
 import { createSessionRepository } from './postgres-session.js';
-import { createAuthAdmission, pseudonym } from './auth-admission.js';
+import { createAuthAdmission } from './auth-admission.js';
+import { attemptCount, manyHashes } from './attempt-fixtures.js';
 import { createSessionService } from '../services/session.js';
 import { hashParentPassword, verifyParentPassword } from '../services/password.js';
 import { buildApp } from '../../app.js';
@@ -17,8 +18,6 @@ const repository = createSessionRepository(pool);
 const families: string[] = [];
 const password = 'a secret phrase for parent authentication';
 const digest = (token: string) => createHash('sha256').update(token).digest('hex');
-// Tests that hash a password for each of dozens of sign-ins.
-const manyHashes = 60_000;
 afterAll(async () => {
   await pool.query('DELETE FROM families WHERE id=ANY($1::uuid[])', [families]);
   await pool.end();
@@ -41,13 +40,7 @@ async function setup(verified = false) {
     dummyHash: await hashParentPassword('test-only-dummy-password'),
   });
   const input = { email, password };
-  const attempts = async (name: string) =>
-    (
-      await pool.query<{ n: number }>(
-        'SELECT count(*)::int n FROM registration_attempts WHERE bucket=$1',
-        [pseudonym(secret, name)],
-      )
-    ).rows[0]!.n;
+  const attempts = (name: string) => attemptCount(pool, secret, name);
   return { family, email, input, secret, admit, service, attempts };
 }
 it('stores only hashes, rotates old cookie and revokes logout across independent service instances', async () => {

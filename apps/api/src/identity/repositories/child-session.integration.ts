@@ -7,6 +7,7 @@ import { createChildPin, createPinMaterial } from '../services/child-pin.js';
 import { hashParentPassword, verifyParentPassword } from '../services/password.js';
 import { tokenHash } from '../services/session-security.js';
 import { createAuthAdmission, pseudonym, type FailureWarning } from './auth-admission.js';
+import { attemptCount, manyHashes } from './attempt-fixtures.js';
 import {
   childAccountBudget,
   childSignInIdentity,
@@ -35,8 +36,6 @@ const headers = {
   'content-type': 'application/json',
   'x-education-request': 'session',
 };
-// Tests that hash a PIN for each of dozens of sign-ins.
-const manyHashes = 60_000;
 
 const repository = createChildSessionRepository(pool);
 afterAll(async () => {
@@ -64,13 +63,6 @@ async function setup(warn?: (warning: FailureWarning) => void) {
       verify: verifyParentPassword,
       dummyHash,
     });
-  const attempts = async (name: string) =>
-    (
-      await pool.query<{ n: number }>(
-        'SELECT count(*)::int n FROM registration_attempts WHERE bucket=$1',
-        [pseudonym(secret, name)],
-      )
-    ).rows[0]!.n;
   const record = (name: string, count: number, age = '1 minute') =>
     pool.query(
       `INSERT INTO registration_attempts(bucket,attempted_at) SELECT $1,now()-$2::interval FROM generate_series(1,$3)`,
@@ -81,7 +73,7 @@ async function setup(warn?: (warning: FailureWarning) => void) {
     child,
     secret,
     serviceFor,
-    attempts,
+    attempts: (name: string) => attemptCount(pool, secret, name),
     record,
     service: serviceFor(),
     other: serviceFor(),

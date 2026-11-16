@@ -7,7 +7,8 @@ import { createSessionRepository } from './postgres-session.js';
 import { createChildSessionService } from '../services/child-session.js';
 import { createSessionService } from '../services/session.js';
 import { createChildAccessService } from '../services/child-access.js';
-import { createAuthAdmission, pseudonym } from './auth-admission.js';
+import { createAuthAdmission } from './auth-admission.js';
+import { attemptCount } from './attempt-fixtures.js';
 import { createChildPin, createPinMaterial, createReplacementPin } from '../services/child-pin.js';
 import { hashParentPassword, verifyParentPassword } from '../services/password.js';
 import { tokenHash } from '../services/session-security.js';
@@ -272,12 +273,7 @@ it('allows independently admitted parent recovery from child login lockout, clea
   await expect(
     a.children().login({ familyCode: a.code, nickname: '小鹿', pin }, 'blocked'),
   ).rejects.toMatchObject({ statusCode: 429 });
-  const familyAttempts = async () =>
-    (
-      await pool.query('SELECT count(*)::int n FROM registration_attempts WHERE bucket=$1', [
-        pseudonym(a.secret, `family:${a.code}`),
-      ])
-    ).rows[0].n;
+  const familyAttempts = () => attemptCount(pool, a.secret, `family:${a.code}`);
   expect(await familyAttempts()).toBe(5);
   await a.access.reset(a.parent.token, a.parent.view.csrfToken, a.input, 'parent-source');
   expect(await familyAttempts()).toBe(5);

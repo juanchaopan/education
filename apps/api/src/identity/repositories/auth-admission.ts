@@ -9,6 +9,7 @@ import {
   type AdmissionPolicy,
   type Budget,
 } from '../domain/admission-policy.js';
+import { inTransaction } from './transaction.js';
 import { RequestError } from '../../shared/request-error.js';
 
 const limited = () => new RequestError(429, '尝试较多，请稍后再试。');
@@ -42,18 +43,11 @@ function sourceGroup(source: string) {
 const lockAttempts = (client: pg.PoolClient) =>
   client.query('SELECT pg_advisory_xact_lock(1717, 0)');
 
-async function inAttemptLock<T>(client: pg.PoolClient, work: () => Promise<T>) {
-  await client.query('BEGIN');
-  try {
+const inAttemptLock = <T>(client: pg.PoolClient, work: () => Promise<T>) =>
+  inTransaction(client, async () => {
     await lockAttempts(client);
-    const result = await work();
-    await client.query('COMMIT');
-    return result;
-  } catch (error) {
-    await client.query('ROLLBACK').catch(() => undefined);
-    throw error;
-  }
-}
+    return work();
+  });
 
 // Empties a budget within a transaction the caller holds, such as resetting a
 // child's PIN.
@@ -149,9 +143,9 @@ async function claimSlot(client: pg.PoolClient) {
 }
 
 // Runs a sign-in whose places only a failure keeps. A failure, including an
-// error after the password was checked, keeps its places. Bookkeeping that
-// fails is let go: the attempt's own outcome is what the family sees, and a
-// place not given back counts more, never less.
+// error after the places were taken, keeps its places. Bookkeeping that fails
+// is let go: the attempt's own outcome is what the family sees, and a place
+// not given back counts more, never less.
 async function countingFailures<T>(
   work: () => Promise<T>,
   failed: () => Promise<unknown>,
